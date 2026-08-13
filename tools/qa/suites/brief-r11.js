@@ -165,7 +165,15 @@ const { chromium, EXE, BASE } = require('./env');
         const NEWCAT = 'ค่าโฆษณาทดสอบ', NEWVEN = 'ร้านทดสอบ จำกัด';
         await p.evaluate(([c, v]) => { $('#eCat').value = c; $('#eVendor').value = v; $('#eAmt').value = '3500'; },
           [NEWCAT, NEWVEN]);
-        await p.click('#eSave'); await p.waitForTimeout(400);
+        await p.click('#eSave'); await p.waitForTimeout(250);
+        /* v1.16: มี popup ยืนยันก่อนบันทึก (บรีฟ L1) — ต้องกดยืนยันและต้องยังไม่บันทึกก่อนกด */
+        const preConfirm = await p.evaluate(() => ({
+          open: $('#modal').classList.contains('on') && !!$('#cfmGo'),
+          last: (EXPENSES[EXPENSES.length - 1] || {}).cat }));
+        if (!preConfirm.open) bad(tag + ' [ข้อ4]: ไม่มี popup ยืนยันก่อนบันทึกค่าใช้จ่าย');
+        if (preConfirm.last === NEWCAT) bad(tag + ' [ข้อ4]: บันทึกก่อนกดยืนยัน — popup เป็นแค่พิธี');
+        await p.evaluate(() => { const b = $('#cfmGo'); if (b) b.onclick(); });
+        await p.waitForTimeout(250);
         const rec = await p.evaluate(() => EXPENSES[EXPENSES.length - 1]);
         if (rec.cat !== NEWCAT) bad(tag + ' [ข้อ4]: หมวดที่พิมพ์เองไม่ถูกบันทึก');
         if (!rec.by || !rec.byName) bad(tag + ' [ข้อ4]: ไม่ได้บันทึกว่าใครเป็นคนเบิก');

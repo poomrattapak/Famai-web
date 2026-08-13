@@ -6078,12 +6078,14 @@ function rHr(){
   /* ---------- ใครเห็นใบลาแค่ไหน (v1.11 — เจ้าของสั่ง "เปิดวันลาให้เพื่อนร่วมงานเห็น แต่ไม่เปิดรายละเอียด") ----------
      เพื่อนร่วมงานในสาขาเดียวกันเห็น "ใครลาวันไหน และอนุมัติแล้วหรือยัง" เพื่อประเมินความเสี่ยงงานได้
      แต่ไม่เห็น "ลาอะไร" เพราะประเภทการลาบอกเรื่องส่วนตัว (ลาป่วย = ข้อมูลสุขภาพ)
-     ด่านอยู่ใน lvView() ที่เป็นคนตัดสินว่าเปิดอะไร ไม่ใช่การซ่อน DOM ทีหลัง */
-  const lvBoss = canFixAtt()||rolePerm().approve;
+     ด่านอยู่ใน lvView() ที่เป็นคนตัดสินว่าเปิดอะไร ไม่ใช่การซ่อน DOM ทีหลัง
+     v1.16: ผูกกับ canFixAtt() ตรง ๆ ไม่ใช่บิต approve รวม ๆ — เพราะ "การเงิน" เพิ่งได้ approve
+     สำหรับตรวจการขาย/ค่าใช้จ่าย (G1) ซึ่งต้องไม่พ่วงสิทธิ์เห็นข้อมูลสุขภาพของเพื่อนร่วมงานมาด้วย */
+  const lvBoss = canFixAtt();
   const lvSee = LEAVES.filter(l=>{ const s=STAFF.find(x=>x.id===l.staffId); return s && inScope(s.branch); });
   const lvView = l => ({ mine: l.staffId===ME.id,
     type: (l.staffId===ME.id || lvBoss) ? l.type : 'ลา' });
-  const lvAct = l => (l.status==='รออนุมัติ' && rolePerm().approve && l.staffId!==ME.id);
+  const lvAct = l => (l.status==='รออนุมัติ' && canFixAtt() && l.staffId!==ME.id);
   const lvPill = l => pill(l.status, l.status==='อนุมัติแล้ว'?'good':(l.status==='ไม่อนุมัติ'?'bad':'warn'));
   const lvBtns = (l,q) => lvAct(l)
     ? '<button class="lnk" data-lv="'+l.id+'" data-ok="1">อนุมัติ</button>'+(q?'':' · ')
