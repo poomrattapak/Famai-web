@@ -1,6 +1,6 @@
 /* เกณฑ์รอบ 3: ที่ 390px ต้องไม่มีการเลื่อนซ้าย-ขวาที่ไหนเลย (ยกเว้น .doc = กระดาษ A4) */
 const { chromium, EXE, BASE } = require('./env');
-const ROLES = { admin: 'ST1', manager: 'ST2', sales: 'ST3', stock: 'ST6', acct: 'ST7', hr: 'ST8', tech: 'ST9' };
+const ROLES = { admin: 'ST1', manager: 'ST2', sales: 'ST3', stock: 'ST6', acct: 'ST7', hr: 'ST8', tech: 'ST9', care: 'ST10' };
 
 (async () => {
   const browser = await chromium.launch({ executablePath: EXE });

@@ -4,7 +4,7 @@
    ปุ่ม ป้าย ชิป ช่องตาราง input ไม่นับ เพราะเป็นตัวเนื้อหาเอง ไม่ใช่ชั้นหุ้ม
    .tw / td.cwrap (กับดัก overflow ตั้งใจ) และ .doc (กระดาษเอกสาร) ยกเว้นตามที่ docs/04 ระบุ */
 const { chromium, EXE, BASE } = require('./env');
-const ROLES = { admin: 'ST1', manager: 'ST2', sales: 'ST3', stock: 'ST6', acct: 'ST7', hr: 'ST8', tech: 'ST9' };
+const ROLES = { admin: 'ST1', manager: 'ST2', sales: 'ST3', stock: 'ST6', acct: 'ST7', hr: 'ST8', tech: 'ST9', care: 'ST10' };
 
 (async () => {
   const browser = await chromium.launch({ executablePath: EXE });

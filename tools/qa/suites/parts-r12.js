@@ -83,7 +83,8 @@ const TBL = { pt1:'#pTable', pt2:'#msTable', pt3:'#gTable' };
     await ctx.close();
   }
 
-  /* 6 · เมนูเหลือ 20 หน้า และตัวเลขแดงของหน้าอะไหล่ต้องรวมอะไหล่ต่ำ + ของแถมต่ำ */
+  /* 6 · จำนวนหน้าในเมนู และตัวเลขแดงของหน้าอะไหล่ต้องรวมอะไหล่ต่ำ + ของแถมต่ำ
+     v1.12 เหลือ 20 · v1.17 เพิ่ม "ดูแลหลังส่งมอบ" (บรีฟรอบ 1 ฝ่ายบริการ) = 21 */
   {
     const ctx = await b.newContext({ viewport: { width: 1440, height: 900 }, timezoneId: 'Asia/Bangkok' });
     const p = await ctx.newPage();
@@ -91,7 +92,7 @@ const TBL = { pt1:'#pTable', pt2:'#msTable', pt3:'#gTable' };
     await p.goto(BASE + '/index.html');
     await p.click('#lgGo'); await p.waitForTimeout(400);
     const n = await p.evaluate(() => MENU.filter(m => m.k).length);
-    if (n !== 20) fails.push(`เมนูมี ${n} หน้า ควรเป็น 20`);
+    if (n !== 21) fails.push(`เมนูมี ${n} หน้า ควรเป็น 21`);
     const gone = await p.evaluate(() => MENU.filter(m => ['partsale','gift','follow','reg','fin','cust'].indexOf(m.k) >= 0).map(m => m.k));
     if (gone.length) fails.push(`ยังมีหน้าเก่าค้างในเมนู: ${gone}`);
     const bg = await p.evaluate(() => {
