@@ -17,3 +17,6 @@ dist/
 # ชั่วคราว
 *.log
 tmp/
+
+# Claude Code — ของเฉพาะเครื่อง
+.claude/settings.local.json
