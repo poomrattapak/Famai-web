@@ -64,11 +64,18 @@ const ALLOWED = ['admin', 'manager', 'acct'];
       if (!may && hasDoc) bad('[' + role + '] ไม่มีสิทธิ์พิมพ์แต่หน้าดีลยังมีปุ่มพิมพ์');
     }
 
-    /* 4 · แท็บเอกสารในหน้าขายรถต้องไม่มีแล้ว (ย้ายไปหน้าดีล) */
+    /* 4 · แท็บเอกสารในหน้าขายรถต้องไม่มีแล้ว (ย้ายไปหน้าดีล)
+       v1.18: ช่อง p3 ถูกใช้ใหม่เป็นแท็บขายส่ง (B2B) ตามบรีฟกลุ่ม ④ — สิ่งที่ห้ามกลับมาคือ
+       "เอกสาร" จึงเช็คจากป้ายแท็บ ไม่ใช่ id ช่อง · แถมคุมว่าแท็บขายส่งโชว์ตรงสิทธิ์ act:wholesale */
     if (await p.evaluate(() => canSee('sell'))) {
-      const tabs = await p.evaluate(() => { go('sell');
-        return [...document.querySelectorAll('#sellTabs button')].map(b => b.dataset.p); });
-      if (tabs.indexOf('p3') >= 0) bad('[' + role + '] หน้าขายรถยังมีแท็บเอกสาร (p3) อยู่');
+      const t = await p.evaluate(() => { go('sell');
+        return { labels: [...document.querySelectorAll('#sellTabs button')].map(b => b.textContent),
+          wsShown: document.querySelector('#sellTabWs').style.display !== 'none',
+          wsMay: canWholesale() }; });
+      if (t.labels.some(x => x.includes('เอกสาร')))
+        bad('[' + role + '] หน้าขายรถมีแท็บเอกสารกลับมา (ต้องอยู่หน้าดีลเท่านั้น)');
+      if (t.wsShown !== t.wsMay)
+        bad('[' + role + '] แท็บขายส่งโชว์ไม่ตรงสิทธิ์ (เห็น=' + t.wsShown + ' · สิทธิ์=' + t.wsMay + ')');
     }
 
     await ctx.close();
