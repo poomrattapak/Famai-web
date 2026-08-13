@@ -265,9 +265,9 @@ GET  /rest/v1/motorcycle_unit?select=…      → รถตามสิทธิ
 
 ---
 
-## 10. migration 10–15 — รันลงฐานข้อมูลจริงแล้ว
+## 10. migration 10–16 — รันลงฐานข้อมูลจริงแล้ว
 
-รันเมื่อ **9 ส.ค. 2569** ฐานข้อมูลจริงตอนนี้อยู่ที่ **migration 15**
+รัน 10–15 เมื่อ **9 ส.ค. 2569** · รัน 16 เมื่อ **13 ส.ค. 2569** ฐานข้อมูลจริงตอนนี้อยู่ที่ **migration 16**
 
 | # | ชื่อ | ได้อะไรมา |
 |---|---|---|
@@ -277,6 +277,7 @@ GET  /rest/v1/motorcycle_unit?select=…      → รถตามสิทธิ
 | 13 | `13_model_photo` | bucket `model-photo` (public) · ตาราง `model_photo` |
 | 14 | `14_public_api` | สคีมา `pub` · ถอนสิทธิ์ `anon` จาก `public` · `pub.model` · `pub.order_status()` · `sale.public_token` |
 | 15 | `15_order_status_volatile` | แก้ `pub.order_status` ให้เป็น `volatile` + เปิดสคีมา `pub` ให้ PostgREST |
+| 16 | `16_money_docs` | บรีฟรอบ 1 กลุ่มเงิน: `customer.birth_date` · `sale` เพิ่ม snapshot เงินผ่อน 4 ช่อง + `gifts`/`fin_approval`/`doc_ov` (jsonb) · `finance_company.tiers/terms` · `freebie.price` · `expense.note/approval` — ตรวจแล้วคอลัมน์ครบ 13 ช่อง default ถูกต้อง |
 
 สคีมา `pub` เปิดให้ PostgREST เห็นแล้วด้วย
 `alter role authenticator set pgrst.db_schemas = 'public, graphql_public, pub'`
