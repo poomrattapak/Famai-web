@@ -448,6 +448,9 @@ textarea.inp{ height:auto; padding:var(--s1) var(--s2); resize:vertical; line-he
 .chip .gq{ display:inline-flex; width:20px; height:20px; margin:0 1px; align-items:center;
   justify-content:center; border-radius:var(--r-pill); border:1px solid var(--hairline);
   font-weight:700; line-height:1; }
+/* บล็อกลูกค้าหนึ่งรายในหน้าฝ่ายบริการ — เส้นคั่นบน + ระยะแนวตั้งเท่านั้น ไม่กินด้านข้าง (กฎ §9c) */
+.acblk{ border-top:1px solid var(--hairline); padding:var(--s2) 0; }
+.acblk:first-child{ border-top:0; padding-top:0; }
 /* หัวข้อย่อยในฟอร์มยาว (บรีฟ: "แบ่งส่วนหัวข้อให้ดี ๆ") — เส้นคั่น+ตัวหนังสือ ไม่กินระยะด้านข้าง (กฎ §9c) */
 .fsh{ font-size:var(--t-label); font-weight:600; color:var(--muted); letter-spacing:.4px;
   border-top:1px solid var(--hairline-2); padding-top:var(--s2); }
@@ -4963,7 +4966,8 @@ function rCare(){
         +'<span>'+esc(t.kind)+' · '+thDate(t.due)+(t.note?' · '+esc(t.note):'')+'</span>'
         +(!t.done && edit? '<button class="lnk fx" data-ct="'+r.id+'|'+t.id+'">บันทึกว่าติดต่อแล้ว</button>':'')
         +'</div>'; }).join('');
-    return '<div class="abr"><b>'+esc(c.name)+'</b> <span class="tsub">'+esc(c.phone||'—')+' · '
+    /* บล็อกละคน คั่นด้วยเส้น ไม่มีกล่องหุ้ม (กฎ §9c) — .abr เป็นแถว flex ใช้ห่อบล็อกไม่ได้ */
+    return '<div class="acblk"><b>'+esc(c.name)+'</b> <span class="tsub">'+esc(c.phone||'—')+' · '
       +esc(u?u.model:'—')+' · ส่งมอบ '+thDate(r.createdAt)+' · '+esc(bName(r.branch))+'</span>'
       +'<h4 class="sec">Checklist ส่งมอบ</h4>'+ck
       +'<h4 class="sec">รอบติดตาม</h4>'+tk+'</div>';

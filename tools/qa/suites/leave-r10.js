@@ -41,7 +41,9 @@ const TYPES = ['ลาป่วย', 'ลากิจ', 'ลาพักร้�
     await p.evaluate(() => { const bs = [...document.querySelectorAll('#hrTabs button')]; bs[1].click(); });
     await p.waitForTimeout(300);
 
-    const boss = await p.evaluate(() => canFixAtt() || rolePerm().approve);
+    /* v1.16: สิทธิ์เห็นประเภทการลาผูกกับ canFixAtt() เท่านั้น — บิต approve ของ "การเงิน"
+       มีไว้ตรวจการขาย/ค่าใช้จ่าย ต้องไม่พ่วงเห็นข้อมูลสุขภาพ (privacy-r5 คุมฝั่งห้ามเห็น) */
+    const boss = await p.evaluate(() => canFixAtt());
     const txt = await p.$eval('#lvTable', e => e.textContent);
 
     /* 1 · ต้องเห็นชื่อและวันที่ของเพื่อนร่วมงาน — ทุกบทบาท */
