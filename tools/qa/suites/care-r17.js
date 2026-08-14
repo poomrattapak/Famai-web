@@ -79,9 +79,18 @@ const { chromium, EXE, BASE } = require('./env');
   /* ---- 3) ลูกค้าเท ---- */
   await login('ST1');
   const t3 = await page.evaluate(() => {
-    /* ใช้ดีลขั้นทะเบียนที่ยังไม่ส่งมอบ */
-    const rg = REGS.find(r => r.stage !== 'ส่งมอบแล้ว');
+    /* ใช้ดีลขั้นทะเบียนที่ยังไม่ส่งมอบ และ "ยังไม่มีเงินเข้า" — v1.22 เพิ่มด่าน:
+       มีเงินเข้าแล้วเทไม่ได้ (ต้องเคลียร์ AR ก่อน) ด่านนั้นมีเทสต์ของตัวเองใน qa-r22 */
+    const noMoneyIn = r => { const a = AR.find(x => x.saleId === r.saleId);
+      return !a || (!(a.paid > 0) && !(a.pays && a.pays.length)); };
+    /* ต้องเป็นดีลผ่อน (down>0) เพราะข้อ assert เงินดาวน์ downBack — เงินสดไม่มีช่องนั้น */
+    const hasDown = r => { const s0 = SALES.find(x => x.id === r.saleId); return s0 && s0.down > 0; };
+    const rg = REGS.find(r => r.stage !== 'ส่งมอบแล้ว' && hasDown(r) && noMoneyIn(r))
+      || REGS.find(r => r.stage !== 'ส่งมอบแล้ว' && hasDown(r));
     if (!rg) return { skip: true };
+    /* ถ้าทุกดีลมีเงินเข้า — เคลียร์เงินของดีลทดสอบก่อน (จำลองการทำเรื่องคืนเงินเสร็จ) */
+    const ar0 = AR.find(x => x.saleId === rg.saleId);
+    if (ar0) { ar0.paid = 0; ar0.pays = []; }
     const s = SALES.find(x => x.id === rg.saleId);
     const u = UNITS.find(x => x.id === s.unitId);
     const g = (s.gifts || []).find(x => x && x.id);
@@ -128,7 +137,13 @@ const { chromium, EXE, BASE } = require('./env');
       r.doneLast = dt[dt.length - 1] === done.rg.deliveredAt; }
     if (finD) {
       const oldSla = CFG.slaFin;
-      CFG.slaFin = 0;                                     /* เงียบเกิน 0 วัน = ช้าทันที */
+      /* v1.22: อย่าพึ่งลำดับ seed — backdate ความเคลื่อนไหวล่าสุดของเคสนี้เอง 3 วันให้ชัวร์ว่า "เงียบ"
+         (เกณฑ์ในโค้ดคือ +CFG.slaFin||1 — ตั้ง 0 เท่ากับ 1) */
+      const fc0 = finD.fc, hadLog = fc0.log && fc0.log.length;
+      const oldAt = hadLog ? fc0.log[fc0.log.length - 1].at : fc0.at;
+      if (hadLog) fc0.log[fc0.log.length - 1].at = addDays(curDate(), -3);
+      else fc0.at = addDays(curDate(), -3);
+      CFG.slaFin = 0;                                     /* เกณฑ์มีผลจริง = 1 วัน · เงียบ 3 วัน = ช้า */
       const slow = dealOf(finD.c.id).slow;
       CFG.slaFin = 9999;
       const notSlow = dealOf(finD.c.id).slow;
@@ -138,6 +153,7 @@ const { chromium, EXE, BASE } = require('./env');
       CFG.slaFin = 0; DEAL_SEL = finD.c.id; rDealOne(finD.c.id);
       r.dotShown = !!document.querySelector('#dlOne .pn.slow');
       CFG.slaFin = oldSla;
+      if (hadLog) fc0.log[fc0.log.length - 1].at = oldAt; else fc0.at = oldAt;
     }
     return r;
   });
