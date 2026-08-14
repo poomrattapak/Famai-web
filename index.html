@@ -2362,7 +2362,13 @@ let STAFF = [
    สร้างแบบคงที่ ไม่สุ่ม — ตัวเลขเงินเดือนจึงตรวจซ้ำได้ทุกครั้ง
    ผสมของจริงให้ครบ: มาสาย · อยู่ OT · ลืมลงเวลาออก · ไม่มีบันทึกทั้งวัน · วันลา
    คีย์ของ ATT คือ staffId + date (หนึ่งแถวต่อคนต่อวัน) — อ่านผ่าน attOf() เท่านั้น */
-const isWorkDay = d => new Date(d+'T00:00:00').getDay()!==0;   /* ร้านปิดวันอาทิตย์ */
+/* วันหยุดบริษัท (H5) — ประกาศก่อน isWorkDay/seed ATT เพราะวันทำงานต้องรู้จักวันหยุด (QA รอบส่งมอบ:
+   เดิม isWorkDay รู้จักแค่วันอาทิตย์ เพิ่มวันหยุดแล้วทั้งบริษัทถูกนับ "ไม่มีบันทึก" เข้าคิวตามแก้+สลิปเพี้ยน) */
+let HOLIDAYS = [
+  {id:'HO1', d:addDays(TODAY,12), name:'วันหยุดประจำปีของบริษัท', demo:true}
+];
+const isWorkDay = d => new Date(d+'T00:00:00').getDay()!==0
+  && !HOLIDAYS.some(h=>h.d===d);                               /* ร้านปิดวันอาทิตย์ + วันหยุดบริษัท */
 let ATT = (function(){
   const rows=[], p2=n=>String(n).padStart(2,'0');
   const hms=s=>p2(Math.floor(s/3600))+':'+p2(Math.floor(s/60)%60)+':'+p2(s%60);
@@ -2417,10 +2423,7 @@ let EXEC_EVENTS = [
   {id:'EV2', d:addDays(TODAY,8),  type:'ประชุม',   title:'ประชุมยอดขายรายเดือนทุกสาขา',     note:'', demo:true},
   {id:'EV3', d:addDays(TODAY,15), type:'รับเชิญ',  title:'งานเปิดตัวรุ่นใหม่ของยามาฮ่า',      note:'ผู้บริหารได้รับเชิญ', demo:true}
 ];
-/* วันหยุดบริษัท (บรีฟรอบ 1 · H5) — โผล่ในปฏิทินบริษัทให้ทุกบทบาทเห็น */
-let HOLIDAYS = [
-  {id:'HO1', d:addDays(TODAY,12), name:'วันหยุดประจำปีของบริษัท', demo:true}
-];
+/* วันหยุดบริษัท (HOLIDAYS) ประกาศไว้เหนือ isWorkDay แล้ว — seed ATT ต้องรู้จักวันหยุดตั้งแต่ตอนสร้าง */
 
 /* ---------- เลขที่เอกสาร: แยกสาขา × ประเภท × ปี พ.ศ. ---------- */
 /* ดูเลขถัดไปโดยไม่กินเลข — ใช้ตอนพรีวิว เลขจริงออกตอนบันทึกการขาย */
@@ -2492,7 +2495,10 @@ const PERM_ACTS=[
   ['act:org','แก้บริษัทและสาขา · คู่ค้าขายส่ง', ['admin','manager']],
   ['act:sites','แก้จุดลงเวลา', ['admin','manager']],
   ['act:care','ติ๊กงานฝ่ายบริการ', ['admin','manager','care']],
-  ['act:voidSale','ยกเลิกการขาย · ลูกค้าเท · ออกรหัสติดตามใหม่', ['admin','manager']]
+  ['act:voidSale','ยกเลิกการขาย · ลูกค้าเท · ออกรหัสติดตามใหม่', ['admin','manager']],
+  /* QA รอบส่งมอบ: สองด่านนี้เดิมเป็น role ตายตัว — หน้าตั้งค่าสิทธิ์ทำให้เข้าใจว่าคุมได้แต่จริง ๆ ไม่คุม */
+  ['act:hrApprove','อนุมัติใบลา/คำขอออกนอกสถานที่ · แก้เวลา/ตรวจการลงเวลา', ['admin','manager','hr']],
+  ['act:execCal','ปฏิทินผู้บริหาร · เพิ่ม/ลบวันหยุดบริษัท', ['admin','manager']]
 ];
 const PERM_DATA=[
   ['data:idNo','เห็นเลขบัตรลูกค้าเต็ม (ไม่ปิดกลาง)', ['admin','manager','acct']],
@@ -2837,7 +2843,11 @@ function badges(){
   set('parts',PARTS.filter(p=>inScope(p.branch) && p.qty<p.min).length
             + GIFTS.filter(g=>inScope(g.branch) && g.qty<g.min).length);
   set('ar',   AR.filter(a=>inScope(a.branch) && a.due-a.paid>0).length);
-  set('hr',   LEAVES.filter(l=>l.status==='รออนุมัติ').length
+  /* ใบลารออนุมัติ: ผู้ตรวจนับตามขอบเขตสาขา · คนทั่วไปนับเฉพาะของตัวเอง (QA: เดิมนับทุกสาขาให้ทุกคน
+     — เซลล์เห็นจุดแดงตลอดแต่เข้าไปทำอะไรไม่ได้ และรู้จำนวนใบลาทั้งบริษัทที่ไม่ใช่เรื่องของตัวเอง) */
+  set('hr',   LEAVES.filter(l=>{ if(l.status!=='รออนุมัติ') return false;
+                if(!canFixAtt()) return l.staffId===ME.id;
+                const st=STAFF.find(x=>x.id===l.staffId); return st && inScope(st.branch); }).length
               + (canFixAtt()? OFFS.filter(o=>o.status==='รออนุมัติ').length : 0)
               + (canFixAtt()? attQueue(curDate().slice(0,7)).length : 0));
   set('service',SERVICE.filter(s=>inScope(s.branch) && s.status!=='ส่งมอบแล้ว').length);
@@ -3180,7 +3190,7 @@ function holSave(d, name){
   if(HOLIDAYS.some(h=>h.d===d)){ toast('วันนี้เป็นวันหยุดอยู่แล้ว', HOLIDAYS.find(h=>h.d===d).name, 1); return false; }
   const h={id: dbId()||nid('HO'), d, name};
   HOLIDAYS.push(h);
-  dbUp('company_holiday', { id:h.id, on_date:d, name });
+  dbUp('company_holiday', { id:h.id, on_date:d, name }, 'on_date');
   toast('เพิ่มวันหยุดแล้ว', thDate(d)+' · '+name); return true;
 }
 function holDel(id){
@@ -3191,7 +3201,7 @@ function holDel(id){
   toast('ลบวันหยุดแล้ว', h.name); return true;
 }
 let CAL_TAB='veh';
-const canExecCal = () => ['admin','manager'].indexOf(ME.role)>=0;
+const canExecCal = () => permW('act:execCal');   /* อ่านจากตารางสิทธิ์ (J3) — ค่าเริ่มต้น admin/manager เท่าเดิม */
 function rCal(){
   if(!$('#calPrev').dataset.init){ $('#calPrev').dataset.init=1;
     $('#calPrev').onclick=()=>{ CAL.m--; if(CAL.m<0){CAL.m=11;CAL.y--;} rCal(); };
@@ -3344,11 +3354,20 @@ function saveRecv(){
     ['วันที่รับ', thDate($('#rDate').value||TODAY)],
     ['ราคาขายแนะนำ', p&&p.retail!=null? fmt(p.retail)+' ฿' : 'รอกำหนดราคา']
   ], ()=>{
-    UNITS.push({ id:nid('UN'), branch:$('#rBranch').value, variant:v, colorCode:cc, yColor:'',
+    const nu={ id: dbId()||nid('UN'), branch:$('#rBranch').value, variant:v, colorCode:cc, yColor:'',
       color:p?p.c[cc]:'—', model:p?p.m:v, modelTh:p?p.th:'', cat:p?p.cat:'—', cc:p?p.cc:null, year:p?p.yr:null,
       sku:v+cc, engine:eng, frame:frm, received:$('#rDate').value||TODAY,
       cost:p?p.cost:0, vat:p?p.vat:0, retail:p?p.retail:null, status:'available', clearance:false, priceNote:'',
-      src:'บันทึกเอง', recvNo:'—', poNo:'—', poDate:'', invNo:'—', files:rFilesArr.slice() });
+      src:'บันทึกเอง', recvNo:'—', poNo:'—', poDate:'', invNo:'—', files:rFilesArr.slice() };
+    UNITS.push(nu);
+    /* QA P3: รับรถโหมดจริงต้องลงฐานทันที — เดิมรถอยู่แค่ในเครื่อง พอขายคันนั้น FK unit_id พังทั้งคิว */
+    if(LIVE){
+      if(VARIANT_IDS[v] && BR_IDS[nu.branch])
+        dbUp('motorcycle_unit', { id:nu.id, branch_id:BR_IDS[nu.branch], variant_id:VARIANT_IDS[v],
+          color_code:cc, sku:nu.sku, engine_no:eng, frame_no:frm, received_at:nu.received,
+          cost:nu.cost, cost_vat:nu.vat, retail:nu.retail, status:'available', src_file:'บันทึกเอง' });
+      else toast('รถคันนี้ยังไม่ถูกบันทึกลงฐานข้อมูล','รุ่น/สาขานี้ไม่อยู่ในฐานข้อมูลจริง — แจ้งผู้ดูแลก่อนขายคันนี้',1);
+    }
     toast('บันทึกรับรถแล้ว', p?p.m:v+' · '+eng + (rFilesArr.length?(' · แนบ '+rFilesArr.length+' ไฟล์'):''));
     $('#rEngine').value=''; $('#rFrame').value=''; rFilesArr=[]; if(window._rDrawFiles) window._rDrawFiles();
     refreshAll();
@@ -3784,7 +3803,7 @@ function saveSale(force, confirmed){
       salesperson_id:ME.id, sold_at:s.soldAt, list_price:s.list, discount:s.disc, net_price:s.net,
       cost:s.cost, freebie_cost:s.freeCost, gross_profit:s.gp, pay_method:s.pay,
       down_payment:s.down, term_months:s.term, note:s.note||null,
-      finance_id:(finById(s.finId)||{}).dbId||null, doc_no:s.docNo,
+      finance_id:(finById(s.finId)||{}).dbId||null, doc_no:s.docNo, public_token:s.pubToken,
       rate_pct:s.rate, monthly_installment:s.per, loan_total:s.loan, pay_now:s.payNow,
       gifts:s.gifts, fin_approval:s.finApproval });
     dbUp('motorcycle_unit', { id:u.id, status:'sold' });
@@ -3817,10 +3836,12 @@ function saveSale(force, confirmed){
     +'<div class="f" style="margin-top:var(--s3)">'
     +'<button class="btn" id="psDeal">ไปที่ดีลของลูกค้า →</button>'
     +'<button class="btn sec" id="psSale">ดูการขายนี้</button>'
-    +'<button class="btn ghost" id="psNext">ขายคันต่อไป</button></div>');
+    /* ห้ามใช้ id "psNext" — ชนกับปุ่มเดือนถัดไปในแผ่นลงเวลา (#drwB ไม่ถูกล้างตอนปิด
+       querySelector จะคว้าตัวแรกในเอกสาร ทำให้ปุ่มนี้ไม่มี handler เงียบ ๆ) */
+    +'<button class="btn ghost" id="psNextSell">ขายคันต่อไป</button></div>');
   $('#psDeal').onclick=()=>{ closeModal(); dealGo(c.id); };
   $('#psSale').onclick=()=>{ closeModal(); saleDrawer(s.id); };
-  $('#psNext').onclick=closeModal;
+  $('#psNextSell').onclick=closeModal;
 }
 /* สลับแท็บหน้าขายจากโค้ด — ใช้ตอนคัดลอกเงื่อนไขผ่อนและตอนกดพิมพ์เอกสารหลังขาย */
 function sellTab(p){
@@ -3997,7 +4018,7 @@ function rWsSale(){
     if(!w) return;
     if(!canFinApprove()){ toast('ต้องเป็นการเงินหรือแอดมิน','',1); return; }
     w.finApproval={status:'ผ่าน', by:ME.nick, at:TODAY, note:''};
-    if(LIVE) dbUp('wholesale_sale', { id:w.id, fin_approval:w.finApproval });
+    dbPatch('wholesale_sale', w.id, { fin_approval:w.finApproval });
     toast('การเงินตรวจแล้ว — ผ่าน', w.docNo||''); rWsSale(); });
   $$('#wsList [data-wsp2]').forEach(b=> b.onclick=()=>wsPrint(b.dataset.wsp2, false));
   $$('#wsList [data-wsptx]').forEach(b=> b.onclick=()=>wsPrint(b.dataset.wsptx, true));
@@ -4131,7 +4152,9 @@ function docHTML(type, d){
             : type==='FINTX'  ? d.net-d.down
             : d.net;
   const rate=CFG.vat/100, base=amt/(1+rate), tax=amt-base;
-  const docNo = d.s ? docNoFor(d.s, type) : peekDocNo(u.branch, type);
+  /* render = ดูตัวอย่างเท่านั้น ห้ามกินเลขจากตัวนับ — เลข commit จริงใน printCurrentDoc ครั้งแรกที่พิมพ์
+     (เดิมเปิดดูดีลเฉย ๆ ก็กินเลขทิ้ง ใบกำกับเลยขาดช่วงทั้งที่ไม่มีใบจริง) */
+  const docNo = (d.s && d.s.docs && d.s.docs[type]) || peekDocNo(u.branch, type);
   const fin = d.s? finById(d.s.finId) : finById($('#sFinCo').value);
   const buyer = type==='FINTX' && fin ? fin.name+' (ผู้ให้เช่าซื้อ)' : d.cust;
   const itemName = ov.item || (esc(u.model)+' ('+esc(u.variant)+') สี'+esc(u.color));
@@ -4189,7 +4212,7 @@ function finApprove(saleId, ok, note){
   const s=SALES.find(x=>x.id===saleId); if(!s || s.void) return false;
   if(!canFinApprove()){ toast('ต้องเป็นการเงินหรือแอดมินเท่านั้น','',1); return false; }
   s.finApproval={status: ok?'ผ่าน':'ไม่ผ่าน', by:ME.nick, at:TODAY, note:(note||'').trim()};
-  if(LIVE) dbUp('sale', { id:s.id, fin_approval:s.finApproval });
+  dbPatch('sale', s.id, { fin_approval:s.finApproval });
   toast(ok?'การเงินตรวจแล้ว — ผ่าน':'การเงินตีกลับแล้ว', s.docNo||'', ok?0:'warn');
   refreshAll(); return true;
 }
@@ -4204,6 +4227,8 @@ function printCurrentDoc(){
   /* ใบกำกับภาษีต้องผ่านการเงินก่อน (G3) — เอกสารภาษีออกแล้วยกเลิกยาก */
   if(DOC_DEFS[DOC_SEL].tax && d.s && finApStatus(d.s)!=='ผ่าน'){
     toast('ยังออกใบกำกับภาษีไม่ได้','การเงินยังไม่ตรวจ ('+finApStatus(d.s)+') — ใบเสร็จรับเงินพิมพ์ได้',1); return; }
+  /* เลขเอกสารออกจริง ณ วินาทีพิมพ์ครั้งแรกเท่านั้น — docHTML เป็นแค่คนวาด ไม่แตะตัวนับ */
+  if(d.s) docNoFor(d.s, DOC_SEL);
   const html=docHTML(DOC_SEL, d);
   printHTML(DOC_DEFS[DOC_SEL].copies===2 ? docCopies(html) : html);
   if(d.s) rDeal();   /* เลขที่เพิ่งออกจริงต้องโชว์ทันที */
@@ -4941,7 +4966,7 @@ function saleDrawer(id){
     +(dts.length? dts.map(t=>'<div class="frow"><span class="mono">'+esc(s.docs[t])+'</span>'
         +'<span class="tsub">'+esc(DOC_DEFS[t]?DOC_DEFS[t].n:t)+'</span></div>').join('') : '<p class="foot">ยังไม่ออกเอกสาร</p>')
 ;
-  if(!s.void && (ME.role==='admin'||ME.role==='manager') && typeof cancelSale==='function')
+  if(!s.void && canVoidSale() && typeof cancelSale==='function')
     h+='<div class="savebar"><button class="btn dgr" id="sdVoid">ยกเลิกการขาย</button></div>';
   openDrawer('การขาย · '+(c?c.name:''), h);
   const sdd=$('#sdDeal'); if(sdd) sdd.onclick=()=>{ closeDrawer(); dealGo(c.id); };
@@ -5214,6 +5239,9 @@ function voidSaleCore(s, drop){
   const ai=AR.findIndex(x=>x.saleId===s.id); if(ai>=0) AR.splice(ai,1);
   const ci=CARE.findIndex(x=>x.saleId===s.id); if(ci>=0) CARE.splice(ci,1);
   if(c) c.stage = (fc && fc.status==='ปฏิเสธ') ? 'ไม่ผ่าน' : 'สนใจ';
+  /* เคสสินเชื่อของการขายที่ตายแล้วต้องตายด้วย — ไม่งั้น badge เมนูดีลนับงานผีที่เข้าไปหาไม่เจอ
+     รายงาน finsum/ค่าคอมนับเคสเกินจริง และปิดบริษัทไฟแนนซ์ไม่ได้เพราะ finRefs ยังเห็นเคสนี้ */
+  const fi=FINCASES.findIndex(x=>x.saleId===s.id); if(fi>=0) FINCASES.splice(fi,1);
 }
 function cancelSale(saleId){
   const s=SALES.find(x=>x.id===saleId); if(!s || s.void) return;
@@ -5239,6 +5267,11 @@ const DROP_REASONS=['เปลี่ยนใจไม่ซื้อแล้�
 function custDropModal(saleId){
   const s=SALES.find(x=>x.id===saleId); if(!s || s.void) return;
   if(!canVoidSale()){ toast('ไม่มีสิทธิ์บันทึกลูกค้าเท','ต้องเป็นแอดมินหรือผู้บริหาร',1); return; }
+  /* ด่านเดียวกับยกเลิกการขาย — มีเงินเข้าแล้ว "เท" ไม่ได้ เพราะ voidSaleCore จะลบแถว AR
+     พร้อมประวัติการรับเงิน (a.pays) ทิ้งทั้งก้อน เงินที่รับมาแล้วต้องเคลียร์ก่อนเสมอ */
+  const arIn=AR.find(a=>a.saleId===s.id);
+  if(arIn && (arIn.paid>0 || (arIn.pays&&arIn.pays.length))){
+    toast('บันทึกลูกค้าเทไม่ได้ — มีเงินเข้าแล้ว','ทำเรื่องคืน/เคลียร์เงินค้างรับก่อน แล้วค่อยบันทึกเท',1); return; }
   const u=UNITS.find(x=>x.id===s.unitId);
   openModal('ลูกค้าเท — '+u.model,
     '<div class="f">'
@@ -5844,7 +5877,7 @@ const hm1 = n => (Math.round(n*10)/10).toFixed(1);
    ผู้มีสิทธิ์แก้เวลา = แอดมิน · HR · และ "ผู้จัดการ" ซึ่งเดิมถูกล็อกไว้ทั้งที่มีสิทธิ์อนุมัติ
    บันทึกที่มีธง (สาย · OT · ลืมลงเวลาออก · ถูกแก้) เข้าคิวรอตรวจจนกว่าจะยืนยันหรือติดปัญหา
    บันทึกปกติไม่เข้าคิว — ไม่งั้นผู้จัดการจะต้องกดยืนยันวันละ 9 ครั้งโดยไม่ได้อะไรเพิ่ม */
-const canFixAtt = () => ['admin','manager','hr'].indexOf(ME.role)>=0;
+const canFixAtt = () => permW('act:hrApprove');   /* อ่านจากตารางสิทธิ์ (J3) — ค่าเริ่มต้น admin/manager/hr เท่าเดิม */
 function attFlags(a){
   const c=attCalc(a), f=[];
   if(c.late)   f.push({k:'late', t:'มาสาย '+Math.round(c.lateMin)+' นาที', tone:'warn'});
@@ -6757,8 +6790,10 @@ async function psRender(){
         : ''));
 
   $$('[data-psd]').forEach(b=> b.onclick=()=>{ PS_DAY=b.dataset.psd; psRender(); });
-  $('#psPrev').onclick=()=>{ PS_DAY=prevM+'-01'; psRender(); };
-  $('#psNext').onclick=()=>{ if(nextM<=curDate().slice(0,7)){ PS_DAY=nextM+'-01'; psRender(); } };
+  /* null guard — psRender มี await สองจุด ถ้าระหว่างนั้นแผ่นถูกแย่ง (เช่นกดกระดิ่ง) ปุ่มพวกนี้ไม่อยู่แล้ว */
+  const pv=$('#psPrev'), pn=$('#psNext');
+  if(pv) pv.onclick=()=>{ PS_DAY=prevM+'-01'; psRender(); };
+  if(pn) pn.onclick=()=>{ if(nextM<=curDate().slice(0,7)){ PS_DAY=nextM+'-01'; psRender(); } };
   const done=()=>{ psRender(); if(CUR==='attend') rAttend(); else rHr(); badges(); };
   if($('#psOk'))   $('#psOk').onclick  =()=>{ attReview(a,'ok',$('#psNote').value.trim());
     toast('ยืนยันแล้ว', s.nick+' · '+thDate(PS_DAY)); done(); };
@@ -6781,14 +6816,21 @@ function lvQuotaHint(){
 /* write-through ใบลา — เขียนได้เฉพาะใบของตัวเอง (โหมดจริงยังไม่โหลดรายชื่อพนักงานทั้งบริษัท — issue 001)
    รูปหลักฐานขึ้น bucket ส่วนตัว hr-photo ก่อน แล้วเก็บ path ลงคอลัมน์ evidence */
 async function lvLivePush(l, who){
-  if(!LIVE || !ME.empId || who!==ME.id) return;
-  const paths=[];
+  if(!LIVE) return;
+  /* บอกตรง ๆ เมื่อใบไม่ลงฐาน — เดิมเงียบแล้ว toast หลักบอก "สำเร็จ" ทำให้เข้าใจผิด (QA P13) */
+  if(!ME.empId || who!==ME.id){
+    toast('ใบลานี้ยังไม่ถูกบันทึกลงฐานข้อมูล',
+      !ME.empId? 'บัญชีนี้ไม่มีแถวพนักงานในฐานข้อมูล — แจ้งผู้ดูแล' : 'ยื่นแทนคนอื่นยังบันทึกได้เฉพาะในเครื่อง', 1);
+    return;
+  }
+  const paths=[]; let failed=0;
   for(let i=0;i<(l.imgs||[]).length;i++){
     try{ const blob=await (await fetch(l.imgs[i])).blob();
       const p='leave/'+ME.id+'/'+l.id+'-'+i+'.jpg';
       await sbUpload('hr-photo', p, blob, 'image/jpeg'); paths.push(p);
-    }catch(_){ /* รูปขึ้นไม่ได้ไม่บล็อกใบลา — ตัวใบยังลงฐานข้อมูลครบ */ }
+    }catch(_){ failed++; }
   }
+  if(failed) toast('รูปหลักฐาน '+failed+' รูปอัปโหลดไม่สำเร็จ','ตัวใบลายังลงฐานข้อมูลครบ — ลองแนบใหม่ได้',1);
   dbUp('leave_request', { id:l.id, employee_id:ME.empId, leave_type:l.type,
     date_from:l.from, date_to:l.to, status:l.status, reason:l.reason||null, evidence:paths });
 }
@@ -6800,7 +6842,7 @@ function lvDecide(id, ok, note){
   if(!ok && !(note||'').trim()){ toast('ไม่อนุมัติต้องบอกเหตุผล','',1); return false; }
   l.status = ok? 'อนุมัติแล้ว':'ไม่อนุมัติ';
   l.decidedBy=ME.nick; l.decidedAt=TODAY; l.decideNote=(note||'').trim();
-  if(LIVE && String(l.id).length===36) dbUp('leave_request', { id:l.id, status:l.status,
+  dbPatch('leave_request', l.id, { status:l.status,
     approved_by:ME.id, approved_at:new Date().toISOString(), decide_note:l.decideNote||null });
   toast(ok?'อนุมัติใบลาแล้ว':'ตีกลับใบลาแล้ว',
     ((STAFF.find(s=>s.id===l.staffId)||{}).nick||'')+(l.decideNote?' — '+l.decideNote:''), ok?0:'warn');
@@ -6827,7 +6869,7 @@ function ofDecide(id, ok, note){
   if(!may){ toast('อนุมัติคำขอของตัวเองไม่ได้','ต้องให้ผู้มีสิทธิ์คนอื่นอนุมัติ',1); return false; }
   if(!ok && !(note||'').trim()){ toast('ไม่อนุมัติต้องบอกเหตุผล','',1); return false; }
   o.status = ok? 'อนุมัติแล้ว':'ไม่อนุมัติ'; o.decidedBy=ME.nick; o.decidedAt=TODAY; o.decideNote=(note||'').trim();
-  if(LIVE && String(o.id).length===36) dbUp('offsite_request', { id:o.id, status:o.status,
+  dbPatch('offsite_request', o.id, { status:o.status,
     approved_by:ME.id, approved_at:new Date().toISOString(), decide_note:o.decideNote||null });
   toast(ok?'อนุมัติคำขอแล้ว':'ตีกลับคำขอแล้ว','',ok?0:'warn'); refreshAll(); return true;
 }
@@ -6848,7 +6890,8 @@ function rHr(){
        ถ้าใครยื่นแทนใครก็ได้ ก็เท่ากับแก้ฐานคำนวณเงินเดือนของคนอื่นได้ */
     $('#lvSave').onclick=()=>{
       const who = canFixAtt()? $('#lvWho').value : ME.id;
-      const s=STAFF.find(x=>x.id===who);
+      /* โหมดจริง ME.id เป็น uuid ที่ไม่อยู่ในรายชื่อสาธิต — ยื่นของตัวเองต้องได้เสมอ (QA P7) */
+      const s=STAFF.find(x=>x.id===who) || (who===ME.id? ME : null);
       if(!s || (who!==ME.id && !canFixAtt())){ toast('ยื่นใบลาแทนคนอื่นไม่ได้','',1); return; }
       const from=$('#lvFrom').value, to=$('#lvTo').value, type=$('#lvType').value;
       if(!from || !to || to<from){ toast('ช่วงวันที่ไม่ถูกต้อง','วันสิ้นสุดต้องไม่ก่อนวันเริ่ม',1); return; }
@@ -6876,12 +6919,15 @@ function rHr(){
       OFFS.push(o);
       if(LIVE && ME.empId) dbUp('offsite_request', { id:o.id, employee_id:ME.empId, on_date:o.date,
         time_range:o.time||null, place:o.place, reason:o.reason||null, status:o.status });
+      else if(LIVE) toast('คำขอนี้ยังไม่ถูกบันทึกลงฐานข้อมูล','บัญชีนี้ไม่มีแถวพนักงานในฐานข้อมูล — แจ้งผู้ดูแล',1);
       toast('ส่งคำขอออกนอกสถานที่แล้ว', thDate(d)+' · '+place);
       ['ofTime','ofPlace','ofWhy'].forEach(k=>$('#'+k).value='');
       refreshAll(); };
   }
   /* ช่องเลือกพนักงาน: คนทั่วไปเห็นชื่อตัวเองอย่างเดียว ผู้ดูแลเห็นทีมในสาขาที่ตัวเองเห็นได้ */
-  const lvOpts = canFixAtt()? attStaffScope() : STAFF.filter(s=>s.id===ME.id);
+  /* โหมดจริงชื่อตัวเองไม่อยู่ใน STAFF สาธิต — ต้องมีตัวเองให้เลือกเสมอ ไม่งั้นยื่นใบลาไม่ได้เลย (QA P7) */
+  let lvOpts = canFixAtt()? attStaffScope() : STAFF.filter(s=>s.id===ME.id);
+  if(!lvOpts.some(s=>s.id===ME.id)) lvOpts=[ME].concat(lvOpts);
   $('#lvWho').innerHTML=lvOpts.map(s=>'<option value="'+s.id+'">'+esc(s.name)+'</option>').join('');
   $('#lvWho').disabled = lvOpts.length<2;
   /* ประเภทลา+โควตามาจากตั้งค่า (H3) — แก้ตั้งค่าแล้วตัวเลือกเปลี่ยนตามทันที */
@@ -7382,7 +7428,8 @@ function notifItems(){
       t:'ลงเวลารอตรวจ '+nq+' รายการ', sub:'เดือน '+rpMonthTh(today.slice(0,7)), go:'hr'});
   }
   if(canSee('aftercare'))
-    CARE.forEach(r=> r.tasks.filter(t=>!t.done && t.due<=today).forEach(t=>{
+    /* inScope ด้วย — วันที่ matrix เปิดหน้านี้ให้บทบาทสาขาเดียว งานข้ามสาขาต้องไม่หลุด (QA B1) */
+    CARE.filter(r=>inScope(r.branch)).forEach(r=> r.tasks.filter(t=>!t.done && t.due<=today).forEach(t=>{
       const c=CUSTOMERS.find(x=>x.id===r.custId);
       it.push({id:'care:'+t.id, k:'care', t:'รอบติดตาม '+t.kind+' — '+(c?c.name:''),
         sub:'ครบกำหนด '+thDate(t.due), go:'aftercare'}); }));
@@ -7573,7 +7620,12 @@ function rPerms(){
 const canEditOrg = () => permW('act:org');
 /* สาขาลบ/ปิดไม่ได้ถ้ามีข้อมูลอ้างอยู่ — กติกาเดียวกับรุ่นรถและไฟแนนซ์ */
 const brRefs = code => UNITS.filter(u=>u.branch===code).length + STAFF.filter(s=>s.branch===code).length
-  + SALES.filter(s=>s.branch===code).length + SITES.filter(s=>s.branch===code).length;
+  + SALES.filter(s=>s.branch===code).length + SITES.filter(s=>s.branch===code).length
+  /* QA รอบส่งมอบ: ระเบียนรุ่นหลังต้องกันสาขาถูกปิดด้วย — เดิมสาขาที่มีแต่บิลขายส่ง/ใบงานซ่อมปิดได้เฉย ๆ */
+  + WSALES.filter(w=>w.branch===code).length + SERVICE.filter(s=>s.branch===code).length
+  + AR.filter(a=>a.branch===code).length + EXPENSES.filter(e=>e.branch===code).length
+  + REGS.filter(r=>r.branch===code).length + PARTS.filter(p=>p.branch===code).length
+  + GIFTS.filter(g=>g.branch===code).length;
 /* select สาขา 8 ตัวผูก option ครั้งเดียวตอน init — เพิ่ม/แก้สาขาแล้วต้องให้มัน init ใหม่
    handler ทุกตัวเป็น onclick= (ผูกซ้ำได้ ไม่ซ้อน) การล้างธง init ทั้งหน้าจึงปลอดภัย */
 function orgResync(){ $$('[data-init]').forEach(e=>{ delete e.dataset.init; }); refreshAll(); }
@@ -7708,6 +7760,11 @@ function rWs(){
       (edit?'<button class="lnk" data-wpt="'+p.id+'">'+(p.active?'ปิด':'เปิด')+'</button>':''))));
   $$('[data-wpt]').forEach(b=> b.onclick=()=>{ const p=wsPartnerById(b.dataset.wpt); if(!p) return;
     if(!canEditOrg()){ toast('ไม่มีสิทธิ์','',1); return; }
+    /* ปิดคู่ค้าที่ยังมีบิลรอการเงินตรวจไม่ได้ — ปิดชื่อไม่ได้ปิดหนี้ (QA A12 — กติกาเดียวกับ finRefs) */
+    if(p.active){
+      const open=WSALES.filter(w=>w.partnerId===p.id && finApStatus(w)!=='ผ่าน').length;
+      if(open){ toast('ปิดไม่ได้ — มีบิลค้างการเงินตรวจ', open+' ใบ ให้การเงินตรวจให้จบก่อน', 1); return; }
+    }
     p.active=!p.active; dbUp('wholesale_partner', { id:p.id, is_active:p.active });
     toast(p.active?'เปิดใช้งานแล้ว':'ปิดใช้งานแล้ว', p.name); refreshAll(); });
   /* ราคาขายส่งต่อรุ่น — พิมพ์แล้วบันทึกทันทีตอน blur */
@@ -8323,7 +8380,10 @@ async function sbFetch(path, opt){
   const r = await fetch(SB_URL+path, Object.assign({}, opt, {headers: Object.assign(h, opt.headers||{})}));
   const txt = await r.text();
   let j=null; if(txt){ try{ j=JSON.parse(txt); }catch(_){ j=null; } }
-  if(!r.ok) throw new Error((j && (j.msg||j.message||j.error_description||j.error)) || ('HTTP '+r.status));
+  if(!r.ok) throw new Error(
+    (j && j.code ? j.code+' ' : '')                                 /* code ของ PostgREST สำคัญต่อการไล่ปัญหา */
+    + ((j && (j.msg||j.message||j.error_description||j.error)) || ('HTTP '+r.status))
+    + (j && j.details ? ' — '+j.details : ''));
   return j;
 }
 function sbSelect(table, params){
@@ -8346,16 +8406,41 @@ const sbPublicUrl = (bucket, path) => SB_URL+'/storage/v1/object/public/'+bucket
    โหมดจริง: เข้าคิวแล้วทยอยส่งเรียงลำดับ ส่งพลาดเก็บงานไว้ลองใหม่ทุก 8 วิ ข้อมูลบนจอไม่หาย
    การ map ชื่อฟิลด์เป็นหน้าที่ของผู้เรียก (สคีมาจริงไม่ใช่ camelCase→snake_case ตรงตัว
    และหลายตารางใช้ FK เป็น uuid) — ชั้นนี้รับ body ที่เป็นรูปคอลัมน์จริงแล้วเท่านั้น */
-let DB_Q=[], DB_T=null, DB_RUN=false, BR_IDS={}, VARIANT_IDS={};
-const dbId = () => (LIVE && crypto.randomUUID) ? crypto.randomUUID() : null;
+let DB_Q=[], DB_T=null, DB_RUN=false, DB_DEAD=[], DB_ERRN=0, BR_IDS={}, VARIANT_IDS={};
+/* uuid ต้องได้เสมอในโหมดจริง — crypto.randomUUID มีเฉพาะ secure context (https/localhost)
+   เปิดผ่าน http บน LAN แล้วคืน null = id:null ลงคอลัมน์ uuid = คิวตายทั้งเส้น (QA P1) */
+function uuid4(){
+  if(crypto.randomUUID) return crypto.randomUUID();
+  const b=new Uint8Array(16); crypto.getRandomValues(b);
+  b[6]=(b[6]&15)|64; b[8]=(b[8]&63)|128;
+  const h=[...b].map(x=>x.toString(16).padStart(2,'0')).join('');
+  return h.slice(0,8)+'-'+h.slice(8,12)+'-'+h.slice(12,16)+'-'+h.slice(16,20)+'-'+h.slice(20);
+}
+const dbId = () => LIVE ? uuid4() : null;
+const isUuid = v => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(v||''));
 function dbUp(table, body, conflict){          /* upsert ด้วย on_conflict (ค่าเริ่มต้น id) */
   if(!LIVE) return;
+  /* ด่านกลาง (QA P2): id รูปเดโม ('HO1','LV1') หลุดเข้าคอลัมน์ uuid = 22P02 คิวตายถาวร
+     ข้ามเงียบดีกว่าพัง — ระเบียนเดโมไม่มีที่ทางในฐานข้อมูลจริงอยู่แล้ว */
+  if(body && body.id!=null && !isUuid(body.id)){
+    console.warn('dbUp ข้าม (id ไม่ใช่ uuid):', table, body.id); return; }
   DB_Q.push({ path:'/rest/v1/'+table+'?on_conflict='+(conflict||'id'),
               headers:{ Prefer:'resolution=merge-duplicates,return=minimal' }, body });
   dbFlush();
 }
+/* แก้สถานะ/คำตัดสินของแถวที่ "อาจไม่มีจริง" (เช่นใบลาที่ HR ยื่นแทน ซึ่งไม่เคยลงฐาน) —
+   PATCH เจอ 0 แถวคือจบเงียบ ไม่เหมือน upsert ที่จะพยายาม INSERT แล้วระเบิด not null (QA P5) */
+function dbPatch(table, id, body){
+  if(!LIVE || !isUuid(id)) return;
+  DB_Q.push({ path:'/rest/v1/'+table+'?id=eq.'+id, method:'PATCH',
+              headers:{ Prefer:'return=minimal' }, body });
+  dbFlush();
+}
 function dbDel(table, filter){                 /* ลบตามเงื่อนไข — ใช้กับแถวตั้งค่า (เช่น ราคาขายส่ง) เท่านั้น */
   if(!LIVE || !filter) return;
+  /* ด่านเดียวกับ dbUp — ค่าเดโมใน filter (id=eq.HO1) ก็ทำคิวตายได้เหมือนกัน */
+  const m=/=eq\.(.+)$/.exec(filter);
+  if(m && !isUuid(m[1])){ console.warn('dbDel ข้าม (ไม่ใช่ uuid):', table, filter); return; }
   DB_Q.push({ path:'/rest/v1/'+table+'?'+filter, method:'DELETE',
               headers:{ Prefer:'return=minimal' }, body:null });
   dbFlush();
@@ -8374,10 +8459,23 @@ async function dbFlush(){
       try{
         await sbFetch(j.path, { method:j.method||'POST', headers:j.headers,
           body: j.body==null? undefined : JSON.stringify(j.body) });
-        DB_Q.shift();
+        DB_Q.shift(); DB_ERRN=0;
       }catch(e){
-        /* แจ้งครั้งเดียวต่อรอบแล้วตั้งเวลาลองใหม่ — ไม่สแปม toast และไม่ทิ้งงาน */
-        toast('บันทึกขึ้นฐานข้อมูลไม่สำเร็จ', String(e.message||e).slice(0,60)+' · จะลองใหม่อัตโนมัติ', 1);
+        /* QA P6: เดิม retry งานเดิมทุก 8 วิ "ตลอดกาล" — งานที่พังถาวร (FK/RLS/ชนิดข้อมูล)
+           บล็อกทุกงานหลังจากนั้น และ toast เด้งไม่หยุด · ตอนนี้:
+           - console.error เต็ม ๆ ให้ debug ได้ (error code ของ PostgREST ไม่โดนตัดทิ้ง)
+           - พลาดเกิน 5 ครั้ง = ย้ายงานเข้า DB_DEAD แล้วเดินคิวต่อ — เสียงานเดียวดีกว่าเสียทั้งเส้น
+           - toast เฉพาะครั้งแรกของ streak กับตอนทิ้งงาน ไม่สแปม */
+        console.error('dbFlush ล้มเหลว', j.method||'POST', j.path, j.body, e);
+        DB_ERRN++;
+        if(DB_ERRN>=5){
+          DB_DEAD.push(DB_Q.shift()); DB_ERRN=0;
+          toast('งานหนึ่งรายการบันทึกขึ้นฐานข้อมูลไม่ได้ — ข้ามไปก่อน',
+            'เก็บไว้ใน console (DB_DEAD) แจ้งผู้ดูแลตรวจ · งานอื่นเดินต่อปกติ', 1);
+          continue;
+        }
+        if(DB_ERRN===1)
+          toast('บันทึกขึ้นฐานข้อมูลไม่สำเร็จ', String(e.message||e).slice(0,60)+' · จะลองใหม่อัตโนมัติ', 1);
         DB_T=setTimeout(()=>{ DB_T=null; dbFlush(); }, 8000);
         return;
       }
@@ -8417,6 +8515,10 @@ async function liveLogin(){
   const email=$('#lgEmail').value.trim(), pw=$('#lgPw2').value;
   if(!email||!pw){ toast('กรอกอีเมลและรหัสผ่าน','',1); return; }
   const btn=$('#lgGo2'); btn.disabled=true; btn.textContent='กำลังเชื่อมต่อ…';
+  /* QA A9: ล็อกอินพังกลางทางต้องคืนสภาพเดโมได้ครบ — เดิม global ชุดองค์กรถูกทับก่อนจุดที่พังบ่อยสุด
+     แล้ว catch คืนแค่ LIVE/SB_TOKEN ทำให้เดโมอ้างสาขาที่หายไป เลขเอกสารออก prefix ผิดทั้งเซสชัน */
+  const snap={ COMPANIES, BRANCHES, WS_PARTNERS, WS_PRICES, HOLIDAYS, EXEC_EVENTS, PERMS,
+    BR_IDS, VARIANT_IDS, LEAVES, OFFS, FIN_DBID: FIN_CO.map(f=>f.dbId) };
   try{
     SB_TOKEN = null;
     const auth = await sbFetch('/auth/v1/token?grant_type=password',
@@ -8438,23 +8540,25 @@ async function liveLogin(){
     const brs = await sbSelect('branch',
       { select:'id,code,name,doc_prefix,branch_no,address,is_active,company_id' });
     BR_IDS={}; (brs||[]).forEach(b=>{ BR_IDS[b.code]=b.id; });
-    /* ชั้นบริษัท+สาขา (กลุ่ม ④) — โหมดจริงใช้ของจริงทั้งสองชั้น id เป็น uuid ตรง FK */
+    /* ชั้นบริษัท+สาขา (กลุ่ม ④) — โหมดจริงใช้ของจริงทั้งสองชั้น id เป็น uuid ตรง FK
+       ทับเมื่อได้ครบทั้งคู่เท่านั้น — BRANCHES ว่าง = bOf().prefix ระเบิดทั้งแอป (QA A9) */
     const cos = await sbSelect('company', { select:'id,name,tax_id,address,phone,is_active' });
-    if(cos && cos.length){
+    if(cos && cos.length && brs && brs.length){
       COMPANIES = cos.map(c=>({ id:c.id, name:c.name, taxId:c.tax_id||'',
         addr:c.address||'', phone:c.phone||'', active:c.is_active!==false }));
-      BRANCHES = (brs||[]).map(b=>({ code:b.code, co:b.company_id, name:b.name,
+      BRANCHES = brs.map(b=>({ code:b.code, co:b.company_id, name:b.name,
         prefix:b.doc_prefix, branchNo:b.branch_no||'00000', addr:b.address||'',
         active:b.is_active!==false }));
     }
+    /* ชุดรอง — พังตัวไหนไม่ล้มการล็อกอิน (QA P11): ครอบ .catch เป็นรายตัว ค่าเดิมอยู่ต่อ */
     const wps = await sbSelect('wholesale_partner',
-      { select:'id,name,tax_id,address,phone,own_company_id,is_active' });
-    WS_PARTNERS = (wps||[]).map(p=>({ id:p.id, name:p.name, taxId:p.tax_id||'',
+      { select:'id,name,tax_id,address,phone,own_company_id,is_active' }).catch(()=>null);
+    if(wps) WS_PARTNERS = wps.map(p=>({ id:p.id, name:p.name, taxId:p.tax_id||'',
       addr:p.address||'', phone:p.phone||'', own:p.own_company_id||'', active:p.is_active!==false }));
-    const mvs = await sbSelect('model_variant', { select:'id,code', limit:'500' });
+    const mvs = await sbSelect('model_variant', { select:'id,code', limit:'500' }).catch(()=>null);
     VARIANT_IDS={}; (mvs||[]).forEach(v=>{ VARIANT_IDS[v.code]=v.id; });
-    const wpr = await sbSelect('wholesale_price', { select:'price,model_variant(code)' });
-    WS_PRICES={}; (wpr||[]).forEach(r=>{ if(r.model_variant) WS_PRICES[r.model_variant.code]=+r.price; });
+    const wpr = await sbSelect('wholesale_price', { select:'price,model_variant(code)' }).catch(()=>null);
+    if(wpr){ WS_PRICES={}; wpr.forEach(r=>{ if(r.model_variant) WS_PRICES[r.model_variant.code]=+r.price; }); }
 
     /* กลุ่ม ⑤: แถวพนักงานของบัญชีนี้ (FK ของใบลา/คำขอ) + วันหยุด + งานผู้บริหาร
        .catch เพราะสามตัวนี้พังไม่ควรล้มการล็อกอินทั้งกระบวน — ลงเวลา/ปฏิทินยังใช้ต่อได้ */
@@ -8466,12 +8570,20 @@ async function liveLogin(){
       { select:'id,event_date,event_type,title,note' }).catch(()=>null);
     if(evs) EXEC_EVENTS = evs.map(e=>({ id:e.id, d:e.event_date, type:e.event_type,
       title:e.title, note:e.note||'' }));
-    const fcs = await sbSelect('finance_company', { select:'id,name' });
-    (fcs||[]).forEach(f=>{ const m=FIN_CO.find(x=>x.name===f.name); if(m) m.dbId=f.id; });
+    /* QA P9: เดิมโหลดแค่ id,name — เรต/ช่วงงวด/ดาวน์ขั้นต่ำ "ของจริง" ใน DB ไม่เคยถูกใช้
+       ค่างวดที่แช่ลง sale เลยมาจากเรตสาธิตในไฟล์ — ตอนนี้ทับด้วยของจริงเมื่อคอลัมน์ไม่ null */
+    const fcs = await sbSelect('finance_company',
+      { select:'id,name,flat_rate_pct,min_down_pct,tiers,terms' }).catch(()=>null);
+    (fcs||[]).forEach(f=>{ const m=FIN_CO.find(x=>x.name===f.name); if(!m) return;
+      m.dbId=f.id;
+      if(f.flat_rate_pct!=null) m.rate=+f.flat_rate_pct;
+      if(f.min_down_pct!=null)  m.minDownPct=+f.min_down_pct;
+      if(f.tiers!=null) m.tiers=f.tiers;
+      if(f.terms!=null) m.terms=f.terms; });
 
     /* สิทธิ์ราย section ที่แอดมินตั้งไว้ (J3) — ทับค่าเริ่มต้นเฉพาะที่เคยตั้ง
        แถว admin ไม่รับค่าทับจากฐานข้อมูลเด็ดขาด: ต่อให้ข้อมูลเพี้ยนยังไง แอดมินต้องเข้าตั้งค่าได้เสมอ */
-    const ps = await sbSelect('app_setting', { select:'value', key:'eq.perms' });
+    const ps = await sbSelect('app_setting', { select:'value', key:'eq.perms' }).catch(()=>null);
     if(ps && ps[0] && ps[0].value){ const saved=ps[0].value, base=permDefaults();
       Object.keys(saved).forEach(r=>{ if(r!=='admin' && base[r]) Object.assign(base[r], saved[r]); });
       PERMS=base; }
@@ -8495,8 +8607,8 @@ async function liveLogin(){
       invNo:r.supplier_inv_no||'—', photo:null, files:[]
     }));
 
-    /* ข้อมูลจริงมีแต่รถ — ไม่สร้างยอดขาย/ลูกค้าปลอมทับ */
-    SALES=[]; CUSTOMERS=[]; TASKS=[]; REGS=[]; FINCASES=[]; AR=[]; SERVICE=[]; REMIND=[]; TRANSFERS=[]; QUOTES=[]; CARE=[]; WSALES=[]; WS_CART=[];
+    /* ข้อมูลจริงมีแต่รถ — ไม่สร้างยอดขาย/ลูกค้าปลอมทับ · ใบลา/คำขอสาธิตก็ต้องไม่ปนโหมดจริง (QA P10) */
+    SALES=[]; CUSTOMERS=[]; TASKS=[]; REGS=[]; FINCASES=[]; AR=[]; SERVICE=[]; REMIND=[]; TRANSFERS=[]; QUOTES=[]; CARE=[]; WSALES=[]; WS_CART=[]; LEAVES=[]; OFFS=[];
     LIVE = true;
     ME = { id:me.id, name:me.full_name, nick:me.nickname||me.full_name.slice(0,2),
            role:roleCode, branch:homeBranch, salary:0, bank:'', ssn:'', empId };
@@ -8509,6 +8621,12 @@ async function liveLogin(){
     toast('เชื่อมฐานข้อมูลแล้ว', UNITS.length+' คันตามสิทธิ์ของคุณ');
   }catch(err){
     SB_TOKEN=null; LIVE=false;
+    /* คืนสภาพเดโมครบชุด (QA A9) — ไม่งั้นเดโมอ้างสาขา/บริษัทที่ถูกทับไปแล้ว เลขเอกสารผิด prefix ทั้งเซสชัน */
+    COMPANIES=snap.COMPANIES; BRANCHES=snap.BRANCHES; WS_PARTNERS=snap.WS_PARTNERS;
+    WS_PRICES=snap.WS_PRICES; HOLIDAYS=snap.HOLIDAYS; EXEC_EVENTS=snap.EXEC_EVENTS; PERMS=snap.PERMS;
+    BR_IDS=snap.BR_IDS; VARIANT_IDS=snap.VARIANT_IDS; LEAVES=snap.LEAVES; OFFS=snap.OFFS;
+    FIN_CO.forEach((f,i)=>{ f.dbId=snap.FIN_DBID[i]; });
+    console.error('liveLogin ล้มเหลว', err);
     toast('เชื่อมฐานข้อมูลไม่สำเร็จ', String(err.message||err).slice(0,80)+' — ใช้โหมดสาธิตต่อได้', 1);
     $('#lgLive').style.display='none'; $('#lgDemo').style.display='';
     $('#lgSwap').textContent='ใช้ข้อมูลจริงจากฐานข้อมูล';

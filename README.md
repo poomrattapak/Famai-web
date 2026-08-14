@@ -12,8 +12,10 @@
 
 ## 📌 สถานะปัจจุบัน
 
-ต้นแบบใช้งานได้จริง **v1.15** อยู่ที่ `index.html` (ไฟล์เดียว 20 หน้าจอ) deploy อัตโนมัติผ่าน Vercel
-ใช้ได้ทั้งโหมดสาธิตและต่อฐานข้อมูลจริงบน Supabase — ฐานข้อมูลจริงรัน migration ครบทั้ง 15 ไฟล์แล้ว
+ต้นแบบใช้งานได้จริง **v1.22** อยู่ที่ `index.html` (ไฟล์เดียว 22 หน้าจอ) deploy อัตโนมัติผ่าน Vercel
+ที่ **https://famai-web.vercel.app** (production ผูกกับ branch `claude/start-b18xi3`)
+ใช้ได้ทั้งโหมดสาธิตและต่อฐานข้อมูลจริงบน Supabase — ฐานข้อมูลจริงรัน migration ครบถึง 19 แล้ว
+บรีฟแก้ไขครั้งที่ 1 ส่งครบทั้ง 6 กลุ่ม — รายละเอียดดู `docs/08-state-and-handoff.md`
 
 | รอบ | สิ่งที่ได้ | สถานะ |
 |---|---|---|
@@ -312,6 +314,8 @@ SQL ที่รันจริงอยู่ใน `supabase/migrations/` (9 �
 รีโปนี้ต่อกับ Vercel ผ่าน Git แล้ว — push แล้ว deploy อัตโนมัติ
 `vercel.json` ตั้ง `X-Robots-Tag: noindex` และ `Referrer-Policy: no-referrer` ไว้
 เพราะต้นแบบมีเลขเครื่อง เลขถัง และต้นทุนจริง
+`.vercelignore` จำกัดสิ่งที่ขึ้นเว็บให้เหลือ `index.html` + `docs/manual/` เท่านั้น —
+`reference/` `supabase/` `prototype/` `tools/` `.claude/` เป็นของภายใน ห้ามถูก serve
 
 > ถ้าวันหนึ่งเลิกสมาชิก Vercel Pro ทางสำรองคือ **Cloudflare Pages** (ฟรี ไม่ห้ามเชิงพาณิชย์)
 > แลกกับต้อง build เป็น static/SPA และย้ายงานฝั่งเซิร์ฟเวอร์ไป Supabase Edge Functions

@@ -21,16 +21,22 @@ if (!URL_ || !KEY) {
 }
 
 /* ตารางทั้งหมดที่มีข้อมูลของร้าน — เรียงตามลำดับ FK เพื่อให้ไฟล์กู้คืนได้ตามลำดับเดียวกัน */
+/* QA รอบส่งมอบ: เทียบชื่อกับ create table ใน supabase/migrations ทุกไฟล์แล้ว —
+   เดิม 'credit_case' สะกดผิด (ของจริงคือ finance_case) ทำให้เคสสินเชื่อไม่ถูกสำรองแบบเงียบสนิท
+   และตกหล่นอีก 12 ตาราง (เอกสารภาษี/ของแถมรายใบ/ประวัติสถานะ/ใบเสร็จรับเงิน ฯลฯ) */
 const TABLES = [
   'company', 'branch', 'role', 'app_user', 'app_user_role', 'app_user_branch',
   'app_setting', 'finance_company', 'model_variant', 'model_color', 'price_history',
-  'model_photo', 'motorcycle_unit', 'customer', 'sale', 'freebie', 'registration',
-  'credit_case', 'receivable', 'wholesale_partner', 'wholesale_price',
+  'model_photo', 'motorcycle_unit', 'customer', 'lead_stage_history', 'promotion',
+  'sale', 'sale_freebie', 'freebie', 'registration', 'registration_event',
+  'finance_case', 'finance_case_event', 'receivable', 'receipt_payment',
+  'commission_rule', 'document', 'wholesale_partner', 'wholesale_price',
   'wholesale_sale', 'wholesale_sale_item', 'employee', 'attendance', 'branch_site',
   'leave_request', 'offsite_request', 'company_event', 'company_holiday',
-  'service_job', 'service_reminder', 'part', 'part_movement', 'expense',
-  'payroll_period', 'payroll_line', 'follow_up_task', 'doc_counter', 'quotation',
-  'unit_transfer', 'public_lookup_log', 'attachment', 'audit_log',
+  'service_job', 'service_job_line', 'service_reminder', 'part', 'part_movement',
+  'expense', 'expense_category', 'payroll_period', 'payroll_line', 'follow_up_task',
+  'doc_counter', 'quotation', 'quotation_option', 'unit_transfer', 'import_log',
+  'public_lookup_log', 'attachment', 'audit_log',
 ];
 
 const thaiDate = d => {
