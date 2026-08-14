@@ -708,6 +708,7 @@ textarea.inp{ height:auto; padding:var(--s1) var(--s2); resize:vertical; line-he
 .cal .ev.e-leave{ color:var(--muted); }
 .cal .ev.e-recv{ color:var(--pos); } .cal .ev.e-sale{ color:var(--ink); }
 .cal .ev.e-exec{ color:var(--accent); }
+.cal .ev.e-hol{ color:var(--attn); font-weight:600; }
 /* รูปรถ — เงา SVG หรือรูปจริงที่อัปโหลด */
 .bph{ width:74px; height:44px; flex:0 0 auto; display:grid; place-items:center;
   background:var(--paper-2); border-radius:var(--r-input); overflow:hidden; }
@@ -1045,7 +1046,8 @@ body.lock{ overflow:hidden; }
 
       <!-- ============ 2. ปฏิทินงาน ============ -->
       <section class="screen" id="s-cal">
-        <div class="tabs" id="calTabs"><button class="on" data-c="veh">ปฏิทินรถ</button><button data-c="exec" id="calExecTab">ปฏิทินผู้บริหาร</button></div>
+        <!-- บรีฟรอบ 1 (H5): "ปฏิทินรถ" → "ปฏิทินบริษัท" เปิดให้ทุกบทบาท + มีวันหยุดบริษัท -->
+        <div class="tabs" id="calTabs"><button class="on" data-c="veh">ปฏิทินบริษัท</button><button data-c="exec" id="calExecTab">ปฏิทินผู้บริหาร</button></div>
         <div class="card"><div class="hd">
           <button class="btn sec sm" id="calPrev"><svg class="i i-sm"><use href="#i-left"/></svg></button>
           <h3 id="calTitle" style="min-width:190px;text-align:center">—</h3>
@@ -1054,6 +1056,7 @@ body.lock{ overflow:hidden; }
           <span id="calLegend"></span>
         </div><div class="bd"><div class="cal" id="calGrid"></div></div></div>
         <div class="card"><div class="hd"><h3 id="calDayT">งานของวันที่เลือก</h3><div class="sp"></div>
+          <button class="btn sec sm" id="holAdd" style="display:none"><svg class="i i-sm"><use href="#i-calendar"/></svg> เพิ่มวันหยุด</button>
           <button class="btn sec sm" id="evAdd" style="display:none"><svg class="i i-sm"><use href="#i-calendar"/></svg> เพิ่มงานผู้บริหาร</button>
         </div><div class="bd" id="calDay"></div></div>
       </section>
@@ -1323,9 +1326,12 @@ body.lock{ overflow:hidden; }
                 <div><label class="fl">ประเภทบริการ</label><select class="inp" id="svType"><option>เช็กระยะ</option><option>ซ่อม</option><option>เคลม</option><option>เปลี่ยนอะไหล่</option><option>อื่นๆ</option></select></div>
                 <div><label class="fl">ช่างผู้รับผิดชอบ</label><select class="inp" id="svTech"></select></div>
               </div>
+              <!-- บรีฟรอบ 1 (K9): งานที่ลืมคีย์หน้างานต้องบันทึกย้อนวันได้ ไม่ใช่ติดวันนี้ตายตัว -->
+              <div><label class="fl">วันที่รับรถ</label><input class="inp" type="date" id="svDate"></div>
               <div><label class="fl">อาการ / สิ่งที่ต้องทำ</label><textarea class="inp" id="svSymptom" rows="2"></textarea></div>
               <div class="f2">
-                <div><label class="fl">ค่าแรง (฿)</label><input class="inp num" id="svLabor" value="300"></div>
+                <!-- บรีฟรอบ 1 (K13): เจ้าของสั่งเปลี่ยนป้าย "ค่าแรง"→"ยอดชำระ" เฉพาะหน้านี้ -->
+                <div><label class="fl">ยอดชำระ (฿)</label><input class="inp num" id="svLabor" value="300"></div>
                 <div><label class="fl">อะไหล่ที่ใช้</label><select class="inp" id="svPart"></select></div>
               </div>
             </div>
@@ -1489,12 +1495,32 @@ body.lock{ overflow:hidden; }
           <div class="card"><div class="hd"><h3>ยื่นใบลา</h3></div><div class="bd">
             <div class="f">
               <div><label class="fl">พนักงาน</label><select class="inp" id="lvWho"></select></div>
-              <div><label class="fl">ประเภท</label><select class="inp" id="lvType"><option>ลาป่วย</option><option>ลากิจ</option><option>ลาพักร้อน</option></select></div>
+              <!-- ประเภท+โควตามาจากตั้งค่า (H3) — เพิ่มประเภทเองได้ ไม่ฮาร์ดโค้ดแล้ว -->
+              <div><label class="fl">ประเภท</label><select class="inp" id="lvType"></select>
+                <div class="hint" id="lvQuota"></div></div>
               <div class="f2"><div><label class="fl">ตั้งแต่</label><input class="inp" type="date" id="lvFrom"></div>
               <div><label class="fl">ถึง</label><input class="inp" type="date" id="lvTo"></div></div>
+              <div><label class="fl">เหตุผล</label><textarea class="inp" id="lvReason" rows="2" placeholder="เช่น ไข้สูง มีใบรับรองแพทย์"></textarea></div>
+              <!-- หลักฐานแนบ (H6) — ย่อรูปหนักก่อนเก็บ ไม่ให้ระบบบวม -->
+              <div><label class="fl">รูปหลักฐาน (ถ้ามี เช่น ใบรับรองแพทย์)</label>
+                <input class="inp" type="file" id="lvImg" accept="image/*" multiple>
+                <div class="hint" id="lvImgN">ยังไม่ได้แนบรูป · รูปถูกย่อขนาดอัตโนมัติ</div></div>
             </div>
             <div class="savebar"><button class="btn" id="lvSave">ยื่นใบลา</button></div>
           </div></div>
+          <!-- ขอออกนอกสถานที่ล่วงหน้า (H4) — อนุมัติก่อนถึงวันจริง -->
+          <div class="card"><div class="hd"><h3>ขอออกนอกสถานที่</h3>
+            <div class="d">ขอล่วงหน้าให้ผู้ดูแลอนุมัติ — วันจริงลงเวลานอกพื้นที่จะอ้างใบนี้ได้เลย</div></div>
+            <div class="bd">
+            <div class="f">
+              <div class="f2"><div><label class="fl">วันที่</label><input class="inp" type="date" id="ofDate"></div>
+              <div><label class="fl">ช่วงเวลา</label><input class="inp" id="ofTime" placeholder="09:00–14:00"></div></div>
+              <div><label class="fl">สถานที่ / งานที่ไปทำ</label><input class="inp" id="ofPlace" placeholder="ส่งมอบรถถึงบ้านลูกค้า"></div>
+              <div><label class="fl">เหตุผล</label><input class="inp" id="ofWhy"></div>
+            </div>
+            <div class="savebar"><button class="btn" id="ofSave">ส่งคำขอ</button></div>
+          </div></div>
+          <div class="card"><div class="hd"><h3>คำขอออกนอกสถานที่</h3></div><div class="bd" id="ofList"></div></div>
         </div></div>
         <div class="pane" id="h3">
           <div class="card"><div class="hd"><h3>รอผู้จัดการตรวจ</h3><div class="d" id="rvSub"></div><div class="sp"></div>
@@ -1579,6 +1605,8 @@ body.lock{ overflow:hidden; }
             </div>
             <div style="margin-top:var(--s2)"><label class="fl">Checklist ส่งมอบของฝ่ายบริการ (บรรทัดละข้อ)</label>
               <textarea class="inp" id="cfCareList" rows="5"></textarea></div>
+            <div style="margin-top:var(--s2)"><label class="fl">โควตาวันลา (บรรทัดละ ประเภท:วัน/ปี — ไม่ใส่ตัวเลข = ไม่จำกัด)</label>
+              <textarea class="inp" id="cfLvQuota" rows="3" placeholder="ลาป่วย:30"></textarea></div>
           </div></div>
           <div class="card"><div class="hd"><h3>สรุปดีลในหน้าขาย</h3><div class="d">เลือกว่าแถวไหนจะโชว์ — มีผลทั้งร้านทันที</div></div><div class="bd">
             <div class="chips" id="cfDealRows"></div>
@@ -1881,7 +1909,9 @@ const DEFAULTS = {
   slaFin:1,
   /* ฝ่ายบริการหลังส่งมอบ (E3-E4): รอบติดตามนับจากวันส่งมอบ · รายการ checklist แก้ได้ */
   careDays:'7,30,60,90,120',
-  careList:'ตรวจสภาพรถก่อนส่งมอบ\nติดตั้งอุปกรณ์และของแถมครบ\nสอนการใช้งานเบื้องต้น\nเอกสารครบ (เล่มทะเบียน ป้าย ประกัน)\nนัดเช็กระยะแรก'
+  careList:'ตรวจสภาพรถก่อนส่งมอบ\nติดตั้งอุปกรณ์และของแถมครบ\nสอนการใช้งานเบื้องต้น\nเอกสารครบ (เล่มทะเบียน ป้าย ประกัน)\nนัดเช็กระยะแรก',
+  /* โควตาวันลา (H3) — บรรทัดละ "ประเภท:วัน/ปี" เพิ่มประเภทเองได้ · ไม่ใส่ตัวเลข = ไม่จำกัด */
+  leaveQuota:'ลาป่วย:30\nลากิจ:6\nลาพักร้อน:6'
 };
 let CFG = Object.assign({}, DEFAULTS);
 /* ทะเบียนแถวสรุปดีล — คีย์ต้องตรงกับ rows ใน calcSell */
@@ -2284,9 +2314,16 @@ let ATT = (function(){
   return rows;
 })();
 let LEAVES = [
-  {id:'LV1',staffId:'ST6',type:'ลาป่วย',from:TODAY,to:addDays(TODAY,3),status:'รออนุมัติ'},
-  {id:'LV2',staffId:'ST7',type:'ลาพักร้อน',from:addDays(TODAY,14),to:addDays(TODAY,17),status:'รออนุมัติ'},
-  {id:'LV3',staffId:'ST3',type:'ลากิจ',from:addDays(TODAY,-9),to:addDays(TODAY,-9),status:'อนุมัติแล้ว'}
+  {id:'LV1',staffId:'ST6',type:'ลาป่วย',from:TODAY,to:addDays(TODAY,3),status:'รออนุมัติ',
+    reason:'ไข้สูง หมอให้พัก มีใบรับรองแพทย์', imgs:[]},
+  {id:'LV2',staffId:'ST7',type:'ลาพักร้อน',from:addDays(TODAY,14),to:addDays(TODAY,17),status:'รออนุมัติ', reason:'', imgs:[]},
+  {id:'LV3',staffId:'ST3',type:'ลากิจ',from:addDays(TODAY,-9),to:addDays(TODAY,-9),status:'อนุมัติแล้ว',
+    reason:'ติดต่อราชการ', imgs:[], decidedBy:'คุณจอย', decidedAt:addDays(TODAY,-10), decideNote:''}
+];
+/* ขอออกนอกสถานที่ล่วงหน้า (บรีฟรอบ 1 · H4) — อนุมัติก่อนถึงวันจริง ตอนลงเวลานอกพื้นที่จะอ้างใบนี้ */
+let OFFS = [
+  {id:'OF1', staffId:'ST3', date:addDays(TODAY,2), time:'09:00–14:00',
+    place:'ส่งมอบรถถึงบ้านลูกค้า อ.เมือง', reason:'ลูกค้าไม่สะดวกเข้าร้าน', status:'รออนุมัติ', demo:true}
 ];
 let PROMOS = [
   {id:'PR1', variant:'BJKD00', title:'Grand Filano Hybrid ABS ลด 5,000', amount:5000, from:addDays(TODAY,-2), to:addDays(TODAY,5), active:true},
@@ -2300,6 +2337,10 @@ let EXEC_EVENTS = [
   {id:'EV1', d:addDays(TODAY,3),  type:'อีเวนท์',  title:'ออกบูธงานมอเตอร์โชว์ประจำจังหวัด', note:'เตรียมรถโชว์ 4 คัน', demo:true},
   {id:'EV2', d:addDays(TODAY,8),  type:'ประชุม',   title:'ประชุมยอดขายรายเดือนทุกสาขา',     note:'', demo:true},
   {id:'EV3', d:addDays(TODAY,15), type:'รับเชิญ',  title:'งานเปิดตัวรุ่นใหม่ของยามาฮ่า',      note:'ผู้บริหารได้รับเชิญ', demo:true}
+];
+/* วันหยุดบริษัท (บรีฟรอบ 1 · H5) — โผล่ในปฏิทินบริษัทให้ทุกบทบาทเห็น */
+let HOLIDAYS = [
+  {id:'HO1', d:addDays(TODAY,12), name:'วันหยุดประจำปีของบริษัท', demo:true}
 ];
 
 /* ---------- เลขที่เอกสาร: แยกสาขา × ประเภท × ปี พ.ศ. ---------- */
@@ -2327,7 +2368,8 @@ const inScope = c => myBranches().indexOf(c) >= 0;
 const MENU = [
   {g:'ภาพรวม'},
   {k:'dash',     t:'Dashboard',        s:'ภาพรวมทั้งกิจการ',            ic:'chart', r:['admin','manager','acct','sales','stock','hr','tech']},
-  {k:'cal',      t:'ปฏิทิน',           s:'ปฏิทินรถ และปฏิทินผู้บริหาร',   ic:'calendar', r:['admin','manager','acct','sales','hr']},
+  /* บรีฟรอบ 1 (H5): ปฏิทินบริษัทเปิดทุกบทบาท — วันหยุด/วันลา/งานสาขาคือข้อมูลที่ทุกคนใช้วางแผน */
+  {k:'cal',      t:'ปฏิทิน',           s:'ปฏิทินบริษัท และปฏิทินผู้บริหาร',   ic:'calendar', r:['admin','manager','acct','sales','hr','stock','tech','care']},
   {k:'report',   t:'รายงาน',           s:'สรุปแยกประเภท พิมพ์และส่งออกได้', ic:'files', r:['admin','manager','acct','stock','hr']},
   {g:'มอเตอร์ไซค์'},
   {k:'recv',     t:'รับรถเข้าสต๊อก',    s:'บันทึกรถทีละคัน',              ic:'inbox', r:['admin','manager','stock']},
@@ -2711,6 +2753,7 @@ function badges(){
             + GIFTS.filter(g=>inScope(g.branch) && g.qty<g.min).length);
   set('ar',   AR.filter(a=>inScope(a.branch) && a.due-a.paid>0).length);
   set('hr',   LEAVES.filter(l=>l.status==='รออนุมัติ').length
+              + (canFixAtt()? OFFS.filter(o=>o.status==='รออนุมัติ').length : 0)
               + (canFixAtt()? attQueue(curDate().slice(0,7)).length : 0));
   set('service',SERVICE.filter(s=>inScope(s.branch) && s.status!=='ส่งมอบแล้ว').length);
   /* จุดรวมบนแท็บ "อื่น ๆ" — มีงานค้างในเมนูที่ไม่ได้อยู่บนแถบล่าง */
@@ -3021,9 +3064,10 @@ const STATUS_DOT={ available:'var(--pos)', reserved:'var(--ink-soft)',
 
 /* ============================= 2. ปฏิทิน ============================= */
 let CAL={y:NOW.getFullYear(), m:NOW.getMonth(), sel:TODAY};
-/* ปฏิทินรถ — ภาพรวมการรับเข้า/ขาย + งานปฏิบัติการ (ติดตาม ทะเบียน ลา) */
+/* ปฏิทินบริษัท — ภาพรวมการรับเข้า/ขาย + งานปฏิบัติการ (ติดตาม ทะเบียน ลา) + วันหยุดบริษัท */
 function calEvents(){
   const ev=[];
+  HOLIDAYS.forEach(h=> ev.push({d:h.d, k:'hol', t:h.name, id:h.id}));
   UNITS.filter(u=>inScope(u.branch)).forEach(u=>
     ev.push({d:u.received,k:'recv',t:'รับเข้า '+u.model+' ('+bOf(u.branch).prefix+')'}));
   sScoped().forEach(s=>{ const u=UNITS.find(x=>x.id===s.unitId);
@@ -3042,7 +3086,25 @@ function calEvents(){
   return ev;
 }
 const EV_META={ recv:{p:'p-good',n:'รับเข้า'}, sale:{p:'p-info',n:'ขาย'}, task:{p:'p-brand',n:'ติดตาม'},
-  reg:{p:'p-warn',n:'ทะเบียน'}, leave:{p:'p-mut',n:'ลา'}, exec:{p:'p-brand',n:'ผู้บริหาร'} };
+  reg:{p:'p-warn',n:'ทะเบียน'}, leave:{p:'p-mut',n:'ลา'}, exec:{p:'p-brand',n:'ผู้บริหาร'},
+  hol:{p:'p-warn',n:'วันหยุด'} };
+/* วันหยุด: เพิ่ม/ลบได้เฉพาะ admin/manager — ด่านอยู่ในฟังก์ชันเขียน (กฎ §9b) */
+function holSave(d, name){
+  if(!canExecCal()){ toast('เพิ่มวันหยุดได้เฉพาะแอดมินและผู้บริหาร','',1); return false; }
+  if(!d || !name){ toast('กรอกวันที่และชื่อวันหยุด','',1); return false; }
+  if(HOLIDAYS.some(h=>h.d===d)){ toast('วันนี้เป็นวันหยุดอยู่แล้ว', HOLIDAYS.find(h=>h.d===d).name, 1); return false; }
+  const h={id: dbId()||nid('HO'), d, name};
+  HOLIDAYS.push(h);
+  dbUp('company_holiday', { id:h.id, on_date:d, name });
+  toast('เพิ่มวันหยุดแล้ว', thDate(d)+' · '+name); return true;
+}
+function holDel(id){
+  if(!canExecCal()){ toast('ลบวันหยุดได้เฉพาะแอดมินและผู้บริหาร','',1); return false; }
+  const i=HOLIDAYS.findIndex(h=>h.id===id); if(i<0) return false;
+  const h=HOLIDAYS[i]; HOLIDAYS.splice(i,1);
+  dbDel('company_holiday', 'id=eq.'+h.id);
+  toast('ลบวันหยุดแล้ว', h.name); return true;
+}
 let CAL_TAB='veh';
 const canExecCal = () => ['admin','manager'].indexOf(ME.role)>=0;
 function rCal(){
@@ -3052,6 +3114,12 @@ function rCal(){
     $$('#calTabs button').forEach(b=> b.onclick=()=>{ CAL_TAB=b.dataset.c;
       $$('#calTabs button').forEach(x=>x.classList.toggle('on',x===b)); rCal(); });
     $('#evAdd').onclick=execEventModal;
+    $('#holAdd').onclick=()=>{ openModal('เพิ่มวันหยุดบริษัท',
+      '<div class="f"><div class="f2"><div><label class="fl">วันที่</label><input class="inp" type="date" id="hoDate" value="'+(CAL.sel||TODAY)+'"></div>'
+      +'<div><label class="fl">ชื่อวันหยุด</label><input class="inp" id="hoName" placeholder="หยุดสงกรานต์"></div></div></div>'
+      +'<p class="foot">ทุกบทบาทเห็นวันหยุดในปฏิทินบริษัท</p>'
+      +'<div class="savebar"><button class="btn" id="hoGo">บันทึก</button></div>');
+      $('#hoGo').onclick=()=>{ if(holSave($('#hoDate').value, $('#hoName').value.trim())){ closeModal(); rCal(); } }; };
   }
   /* แท็บผู้บริหารเห็นเฉพาะ admin/manager */
   $('#calExecTab').style.display = canExecCal()? '' : 'none';
@@ -3059,7 +3127,8 @@ function rCal(){
   $$('#calTabs button').forEach(x=>x.classList.toggle('on', x.dataset.c===CAL_TAB));
   const exec = CAL_TAB==='exec';
   $('#evAdd').style.display = exec? '' : 'none';
-  $('#calLegend').innerHTML = (exec? ['exec'] : ['recv','sale','task','reg','leave'])
+  $('#holAdd').style.display = (!exec && canExecCal())? '' : 'none';
+  $('#calLegend').innerHTML = (exec? ['exec'] : ['hol','recv','sale','task','reg','leave'])
     .map(k=>'<span class="pill '+EV_META[k].p+'">'+EV_META[k].n+'</span>').join(' ');
   $('#calTitle').textContent = TH_M[CAL.m].replace('.','.')+' '+(CAL.y+543);
   const first=new Date(CAL.y,CAL.m,1); const startDow=(first.getDay()+6)%7;
@@ -3082,10 +3151,14 @@ function rCal(){
     $('#calDayT').textContent='งานวันที่ '+thDate(CAL.sel);
     $('#calDay').innerHTML = de.length? de.map(e=>'<div style="display:flex;gap:var(--s2);align-items:center;padding:var(--s1) 0;border-bottom:1px solid var(--hairline-2)">'
       +'<span class="pill '+EV_META[e.k].p+'">'+EV_META[e.k].n+'</span><span style="flex:1">'+esc(e.t)+'</span>'
-      +(e.k==='exec'? '<button class="lnk" data-evd="'+e.id+'">ลบ</button>':'')+'</div>').join('')
+      +(e.k==='exec'? '<button class="lnk" data-evd="'+e.id+'">ลบ</button>':'')
+      +(e.k==='hol' && canExecCal()? '<button class="lnk" data-hod="'+e.id+'">ลบ</button>':'')+'</div>').join('')
       : '<div class="empty"><b>ไม่มีงานในวันนี้</b>เลือกวันอื่นจากปฏิทินด้านบน</div>';
-    $$('#calDay [data-evd]').forEach(b=> b.onclick=()=>{ const i=EXEC_EVENTS.findIndex(x=>x.id===b.dataset.evd);
-      if(i>=0){ EXEC_EVENTS.splice(i,1); toast('ลบงานแล้ว'); rCal(); } });
+    $$('#calDay [data-evd]').forEach(b=> b.onclick=()=>{ if(!canExecCal()) return;
+      const i=EXEC_EVENTS.findIndex(x=>x.id===b.dataset.evd);
+      if(i>=0){ const ev0=EXEC_EVENTS[i]; EXEC_EVENTS.splice(i,1);
+        dbDel('company_event','id=eq.'+ev0.id); toast('ลบงานแล้ว'); rCal(); } });
+    $$('#calDay [data-hod]').forEach(b=> b.onclick=()=>{ if(holDel(b.dataset.hod)) rCal(); });
   }
 }
 function execEventModal(){
@@ -3096,8 +3169,13 @@ function execEventModal(){
     +'<div><label class="fl">หมายเหตุ</label><input class="inp" id="evNote"></div></div>'
     +'<div class="savebar"><button class="btn" id="evGo">บันทึก<svg class="i"><use href="#i-check"/></svg></button></div>');
   $('#evGo').onclick=()=>{ const t=$('#evTitle').value.trim();
+    /* ด่านในฟังก์ชันเขียน (กฎ §9b) — เดิมมีแค่การซ่อนปุ่ม เรียกฟังก์ชันตรงก็เพิ่มได้ */
+    if(!canExecCal()){ toast('เพิ่มงานผู้บริหารได้เฉพาะแอดมินและผู้บริหาร','',1); return; }
     if(!t){ toast('กรอกชื่องานก่อน','',1); return; }
-    EXEC_EVENTS.push({id:nid('EV'), d:$('#evDate').value||TODAY, type:$('#evType').value, title:t, note:$('#evNote').value.trim()});
+    const e={id: dbId()||nid('EV'), d:$('#evDate').value||TODAY, type:$('#evType').value, title:t, note:$('#evNote').value.trim()};
+    EXEC_EVENTS.push(e);
+    dbUp('company_event', { id:e.id, event_date:e.d, event_type:e.type, title:e.title,
+      note:e.note||null, created_by: LIVE? ME.id : null });
     closeModal(); toast('เพิ่มงานผู้บริหารแล้ว', t); rCal(); };
 }
 
@@ -5153,6 +5231,7 @@ function rService(){
     $('#svTech').innerHTML=STAFF.filter(s=>s.role==='tech'||s.role==='stock').map(s=>'<option>'+esc(s.nick)+'</option>').join('')||'<option>ช่างเอก</option>';
     $('#svFind').onclick=svLookup;
     $('#svSearch').onkeydown=e=>{ if(e.key==='Enter') svLookup(); };
+    $('#svDate').value=TODAY;
     $('#svSave').onclick=svSave;
     $('#svLine').onclick=()=>{ const r=REMIND.filter(x=>x.status==='รอถึงกำหนด'&&x.due<=addDays(TODAY,7));
       openModal('รายการส่ง LINE ('+r.length+' คน)',''
@@ -5235,16 +5314,19 @@ function svSave(){
   if(!c){ c={id:nid('CU'),name,phone:$('#svPhone').value.trim(),src:'เข้าศูนย์บริการ',stage:'รับรถสำเร็จ',
     branch:ME.branch,variant:'',owner:ME.nick}; CUSTOMERS.push(c); }
   const now=new Date(); const hhmm=String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
+  /* วันที่รับรถเลือกได้ (K9) — ห้ามเป็นวันอนาคต เพราะใบงานคือบันทึกของงานที่เกิดแล้ว */
+  const svAt=$('#svDate').value||TODAY;
+  if(svAt>TODAY){ toast('วันที่รับรถเป็นวันอนาคตไม่ได้','',1); return; }
   const job={id:nid('SV'), no:nextDocNo(ME.branch,'SERVICE'), branch:ME.branch, custId:c.id,
     unitId:svFoundUnit?svFoundUnit.id:null, engine:svFoundUnit?svFoundUnit.engine:$('#svSearch').value.trim(),
     frame:svFoundUnit?svFoundUnit.frame:'', km:num($('#svKm').value), type:$('#svType').value,
-    symptom:$('#svSymptom').value.trim(), at:TODAY, time:hhmm, status:'รับเข้า',
+    symptom:$('#svSymptom').value.trim(), at:svAt, time:hhmm, status:'รับเข้า',
     labor:num($('#svLabor').value), parts:p?p.price:0, tech:$('#svTech').value};
   SERVICE.push(job);
   if(p){ p.qty--; PMOVES.push({id:nid('MV'),partId:p.id,qty:-1,type:'job',at:TODAY,branch:ME.branch,jobId:job.id}); }
   /* ตั้งเตือนรอบถัดไปจากเลขไมล์ */
   const kms=String(CFG.km).split(',').map(x=>parseInt(x)).filter(k=>k>job.km);
-  if(kms.length) REMIND.push({id:nid('RM'),custId:c.id,unitId:job.unitId,km:kms[0],due:addDays(TODAY,90),status:'รอถึงกำหนด'});
+  if(kms.length) REMIND.push({id:nid('RM'),custId:c.id,unitId:job.unitId,km:kms[0],due:addDays(svAt,90),status:'รอถึงกำหนด'});
   toast('เปิดใบงานแล้ว', job.no+' · ลงเวลาเข้า '+hhmm+(kms.length?(' · ตั้งเตือนรอบ '+fmt(kms[0])+' กม.'):''));
   $('#svSymptom').value=''; $('#svKm').value=''; refreshAll();
 }
@@ -5599,6 +5681,29 @@ function attEnsure(staffId, date){ let a=attOf(staffId,date);
 function onLeave(staffId, date){
   return LEAVES.some(l=>l.staffId===staffId && l.status==='อนุมัติแล้ว' && l.from<=date && l.to>=date); }
 function isLeaveDay(a, staffId, date){ return (a && a.status==='ลา') || onLeave(staffId, date); }
+/* ---------- โควตาวันลา (บรีฟรอบ 1 · H3) ----------
+   ประเภท+เพดานมาจากตั้งค่า (บรรทัดละ "ประเภท:วัน/ปี") — ไม่ใส่ตัวเลข = ไม่จำกัด (ยังไม่ตั้ง = ปล่อยผ่าน กฎ §9i)
+   วันที่ใช้ไปนับจากใบที่ไม่ถูกตีตก (รออนุมัติก็กันโควตาไว้ก่อน — กันยื่นทับจนเกินสิทธิ์) */
+const lvTypes = () => String(CFG.leaveQuota||'').split('\n').map(x=>x.trim()).filter(Boolean)
+  .map(x=>{ const i=x.lastIndexOf(':');
+    return i<0? {type:x, days:null} : {type:x.slice(0,i).trim(), days:(parseInt(x.slice(i+1))||null)}; });
+const lvDays = l => { let d=l.from, n=0; while(d<=l.to && n<366){ n++; d=addDays(d,1); } return n; };
+const lvUsed = (staffId, type, year) => LEAVES.filter(l=>l.staffId===staffId && l.type===type
+  && l.status!=='ไม่อนุมัติ' && l.from.slice(0,4)===String(year)).reduce((s,l)=>s+lvDays(l),0);
+/* ย่อรูปหลักฐานใบลา (H6) — คงสัดส่วนภาพ (ไม่ครอปแบบรูปรุ่นรถ) บีบหนักให้เก็บได้เยอะ */
+function lvImgShrink(file){
+  return new Promise(res=>{
+    const rd=new FileReader();
+    rd.onload=()=>{ const img=new Image();
+      img.onload=()=>{ const k=Math.min(1, 1000/Math.max(img.width,img.height));
+        const cv=document.createElement('canvas');
+        cv.width=Math.round(img.width*k); cv.height=Math.round(img.height*k);
+        cv.getContext('2d').drawImage(img,0,0,cv.width,cv.height);
+        res(cv.toDataURL('image/jpeg',.55)); };
+      img.onerror=()=>res(null); img.src=rd.result; };
+    rd.onerror=()=>res(null); rd.readAsDataURL(file);
+  });
+}
 /* ตัวเลขของบันทึกวันเดียว — ตาราง สลิป คิวตรวจ และเงินเดือน ใช้ตัวเดียวกันหมด
    สาย = เข้าหลังเวลาเข้างาน + ผ่อนผัน · OT = อยู่เกินเวลาเลิกงาน (ไม่มีเลข 8.5 ลอย ๆ อีกแล้ว) */
 function attCalc(a){
@@ -6077,10 +6182,41 @@ function punch(staffId, side, proof){
     dist:(v.dist==null? null : v.dist),
     outside:!!v.outside, nosite:!!v.nosite, observed:!!v.observed,
     reason:String(proof.reason||'').trim()||null }, proof);
+  /* โหมดจริง: ยิงเข้า punch_clock ของฐานข้อมูล — เวลา/คำตัดสินทางการคือของฝั่งเซิร์ฟเวอร์ (§9i)
+     จอโชว์เวลาเครื่อง (ต่างกันไม่เกินวินาที) แต่เงินเดือนคิดจากแถว attendance ของจริง */
+  if(LIVE) attLivePush(a, side, proof);
   toast((side==='in'?'ลงเวลาเข้าแล้ว ':'ลงเวลาออกแล้ว ')+t, 'บันทึกพร้อมรูปและตำแหน่งเรียบร้อย');
   if(IDB_OK===false) toast('เก็บรูปถาวรไม่ได้','เบราว์เซอร์นี้ใช้ IndexedDB ไม่ได้ — รูปจะหายเมื่อปิดแอป',1);
   if(CUR==='hr') rHr();
   return t;
+}
+/* ---------- ส่งลงเวลาขึ้นฐานข้อมูลจริง (H1) ----------
+   รูปขึ้น bucket ส่วนตัว hr-photo ก่อน แล้วเรียก RPC punch_clock ซึ่งจับเวลาด้วย now() ของ Postgres
+   และตัดสินระยะใหม่ฝั่งเซิร์ฟเวอร์ — ไม่เชื่อคำตัดสินจากเบราว์เซอร์
+   จงใจไม่เข้าคิว dbUp: RPC มีด่านหลักฐานสด 120 วิ ถ้า retry ช้าจะพังถาวรและค้างหัวคิว
+   ยิงตรงครั้งเดียว พลาดแล้วแจ้งให้ลงใหม่ — เวลาในเครื่องยังอยู่ให้ผู้จัดการเทียบ */
+async function attLivePush(a, side, proof){
+  try{
+    let url='(อัปโหลดรูปไม่สำเร็จ)';
+    const rec=proof.photoId? await idbGet(proof.photoId) : null;
+    if(rec && rec.data){
+      const blob=await (await fetch(rec.data)).blob();
+      const p='att/'+ME.id+'/'+a.date+'-'+side+'.jpg';
+      await sbUpload('hr-photo', p, blob, 'image/jpeg');
+      url=p;
+    }
+    const pf=a[side+'Proof']||{};
+    await sbFetch('/rest/v1/rpc/punch_clock', { method:'POST', body: JSON.stringify({
+      p_side:side, p_lat:proof.geo.lat, p_lng:proof.geo.lng,
+      p_acc:Math.round(proof.geo.acc||0), p_photo_url:url,
+      p_device:pf.device||'', p_device_id:pf.deviceId||'',
+      p_client_at:pf.clientAt||new Date().toISOString(),
+      p_photo_at:proof.photoAt||null, p_geo_at:proof.geoAt||null,
+      p_opened_at:proof.openedAt||null, p_reason:pf.reason||null }) });
+  }catch(e){
+    toast('ส่งเวลาขึ้นฐานข้อมูลไม่สำเร็จ',
+      String(e.message||e).slice(0,60)+' — เวลาในเครื่องยังอยู่ แจ้งผู้จัดการตรวจ', 1);
+  }
 }
 function attBadges(a, side){
   const p=side==='out'? (a.outProof||{}) : (a.inProof||{});
@@ -6154,6 +6290,9 @@ function punchSheet(staffId, side){
       +' ยืนยัน'+(side==='in'?'ลงเวลาเข้า':'ลงเวลาออก')+'</button></div>');
 
   const vid=$('#psVid'), img=$('#psImg');
+  /* มีใบขอออกนอกสถานที่ที่อนุมัติแล้วของวันนี้ → อ้างเป็นเหตุผลให้เลย (H4) */
+  const of0=OFFS.find(o=>o.staffId===staffId && o.date===punchDate() && o.status==='อนุมัติแล้ว');
+  if(of0 && !$('#psWhy').value) $('#psWhy').value='ตามใบขอออกนอกสถานที่ที่อนุมัติแล้ว — '+of0.place;
   const t0=PH_TIERS[0];
   /* รายการตรวจบอกตรง ๆ ว่าขาดอะไร และคุมปุ่มยืนยันจากที่เดียว */
   const sync=()=>{
@@ -6535,25 +6674,126 @@ async function psRender(){
 }
 let hrClockTimer=null;
 let ATT_DAY=null;                       /* วันที่กำลังดูในหน้าลงเวลา */
+/* ---------- ใบลา v1.19: เหตุผล+หลักฐาน+ผู้อนุมัติ (K10/H6) + ขอออกนอกสถานที่ (H4) ----------
+   ด่านทุกตัวอยู่ในฟังก์ชันตัดสิน ไม่ใช่ที่ปุ่ม (กฎ §9b) — เรียกตรงด้วยบทบาทต้องห้ามแล้วต้องโดนปฏิเสธ */
+let LV_IMGS=[];
+function lvQuotaHint(){
+  const t=$('#lvType').value, q=lvTypes().find(x=>x.type===t);
+  const who = canFixAtt()? $('#lvWho').value : ME.id;
+  $('#lvQuota').textContent = !q || q.days==null ? 'ไม่จำกัดจำนวนวัน'
+    : 'ใช้ไป '+lvUsed(who, t, curDate().slice(0,4))+' จาก '+q.days+' วัน/ปีนี้';
+}
+/* write-through ใบลา — เขียนได้เฉพาะใบของตัวเอง (โหมดจริงยังไม่โหลดรายชื่อพนักงานทั้งบริษัท — issue 001)
+   รูปหลักฐานขึ้น bucket ส่วนตัว hr-photo ก่อน แล้วเก็บ path ลงคอลัมน์ evidence */
+async function lvLivePush(l, who){
+  if(!LIVE || !ME.empId || who!==ME.id) return;
+  const paths=[];
+  for(let i=0;i<(l.imgs||[]).length;i++){
+    try{ const blob=await (await fetch(l.imgs[i])).blob();
+      const p='leave/'+ME.id+'/'+l.id+'-'+i+'.jpg';
+      await sbUpload('hr-photo', p, blob, 'image/jpeg'); paths.push(p);
+    }catch(_){ /* รูปขึ้นไม่ได้ไม่บล็อกใบลา — ตัวใบยังลงฐานข้อมูลครบ */ }
+  }
+  dbUp('leave_request', { id:l.id, employee_id:ME.empId, leave_type:l.type,
+    date_from:l.from, date_to:l.to, status:l.status, reason:l.reason||null, evidence:paths });
+}
+function lvDecide(id, ok, note){
+  const l=LEAVES.find(x=>x.id===id);
+  const may = l && l.status==='รออนุมัติ' && canFixAtt() && l.staffId!==ME.id;
+  if(!may){ toast('อนุมัติใบลาของตัวเองไม่ได้','ต้องให้ผู้มีสิทธิ์คนอื่นอนุมัติ',1); return false; }
+  /* K10: ตีกลับต้องบอกเหตุผล — คนยื่นจะได้รู้ว่าติดตรงไหน ไม่ใช่โดนเงียบ ๆ */
+  if(!ok && !(note||'').trim()){ toast('ไม่อนุมัติต้องบอกเหตุผล','',1); return false; }
+  l.status = ok? 'อนุมัติแล้ว':'ไม่อนุมัติ';
+  l.decidedBy=ME.nick; l.decidedAt=TODAY; l.decideNote=(note||'').trim();
+  if(LIVE && String(l.id).length===36) dbUp('leave_request', { id:l.id, status:l.status,
+    approved_by:ME.id, approved_at:new Date().toISOString(), decide_note:l.decideNote||null });
+  toast(ok?'อนุมัติใบลาแล้ว':'ตีกลับใบลาแล้ว',
+    ((STAFF.find(s=>s.id===l.staffId)||{}).nick||'')+(l.decideNote?' — '+l.decideNote:''), ok?0:'warn');
+  refreshAll(); return true;
+}
+function lvDetail(id){
+  const l=LEAVES.find(x=>x.id===id); if(!l) return;
+  /* ประเภท เหตุผล และหลักฐานเป็นข้อมูลส่วนตัว (กฎ 13) — เปิดเฉพาะเจ้าตัวกับผู้มีสิทธิ์ตรวจ */
+  if(l.staffId!==ME.id && !canFixAtt()){ toast('ไม่มีสิทธิ์ดูรายละเอียดใบลาของคนอื่น','',1); return; }
+  const s=STAFF.find(x=>x.id===l.staffId)||{};
+  openModal('ใบลา — '+(s.nick||''),
+    '<dl class="kv"><dt>ประเภท</dt><dd><b>'+esc(l.type)+'</b></dd>'
+    +'<dt>ช่วงวันที่</dt><dd>'+thDate(l.from)+' – '+thDate(l.to)+' ('+lvDays(l)+' วัน)</dd>'
+    +(l.reason?'<dt>เหตุผล</dt><dd>'+esc(l.reason)+'</dd>':'')
+    +'<dt>สถานะ</dt><dd>'+esc(l.status)+(l.decidedBy?' · โดย '+esc(l.decidedBy)+' '+thDate(l.decidedAt):'')+'</dd>'
+    +(l.decideNote?'<dt>เหตุผลที่ไม่อนุมัติ</dt><dd>'+esc(l.decideNote)+'</dd>':'')+'</dl>'
+    +((l.imgs||[]).length? '<div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--s2);margin-top:var(--s2)">'
+        +l.imgs.map(d=>'<img src="'+d+'" style="width:100%;border-radius:var(--r-input)" alt="หลักฐาน">').join('')+'</div>'
+      : '<p class="foot">ไม่มีรูปหลักฐานแนบ</p>'));
+}
+function ofDecide(id, ok, note){
+  const o=OFFS.find(x=>x.id===id);
+  const may = o && o.status==='รออนุมัติ' && canFixAtt() && o.staffId!==ME.id;
+  if(!may){ toast('อนุมัติคำขอของตัวเองไม่ได้','ต้องให้ผู้มีสิทธิ์คนอื่นอนุมัติ',1); return false; }
+  if(!ok && !(note||'').trim()){ toast('ไม่อนุมัติต้องบอกเหตุผล','',1); return false; }
+  o.status = ok? 'อนุมัติแล้ว':'ไม่อนุมัติ'; o.decidedBy=ME.nick; o.decidedAt=TODAY; o.decideNote=(note||'').trim();
+  if(LIVE && String(o.id).length===36) dbUp('offsite_request', { id:o.id, status:o.status,
+    approved_by:ME.id, approved_at:new Date().toISOString(), decide_note:o.decideNote||null });
+  toast(ok?'อนุมัติคำขอแล้ว':'ตีกลับคำขอแล้ว','',ok?0:'warn'); refreshAll(); return true;
+}
 function rHr(){
   if(!$('#lvSave').dataset.init){ $('#lvSave').dataset.init=1;
     $$('#hrTabs button').forEach(b=> b.onclick=()=>{ $$('#hrTabs button').forEach(x=>x.classList.remove('on'));
       b.classList.add('on'); $$('#s-hr .pane').forEach(p=>p.classList.toggle('on',p.id===b.dataset.p)); });
-    $('#lvFrom').value=TODAY; $('#lvTo').value=TODAY;
+    $('#lvFrom').value=TODAY; $('#lvTo').value=TODAY; $('#ofDate').value=addDays(TODAY,1);
+    /* รูปหลักฐาน (H6) — ย่อทันทีที่เลือก เก็บสูงสุด 5 รูปต่อใบ */
+    $('#lvImg').onchange=async ()=>{
+      LV_IMGS=[];
+      for(const f of [...$('#lvImg').files].slice(0,5)){
+        const d=await lvImgShrink(f); if(d) LV_IMGS.push(d); }
+      $('#lvImgN').textContent = LV_IMGS.length
+        ? 'แนบแล้ว '+LV_IMGS.length+' รูป (ย่อขนาดแล้ว)' : 'ยังไม่ได้แนบรูป · รูปถูกย่อขนาดอัตโนมัติ'; };
+    $('#lvType').onchange=lvQuotaHint; $('#lvWho').onchange=lvQuotaHint;
     /* ยื่นใบลาแทนคนอื่นได้เฉพาะคนที่มีหน้าที่ดูแล — ใบลาที่อนุมัติแล้วไปลดวันขาดบันทึกของคนนั้น
        ถ้าใครยื่นแทนใครก็ได้ ก็เท่ากับแก้ฐานคำนวณเงินเดือนของคนอื่นได้ */
     $('#lvSave').onclick=()=>{
       const who = canFixAtt()? $('#lvWho').value : ME.id;
       const s=STAFF.find(x=>x.id===who);
       if(!s || (who!==ME.id && !canFixAtt())){ toast('ยื่นใบลาแทนคนอื่นไม่ได้','',1); return; }
-      LEAVES.push({id:nid('LV'),staffId:who,type:$('#lvType').value,
-        from:$('#lvFrom').value,to:$('#lvTo').value,status:'รออนุมัติ'});
-      toast('ยื่นใบลาแล้ว', esc(s.nick)+' · รอผู้มีสิทธิ์อนุมัติ'); refreshAll(); };
+      const from=$('#lvFrom').value, to=$('#lvTo').value, type=$('#lvType').value;
+      if(!from || !to || to<from){ toast('ช่วงวันที่ไม่ถูกต้อง','วันสิ้นสุดต้องไม่ก่อนวันเริ่ม',1); return; }
+      /* ด่านโควตา (H3) — นับรวมใบที่รออนุมัติด้วย กันยื่นซ้อนจนเกินสิทธิ์ */
+      const q=lvTypes().find(x=>x.type===type), ask=lvDays({from,to});
+      if(q && q.days!=null){
+        const used=lvUsed(who, type, from.slice(0,4));
+        if(used+ask>q.days){
+          toast('เกินโควตา'+type, 'ใช้ไป '+used+' จาก '+q.days+' วัน/ปี — ขอเพิ่มอีก '+ask+' วันไม่ได้', 1); return; }
+      }
+      const l={id: dbId()||nid('LV'), staffId:who, type, from, to, status:'รออนุมัติ',
+        reason:$('#lvReason').value.trim(), imgs:LV_IMGS.slice(), at:TODAY};
+      LEAVES.push(l);
+      lvLivePush(l, who);
+      toast('ยื่นใบลาแล้ว', esc(s.nick)+' · '+type+' '+ask+' วัน · รอผู้มีสิทธิ์อนุมัติ');
+      $('#lvReason').value=''; $('#lvImg').value=''; LV_IMGS=[];
+      refreshAll(); };
+    /* ขอออกนอกสถานที่ (H4) — ขอให้ตัวเองเท่านั้น และต้องเป็นวันข้างหน้า (ใบขอมีไว้ขอ "ก่อน") */
+    $('#ofSave').onclick=()=>{
+      const d=$('#ofDate').value, place=$('#ofPlace').value.trim();
+      if(!d || d<TODAY){ toast('เลือกวันที่ล่วงหน้า','ขอย้อนหลังไม่ได้ — วันจริงใช้เหตุผลตอนลงเวลาแทน',1); return; }
+      if(!place){ toast('บอกสถานที่หรืองานที่ไปทำ','',1); return; }
+      const o={id: dbId()||nid('OF'), staffId:ME.id, date:d, time:$('#ofTime').value.trim(),
+        place, reason:$('#ofWhy').value.trim(), status:'รออนุมัติ'};
+      OFFS.push(o);
+      if(LIVE && ME.empId) dbUp('offsite_request', { id:o.id, employee_id:ME.empId, on_date:o.date,
+        time_range:o.time||null, place:o.place, reason:o.reason||null, status:o.status });
+      toast('ส่งคำขอออกนอกสถานที่แล้ว', thDate(d)+' · '+place);
+      ['ofTime','ofPlace','ofWhy'].forEach(k=>$('#'+k).value='');
+      refreshAll(); };
   }
   /* ช่องเลือกพนักงาน: คนทั่วไปเห็นชื่อตัวเองอย่างเดียว ผู้ดูแลเห็นทีมในสาขาที่ตัวเองเห็นได้ */
   const lvOpts = canFixAtt()? attStaffScope() : STAFF.filter(s=>s.id===ME.id);
   $('#lvWho').innerHTML=lvOpts.map(s=>'<option value="'+s.id+'">'+esc(s.name)+'</option>').join('');
   $('#lvWho').disabled = lvOpts.length<2;
+  /* ประเภทลา+โควตามาจากตั้งค่า (H3) — แก้ตั้งค่าแล้วตัวเลือกเปลี่ยนตามทันที */
+  (function(){ const el=$('#lvType'), want=el.value;
+    el.innerHTML=lvTypes().map(q=>'<option>'+esc(q.type)+'</option>').join('');
+    if(want && lvTypes().some(q=>q.type===want)) el.value=want; })();
+  lvQuotaHint();
   /* นาฬิกาสดหน่วยวินาที — เดินเฉพาะตอนอยู่หน้านี้ */
   if(hrClockTimer) clearInterval(hrClockTimer);
   const tick=()=>{ const el=$('#hrClock'); if(!el || CUR!=='hr'){ clearInterval(hrClockTimer); hrClockTimer=null; return; }
@@ -6671,9 +6911,11 @@ function rHr(){
     type: (l.staffId===ME.id || lvBoss) ? l.type : 'ลา' });
   const lvAct = l => (l.status==='รออนุมัติ' && canFixAtt() && l.staffId!==ME.id);
   const lvPill = l => pill(l.status, l.status==='อนุมัติแล้ว'?'good':(l.status==='ไม่อนุมัติ'?'bad':'warn'));
-  const lvBtns = (l,q) => lvAct(l)
+  /* ปุ่ม "ดู" (รายละเอียด+หลักฐาน) เฉพาะเจ้าตัวกับผู้ตรวจ — เพื่อนร่วมงานไม่มีทางเข้ารายละเอียด */
+  const lvBtns = (l,q) => (lvAct(l)
     ? '<button class="lnk" data-lv="'+l.id+'" data-ok="1">อนุมัติ</button>'+(q?'':' · ')
-      +'<button class="lnk'+(q?' q':'')+'" data-lv="'+l.id+'" data-ok="0">ไม่อนุมัติ</button>' : '';
+      +'<button class="lnk'+(q?' q':'')+'" data-lv="'+l.id+'" data-ok="0">ไม่อนุมัติ</button>'+(q?'':' · ') : '')
+    +((l.staffId===ME.id || lvBoss)? '<button class="lnk'+(q?' q':'')+'" data-lvv="'+l.id+'">ดู</button>' : '');
   tbl($('#lvTable'), ['พนักงาน','ประเภท','ตั้งแต่','ถึง','สถานะ',''],
     lvSee.map(l=>{ const s=STAFF.find(x=>x.id===l.staffId), v=lvView(l);
       return '<tr'+(v.mine?' class="self"':'')+'><td><b>'+esc(s?s.nick:'—')+'</b></td><td>'+esc(v.type)+'</td>'
@@ -6683,10 +6925,36 @@ function rHr(){
     lvSee.map(l=>{ const s=STAFF.find(x=>x.id===l.staffId), v=lvView(l);
       return crow(v.mine?'class="self"':'', esc(s?s.nick:'—'), lvPill(l),
         esc(v.type)+' · '+thDate(l.from)+' – '+thDate(l.to), lvBtns(l,1)); }));
-  $$('[data-lv]').forEach(b=> b.onclick=()=>{ const l=LEAVES.find(x=>x.id===b.dataset.lv);
-    /* อนุมัติใบลาของตัวเองไม่ได้ — ใบลาที่อนุมัติแล้วลดวันขาดบันทึก จึงกระทบเงินโดยตรง */
-    if(!l || !lvAct(l)){ toast('อนุมัติใบลาของตัวเองไม่ได้','ต้องให้ผู้มีสิทธิ์คนอื่นอนุมัติ',1); return; }
-    l.status = b.dataset.ok==='1'?'อนุมัติแล้ว':'ไม่อนุมัติ'; toast('บันทึกแล้ว',l.status); refreshAll(); });
+  /* ตัดสินผ่าน lvDecide เท่านั้น (K10) — อนุมัติกดตรง · ตีกลับต้องบอกเหตุผลก่อน */
+  $$('[data-lv]').forEach(b=> b.onclick=()=>{
+    if(b.dataset.ok==='1'){ lvDecide(b.dataset.lv, true); return; }
+    openModal('ไม่อนุมัติใบลา — บอกเหตุผล',
+      '<div class="f"><div><label class="fl">เหตุผลที่ไม่อนุมัติ</label>'
+      +'<textarea class="inp" id="lvNo" rows="2" placeholder="เช่น ช่วงนั้นคนไม่พอ ขอเลื่อนวัน"></textarea></div></div>'
+      +'<div class="savebar"><button class="btn" id="lvNoGo">ยืนยันไม่อนุมัติ</button></div>');
+    $('#lvNoGo').onclick=()=>{ if(lvDecide(b.dataset.lv, false, $('#lvNo').value)) closeModal(); }; });
+  $$('[data-lvv]').forEach(b=> b.onclick=()=> lvDetail(b.dataset.lvv));
+  /* ---------- คำขอออกนอกสถานที่ (H4) — เห็นตามขอบเขตสาขา สถานที่/เหตุผลเฉพาะเจ้าตัว+ผู้ตรวจ ---------- */
+  const ofSee=OFFS.filter(o=>{ const s=STAFF.find(x=>x.id===o.staffId); return s && inScope(s.branch); })
+    .slice().sort((a,b)=> b.date.localeCompare(a.date));
+  const ofPill=o=> pill(o.status, o.status==='อนุมัติแล้ว'?'good':(o.status==='ไม่อนุมัติ'?'bad':'warn'));
+  $('#ofList').innerHTML = ofSee.length? ofSee.map(o=>{
+    const s=STAFF.find(x=>x.id===o.staffId)||{};
+    const full=o.staffId===ME.id||canFixAtt();
+    const may=o.status==='รออนุมัติ' && canFixAtt() && o.staffId!==ME.id;
+    return '<div class="frow"><span><b>'+esc(s.nick||'—')+'</b> · '+thDate(o.date)+(o.time?' · '+esc(o.time):'')
+      +(full? '<div class="tsub">'+esc(o.place)+(o.reason?' — '+esc(o.reason):'')
+        +(o.decidedBy?'<br>'+esc(o.status)+' โดย '+esc(o.decidedBy)+(o.decideNote?' — '+esc(o.decideNote):''):'')+'</div>':'')
+      +'</span><span class="fx" style="text-align:right">'+ofPill(o)
+      +(may? '<br><button class="lnk" data-of="'+o.id+'" data-ok="1">อนุมัติ</button> · '
+            +'<button class="lnk" data-of="'+o.id+'" data-ok="0">ไม่อนุมัติ</button>':'')+'</span></div>'; }).join('')
+    : '<div class="empty"><b>ยังไม่มีคำขอ</b>ขอล่วงหน้าได้จากการ์ดด้านบน</div>';
+  $$('#ofList [data-of]').forEach(b=> b.onclick=()=>{
+    if(b.dataset.ok==='1'){ ofDecide(b.dataset.of, true); return; }
+    openModal('ไม่อนุมัติคำขอ — บอกเหตุผล',
+      '<div class="f"><div><label class="fl">เหตุผล</label><textarea class="inp" id="ofNo" rows="2"></textarea></div></div>'
+      +'<div class="savebar"><button class="btn" id="ofNoGo">ยืนยันไม่อนุมัติ</button></div>');
+    $('#ofNoGo').onclick=()=>{ if(ofDecide(b.dataset.of, false, $('#ofNo').value)) closeModal(); }; });
   rReview(ym);
 }
 /* ---------- แท็บตรวจการลงเวลา (แอดมิน · ผู้จัดการ · HR) ---------- */
@@ -6965,7 +7233,7 @@ function impCheck(){
 const CFMAP={cfCo:'company',cfAddr:'address',cfTax:'taxId',cfPhone:'phone',cfAging:'aging',cfReg:'regDays',
   cfLow:'lowStock',cfVat:'vat',cfCad:'cadence',cfKm:'km',cfIn:'workIn',cfOut:'workOut',cfGrace:'lateGrace',
   cfOt:'otRate',cfComm:'commPct',cfGeoMode:'geoMode',cfGeoAcc:'geoAcc',cfGeoSlack:'geoSlack',
-  cfSlaFin:'slaFin',cfCareDays:'careDays',cfCareList:'careList'};
+  cfSlaFin:'slaFin',cfCareDays:'careDays',cfCareList:'careList',cfLvQuota:'leaveQuota'};
 function rSettings(){
   Object.keys(CFMAP).forEach(k=> $('#'+k).value = CFG[CFMAP[k]]);
   if(!$('#cfSave').dataset.init){ $('#cfSave').dataset.init=1;
@@ -7928,6 +8196,17 @@ async function liveLogin(){
     VARIANT_IDS={}; (mvs||[]).forEach(v=>{ VARIANT_IDS[v.code]=v.id; });
     const wpr = await sbSelect('wholesale_price', { select:'price,model_variant(code)' });
     WS_PRICES={}; (wpr||[]).forEach(r=>{ if(r.model_variant) WS_PRICES[r.model_variant.code]=+r.price; });
+
+    /* กลุ่ม ⑤: แถวพนักงานของบัญชีนี้ (FK ของใบลา/คำขอ) + วันหยุด + งานผู้บริหาร
+       .catch เพราะสามตัวนี้พังไม่ควรล้มการล็อกอินทั้งกระบวน — ลงเวลา/ปฏิทินยังใช้ต่อได้ */
+    const emp = await sbSelect('employee', { select:'id', user_id:'eq.'+auth.user.id }).catch(()=>null);
+    const empId = (emp && emp[0] && emp[0].id) || null;
+    const hols = await sbSelect('company_holiday', { select:'id,on_date,name' }).catch(()=>null);
+    if(hols) HOLIDAYS = hols.map(h=>({ id:h.id, d:h.on_date, name:h.name }));
+    const evs = await sbSelect('company_event',
+      { select:'id,event_date,event_type,title,note' }).catch(()=>null);
+    if(evs) EXEC_EVENTS = evs.map(e=>({ id:e.id, d:e.event_date, type:e.event_type,
+      title:e.title, note:e.note||'' }));
     const fcs = await sbSelect('finance_company', { select:'id,name' });
     (fcs||[]).forEach(f=>{ const m=FIN_CO.find(x=>x.name===f.name); if(m) m.dbId=f.id; });
 
@@ -7961,7 +8240,7 @@ async function liveLogin(){
     SALES=[]; CUSTOMERS=[]; TASKS=[]; REGS=[]; FINCASES=[]; AR=[]; SERVICE=[]; REMIND=[]; TRANSFERS=[]; QUOTES=[]; CARE=[]; WSALES=[]; WS_CART=[];
     LIVE = true;
     ME = { id:me.id, name:me.full_name, nick:me.nickname||me.full_name.slice(0,2),
-           role:roleCode, branch:homeBranch, salary:0, bank:'', ssn:'' };
+           role:roleCode, branch:homeBranch, salary:0, bank:'', ssn:'', empId };
     $('#login').classList.add('off'); $('#app').classList.remove('off');
     $('#meAv').textContent = ME.nick.slice(0,2);
     $('#meName').textContent = ME.name;

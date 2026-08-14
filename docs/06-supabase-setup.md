@@ -265,9 +265,9 @@ GET  /rest/v1/motorcycle_unit?select=…      → รถตามสิทธิ
 
 ---
 
-## 10. migration 10–17 — รันลงฐานข้อมูลจริงแล้ว
+## 10. migration 10–18 — รันลงฐานข้อมูลจริงแล้ว
 
-รัน 10–15 เมื่อ **9 ส.ค. 2569** · รัน 16–17 เมื่อ **13 ส.ค. 2569** ฐานข้อมูลจริงตอนนี้อยู่ที่ **migration 17**
+รัน 10–15 เมื่อ **9 ส.ค. 2569** · รัน 16–17 เมื่อ **13 ส.ค. 2569** · รัน 18 เมื่อ **14 ส.ค. 2569** ฐานข้อมูลจริงตอนนี้อยู่ที่ **migration 18**
 
 | # | ชื่อ | ได้อะไรมา |
 |---|---|---|
@@ -279,6 +279,7 @@ GET  /rest/v1/motorcycle_unit?select=…      → รถตามสิทธิ
 | 15 | `15_order_status_volatile` | แก้ `pub.order_status` ให้เป็น `volatile` + เปิดสคีมา `pub` ให้ PostgREST |
 | 16 | `16_money_docs` | บรีฟรอบ 1 กลุ่มเงิน: `customer.birth_date` · `sale` เพิ่ม snapshot เงินผ่อน 4 ช่อง + `gifts`/`fin_approval`/`doc_ov` (jsonb) · `finance_company.tiers/terms` · `freebie.price` · `expense.note/approval` — ตรวจแล้วคอลัมน์ครบ 13 ช่อง default ถูกต้อง |
 | 17 | `17_company_wholesale` | บรีฟรอบ 1 กลุ่ม ④: ตาราง `company` เหนือ `branch` (ยก 3 แถวสาขาเดิมขึ้นเป็น 3 บริษัท · `branch.company_id`) + ชุดขายส่ง B2B `wholesale_partner/price/sale/sale_item` พร้อม RLS — ตรวจด้วยการสวมบทบาทจริง: เซลล์อ่าน company ได้ 3 แถว/เขียนโดนบล็อก · เปิดบิลขายส่งได้เฉพาะสาขาตัวเอง (ข้ามสาขาโดน 42501) · `anon` โดนปฏิเสธทั้งชุด · `app_setting` คีย์ `perms` (ตารางสิทธิ์ J3) เขียนได้เฉพาะแอดมิน |
+| 18 | `18_hr_leave_offsite` | บรีฟรอบ 1 กลุ่ม ⑤: `leave_request` เพิ่ม `evidence/decide_note/created_at` (K10/H6) · ตาราง `offsite_request` (H4) + `company_holiday` (H5) พร้อม RLS · helper `is_hr_boss()` · bucket ส่วนตัว `hr-photo` (รูปลงเวลา `att/<uid>/…` + หลักฐานใบลา `leave/<uid>/…` — เขียนได้เฉพาะโฟลเดอร์ตัวเอง อ่านได้เจ้าตัว+admin/manager/hr) — ตรวจสวมบทบาท: เซลล์อ่านวันหยุดได้/เขียนโดนบล็อก · ยื่นคำขอแทนคนอื่นโดน 42501 · อนุมัติเองไม่ได้ (0 แถว) · HR อนุมัติได้ · `anon` โดนปฏิเสธ |
 
 สคีมา `pub` เปิดให้ PostgREST เห็นแล้วด้วย
 `alter role authenticator set pgrst.db_schemas = 'public, graphql_public, pub'`
