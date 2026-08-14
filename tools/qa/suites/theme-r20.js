@@ -84,7 +84,7 @@ const { chromium, EXE, BASE } = require('./env');
   const t6 = await p.evaluate(() => {
     buildNav();
     const gs = new Set([...document.querySelectorAll('#nav .nb')]
-      .map(bn => [...bn.classList].find(c => /^g[1-6]$/.test(c))).filter(Boolean));
+      .map(bn => [...bn.classList].find(c => /^mg[1-6]$/.test(c))).filter(Boolean));
     const tok = getComputedStyle(document.documentElement).getPropertyValue('--grp3').trim();
     return { n: gs.size, tok };
   });

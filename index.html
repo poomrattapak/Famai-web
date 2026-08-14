@@ -59,9 +59,13 @@
   /* -- Motion -- เส้นโค้งเดียว สองช่วงเวลา -- */
   --ease:cubic-bezier(.16,1,.3,1); --dur-ui:.3s; --dur-in:.35s;
 
-  /* -- สีประจำกลุ่มเมนู 6 กลุ่ม (บรีฟรอบ 1 I1=ข — กฎสีเดียวถูกยกเลิก ดู §9k) -- */
+  /* -- สีประจำกลุ่มเมนู 6 กลุ่ม (บรีฟรอบ 1 I1=ข — กฎสีเดียวถูกยกเลิก ดู §9k) --
+     ทุกสีต้องอ่านออกบนพื้น --paper ของทุกธีม (ตัวอักษรเล็ก 4.5:1) — grp-r23 วัดจริงทั้ง 6 สี × 4 ธีม */
   --grp1:#B3000E; --grp2:#2C5F8A; --grp3:#1F7A4D;
-  --grp4:#A96410; --grp5:#6B3FA0; --grp6:#5A6472;
+  --grp4:#A05F0F; --grp5:#6B3FA0; --grp6:#5A6472;
+  /* สีของกลุ่มที่กำลังเปิดอยู่ — go() ตั้ง data-gcur บน <html> ที่เดียว ทุกจุดอ่านต่อจากตัวนี้
+     ค่าตั้งต้นเป็นแดงเดิม เผื่อจอที่ยังไม่รู้ว่าอยู่กลุ่มไหน (หน้าล็อกอิน) */
+  --grp-cur:var(--accent);
   /* -- ขั้นตอนสีเขียว (I1) -- */
   --pos-wash:rgba(31,122,77,.14);
   /* -- กระดาษเอกสาร — ค่าคงที่ไม่ตามธีม ใบกำกับต้องเป็นกระดาษขาวเสมอ -- */
@@ -69,6 +73,12 @@
 
   --side-w:248px;
 }
+/* ---------- สีกลุ่มเดินตามหน้า (v1.23) ----------
+   go() เขียนเลขกลุ่มลง data-gcur ครั้งเดียวต่อการเปลี่ยนหน้า — แถบแท็บ หัวกลุ่มเมนู และแถบล่างมือถือ
+   อ่าน --grp-cur ต่อจากตรงนี้ ไม่มีใครต้องรู้เลขกลุ่มเอง และธีมยังสลับสีตาม token ได้เหมือนเดิม */
+html[data-gcur="1"]{ --grp-cur:var(--grp1); } html[data-gcur="2"]{ --grp-cur:var(--grp2); }
+html[data-gcur="3"]{ --grp-cur:var(--grp3); } html[data-gcur="4"]{ --grp-cur:var(--grp4); }
+html[data-gcur="5"]{ --grp-cur:var(--grp5); } html[data-gcur="6"]{ --grp-cur:var(--grp6); }
 /* ---------- ธีมต่อคน (บรีฟรอบ 1 I3/I4/I6) ----------
    เปลี่ยนเฉพาะ token — องค์ประกอบทุกตัวอ่าน token จึงสลับทั้งแอปจากที่เดียว
    เก็บเป็น data-theme บน <html> ต่อผู้ใช้ต่อเครื่อง (localStorage) */
@@ -169,17 +179,26 @@ h2,h3{ font-size:var(--t-h2); line-height:1.3; letter-spacing:-.01em; }
 a.nb{ text-decoration:none; box-sizing:border-box; }
 @media (hover:hover){ .nb:hover{ color:var(--ink); background:var(--hairline-2); } }
 .nb.on{ color:var(--ink); font-weight:600; background:var(--card); box-shadow:var(--sh-sm); }
-/* สีประจำกลุ่มเมนู 6 กลุ่ม (I1=ข) — ไอคอน หัวกลุ่ม และแถบซ้ายของปุ่มที่เปิดอยู่ ตามกลุ่มของมัน */
-.nb.g1 .i{ color:var(--grp1); } .nb.g2 .i{ color:var(--grp2); } .nb.g3 .i{ color:var(--grp3); }
-.nb.g4 .i{ color:var(--grp4); } .nb.g5 .i{ color:var(--grp5); } .nb.g6 .i{ color:var(--grp6); }
-.nb.on.g1::before{ background:var(--grp1); } .nb.on.g2::before{ background:var(--grp2); }
-.nb.on.g3::before{ background:var(--grp3); } .nb.on.g4::before{ background:var(--grp4); }
-.nb.on.g5::before{ background:var(--grp5); } .nb.on.g6::before{ background:var(--grp6); }
-#nav h6.g1{ color:var(--grp1); } #nav h6.g2{ color:var(--grp2); } #nav h6.g3{ color:var(--grp3); }
-#nav h6.g4{ color:var(--grp4); } #nav h6.g5{ color:var(--grp5); } #nav h6.g6{ color:var(--grp6); }
+/* สีประจำกลุ่มเมนู 6 กลุ่ม (I1=ข) — ไอคอน หัวกลุ่ม และแถบซ้ายของปุ่มที่เปิดอยู่ ตามกลุ่มของมัน
+   ชื่อคลาสคือ mg1-mg6 ไม่ใช่ g1-g6: `.g2`/`.g3` เป็นคลาสจัดหน้า (grid 2 และ 3 คอลัมน์) มาก่อนแล้ว
+   ของเดิมชนกันจริง — กลุ่ม 2 และ 3 ในเมนูกลายเป็น display:grid ไอคอนกับชื่อจึงคนละบรรทัด (แก้ v1.23) */
+.nb.mg1 .i{ color:var(--grp1); } .nb.mg2 .i{ color:var(--grp2); } .nb.mg3 .i{ color:var(--grp3); }
+.nb.mg4 .i{ color:var(--grp4); } .nb.mg5 .i{ color:var(--grp5); } .nb.mg6 .i{ color:var(--grp6); }
+.nb.on.mg1::before{ background:var(--grp1); } .nb.on.mg2::before{ background:var(--grp2); }
+.nb.on.mg3::before{ background:var(--grp3); } .nb.on.mg4::before{ background:var(--grp4); }
+.nb.on.mg5::before{ background:var(--grp5); } .nb.on.mg6::before{ background:var(--grp6); }
+/* หัวกลุ่ม: สีตัวอักษร + เส้นใต้สีเดียวกัน — เส้นคือตัวแบ่งกลุ่มจริง สีลำพังแยกไม่ออกพอ (v1.23)
+   selector เดียวคุมทั้งเมนูซ้าย (#nav) และแผ่น "อื่น ๆ" บนมือถือ (#moreB) ผ่านมาร์กเกอร์ data-grp */
+h6[data-grp]{ padding-bottom:var(--s-half); border-bottom:2px solid var(--hairline); }
+h6[data-grp].mg1{ color:var(--grp1); border-bottom-color:var(--grp1); }
+h6[data-grp].mg2{ color:var(--grp2); border-bottom-color:var(--grp2); }
+h6[data-grp].mg3{ color:var(--grp3); border-bottom-color:var(--grp3); }
+h6[data-grp].mg4{ color:var(--grp4); border-bottom-color:var(--grp4); }
+h6[data-grp].mg5{ color:var(--grp5); border-bottom-color:var(--grp5); }
+h6[data-grp].mg6{ color:var(--grp6); border-bottom-color:var(--grp6); }
 .nb.on::before{ content:''; position:absolute; left:0; top:8px; bottom:8px; width:2px;
   background:var(--accent); border-radius:var(--r-pill); }
-.nb.on .i{ opacity:1; }   /* สีไอคอนมาจากกลุ่ม (.gN) ไม่บังคับแดงอีกแล้ว — I1=ข */
+.nb.on .i{ opacity:1; }   /* สีไอคอนมาจากกลุ่ม (.mgN) ไม่บังคับแดงอีกแล้ว — I1=ข */
 .nb .bdg{ margin-left:auto; font-size:var(--t-label); font-weight:600; color:var(--muted);
   font-variant-numeric:tabular-nums; }
 .nb.on .bdg{ color:var(--accent); }
@@ -478,9 +497,11 @@ textarea.inp{ height:auto; padding:var(--s1) var(--s2); resize:vertical; line-he
 .tabs button{ padding:0 0 var(--s1); font-size:var(--t-table); color:var(--muted);
   position:relative; transition:color var(--dur-ui) var(--ease); }
 @media (hover:hover){ .tabs button:hover{ color:var(--ink); } }
-.tabs button.on{ color:var(--ink); font-weight:600; }
-.tabs button.on::after{ content:''; position:absolute; left:0; right:0; bottom:-1px; height:2px;
-  background:var(--accent); border-radius:var(--r-pill); }
+/* แท็บที่เลือก = สีประจำกลุ่มของหน้านั้น (v1.23) — เปิดหน้าไหนก็รู้ว่าอยู่กลุ่มงานไหนโดยไม่ต้องมองเมนู
+   ตัวหนา + เส้นใต้ยังอยู่ครบ สีจึงไม่ได้ทำงานลำพัง (กฎข้อ 3) */
+.tabs button.on{ color:var(--grp-cur); font-weight:600; }
+.tabs button.on::after{ content:''; position:absolute; left:0; right:0; bottom:-1px; height:3px;
+  background:var(--grp-cur); border-radius:var(--r-pill); }
 .pane{ display:none; } .pane.on{ display:block; }
 .chips{ display:flex; gap:var(--s1); flex-wrap:wrap; align-items:center; }
 .chip{ padding:var(--s-half) var(--s2); border:1px solid var(--hairline); border-radius:var(--r-pill);
@@ -780,9 +801,16 @@ tr.grp-sub td{ background:var(--paper-2); }
   padding-bottom:env(safe-area-inset-bottom); }
 .bnb{ display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px;
   padding:var(--s1) 0; min-height:56px; font-size:11px; color:var(--muted); position:relative; }
-.bnb .i{ width:22px; height:22px; flex:0 0 22px; }
+.bnb .i{ width:22px; height:22px; flex:0 0 22px; opacity:.75; }
 .bnb.on{ color:var(--ink); font-weight:600; }
-.bnb.on .i{ color:var(--accent); }
+.bnb.on .i{ opacity:1; }
+/* ไอคอนเป็นสีประจำกลุ่มของหน้านั้นเสมอ เหมือนเมนูซ้าย (v1.23) */
+.bnb.mg1 .i{ color:var(--grp1); } .bnb.mg2 .i{ color:var(--grp2); } .bnb.mg3 .i{ color:var(--grp3); }
+.bnb.mg4 .i{ color:var(--grp4); } .bnb.mg5 .i{ color:var(--grp5); } .bnb.mg6 .i{ color:var(--grp6); }
+.bnb[data-more].on .i{ color:var(--grp-cur); }   /* หน้าที่ไม่มีในบาร์ → ใช้สีของกลุ่มหน้าที่เปิดอยู่ */
+/* เส้นบอกแท็บที่เลือกอยู่ที่ "ขอบบน" ไม่ใช่ขอบล่าง — บาร์ติดขอบล่างจอ เส้นใต้จะไปชนแถบ home ของ iPhone */
+.bnb.on::before{ content:''; position:absolute; top:0; left:22%; right:22%; height:3px;
+  background:var(--grp-cur); border-radius:var(--r-pill); }
 .bnb .bdg{ position:absolute; top:4px; left:calc(50% + 8px); min-width:16px; height:16px;
   border-radius:var(--r-pill); background:var(--accent); color:#fff; font-size:10px;
   display:grid; place-items:center; padding:0 4px; font-variant-numeric:tabular-nums; }
@@ -899,7 +927,8 @@ body.lock{ overflow:hidden; }
   .tabs button{ padding:0 var(--s2); min-height:44px; border:1px solid var(--hairline);
     border-radius:var(--r-pill); background:var(--card); color:var(--ink-soft);
     font-size:var(--t-label); line-height:1.25; white-space:normal; }
-  .tabs button.on{ border-color:var(--ink); background:var(--ink); color:var(--paper); }
+  /* ชิปที่เลือกเป็นพื้นสีกลุ่มเต็ม — คู่กับ --paper ผ่านคอนทราสต์ 4.5:1 ทุกธีม (grp-r23 วัดจริง) */
+  .tabs button.on{ border-color:var(--grp-cur); background:var(--grp-cur); color:var(--paper); }
   .tabs button.on::after{ display:none; }
   .card>.hd,.card>.bd{ padding-left:var(--s2); padding-right:var(--s2); }
   /* ตัวกรองย้ายลงแผ่นล่าง — หัวการ์ดเหลือปุ่มกับบรรทัดสรุปว่ากำลังกรองอะไรอยู่ */
@@ -2482,6 +2511,11 @@ const MENU = [
   {k:'flow',     t:'ผังกระบวนการ',      s:'ใครทำอะไรตอนไหน',             ic:'route',  r:['admin','manager','sales','stock','acct','hr','tech']}
 ];
 const menuOf = k => MENU.find(m=>m.k===k);
+/* เลขกลุ่มของหน้า 1-6 — นับจากลำดับ MENU ชุดเดียวกับที่ buildNav ใช้ จึงไม่มีทางหลุดจากกัน
+   และไม่ขึ้นกับบทบาท (กลุ่มที่ว่างถูกซ่อนตอนวาด แต่เลขกลุ่มยังเท่าเดิมทุกคน) */
+function grpOf(k){ let gi=0;
+  for(const m of MENU){ if(m.g){ gi++; continue; } if(m.k===k) return gi; }
+  return 0; }
 /* ---------- สิทธิ์ราย section (บรีฟรอบ 1 · J3) ----------
    แอดมินติ๊กเองได้ว่า role ไหนเห็น/ทำอะไรได้ — ค่าเริ่มต้นสร้างจากพฤติกรรมเดิมเป๊ะ
    ไม่มีใครได้/เสียสิทธิ์ในวันแรก · ด่านทุกตัวอ่านจาก PERMS ไม่ใช่ลิสต์ตายตัวอีกต่อไป
@@ -2672,10 +2706,10 @@ function firstScreen(){ const m=MENU.find(m=>m.k && canSee(m.k)); return m?m.k:'
 function buildNav(){
   let h='', gi=0;
   MENU.forEach(m=>{
-    if(m.g){ gi++; h+='<h6 data-grp class="g'+gi+'">'+esc(m.g)+'</h6>'; return; }
+    if(m.g){ gi++; h+='<h6 data-grp class="mg'+gi+'">'+esc(m.g)+'</h6>'; return; }
     if(!canSee(m.k)) return;   /* อ่านจากตารางสิทธิ์ (J3) — แอดมินเปิด/ปิดหน้าให้ role ไหนก็ได้ */
     /* คลาส g1-g6 = สีประจำกลุ่ม (I1=ข) — สีอยู่ที่ token ทั้งหมด ธีมสลับตามได้ */
-    h+='<button class="nb g'+gi+'" data-s="'+m.k+'">'+ic(m.ic)+'<span>'+esc(m.t)+'</span><span class="bdg" id="bg-'+m.k+'" style="display:none"></span></button>';
+    h+='<button class="nb mg'+gi+'" data-s="'+m.k+'">'+ic(m.ic)+'<span>'+esc(m.t)+'</span><span class="bdg" id="bg-'+m.k+'" style="display:none"></span></button>';
   });
   $('#nav').innerHTML=h;
   /* ลบหัวข้อกลุ่มที่ไม่มีเมนูเหลืออยู่ */
@@ -2701,8 +2735,9 @@ function buildTabs(){
   const cfg = BTABS[ME.role] || {tabs:['dash'], fab:null};
   const tabs = cfg.tabs.filter(canSee);
   const fab = cfg.fab && canSee(cfg.fab) ? cfg.fab : null;
+  /* คลาส gN = สีประจำกลุ่มของหน้านั้น เหมือนเมนูซ้าย (v1.23) */
   const tb = k => { const m=menuOf(k);
-    return '<button class="bnb" data-s="'+k+'">'+ic(m.ic)+'<span>'+esc(m.t)+'</span><span class="bdg" id="tb-'+k+'"></span></button>'; };
+    return '<button class="bnb mg'+grpOf(k)+'" data-s="'+k+'">'+ic(m.ic)+'<span>'+esc(m.t)+'</span><span class="bdg" id="tb-'+k+'"></span></button>'; };
   let h='';
   if(fab){
     const half=Math.ceil(tabs.length/2), fm=menuOf(fab);
@@ -2719,9 +2754,9 @@ function buildTabs(){
   const inBar = tabs.concat(fab?[fab]:[]);
   let mh='', mgi=0;
   MENU.forEach(m=>{
-    if(m.g){ mgi++; mh+='<h6>'+esc(m.g)+'</h6>'; return; }
+    if(m.g){ mgi++; mh+='<h6 data-grp class="mg'+mgi+'">'+esc(m.g)+'</h6>'; return; }
     if(!canSee(m.k) || inBar.indexOf(m.k)>=0) return;
-    mh+='<button class="nb g'+mgi+'" data-s="'+m.k+'">'+ic(m.ic)+'<span>'+esc(m.t)+'</span><span class="bdg" id="mb-'+m.k+'" style="display:none"></span></button>';
+    mh+='<button class="nb mg'+mgi+'" data-s="'+m.k+'">'+ic(m.ic)+'<span>'+esc(m.t)+'</span><span class="bdg" id="mb-'+m.k+'" style="display:none"></span></button>';
   });
   /* คู่มือการใช้งาน — เล่มของบทบาทตัวเอง + เล่ม flow (สร้างด้วย tools/manual/build.js) */
   mh+='<h6>ช่วยเหลือ</h6>'
@@ -2808,6 +2843,8 @@ function go(k){
   if(k==='deal' && !DEAL_KEEP) DEAL_SEL='';
   DEAL_KEEP=false;
   CUR=k;
+  /* สีประจำกลุ่มของหน้านี้ — ตั้งที่เดียว แถบแท็บ/หัวกลุ่ม/แถบล่างอ่าน --grp-cur ต่อเอง (v1.23) */
+  document.documentElement.dataset.gcur = String(grpOf(k) || '');
   $$('.screen').forEach(s=>s.classList.toggle('on', s.id==='s-'+k));
   $$('#nav .nb').forEach(b=>b.classList.toggle('on', b.dataset.s===k));
   $$('#bnav .bnb[data-s]').forEach(b=>b.classList.toggle('on', b.dataset.s===k));
