@@ -116,12 +116,15 @@ const login = async (p, id) => {
   if (fix.afterOt <= fix.beforeOt) fails.push(`OT pay did not rise after extending the day (${fix.beforeOt} -> ${fix.afterOt})`);
 
   // ---------- badge นับรายการรอตรวจ ----------
+  // v1.19: ผู้ตรวจเห็นรวมคำขอออกนอกสถานที่ที่รออนุมัติด้วย (H4) — สูตรตาม set('hr',…) ใน refreshAll
   const badge = await p.evaluate(() => { refreshAll();
     const el = document.querySelector('#tb-hr') || document.querySelector('#bg-hr');
     return { txt: (document.querySelector('#bg-hr') || {}).textContent,
       q: attQueue(curDate().slice(0, 7)).length,
-      lv: LEAVES.filter(l => l.status === 'รออนุมัติ').length }; });
-  if (+badge.txt !== badge.q + badge.lv) fails.push(`hr badge ${badge.txt} != queue ${badge.q} + leaves ${badge.lv}`);
+      lv: LEAVES.filter(l => l.status === 'รออนุมัติ').length,
+      of: OFFS.filter(o => o.status === 'รออนุมัติ').length }; });
+  if (+badge.txt !== badge.q + badge.lv + badge.of)
+    fails.push(`hr badge ${badge.txt} != queue ${badge.q} + leaves ${badge.lv} + offsite ${badge.of}`);
   await p.close();
 
   // ---------- เซลล์ไม่เห็นแท็บตรวจ และแก้เวลาคนอื่นไม่ได้ ----------
