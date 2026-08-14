@@ -711,3 +711,19 @@ with check (is_all_branch() or branch_id in (select my_branches()));
 | ไม่มีตาราง expense / service / payroll / registration / receivable | ทำงานจริงไม่ได้ | เพิ่มครบตาม §2 |
 | ราคาขายเดาเป็น ต้นทุน + 15% | ตัวเลขผิด | `price_history` + ธง "รอกำหนดราคา" |
 | ไม่มี audit | ตรวจสอบย้อนหลังไม่ได้ | `audit_log` + trigger |
+
+---
+
+## 6. ตารางที่เพิ่มในบรีฟแก้ไขครั้งที่ 1 (migration 16–18 · 13-14 ส.ค. 2569)
+
+| ตาราง/คอลัมน์ | migration | ทำไม |
+|---|---|---|
+| `customer.birth_date` · `sale` +8 คอลัมน์ (snapshot เงินผ่อน 4 · `gifts`/`fin_approval`/`doc_ov` jsonb) · `finance_company.tiers/terms` · `freebie.price` · `expense.note/approval` | 16 | กลุ่มเงิน: ตัวเลข ณ วันขายถูกแช่ลงบันทึก (§9i) · การเงินตรวจก่อนออกใบกำกับ |
+| `company` + `branch.company_id` | 17 | 3 "สาขา" เดิมแท้จริงคือ 3 บริษัท (A3) — ใบกำกับดึงชื่อ/เลขภาษีจากบริษัทของสาขา |
+| `wholesale_partner/price/sale/sale_item` | 17 | ขายส่ง B2B หลายคันต่อบิล ราคาแยกชุดจากปลีก (F1-F3) — โอนข้ามบริษัทต้องมีบิล |
+| `app_setting` คีย์ `perms` | 17 | ตารางสิทธิ์ role×section (J3) — แถวแอดมินไม่รับค่าทับ กันล็อกตัวเองออก |
+| `leave_request.evidence/decide_note/created_at` | 18 | หลักฐานใบลา + เหตุผลตอนตีกลับ (K10/H6) |
+| `offsite_request` | 18 | ขอออกนอกสถานที่ล่วงหน้า (H4) — ยื่นได้เฉพาะของตัวเองที่ระดับ RLS |
+| `company_holiday` | 18 | วันหยุดบริษัทบนปฏิทิน (H5) — ทุกคนอ่าน แอดมิน/ผู้บริหารเขียน |
+| bucket `hr-photo` (private) + `is_hr_boss()` | 18/18b | รูปลงเวลา+หลักฐานใบลา — โฟลเดอร์ต่อคน เขียนได้เฉพาะของตัวเอง อ่านได้เจ้าตัว+ผู้ตรวจ HR · 18b ถอนสิทธิ์ anon |
+

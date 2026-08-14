@@ -26,7 +26,7 @@ const MASK = !argv.includes('--no-mask');
 const KEEP = argv.includes('--keep-html');
 const CHROME = '/opt/pw-browsers/chromium';
 
-const ROLE_STAFF = { admin: 'ST1', manager: 'ST2', sales: 'ST3', stock: 'ST6', acct: 'ST7', hr: 'ST8', tech: 'ST9' };
+const ROLE_STAFF = { admin: 'ST1', manager: 'ST2', sales: 'ST3', stock: 'ST6', acct: 'ST7', hr: 'ST8', tech: 'ST9', care: 'ST10' };
 const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
 /* ---------- เสิร์ฟไฟล์คงที่เอง จะได้ไม่ต้องพึ่งเซิร์ฟเวอร์ที่เปิดค้างไว้ ---------- */

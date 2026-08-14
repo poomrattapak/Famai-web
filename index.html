@@ -972,6 +972,7 @@ body.lock{ overflow:hidden; }
 <symbol id="i-clip" viewBox="0 0 24 24"><path d="m21.4 11.1-9.2 9.2a5 5 0 0 1-7.1-7.1l9.2-9.2a3.5 3.5 0 0 1 5 5l-9.2 9.2a2 2 0 0 1-2.8-2.8l8.5-8.5"/></symbol>
 <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></symbol>
 <symbol id="i-alert" viewBox="0 0 24 24"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0zM12 9v4M12 17h.01"/></symbol>
+<symbol id="i-bell" viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"/></symbol>
 <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 16v-4M12 8h.01"/></symbol>
 <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s3.7-7 10-7 10 7 10 7-3.7 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></symbol>
 <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></symbol>
@@ -1040,6 +1041,13 @@ body.lock{ overflow:hidden; }
       <div class="sp"></div>
       <div class="srch noprint"><span class="mag"><svg class="i i-sm"><use href="#i-search"/></svg></span><input id="gsInput" placeholder="ค้นหา" readonly></div>
       <button class="tbtn noprint" id="gsBtn" aria-label="ค้นหา"><svg class="i i-sm"><use href="#i-search"/></svg></button>
+      <!-- ศูนย์แจ้งเตือน (บรีฟรอบ 1 · J1-J2) — ตัวเลขคืองานค้างที่คิดสดจากระเบียนจริง -->
+      <button class="tbtn noprint" id="bellBtn" aria-label="แจ้งเตือน" style="position:relative">
+        <svg class="i i-sm"><use href="#i-bell"/></svg>
+        <span id="bellN" style="display:none;position:absolute;top:2px;right:0;min-width:16px;height:16px;
+          border-radius:var(--r-pill);background:var(--accent);color:#fff;font-size:10px;font-weight:700;
+          line-height:16px;padding:0 4px">0</span>
+      </button>
     </header>
 
     <div class="wrap">
@@ -2812,6 +2820,7 @@ function render(){
     custom:rCustom,flow:rFlow}[CUR];
   if(f) f();
   badges();
+  notifSync();   /* กระดิ่งเดินคู่กับ badge เสมอ — คิดสดจากระเบียนชุดเดียวกัน */
 }
 function badges(){
   const CNT={};
@@ -3672,7 +3681,10 @@ function calcSell(){
     ['gp','กำไรขั้นต้น','<b style="color:'+(gp>0?'var(--pos)':'var(--accent)')+'">'+money(gp)+'</b>'
       +(noMoney()?'':' <span class="tsub">('+Math.round(gp/net*100)+'%)</span>')]
   ]).filter(r=>show(r[0]));
-  $('#sSummary').innerHTML=(promo?'<div class="note g">'+ic('check','i i-sm')+'<span>'+esc(promo.title)+'</span></div>':'')
+  /* รูปรุ่นบนสรุปดีล (K2) — เห็นคันที่กำลังขายทันที ไม่ต้องเดาจากชื่อรุ่น */
+  $('#sSummary').innerHTML='<div style="display:flex;justify-content:center;margin-bottom:var(--s1)">'
+    +'<span class="bph" style="width:120px;height:70px">'+bikeArt(u.variant,u.color)+'</span></div>'
+    +(promo?'<div class="note g">'+ic('check','i i-sm')+'<span>'+esc(promo.title)+'</span></div>':'')
     +'<dl class="kv">'+rows.map(r=>'<dt>'+r[1]+'</dt><dd>'+r[2]+'</dd>').join('')+'</dl>';
   const cad=String(CFG.cadence).split(',').length;
   $('#sImpact').innerHTML=(age(u)>CFG.aging?'<div class="note w">'+ic('alert','i i-sm')+'<span>ค้างสต๊อก '+age(u)+' วัน เกินเกณฑ์ '+CFG.aging+' วัน</span></div>':'')
@@ -4617,6 +4629,11 @@ function dealActions(d){
 function dealDetail(d){
   const kv=rows=>'<dl class="kv">'+rows.filter(Boolean).map(([a,b])=>'<dt>'+esc(a)+'</dt><dd>'+b+'</dd>').join('')+'</dl>';
   let h='';
+  /* รูปรุ่นหัวดีล (K2) — คันจริงของดีลนี้ */
+  if(d.u) h+='<div style="display:flex;align-items:center;gap:var(--s2);margin-bottom:var(--s1)">'
+    +'<span class="bph">'+bikeArt(d.u.variant,d.u.color)+'</span>'
+    +'<span><b>'+esc(d.u.model)+'</b><div class="tsub">'+esc(d.u.color)
+    +' · <span class="mono">'+esc(d.u.engine)+'</span></div></span></div>';
   if(d.s){
     h+='<h4 class="sec">การขาย</h4>'+kv([
       ['เลขที่','<span class="mono">'+esc(d.s.docNo||'—')+'</span>'
@@ -5365,7 +5382,9 @@ function svLookup(){
   $('#svFound').innerHTML='<div class="note g">'+ic('check','i i-sm')+'<span><b>'+(c?'ลูกค้าเก่า':'รถของร้าน')+'</b> · '
     +esc(u.model)+' '+esc(u.color)+(c?(' · ซื้อ '+thDate(s.soldAt)):'')+'</span></div>';
   const sv=SERVICE.filter(x=>x.unitId===u.id);
-  let h='<dl class="kv"><dt>รุ่น</dt><dd><b>'+esc(u.model)+'</b> · '+esc(u.color)+'</dd>'
+  let h='<div style="display:flex;justify-content:center;margin-bottom:var(--s1)">'
+    +'<span class="bph" style="width:120px;height:70px">'+bikeArt(u.variant,u.color)+'</span></div>'
+    +'<dl class="kv"><dt>รุ่น</dt><dd><b>'+esc(u.model)+'</b> · '+esc(u.color)+'</dd>'
     +'<dt>เลขเครื่อง</dt><dd class="mono">'+esc(u.engine)+'</dd>'
     +'<dt>เลขถัง</dt><dd class="mono">'+esc(u.frame)+'</dd>'
     +(c?'<dt>ลูกค้า</dt><dd>'+esc(c.name)+' · '+esc(c.phone||'')+'</dd>'
@@ -7305,6 +7324,116 @@ function impCheck(){
     +'</tbody></table></div>'+(rows.length>6?'<div class="tsub">แสดง 6 จาก '+rows.length+' แถว</div>':'');
 }
 
+/* ============================= 20a. ศูนย์แจ้งเตือน (บรีฟรอบ 1 · J1-J2) =============================
+   ไม่มีตารางแจ้งเตือน — ทุกรายการคิดสดจากระเบียนจริง (กฎข้อ 8) จึงไม่มีทางค้างหรือหลอนหลัง sync
+   "อ่านแล้ว" กับการปิดหมวดเป็นเรื่องส่วนตัวต่อคนต่อเครื่อง → localStorage แบบเดียวกับหน้าปรับแต่ง
+   ช่องทางนอกแอป (อีเมล/LINE — J1): เจ้าของสั่ง "ทำโครงไว้แต่ยังไม่ส่งจริง" ดู NOTIF_CHANNELS */
+const NOTIF_CATS={ fin:'การเงิน/ไฟแนนซ์', ar:'เงินค้างรับ', stock:'สต๊อก', task:'ติดตามลูกค้า',
+  hr:'พนักงาน', care:'หลังส่งมอบ', service:'ศูนย์ซ่อม' };
+const NOTIF_CHANNELS=[ ['app','ในแอป',true], ['email','อีเมล',false], ['line','LINE',false] ];
+const ntfKey = () => 'famai_ntf_' + (ME && ME.id || 'guest');
+function ntfLoad(){ try{ return Object.assign({seen:{},mute:{}}, JSON.parse(localStorage.getItem(ntfKey())||'{}')); }
+  catch(_){ return {seen:{},mute:{}}; } }
+function ntfSave(n){ try{ localStorage.setItem(ntfKey(), JSON.stringify(n)); }catch(_){ } }
+/* รายการแจ้งเตือนของ "คนนี้" — สิทธิ์/ขอบเขตเดียวกับหน้าจริงทุกข้อ ไม่มีทางเห็นเกินหน้าที่ตัวเองเปิดได้ */
+function notifItems(){
+  const it=[], today=curDate();
+  if(canFinApprove())
+    SALES.filter(s=>!s.void && finApStatus(s)==='รอตรวจ' && inScope(s.branch)).forEach(s=>{
+      const c=CUSTOMERS.find(x=>x.id===s.custId);
+      it.push({id:'fap:'+s.id, k:'fin', t:'การเงินยังไม่ตรวจ — '+(c?c.name:s.docNo||''),
+        sub:'ใบกำกับภาษีออกไม่ได้จนกว่าจะผ่าน', go:'deal'}); });
+  if(canSee('deal'))
+    SALES.filter(s=>!s.void && s.pay==='finance' && inScope(s.branch)).forEach(s=>{
+      const d=dealOf(s.custId);
+      if(d && d.slow) it.push({id:'slow:'+s.id, k:'fin', t:'ไฟแนนซ์เงียบเกินเกณฑ์ — '+d.c.name,
+        sub:'เกิน '+CFG.slaFin+' วันไม่มีความคืบหน้า ต้องตามแล้ว', go:'deal'}); });
+  if(canSee('ar'))
+    AR.filter(a=>inScope(a.branch) && a.due-a.paid>0).forEach(a=>{
+      const c=CUSTOMERS.find(x=>x.id===a.custId);
+      it.push({id:'ar:'+a.id, k:'ar', t:'ค้างรับ — '+(c?c.name:'')
+        +(noMoney()?'':' '+fmt(a.due-a.paid)+' ฿'), sub:a.kind||'', go:'ar'}); });
+  if(canSee('stock')){
+    const low={}; UNITS.filter(u=>u.status==='available'&&inScope(u.branch)).forEach(u=>{ low[u.variant]=(low[u.variant]||0)+1; });
+    Object.keys(PRICE).forEach(v=>{ const n=low[v]||0;
+      if(n>0 && n<CFG.lowStock) it.push({id:'low:'+v, k:'stock',
+        t:'เหลือน้อย — '+PRICE[v].m+' ('+n+' คัน)', sub:'ต่ำกว่าเกณฑ์ '+CFG.lowStock+' คัน', go:'stock'}); });
+  }
+  if(canSee('deal'))
+    TASKS.filter(t=>!t.done && inScope(t.branch) && t.due<=today).forEach(t=>{
+      const c=CUSTOMERS.find(x=>x.id===t.custId);
+      it.push({id:'task:'+t.id, k:'task', t:'ติดตามลูกค้า — '+(c?c.name:''),
+        sub:'ครบกำหนด '+thDate(t.due), go:'deal'}); });
+  /* ใบลา: ผู้ตรวจเห็นรายใบ · คนทั่วไปเห็นเฉพาะใบของตัวเองที่ถูกตัดสินแล้ว (จะได้รู้ผล) */
+  LEAVES.forEach(l=>{ const s=STAFF.find(x=>x.id===l.staffId);
+    if(!s || !inScope(s.branch)) return;
+    if(l.status==='รออนุมัติ' && canFixAtt() && l.staffId!==ME.id)
+      it.push({id:'lv:'+l.id, k:'hr', t:'ใบลารออนุมัติ — '+s.nick, sub:thDate(l.from)+' – '+thDate(l.to), go:'hr'});
+    if(l.staffId===ME.id && l.decidedAt)
+      it.push({id:'lvd:'+l.id+':'+l.status, k:'hr', t:'ใบลาของคุณ'+l.status,
+        sub:(l.decideNote? 'เหตุผล: '+l.decideNote : 'โดย '+(l.decidedBy||'')), go:'hr'}); });
+  if(canFixAtt()){
+    OFFS.filter(o=>o.status==='รออนุมัติ' && o.staffId!==ME.id).forEach(o=>{
+      const s=STAFF.find(x=>x.id===o.staffId);
+      if(s && inScope(s.branch)) it.push({id:'of:'+o.id, k:'hr',
+        t:'ขอออกนอกสถานที่ — '+s.nick, sub:thDate(o.date)+' · '+o.place, go:'hr'}); });
+    const nq=attQueue(today.slice(0,7)).length;
+    if(nq) it.push({id:'attq:'+today.slice(0,7)+':'+nq, k:'hr',
+      t:'ลงเวลารอตรวจ '+nq+' รายการ', sub:'เดือน '+rpMonthTh(today.slice(0,7)), go:'hr'});
+  }
+  if(canSee('aftercare'))
+    CARE.forEach(r=> r.tasks.filter(t=>!t.done && t.due<=today).forEach(t=>{
+      const c=CUSTOMERS.find(x=>x.id===r.custId);
+      it.push({id:'care:'+t.id, k:'care', t:'รอบติดตาม '+t.kind+' — '+(c?c.name:''),
+        sub:'ครบกำหนด '+thDate(t.due), go:'aftercare'}); }));
+  if(canSee('service')){
+    const n=SERVICE.filter(s=>inScope(s.branch) && s.status!=='ส่งมอบแล้ว').length;
+    if(n) it.push({id:'svc:'+n, k:'service', t:'ใบงานซ่อมค้าง '+n+' ใบ', sub:'ยังไม่ปิดงาน', go:'service'});
+  }
+  const mute=ntfLoad().mute;
+  return it.filter(x=>!mute[x.k]);
+}
+function notifSync(){
+  const el=$('#bellN'); if(!el) return;
+  if(!$('#bellBtn').dataset.init){ $('#bellBtn').dataset.init=1; $('#bellBtn').onclick=notifOpen; }
+  const seen=ntfLoad().seen;
+  const n=notifItems().filter(x=>!seen[x.id]).length;
+  el.style.display = n? '' : 'none';
+  el.textContent = n>99? '99+' : n;
+}
+function notifOpen(){
+  const nt=ntfLoad(), items=notifItems();
+  const byCat={}; items.forEach(x=>{ (byCat[x.k]=byCat[x.k]||[]).push(x); });
+  /* สรุปประจำวันของผู้บริหาร (J2) — ตัวเลขคิดสด ไม่เก็บซ้ำ */
+  const digest = (['admin','manager'].indexOf(ME.role)>=0)
+    ? (function(){ const t=curDate();
+        const sold=SALES.filter(s=>!s.void && s.soldAt===t && inScope(s.branch));
+        const net=sold.reduce((n,s)=>n+s.net,0);
+        return '<div class="acblk"><b>สรุปวันนี้ '+thDate(t)+'</b>'
+          +'<div class="tsub">ขาย '+sold.length+' คัน'+(noMoney()?'':' · ยอดรวม '+fmt(net)+' ฿')
+          +' · งานค้างทั้งหมด '+items.length+' รายการ</div></div>'; })()
+    : '';
+  const catChips='<div class="chips" style="margin-bottom:var(--s2)">'+Object.keys(NOTIF_CATS).map(k=>
+    '<button class="chip'+(nt.mute[k]?'':' on')+'" data-ntc="'+k+'">'+NOTIF_CATS[k]
+    +(byCat[k]?' ('+byCat[k].length+')':'')+'</button>').join('')+'</div>';
+  const rows = items.length? Object.keys(NOTIF_CATS).filter(k=>byCat[k]).map(k=>
+      '<div class="acblk"><b>'+NOTIF_CATS[k]+'</b>'
+      +byCat[k].map(x=>'<div class="frow" style="cursor:pointer" data-ngo="'+x.go+'">'
+        +'<span>'+esc(x.t)+(x.sub?'<div class="tsub">'+esc(x.sub)+'</div>':'')+'</span>'
+        +'<span class="fx tsub">เปิด ›</span></div>').join('')+'</div>').join('')
+    : '<div class="empty"><b>ไม่มีงานค้าง</b>ทุกอย่างเรียบร้อย — แจ้งเตือนคิดสดจากงานจริง ไม่มีตกค้าง</div>';
+  openDrawer('แจ้งเตือน',
+    catChips + digest + rows
+    +'<p class="foot" style="margin-top:var(--s3)">ช่องทางแจ้งเตือน: '
+    +NOTIF_CHANNELS.map(c=>c[2]? '<b>'+c[1]+' ✓</b>' : c[1]+' (โครงพร้อม ยังไม่เปิดใช้)').join(' · ')
+    +'<br>ปิด/เปิดหมวดได้จากชิปด้านบน — มีผลเฉพาะคุณบนเครื่องนี้</p>');
+  /* เปิดดู = อ่านแล้วทั้งชุดที่เห็น (เฉพาะหมวดที่เปิดอยู่) */
+  items.forEach(x=>{ nt.seen[x.id]=1; }); ntfSave(nt); notifSync();
+  $$('#drwB [data-ngo]').forEach(r=> r.onclick=()=>{ closeDrawer(); go(r.dataset.ngo); });
+  $$('#drwB [data-ntc]').forEach(b=> b.onclick=()=>{
+    const n2=ntfLoad(); n2.mute[b.dataset.ntc]=!n2.mute[b.dataset.ntc]; ntfSave(n2);
+    notifOpen(); notifSync(); });
+}
 /* ============================= 20b. ปรับแต่งต่อคน (บรีฟรอบ 1 · I2-I6) =============================
    เก็บใน localStorage ต่อผู้ใช้ต่อเครื่อง — ไม่ใช่ข้อมูลของร้าน ไม่ต้องมีสิทธิ์ ไม่ write-through
    ทุกอย่างทำผ่าน token: ธีม/ขนาด = data-attribute บน <html> · ฟอนต์ = สลับ --f-thai */
