@@ -59,8 +59,44 @@
   /* -- Motion -- เส้นโค้งเดียว สองช่วงเวลา -- */
   --ease:cubic-bezier(.16,1,.3,1); --dur-ui:.3s; --dur-in:.35s;
 
+  /* -- สีประจำกลุ่มเมนู 6 กลุ่ม (บรีฟรอบ 1 I1=ข — กฎสีเดียวถูกยกเลิก ดู §9k) -- */
+  --grp1:#B3000E; --grp2:#2C5F8A; --grp3:#1F7A4D;
+  --grp4:#A96410; --grp5:#6B3FA0; --grp6:#5A6472;
+  /* -- ขั้นตอนสีเขียว (I1) -- */
+  --pos-wash:rgba(31,122,77,.14);
+  /* -- กระดาษเอกสาร — ค่าคงที่ไม่ตามธีม ใบกำกับต้องเป็นกระดาษขาวเสมอ -- */
+  --doc-paper:#FFFFFF; --doc-ink:#16181D;
+
   --side-w:248px;
 }
+/* ---------- ธีมต่อคน (บรีฟรอบ 1 I3/I4/I6) ----------
+   เปลี่ยนเฉพาะ token — องค์ประกอบทุกตัวอ่าน token จึงสลับทั้งแอปจากที่เดียว
+   เก็บเป็น data-theme บน <html> ต่อผู้ใช้ต่อเครื่อง (localStorage) */
+html[data-theme="dark"]{
+  --paper:#131419; --paper-2:#0E0F12; --card:#1C1E25;
+  --ink:#ECEDF0; --ink-soft:#C7CAD1; --muted:#9096A2;
+  --hairline:rgba(236,237,240,.16); --hairline-2:rgba(236,237,240,.08);
+  --accent:#FF3B47; --accent-hover:#FF5C66; --accent-deep:#E60012;
+  --accent-wash:rgba(255,59,71,.10);
+  --pos:#3DBA7A; --attn:#D98A2B; --pos-wash:rgba(61,186,122,.16);
+  --st-in:#3DBA7A; --st-late:#D98A2B; --st-leave:#6E9FD6; --st-none:#F2606B;
+  --grp1:#FF6B74; --grp2:#6EA8D9; --grp3:#3DBA7A; --grp4:#D98A2B; --grp5:#A97FD6; --grp6:#9BA3B2;
+  --sh-sm:0 1px 2px rgba(0,0,0,.42); --sh-md:0 8px 24px rgba(0,0,0,.5); --sh-lg:0 20px 50px rgba(0,0,0,.6);
+  --glow:0 0 30px rgba(255,59,71,.22);
+}
+html[data-theme="warm"]{
+  --paper:#FAF4E9; --paper-2:#F2E9D8; --card:#FFFDF7;
+  --hairline:rgba(64,52,30,.14); --hairline-2:rgba(64,52,30,.07);
+}
+html[data-theme="cool"]{
+  --paper:#F3F6F9; --paper-2:#E8EDF2; --card:#FFFFFF;
+  --ink:#141A22; --hairline:rgba(20,30,42,.13); --hairline-2:rgba(20,30,42,.06);
+}
+/* ---------- ขนาดตัวอักษรต่อคน (I2) — 3 ระดับ ปรับผ่านชุด token ทั้งแปดขนาด ---------- */
+html[data-fs="lg"]{ --t-label:13px; --t-table:15px; --t-body:16px; --t-lead:19px;
+  --t-h2:22px; --t-h1:30px; --t-stat:34px; --t-display:36px; }
+html[data-fs="xl"]{ --t-label:14px; --t-table:16px; --t-body:18px; --t-lead:21px;
+  --t-h2:24px; --t-h1:32px; --t-stat:36px; --t-display:38px; }
 
 /* -------------------- RESET -------------------- */
 *{ box-sizing:border-box; }
@@ -133,9 +169,17 @@ h2,h3{ font-size:var(--t-h2); line-height:1.3; letter-spacing:-.01em; }
 a.nb{ text-decoration:none; box-sizing:border-box; }
 @media (hover:hover){ .nb:hover{ color:var(--ink); background:var(--hairline-2); } }
 .nb.on{ color:var(--ink); font-weight:600; background:var(--card); box-shadow:var(--sh-sm); }
+/* สีประจำกลุ่มเมนู 6 กลุ่ม (I1=ข) — ไอคอน หัวกลุ่ม และแถบซ้ายของปุ่มที่เปิดอยู่ ตามกลุ่มของมัน */
+.nb.g1 .i{ color:var(--grp1); } .nb.g2 .i{ color:var(--grp2); } .nb.g3 .i{ color:var(--grp3); }
+.nb.g4 .i{ color:var(--grp4); } .nb.g5 .i{ color:var(--grp5); } .nb.g6 .i{ color:var(--grp6); }
+.nb.on.g1::before{ background:var(--grp1); } .nb.on.g2::before{ background:var(--grp2); }
+.nb.on.g3::before{ background:var(--grp3); } .nb.on.g4::before{ background:var(--grp4); }
+.nb.on.g5::before{ background:var(--grp5); } .nb.on.g6::before{ background:var(--grp6); }
+#nav h6.g1{ color:var(--grp1); } #nav h6.g2{ color:var(--grp2); } #nav h6.g3{ color:var(--grp3); }
+#nav h6.g4{ color:var(--grp4); } #nav h6.g5{ color:var(--grp5); } #nav h6.g6{ color:var(--grp6); }
 .nb.on::before{ content:''; position:absolute; left:0; top:8px; bottom:8px; width:2px;
   background:var(--accent); border-radius:var(--r-pill); }
-.nb.on .i{ opacity:1; color:var(--accent); }
+.nb.on .i{ opacity:1; }   /* สีไอคอนมาจากกลุ่ม (.gN) ไม่บังคับแดงอีกแล้ว — I1=ข */
 .nb .bdg{ margin-left:auto; font-size:var(--t-label); font-weight:600; color:var(--muted);
   font-variant-numeric:tabular-nums; }
 .nb.on .bdg{ color:var(--accent); }
@@ -480,15 +524,16 @@ textarea.inp{ height:auto; padding:var(--s1) var(--s2); resize:vertical; line-he
   transition:background var(--dur-ui) var(--ease), color var(--dur-ui) var(--ease),
              box-shadow var(--dur-ui) var(--ease); }
 .pstep .pn .i{ color:currentColor; }
-.pstep .pn.done{ background:var(--ink); border-color:var(--ink); color:var(--card); }
-.pstep .pn.now{ background:var(--accent); border-color:var(--accent); color:var(--paper);
-  box-shadow:0 0 0 4px var(--accent-wash); }
-/* ตกราง (เช่นไฟแนนซ์ไม่ผ่าน) — วงแดงกลวง บอกว่าหยุดอยู่ตรงนี้ ไม่ได้เดินต่อ */
+/* ขั้นที่ผ่านและขั้นปัจจุบันเป็นสีเขียว (บรีฟรอบ 1 I1) — เขียว = เดินหน้า/สำเร็จ แดงเก็บไว้ให้ของที่ผิดจริง */
+.pstep .pn.done{ background:var(--pos); border-color:var(--pos); color:#fff; }
+.pstep .pn.now{ background:var(--pos); border-color:var(--pos); color:#fff;
+  box-shadow:0 0 0 4px var(--pos-wash); }
+/* ตกราง (เช่นไฟแนนซ์ไม่ผ่าน) — วงแดงกลวง บอกว่าหยุดอยู่ตรงนี้ ไม่ได้เดินต่อ (แดงยังเป็นของที่ผิดจริง) */
 .pstep.off .pn.now{ background:var(--card); border-color:var(--accent); color:var(--accent); }
 .pstep .pl{ flex:1 1 auto; min-width:10px; height:3px; border-radius:2px; background:var(--hairline-2); }
-.pstep .pl.on{ background:var(--ink); }
-/* เส้นที่วิ่งเข้าขั้นปัจจุบันไล่สีหมึก→แดง บอกว่า "กำลังอยู่ระหว่างทาง" ไม่ใช่จบแล้ว */
-.pstep .pl.on.cur{ background:linear-gradient(90deg, var(--ink), var(--accent)); }
+.pstep .pl.on{ background:var(--pos); }
+/* เส้นที่วิ่งเข้าขั้นปัจจุบันไล่เขียวจาง→เขียว บอกว่า "กำลังอยู่ระหว่างทาง" ไม่ใช่จบแล้ว */
+.pstep .pl.on.cur{ background:linear-gradient(90deg, var(--pos-wash), var(--pos)); }
 /* แบบมีชื่อขั้นใต้ไอคอน ใช้ตอนมีที่ว่างพอ */
 .pstep.lab{ align-items:flex-start; }
 /* ชื่อขั้นกินความกว้างเท่าที่ต้องใช้ (ไม่เกิน 88px) ที่เหลือยกให้เส้นเชื่อม
@@ -643,8 +688,11 @@ textarea.inp{ height:auto; padding:var(--s1) var(--s2); resize:vertical; line-he
 .gsi span{ font-size:var(--t-label); color:var(--muted); }
 
 /* -------------------- DOCUMENT -------------------- */
-.doc{ background:var(--card); border-radius:var(--r-input); padding:var(--s4);
-  font-size:var(--t-table); overflow-x:auto; box-shadow:var(--sh-sm); position:relative; }
+/* เอกสารคือกระดาษ — ล็อก token ภายในให้เป็นชุดกลางวันเสมอ ธีมมืดต้องไม่ย้อมใบกำกับ */
+.doc{ background:var(--doc-paper); color:var(--doc-ink); border-radius:var(--r-input); padding:var(--s4);
+  font-size:var(--t-table); overflow-x:auto; box-shadow:var(--sh-sm); position:relative;
+  --card:#FFFFFF; --paper:#FAFAF8; --ink:#16181D; --ink-soft:#3A3E47; --muted:#6A6E76;
+  --hairline:rgba(22,24,29,.16); --hairline-2:rgba(22,24,29,.07); --accent:#E60012; --pos:#1F7A4D; }
 .doc .mark{ position:absolute; top:var(--s3); right:var(--s4); font-size:var(--t-label);
   letter-spacing:.08em; color:var(--muted); border:1px solid var(--hairline); border-radius:var(--r-pill);
   padding:2px var(--s1); }
@@ -1732,6 +1780,29 @@ body.lock{ overflow:hidden; }
         </div>
       </section>
 
+      <!-- ============ 22b. ปรับแต่งต่อคน (บรีฟรอบ 1 · I2-I6) ============ -->
+      <section class="screen" id="s-custom">
+        <div class="g2e">
+          <div class="card"><div class="hd"><h3>ธีม</h3>
+            <div class="d">เปลี่ยนทั้งแอปทันที — เอกสาร/ใบกำกับยังพิมพ์บนพื้นขาวเสมอ</div></div>
+            <div class="bd"><div class="chips" id="cuTheme"></div></div></div>
+          <div class="card"><div class="hd"><h3>ขนาดตัวอักษร</h3>
+            <div class="d">ปรับทั้งชุดตัวอักษรพร้อมกัน ตาราง ปุ่ม และหัวข้อ</div></div>
+            <div class="bd"><div class="chips" id="cuFs"></div></div></div>
+          <div class="card"><div class="hd"><h3>ฟอนต์ภาษาไทย</h3>
+            <div class="d">โหลดจาก Google Fonts ตอนเลือกครั้งแรก — ถ้าออฟไลน์จะใช้ฟอนต์เดิมไปก่อน</div></div>
+            <div class="bd">
+              <select class="inp" id="cuFont"></select>
+              <p class="foot" id="cuFontPrev" style="margin-top:var(--s2)">สวัสดีครับ ยินดีต้อนรับสู่ Famai Motor Group — 1,354,302 ฿</p>
+            </div></div>
+          <div class="card"><div class="hd"><h3>ของคุณคนเดียว</h3></div><div class="bd">
+            <p class="foot" style="margin:0">การตั้งค่าหน้านี้เก็บใน<b>เครื่องนี้ ต่อผู้ใช้</b> — เพื่อนร่วมงานและเครื่องอื่นไม่เปลี่ยนตาม
+              · กลับค่าเดิมได้ทุกเมื่อด้วยปุ่มด้านล่าง</p>
+            <div class="savebar"><button class="btn sec" id="cuReset">คืนค่าเริ่มต้น</button></div>
+          </div></div>
+        </div>
+      </section>
+
       <!-- ============ 23. รายงาน ============ -->
       <section class="screen" id="s-report">
         <div class="tabs" id="rpTabs"></div>
@@ -2395,6 +2466,8 @@ const MENU = [
   {g:'ข้อมูลและตั้งค่า'},
   {k:'imp',      t:'นำเข้าข้อมูล',      s:'อ่านไฟล์จากระบบยามาฮ่า',       ic:'folder', r:['admin','manager','stock']},
   {k:'settings', t:'ตั้งค่าระบบ',       s:'เกณฑ์ทั้งหมดที่ระบบใช้',        ic:'sliders',  r:['admin','manager']},
+  /* บรีฟรอบ 1 (I2-I6): ปรับแต่งหน้าตาต่อคน — ทุกบทบาทเข้าได้ เก็บเฉพาะเครื่อง/ผู้ใช้ ไม่กระทบคนอื่น */
+  {k:'custom',   t:'ปรับแต่ง',          s:'ธีม ขนาดอักษร ฟอนต์ — เฉพาะคุณ', ic:'sliders',  r:['admin','manager','sales','stock','acct','hr','tech','care']},
   {k:'flow',     t:'ผังกระบวนการ',      s:'ใครทำอะไรตอนไหน',             ic:'route',  r:['admin','manager','sales','stock','acct','hr','tech']}
 ];
 const menuOf = k => MENU.find(m=>m.k===k);
@@ -2574,6 +2647,7 @@ function doLogin(){
   $('#meAv').textContent = st.nick.slice(0,2);
   $('#meName').textContent = st.name;
   $('#meRole').textContent = ROLES[st.role].name+' · '+(rolePerm().allBranch?'ทุกสาขา':bName(st.branch));
+  uiApply(uiLoad());          /* หน้าตาของคนนี้บนเครื่องนี้ (I6) — ก่อนวาดหน้าแรก */
   buildNav(); seedDemo(); go(firstScreen());
   /* เทียบนาฬิกากับเซิร์ฟเวอร์ตั้งแต่เข้าระบบ จะได้ไม่ต้องรอตอนกดลงเวลา */
   srvSync();
@@ -2582,11 +2656,12 @@ function doLogin(){
 function firstScreen(){ const m=MENU.find(m=>m.k && canSee(m.k)); return m?m.k:'dash'; }
 
 function buildNav(){
-  let h='';
+  let h='', gi=0;
   MENU.forEach(m=>{
-    if(m.g){ h+='<h6 data-grp>'+esc(m.g)+'</h6>'; return; }
+    if(m.g){ gi++; h+='<h6 data-grp class="g'+gi+'">'+esc(m.g)+'</h6>'; return; }
     if(!canSee(m.k)) return;   /* อ่านจากตารางสิทธิ์ (J3) — แอดมินเปิด/ปิดหน้าให้ role ไหนก็ได้ */
-    h+='<button class="nb" data-s="'+m.k+'">'+ic(m.ic)+'<span>'+esc(m.t)+'</span><span class="bdg" id="bg-'+m.k+'" style="display:none"></span></button>';
+    /* คลาส g1-g6 = สีประจำกลุ่ม (I1=ข) — สีอยู่ที่ token ทั้งหมด ธีมสลับตามได้ */
+    h+='<button class="nb g'+gi+'" data-s="'+m.k+'">'+ic(m.ic)+'<span>'+esc(m.t)+'</span><span class="bdg" id="bg-'+m.k+'" style="display:none"></span></button>';
   });
   $('#nav').innerHTML=h;
   /* ลบหัวข้อกลุ่มที่ไม่มีเมนูเหลืออยู่ */
@@ -2628,11 +2703,11 @@ function buildTabs(){
   $('#bnav [data-more]').onclick=openMore;
   /* แผ่น "อื่น ๆ" — เมนูที่เหลือทั้งหมด จัดกลุ่มเหมือน sidebar + ผู้ใช้และออกจากระบบ */
   const inBar = tabs.concat(fab?[fab]:[]);
-  let mh='';
+  let mh='', mgi=0;
   MENU.forEach(m=>{
-    if(m.g){ mh+='<h6>'+esc(m.g)+'</h6>'; return; }
+    if(m.g){ mgi++; mh+='<h6>'+esc(m.g)+'</h6>'; return; }
     if(!canSee(m.k) || inBar.indexOf(m.k)>=0) return;
-    mh+='<button class="nb" data-s="'+m.k+'">'+ic(m.ic)+'<span>'+esc(m.t)+'</span><span class="bdg" id="mb-'+m.k+'" style="display:none"></span></button>';
+    mh+='<button class="nb g'+mgi+'" data-s="'+m.k+'">'+ic(m.ic)+'<span>'+esc(m.t)+'</span><span class="bdg" id="mb-'+m.k+'" style="display:none"></span></button>';
   });
   /* คู่มือการใช้งาน — เล่มของบทบาทตัวเอง + เล่ม flow (สร้างด้วย tools/manual/build.js) */
   mh+='<h6>ช่วยเหลือ</h6>'
@@ -2733,7 +2808,8 @@ function refreshAll(){ render(); badges(); promoBar(); }
 function render(){
   const f={dash:rDash,cal:rCal,report:rReport,recv:rRecv,stock:rStock,sell:rSell,transfer:rTransfer,quote:rQuote,
     deal:rDeal,ar:rAr,service:rService,aftercare:rCare,parts:rParts,
-    expense:rExpense,attend:rAttend,hr:rHr,payroll:rPayroll,users:rUsers,imp:rImp,settings:rSettings,flow:rFlow}[CUR];
+    expense:rExpense,attend:rAttend,hr:rHr,payroll:rPayroll,users:rUsers,imp:rImp,settings:rSettings,
+    custom:rCustom,flow:rFlow}[CUR];
   if(f) f();
   badges();
 }
@@ -7229,6 +7305,60 @@ function impCheck(){
     +'</tbody></table></div>'+(rows.length>6?'<div class="tsub">แสดง 6 จาก '+rows.length+' แถว</div>':'');
 }
 
+/* ============================= 20b. ปรับแต่งต่อคน (บรีฟรอบ 1 · I2-I6) =============================
+   เก็บใน localStorage ต่อผู้ใช้ต่อเครื่อง — ไม่ใช่ข้อมูลของร้าน ไม่ต้องมีสิทธิ์ ไม่ write-through
+   ทุกอย่างทำผ่าน token: ธีม/ขนาด = data-attribute บน <html> · ฟอนต์ = สลับ --f-thai */
+const UI_THEMES=[ ['std','มาตรฐาน'], ['dark','โหมดมืด'], ['warm','ครีมอุ่น'], ['cool','เทาหมึกเย็น'] ];
+const UI_FS=[ ['std','มาตรฐาน'], ['lg','ใหญ่'], ['xl','ใหญ่มาก'] ];
+/* ฟอนต์ไทย 20 ตัวจาก Google Fonts (I5) — โหลดตอนเลือกครั้งแรก ออฟไลน์ = ถอยกลับฟอนต์เดิมเอง */
+const UI_FONTS=['Noto Sans Thai','Sarabun','Prompt','Kanit','Anuphan','IBM Plex Sans Thai','Bai Jamjuree',
+  'Chakra Petch','Mitr','Krub','Athiti','K2D','Pridi','Trirong','Taviraj','Niramit','Mali','Sriracha',
+  'Charm','Itim'];
+const UI_DEF={ theme:'std', fs:'std', font:'Noto Sans Thai' };
+const uiKey = () => 'famai_ui_' + (ME && ME.id || 'guest');
+function uiLoad(){
+  try{ return Object.assign({}, UI_DEF, JSON.parse(localStorage.getItem(uiKey())||'{}')); }
+  catch(_){ return Object.assign({}, UI_DEF); }
+}
+function uiSave(u){ try{ localStorage.setItem(uiKey(), JSON.stringify(u)); }catch(_){ } }
+function uiApply(u){
+  const de=document.documentElement;
+  if(u.theme==='std') de.removeAttribute('data-theme'); else de.dataset.theme=u.theme;
+  if(u.fs==='std')    de.removeAttribute('data-fs');    else de.dataset.fs=u.fs;
+  if(u.font && u.font!==UI_DEF.font){
+    let ln=$('#uiFontLink');
+    if(!ln){ ln=document.createElement('link'); ln.id='uiFontLink'; ln.rel='stylesheet';
+      document.head.appendChild(ln); }
+    ln.href='https://fonts.googleapis.com/css2?family='+encodeURIComponent(u.font).replace(/%20/g,'+')
+      +':wght@400;500;600;700&display=swap';
+    de.style.setProperty('--f-thai', "'"+u.font+"', 'Noto Sans Thai'");
+    de.style.setProperty('--f-display', "'"+u.font+"', 'Noto Sans Thai', system-ui, sans-serif");
+  } else {
+    de.style.removeProperty('--f-thai'); de.style.removeProperty('--f-display');
+    const ln=$('#uiFontLink'); if(ln) ln.remove();
+  }
+}
+function uiSet(patch){
+  const u=Object.assign(uiLoad(), patch);
+  uiSave(u); uiApply(u); rCustom();
+}
+function rCustom(){
+  const u=uiLoad();
+  $('#cuTheme').innerHTML=UI_THEMES.map(t=>
+    '<button class="chip'+(u.theme===t[0]?' on':'')+'" data-cut="'+t[0]+'">'+t[1]+'</button>').join('');
+  $('#cuFs').innerHTML=UI_FS.map(f=>
+    '<button class="chip'+(u.fs===f[0]?' on':'')+'" data-cuf="'+f[0]+'">'+f[1]+'</button>').join('');
+  $('#cuFont').innerHTML=UI_FONTS.map(f=>
+    '<option value="'+esc(f)+'"'+(u.font===f?' selected':'')+'>'+esc(f)+(f===UI_DEF.font?' (ค่าเริ่มต้น)':'')+'</option>').join('');
+  $$('#cuTheme .chip').forEach(b=> b.onclick=()=>{ uiSet({theme:b.dataset.cut});
+    toast('เปลี่ยนธีมแล้ว', UI_THEMES.find(t=>t[0]===b.dataset.cut)[1]); });
+  $$('#cuFs .chip').forEach(b=> b.onclick=()=>{ uiSet({fs:b.dataset.cuf});
+    toast('ปรับขนาดตัวอักษรแล้ว', UI_FS.find(f=>f[0]===b.dataset.cuf)[1]); });
+  $('#cuFont').onchange=()=>{ uiSet({font:$('#cuFont').value});
+    toast('เปลี่ยนฟอนต์แล้ว', $('#cuFont').value+' — โหลดครั้งแรกอาจช้าหนึ่งอึดใจ'); };
+  $('#cuReset').onclick=()=>{ uiSave(Object.assign({},UI_DEF)); uiApply(UI_DEF); rCustom();
+    toast('คืนค่าหน้าตาเริ่มต้นแล้ว'); };
+}
 /* ============================= 21. ตั้งค่า ============================= */
 const CFMAP={cfCo:'company',cfAddr:'address',cfTax:'taxId',cfPhone:'phone',cfAging:'aging',cfReg:'regDays',
   cfLow:'lowStock',cfVat:'vat',cfCad:'cadence',cfKm:'km',cfIn:'workIn',cfOut:'workOut',cfGrace:'lateGrace',
@@ -8245,6 +8375,7 @@ async function liveLogin(){
     $('#meAv').textContent = ME.nick.slice(0,2);
     $('#meName').textContent = ME.name;
     $('#meRole').textContent = (ROLES[roleCode]?.name||roleCode)+' · '+(rolePerm().allBranch?'ทุกสาขา':bName(homeBranch));
+    uiApply(uiLoad());
     buildNav(); go(firstScreen());
     toast('เชื่อมฐานข้อมูลแล้ว', UNITS.length+' คันตามสิทธิ์ของคุณ');
   }catch(err){
