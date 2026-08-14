@@ -16,7 +16,7 @@ Production: **https://famai-web.vercel.app** — Vercel ผูกกับ branc
 | แอปทั้งตัว | `index.html` ไฟล์เดียว ~8,500 บรรทัด ไม่มี build step ไม่มี `package.json` |
 | ฐานข้อมูลจริง | Supabase `famai-motor` ref `hpsmjavfvrdctclmlmhp` · org **Famai-motor** · แพ็ก free |
 | SQL | `supabase/migrations/` 19 ไฟล์ (01–18b) **รันครบทุกไฟล์แล้ว** — ตรวจตาม §9j ทุกตัว |
-| ด่านตรวจ | `tools/qa/` 43 ชุด — `node tools/qa/run.js` (~15-20 นาที) |
+| ด่านตรวจ | `tools/qa/` 44 ชุด — `node tools/qa/run.js` (~15-20 นาที) |
 | คู่มือผู้ใช้ | `docs/manual/` PDF สร้างด้วย `tools/manual/build.js` (พอร์ต 8123 ชนกับตัวรัน QA — ปิดตัวหนึ่งก่อน) |
 | สำรองข้อมูล | `tools/backup/backup.js` (A2) — service key ผ่าน env เท่านั้น · `backups/` อยู่ใน .gitignore |
 | งานค้าง/ticket | `.claude/issues/` — ตัวหลักคือ `001-live-sync-rest.md` (ช่องว่างโหมดข้อมูลจริง) |
@@ -73,6 +73,6 @@ migration ยิงตรวจด้วยการสวมบทบาทจ�
 ## 6. กติกาที่ห้ามลืม
 
 - อ่าน `.claude/CLAUDE.md` + `.claude/rules/` ก่อนเริ่ม — กับดักสภาพแวดล้อมเขียนไว้ครบ
-- `node tools/qa/suites/syntax.js` ก่อนเสมอ · เส้นฐาน 14 ส.ค. 2569: **เขียวครบ 43/43 ชุด**
+- `node tools/qa/suites/syntax.js` ก่อนเสมอ · เส้นฐาน 14 ส.ค. 2569: **เขียวครบ 44/44 ชุด**
 - ห้าม commit: รหัสผ่านฐานข้อมูล · `SUPABASE_SERVICE_ROLE_KEY` · PAT — publishable key commit ได้
 - แก้ schema = เพิ่มไฟล์ migration ใหม่เสมอ แล้วยิงตรวจด้วยสิทธิ์จริงตาม §9j
