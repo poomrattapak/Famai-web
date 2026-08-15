@@ -35,7 +35,8 @@ const { chromium, EXE, BASE } = require('./env');
 
   // เนื้อไฟล์ _ขายอะไหล่ ต้องมีราคาคูณจำนวนจริง
   const pmRow = await page.evaluate(() => {
-    const pm = PMOVES.filter(x => x.qty < 0 && x.type === 'sale' && inScope(x.branch) && String(x.at).slice(0, 7) === $('#acMonth').value);
+    /* v1.24: ชุดส่งบัญชีออกตามช่วงที่เลือกบนหน้า ไม่ใช่ตัวเลือกเดือนแล้ว */
+    const pm = PMOVES.filter(x => x.qty < 0 && x.type === 'sale' && inScope(x.branch) && inPer('expense', x.at));
     return pm.map(x => { const p = PARTS.find(y => y.id === x.partId); return p ? p.price * -x.qty : 0; });
   });
   if (!pmRow.length || pmRow.some(v => !(v > 0))) fails.push('parts-sale rows invalid: ' + pmRow);

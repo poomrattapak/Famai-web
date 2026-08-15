@@ -209,28 +209,28 @@ const { chromium, EXE, BASE } = require('./env');
       await p.evaluate(() => { window.__pr = 0; window.print = () => { window.__pr++; }; });
       await p.waitForTimeout(200);
 
-      const quick = await p.$$eval('#s-dash .chips [data-r]', e => e.map(x => x.dataset.r));
+      const quick = await p.$$eval('#dPer [data-pr]', e => e.map(x => x.dataset.pr));
       for (const need of ['1', '7', '30']) if (quick.indexOf(need) < 0)
         bad(tag + ' [ข้อ2]: ไม่มีปุ่มลัด ' + need + ' วัน');
-      if (!await p.$('#dCustom')) bad(tag + ' [ข้อ2]: ไม่มีปุ่มเลือกช่วงเวลาเอง');
+      if (!await p.$('#dPer [data-pcus]')) bad(tag + ' [ข้อ2]: ไม่มีปุ่มเลือกช่วงเวลาเอง');
       else {
         /* ปุ่มลัดต้องได้ช่วงที่ถูกต้องและตัวเลขต้องตามไปด้วย */
-        await p.click('#s-dash .chips [data-r="1"]'); await p.waitForTimeout(300);
+        await p.click('#dPer [data-pr="1"]'); await p.waitForTimeout(300);
         const one = await p.evaluate(() => ({ p: dPeriod(),
           ok: dSales().every(s => s.soldAt === curDate()) }));
         if (one.p.from !== one.p.to) bad(tag + ' [ข้อ2]: ปุ่ม "วันนี้" ไม่ได้ช่วงวันเดียว');
         if (!one.ok) bad(tag + ' [ข้อ2]: ปุ่ม "วันนี้" แต่ยังมีการขายวันอื่นปนมา');
 
         /* เลือกวันเอง */
-        await p.click('#dCustom'); await p.waitForTimeout(250);
-        if (!await p.$('#dFrom')) bad(tag + ' [ข้อ2]: กด "กำหนดเอง" แล้วไม่มีช่องเลือกวัน');
-        await p.evaluate(() => { $('#dFrom').value = addDays(curDate(), -45);
-          $('#dTo').value = addDays(curDate(), -10); $('#dFrom').onchange(); });
+        await p.click('#dPer [data-pcus]'); await p.waitForTimeout(250);
+        if (!await p.$('#dPer [data-pf]')) bad(tag + ' [ข้อ2]: กด "กำหนดเอง" แล้วไม่มีช่องเลือกวัน');
+        await p.evaluate(() => { $('#dPer [data-pf]').value = addDays(curDate(), -45);
+          $('#dPer [data-pt]').value = addDays(curDate(), -10); $('#dPer [data-pf]').onchange(); });
         await p.waitForTimeout(350);
         const cus = await p.evaluate(() => ({ p: dPeriod(),
           inRange: dSales().every(s => s.soldAt >= dPeriod().from && s.soldAt <= dPeriod().to),
-          quickOff: [...document.querySelectorAll('#s-dash .chips [data-r]')].every(x => !x.classList.contains('on')),
-          customOn: document.querySelector('#dCustom').classList.contains('on'),
+          quickOff: [...document.querySelectorAll('#dPer [data-pr]')].every(x => !x.classList.contains('on')),
+          customOn: document.querySelector('#dPer [data-pcus]').classList.contains('on'),
           label: document.querySelector('#dPeriod').textContent }));
         if (!cus.p.custom)  bad(tag + ' [ข้อ2]: เลือกวันเองแล้วไม่ถือเป็นช่วงกำหนดเอง');
         if (!cus.inRange)   bad(tag + ' [ข้อ2]: ช่วงกำหนดเองแล้วยังมีการขายนอกช่วงปนมา');
@@ -239,8 +239,8 @@ const { chromium, EXE, BASE } = require('./env');
         if (!cus.label.trim()) bad(tag + ' [ข้อ2]: ไม่มีบรรทัดบอกว่ากำลังดูช่วงไหน');
 
         /* กรอกกลับด้านต้องสลับให้ ไม่ใช่ได้ช่วงว่าง */
-        await p.evaluate(() => { $('#dFrom').value = addDays(curDate(), -5);
-          $('#dTo').value = addDays(curDate(), -20); $('#dTo').onchange(); });
+        await p.evaluate(() => { $('#dPer [data-pf]').value = addDays(curDate(), -5);
+          $('#dPer [data-pt]').value = addDays(curDate(), -20); $('#dPer [data-pt]').onchange(); });
         await p.waitForTimeout(300);
         const sw = await p.evaluate(() => dPeriod());
         if (sw.from > sw.to) bad(tag + ' [ข้อ2]: กรอกวันกลับด้านแล้วไม่สลับให้');
@@ -259,7 +259,7 @@ const { chromium, EXE, BASE } = require('./env');
         if (!await p.evaluate(() => window.__pr)) bad(tag + ' [ข้อ2]: กดพิมพ์สรุปแล้วไม่พิมพ์');
 
         /* ล้างแล้วกลับไปใช้ปุ่มลัด */
-        await p.click('#dRangeClr'); await p.waitForTimeout(300);
+        await p.click('#dPer [data-pclr]'); await p.waitForTimeout(300);
         if (await p.evaluate(() => dPeriod().custom)) bad(tag + ' [ข้อ2]: กดล้างแล้วยังเป็นช่วงกำหนดเอง');
       }
       await ctx.close();

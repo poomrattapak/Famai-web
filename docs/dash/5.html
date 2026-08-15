@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="th"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>แบบ 5 · วิเคราะห์ — Famai Motor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+/* ============ แบบ 5 · วิเคราะห์ ============
+   แนวคิด: ข้อมูลแน่นแบบเครื่องมือวิเคราะห์ — ทุกตัวเลขมีตัวเทียบ ทุกกราฟมีแกน
+   ใช้เมื่อ: นั่งดูจริงจังบนจอใหญ่ หาว่าอะไรทำให้ตัวเลขเปลี่ยน */
+:root{
+  --bg:#F7F8FA; --card:#FFFFFF; --ink:#0F172A; --dim:#64748B; --line:#E2E8F0; --grid:#EFF2F6;
+  --a:#2563EB; --b:#0D9488; --c:#DB2777; --pos:#059669; --neg:#DC2626; --mono:'IBM Plex Mono',monospace;
+}
+html[data-theme="dark"]{ --bg:#0B1020; --card:#121829; --ink:#E6EAF2; --dim:#94A3B8; --line:#243049;
+  --grid:#1B2337; --a:#60A5FA; --b:#2DD4BF; --c:#F472B6; --pos:#34D399; --neg:#F87171; }
+@media (prefers-color-scheme:dark){ html:not([data-theme="light"]){ --bg:#0B1020; --card:#121829; --ink:#E6EAF2;
+  --dim:#94A3B8; --line:#243049; --grid:#1B2337; --a:#60A5FA; --b:#2DD4BF; --c:#F472B6; --pos:#34D399; --neg:#F87171; } }
+*{box-sizing:border-box;margin:0;padding:0}
+body{ background:var(--bg); color:var(--ink); font-family:'Noto Sans Thai',system-ui,sans-serif; padding:16px; font-size:14px; }
+.wrap{ max-width:1280px; margin:0 auto; }
+.switch{ display:flex; gap:6px; flex-wrap:wrap; align-items:center; font-size:12px; margin-bottom:12px; }
+.switch a{ color:var(--dim); text-decoration:none; padding:5px 10px; border:1px solid var(--line); border-radius:5px; background:var(--card); }
+.switch a.on{ color:var(--ink); border-color:var(--a); }
+.switch a.home{ border-color:transparent; background:none; padding-left:0; }
+.switch .tg{ margin-left:auto; background:var(--card); border:1px solid var(--line); color:var(--dim); border-radius:5px; width:30px; height:30px; cursor:pointer; }
+.bar{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:14px; }
+.bar h1{ font-size:18px; font-weight:600; }
+.bar .chip{ font-size:12px; padding:5px 10px; border:1px solid var(--line); border-radius:5px; background:var(--card); color:var(--dim); }
+.bar .chip.on{ border-color:var(--a); color:var(--ink); }
+.kpi{ display:grid; grid-template-columns:repeat(6,1fr); gap:10px; margin-bottom:12px; }
+.k{ background:var(--card); border:1px solid var(--line); border-radius:8px; padding:12px 13px; }
+.k .l{ font-size:11px; color:var(--dim); }
+.k .v{ font-size:21px; font-weight:600; font-variant-numeric:tabular-nums; letter-spacing:-.02em; margin:2px 0 3px; }
+.k .d{ font-size:11px; font-family:var(--mono); }
+.pos{ color:var(--pos); } .neg{ color:var(--neg); }
+.g{ display:grid; grid-template-columns:2fr 1fr; gap:12px; margin-bottom:12px; }
+.p{ background:var(--card); border:1px solid var(--line); border-radius:8px; padding:14px; }
+.p h2{ font-size:12px; font-weight:600; margin-bottom:2px; }
+.p .hint{ font-size:11px; color:var(--dim); margin-bottom:12px; }
+table{ width:100%; border-collapse:collapse; font-size:13px; }
+th{ text-align:left; font-size:11px; color:var(--dim); font-weight:500; padding:0 6px 7px 0; border-bottom:1px solid var(--line); }
+td{ padding:8px 6px 8px 0; border-bottom:1px solid var(--grid); font-variant-numeric:tabular-nums; }
+tr:last-child td{ border-bottom:0; }
+th.n,td.n{ text-align:right; padding-right:0; }
+.ib{ height:5px; border-radius:99px; background:var(--a); display:block; margin-left:10px; }
+/* ปฏิทินความร้อน */
+.heat{ display:grid; grid-template-columns:repeat(7,1fr); gap:4px; }
+.heat .cell{ aspect-ratio:1; border-radius:4px; background:var(--grid); position:relative; }
+.heat .cell b{ position:absolute; inset:0; display:grid; place-items:center; font-size:10px;
+  font-family:var(--mono); color:var(--dim); font-weight:400; }
+.heat .cell.v b{ color:#fff; font-weight:600; }
+.dow{ display:grid; grid-template-columns:repeat(7,1fr); gap:4px; font-size:10px; color:var(--dim); margin-bottom:5px; text-align:center; }
+.lgd{ display:flex; align-items:center; gap:6px; font-size:11px; color:var(--dim); margin-top:10px; }
+.lgd i{ width:16px; height:9px; border-radius:3px; display:block; }
+.foot{ margin-top:16px; text-align:center; font-size:12px; color:var(--dim); }
+@media (max-width:1000px){ .kpi{ grid-template-columns:repeat(3,1fr); } .g{ grid-template-columns:1fr; } }
+@media (max-width:560px){ body{padding:12px} .kpi{ grid-template-columns:repeat(2,1fr); } }
+</style></head><body>
+<div class="wrap"><div id="sw"></div>
+<div class="bar"><h1>วิเคราะห์ยอดขายและสต๊อก</h1>
+  <span class="chip on">30 วันล่าสุด</span><span class="chip">เทียบช่วงก่อนหน้า</span>
+  <span class="chip">ทุกสาขา</span><span class="chip" id="perChip"></span></div>
+<div class="kpi" id="kpi"></div>
+<div class="g"><div class="p" id="trend"></div><div class="p" id="heat"></div></div>
+<div class="g"><div class="p" id="model"></div><div class="p" id="staff"></div></div>
+<div class="p" id="stock"></div>
+<p class="foot">ตัวอย่างการออกแบบ · ตัวเลขจากข้อมูลสาธิตของระบบจริง — ทั้ง 5 แบบใช้ชุดตัวเลขเดียวกัน</p></div>
+<script src="data.js"></script><script src="common.js"></script>
+<script>
+const k=D.kpi, dd=daily(), mx=Math.max(1,...dd.map(x=>x.v));
+const avg = k.sold? Math.round(k.rev/k.sold) : 0;
+const prevAvg = k.prevSold? Math.round(k.prevRev/k.prevSold) : 0;
+const KP=[
+  ['ยอดขาย', B(k.rev)+' ฿', pct(k.rev,k.prevRev), 'ช่วงก่อน '+B(k.prevRev)],
+  ['จำนวนคัน', k.sold+' คัน', pct(k.sold,k.prevSold), 'ช่วงก่อน '+k.prevSold+' คัน'],
+  ['ราคาเฉลี่ย/คัน', B(avg)+' ฿', pct(avg,prevAvg), 'ช่วงก่อน '+B(prevAvg)],
+  ['กำไรขั้นต้น', B(k.gp)+' ฿', null, 'อัตรา '+(k.rev?(k.gp/k.rev*100).toFixed(1):0)+'%'],
+  ['สต๊อกคงเหลือ', k.stock+' คัน', null, 'ทุนจม '+B(k.cost)],
+  ['เงินค้างรับ', B(k.ar)+' ฿', null, k.arN+' ราย']
+];
+document.getElementById('sw').innerHTML = switcher('5');
+document.getElementById('perChip').textContent = D.period.text;
+document.getElementById('kpi').innerHTML = KP.map(x=>'<div class="k"><div class="l">'+x[0]+'</div>'
+  +'<div class="v">'+x[1]+'</div><div class="d '+(x[2]==null?'':(x[2]>=0?'pos':'neg'))+'">'
+  +(x[2]==null? '<span style="color:var(--dim)">'+x[3]+'</span>' : (x[2]>=0?'▲ +':'▼ ')+x[2]+'% · '+x[3])+'</div></div>').join('');
+
+/* กราฟแท่ง+เส้นสะสม */
+const W=680,H=190,P=26, bw=Math.max(3,(W-P*2)/dd.length-3);
+let acc=0; const cum=dd.map(x=>acc+=x.v);
+const lp=linePath(cum, W, H, P);
+document.getElementById('trend').innerHTML = '<h2>ยอดขายรายวันและยอดสะสม</h2>'
++ '<div class="hint">แท่ง = ยอดขายของวันนั้น · เส้น = ยอดสะสมตั้งแต่ต้นช่วง</div>'
++ '<svg viewBox="0 0 '+W+' '+H+'" width="100%" height="200">'
++ [0,.25,.5,.75,1].map(g=>'<line x1="'+P+'" x2="'+(W-P)+'" y1="'+(H-P-g*(H-P*2)).toFixed(1)+'" y2="'+(H-P-g*(H-P*2)).toFixed(1)+'" stroke="var(--grid)"/>').join('')
++ dd.map((x,i)=>{ const h=x.v/mx*(H-P*2), xx=P+i*((W-P*2)/dd.length);
+    return '<rect x="'+xx.toFixed(1)+'" y="'+(H-P-h).toFixed(1)+'" width="'+bw.toFixed(1)+'" height="'+Math.max(0,h).toFixed(1)+'" rx="1.5" fill="var(--a)" opacity="'+(x.v?'.85':'.15')+'"><title>'+thShort(x.d)+' · '+B(x.v)+' ฿</title></rect>'; }).join('')
++ '<path d="'+lp.line+'" fill="none" stroke="var(--c)" stroke-width="1.8"/>'
++ '<text x="'+P+'" y="'+(H-6)+'" font-size="10" fill="var(--dim)">'+thShort(D.period.from)+'</text>'
++ '<text x="'+(W-P)+'" y="'+(H-6)+'" font-size="10" fill="var(--dim)" text-anchor="end">'+thShort(D.period.to)+'</text>'
++ '<text x="'+(W-P)+'" y="16" font-size="10" fill="var(--c)" text-anchor="end">สะสม '+B(cum[cum.length-1])+' ฿</text>'
++ '</svg>';
+
+/* ปฏิทินความร้อน — ช่องว่างต้นสัปดาห์ให้ตรงวัน */
+const first=new Date(D.period.from+'T00:00:00').getDay();
+document.getElementById('heat').innerHTML = '<h2>วันไหนขายดี</h2>'
++ '<div class="hint">สีเข้ม = ยอดขายวันนั้นสูง · ช่องจาง = ไม่มีการขาย</div>'
++ '<div class="dow">'+['อา','จ','อ','พ','พฤ','ศ','ส'].map(d=>'<span>'+d+'</span>').join('')+'</div>'
++ '<div class="heat">'
++ Array.from({length:first},()=>'<span></span>').join('')
++ dd.map(x=>{ const r=x.v/mx;
+    return '<span class="cell'+(x.v?' v':'')+'" style="'+(x.v?'background:color-mix(in srgb, var(--a) '+Math.round(30+r*70)+'%, transparent)':'')+'" title="'+thShort(x.d)+' · '+B(x.v)+' ฿"><b>'+(+x.d.slice(8))+'</b></span>'; }).join('')
++ '</div><div class="lgd"><i style="background:var(--grid)"></i>ไม่มีขาย<i style="background:color-mix(in srgb,var(--a) 45%,transparent)"></i>ปานกลาง<i style="background:var(--a)"></i>สูงสุด '+B(mx)+' ฿</div>';
+
+const mEnt=Object.entries(D.byModel).sort((a,b)=>b[1].net-a[1].net), mMax=Math.max(...mEnt.map(x=>x[1].net));
+document.getElementById('model').innerHTML='<h2>ยอดขายแยกรุ่น</h2><div class="hint">เรียงตามยอดขายในช่วงที่เลือก</div>'
++ '<table><thead><tr><th>รุ่น</th><th class="n">คัน</th><th class="n">ยอดขาย</th><th style="width:34%"></th></tr></thead><tbody>'
++ mEnt.map(([m,v])=>'<tr><td>'+m+'</td><td class="n">'+v.n+'</td><td class="n">'+B(v.net)+'</td>'
+  +'<td><i class="ib" style="width:'+Math.round(v.net/mMax*100)+'%"></i></td></tr>').join('')
++ '</tbody></table>';
+
+const sEnt=Object.entries(D.byStaff).sort((a,b)=>b[1].net-a[1].net);
+document.getElementById('staff').innerHTML='<h2>ผลงานรายบุคคล</h2><div class="hint">กำไรต่อคันบอกคุณภาพของดีล ไม่ใช่แค่ปริมาณ</div>'
++ '<table><thead><tr><th>เซลล์</th><th class="n">คัน</th><th class="n">ยอดขาย</th><th class="n">กำไร/คัน</th></tr></thead><tbody>'
++ sEnt.map(([n,v])=>'<tr><td>'+n+'</td><td class="n">'+v.n+'</td><td class="n">'+B(v.net)+'</td>'
+  +'<td class="n">'+B(Math.round(v.gp/v.n))+'</td></tr>').join('')
++ '</tbody></table>';
+
+const brEnt=Object.entries(D.stockBr), brMax=Math.max(...brEnt.map(x=>x[1]));
+document.getElementById('stock').innerHTML='<h2>สต๊อกและอายุรถ</h2>'
++ '<div class="hint">รถที่ค้างเกิน '+D.aging+' วันคือเงินที่ไม่หมุน — ดูควบคู่กับจำนวนคงเหลือรายสาขา</div>'
++ '<div class="g" style="margin:0"><div><table><thead><tr><th>สาขา</th><th class="n">คงเหลือ</th><th style="width:45%"></th></tr></thead><tbody>'
++ brEnt.map(([b,n])=>'<tr><td>'+b+'</td><td class="n">'+n+'</td><td><i class="ib" style="width:'+Math.round(n/brMax*100)+'%;background:var(--b)"></i></td></tr>').join('')
++ '</tbody></table></div>'
++ '<div><table><thead><tr><th>อายุในสต๊อก</th><th class="n">คัน</th><th class="n">สัดส่วน</th></tr></thead><tbody>'
++ Object.entries(D.ageB).map(([b,n])=>'<tr><td>'+b+' วัน</td><td class="n">'+n+'</td>'
+  +'<td class="n '+(b==='180+'&&n?'neg':'')+'">'+Math.round(n/Math.max(1,k.stock)*100)+'%</td></tr>').join('')
++ '</tbody></table></div></div>';
+setTheme();
+</script>
+</body></html>

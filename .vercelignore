@@ -8,3 +8,5 @@
 docs/*
 !docs/manual/
 !docs/manual/**
+!docs/dash/
+!docs/dash/**

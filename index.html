@@ -509,6 +509,12 @@ textarea.inp{ height:auto; padding:var(--s1) var(--s2); resize:vertical; line-he
   transition:border-color var(--dur-ui) var(--ease), color var(--dur-ui) var(--ease); }
 @media (hover:hover){ .chip:hover{ border-color:var(--muted); color:var(--ink); } }
 .chip.on{ border-color:var(--ink); color:var(--ink); font-weight:600; }
+/* แถบเลือกช่วงเวลา (v1.24) — ตัวเดียวใช้ทุกหน้า วาดด้วย perBar() */
+.perbar{ margin-bottom:var(--s2); }
+.perbar .perlab{ font-size:var(--t-label); color:var(--muted); align-self:center; margin-right:4px; }
+.perbar .perflex{ flex:1; }
+.perbar .perbox{ margin-top:var(--s1); }
+.perbar .perbox .fl{ margin:0; align-self:center; }
 /* ปุ่มเพิ่ม-ลดจำนวนในชิปของแถม — จุดแตะเล็กในชิปเดียว ไม่ต้องมีแถวใหม่ */
 .chip .gq{ display:inline-flex; width:20px; height:20px; margin:0 1px; align-items:center;
   justify-content:center; border-radius:var(--r-pill); border:1px solid var(--hairline);
@@ -1087,24 +1093,8 @@ body.lock{ overflow:hidden; }
         <!-- ลงเวลาเข้า-ออก อยู่บนสุดของหน้าแรก เห็นทันทีที่เปิดแอป ไม่ต้องเดินเมนู -->
         <div class="card pc" id="punchCard"><div class="bd" id="punchBody"></div></div>
         <!-- ปุ่มลัดกับช่วงเวลาที่เลือกเอง ทำงานเป็นตัวเดียวกัน — เลือกวันเองแล้วปุ่มลัดจะคลายออก -->
-        <div class="chips" style="margin-bottom:var(--s2)">
-          <span style="font-size:var(--t-label);color:var(--muted);align-self:center;margin-right:4px">ช่วงเวลา</span>
-          <button class="chip" data-r="1">วันนี้</button>
-          <button class="chip on" data-r="7">7 วัน</button>
-          <button class="chip" data-r="30">30 วัน</button>
-          <button class="chip" data-r="90">90 วัน</button>
-          <button class="chip" data-r="365">1 ปี</button>
-          <button class="chip" id="dCustom">กำหนดเอง</button>
-          <span style="flex:1"></span>
-          <select class="inp ct" id="dBranch"></select>
-        </div>
-        <div class="chips" id="dRangeBox" style="margin-bottom:var(--s2);display:none">
-          <label class="fl" style="margin:0;align-self:center">ตั้งแต่</label>
-          <input class="inp ct" type="date" id="dFrom">
-          <label class="fl" style="margin:0;align-self:center">ถึง</label>
-          <input class="inp ct" type="date" id="dTo">
-          <button class="btn sec sm" id="dRangeClr">ล้าง</button>
-        </div>
+        <div id="dPer"></div>
+        <select class="inp ct" id="dBranch"></select>
         <div class="dper" id="dPeriod"></div>
         <div class="kpis k6" id="dKpis"></div>
         <div class="g2">
@@ -1312,7 +1302,8 @@ body.lock{ overflow:hidden; }
             </div>
             <div class="savebar"><button class="btn" id="wsSave">บันทึกบิลขายส่ง</button></div>
           </div></div>
-          <div class="card"><div class="hd"><h3>บิลขายส่งล่าสุด</h3></div><div class="bd" id="wsList"></div>
+          <div id="wsPer"></div>
+          <div class="card"><div class="hd"><h3>บิลขายส่งในช่วงที่เลือก</h3><div class="sp"></div><button class="lnk noprint" id="expWs"><svg class="i i-sm"><use href="#i-download"/></svg> ส่งออก</button></div><div class="bd" id="wsList"></div>
         </div></div></div>
       </section>
 
@@ -1330,7 +1321,8 @@ body.lock{ overflow:hidden; }
             </div>
             <div class="savebar"><button class="btn" id="tSave">ส่งคำขอโอนย้าย</button></div>
           </div></div>
-          <div class="card"><div class="hd"><h3>รายการโอนย้าย</h3></div><div class="bd flush"><div class="tw"><table id="tList"></table></div></div></div>
+          <div id="trPer"></div>
+          <div class="card"><div class="hd"><h3>รายการโอนย้าย</h3><div class="sp"></div><button class="lnk noprint" id="expTr"><svg class="i i-sm"><use href="#i-download"/></svg> ส่งออก</button></div><div class="bd flush"><div class="tw"><table id="tList"></table></div></div></div>
         </div>
       </section>
 
@@ -1352,7 +1344,8 @@ body.lock{ overflow:hidden; }
             <div><label class="fl">เงินดาวน์ (฿)</label><input class="inp num" id="qDown" value="5000"></div>
           </div>
         </div></div>
-        <div class="card"><div class="hd"><h3>ใบเสนอที่บันทึกไว้</h3><div class="d">เปิดการขายต่อจากใบเสนอได้เลย</div></div><div class="bd flush"><div class="tw"><table id="qList"></table></div></div></div>
+        <div id="quotePer"></div>
+        <div class="card"><div class="hd"><h3>ใบเสนอที่บันทึกไว้</h3><div class="d">เปิดการขายต่อจากใบเสนอได้เลย</div><div class="sp"></div><button class="lnk noprint" id="expQuote"><svg class="i i-sm"><use href="#i-download"/></svg> ส่งออก</button></div><div class="bd flush"><div class="tw"><table id="qList"></table></div></div></div>
         <div class="card"><div class="bd docwrap"><div id="qDoc"></div></div></div>
       </section>
 
@@ -1425,13 +1418,14 @@ body.lock{ overflow:hidden; }
           <div class="card"><div class="hd"><h3>ประวัติของรถคันนี้</h3></div><div class="bd" id="svHistory"><div class="empty"><b>ยังไม่ได้ค้นหา</b>กรอกเลขเครื่องหรือเลขถังแล้วกดค้นหา</div></div></div>
         </div></div>
         <div class="pane" id="v2"><div class="card"><div class="hd"><h3>ใบงานซ่อม</h3><div class="sp"></div><button class="lnk" id="expSv"><svg class="i i-sm"><use href="#i-download"/></svg> ส่งออก</button></div><div class="bd flush"><div class="tw"><table id="svTable"></table></div></div></div></div>
-        <div class="pane" id="v3"><div class="card"><div class="hd"><h3>เตือนเช็กระยะ</h3><div class="d">ตามรอบที่ตั้งไว้ในหน้าตั้งค่า</div><div class="sp"></div><button class="btn sec sm" id="svLine">รายการส่ง LINE</button></div><div class="bd flush"><div class="tw"><table id="svRemind"></table></div></div></div></div>
+        <div class="pane" id="v3"><div class="card"><div class="hd"><h3>เตือนเช็กระยะ</h3><div class="d">ตามรอบที่ตั้งไว้ในหน้าตั้งค่า</div><div class="sp"></div><button class="btn sec sm" id="svLine">รายการส่ง LINE</button><button class="lnk noprint" id="expRemind"><svg class="i i-sm"><use href="#i-download"/></svg> ส่งออก</button></div><div class="bd flush"><div class="tw"><table id="svRemind"></table></div></div></div></div>
       </section>
 
       <!-- ============ 12b. ดูแลหลังส่งมอบ (ฝ่ายบริการ — บรีฟรอบ 1) ============ -->
       <section class="screen" id="s-aftercare">
         <div class="kpis k3" id="acKpi"></div>
-        <div class="card"><div class="hd"><h3>ลูกค้าที่ส่งมอบแล้ว</h3><div class="d">ติ๊ก checklist ส่งมอบ และตามรอบ 7/30/60/90/120 วัน — เซลล์เห็นความคืบหน้าในดีลของตัวเอง</div></div>
+        <div id="carePer"></div>
+        <div class="card"><div class="hd"><h3>ลูกค้าที่ส่งมอบแล้ว</h3><div class="d">ติ๊ก checklist ส่งมอบ และตามรอบ 7/30/60/90/120 วัน — เซลล์เห็นความคืบหน้าในดีลของตัวเอง</div><div class="sp"></div><button class="lnk noprint" id="expCare"><svg class="i i-sm"><use href="#i-download"/></svg> ส่งออก</button></div>
           <div class="bd" id="acList"></div></div>
       </section>
 
@@ -1475,12 +1469,13 @@ body.lock{ overflow:hidden; }
               </div>
               <div class="savebar"><button class="btn" id="msSave">บันทึก</button></div>
             </div></div>
-            <div class="card"><div class="hd"><h3>การเคลื่อนไหวล่าสุด</h3></div><div class="bd flush"><div class="tw"><table id="msTable"></table></div></div></div>
+            <div id="movePer"></div>
+            <div class="card"><div class="hd"><h3>การเคลื่อนไหวในช่วงที่เลือก</h3><div class="sp"></div><button class="lnk noprint" id="expMove"><svg class="i i-sm"><use href="#i-download"/></svg> ส่งออก</button></div><div class="bd flush"><div class="tw"><table id="msTable"></table></div></div></div>
           </div>
         </div>
         <div class="pane" id="pt3">
           <div class="g2">
-            <div class="card"><div class="hd"><h3>สต๊อกของแถม</h3></div><div class="bd flush"><div class="tw"><table id="gTable"></table></div></div></div>
+            <div class="card"><div class="hd"><h3>สต๊อกของแถม</h3><div class="sp"></div><button class="lnk noprint" id="expGift"><svg class="i i-sm"><use href="#i-download"/></svg> ส่งออก</button></div><div class="bd flush"><div class="tw"><table id="gTable"></table></div></div></div>
             <div class="card"><div class="hd"><h3>เพิ่ม / รับของแถม</h3></div><div class="bd">
               <div class="f">
                 <div><label class="fl">ชื่อของแถม</label><input class="inp" id="gName" placeholder="หมวกกันน็อก"></div>
@@ -1533,8 +1528,8 @@ body.lock{ overflow:hidden; }
             </div>
             <div class="savebar"><button class="btn" id="eSave">บันทึกค่าใช้จ่าย</button></div>
           </div></div>
-          <div class="card"><div class="hd"><h3>ค่าใช้จ่ายล่าสุด</h3><div class="sp"></div>
-            <select class="inp ct" id="acMonth"></select>
+          <div id="expPer"></div>
+          <div class="card"><div class="hd"><h3>ค่าใช้จ่ายในช่วงที่เลือก</h3><div class="sp"></div>
             <button class="lnk" id="expBook"><svg class="i i-sm"><use href="#i-files"/></svg> ชุดส่งบัญชี</button>
             <button class="lnk" id="expExp"><svg class="i i-sm"><use href="#i-download"/></svg> ส่งออก</button></div><div class="bd flush"><div class="tw"><table id="eTable"></table></div></div></div>
         </div>
@@ -1576,7 +1571,7 @@ body.lock{ overflow:hidden; }
           <div class="card"><div class="hd"><h3>สรุปเวลาทำงาน</h3></div><div class="bd" id="attSum"></div></div>
         </div></div>
         <div class="pane" id="h2"><div class="g2">
-          <div class="card"><div class="hd"><h3>ใบลา</h3></div><div class="bd flush"><div class="tw"><table id="lvTable"></table></div></div></div>
+          <div class="card"><div class="hd"><h3>ใบลา</h3><div class="sp"></div><button class="lnk noprint" id="expLeave"><svg class="i i-sm"><use href="#i-download"/></svg> ส่งออก</button></div><div class="bd flush"><div class="tw"><table id="lvTable"></table></div></div></div>
           <div class="card"><div class="hd"><h3>ยื่นใบลา</h3></div><div class="bd">
             <div class="f">
               <div><label class="fl">พนักงาน</label><select class="inp" id="lvWho"></select></div>
@@ -1637,7 +1632,7 @@ body.lock{ overflow:hidden; }
 
       <!-- ============ 19. บัญชีผู้ใช้ ============ -->
       <section class="screen" id="s-users">
-        <div class="card"><div class="hd"><h3>ผู้ใช้ทั้งหมด</h3></div><div class="bd flush"><div class="tw"><table id="uTable"></table></div></div></div>
+        <div class="card"><div class="hd"><h3>ผู้ใช้ทั้งหมด</h3><div class="sp"></div><button class="lnk noprint" id="expStaff"><svg class="i i-sm"><use href="#i-download"/></svg> ส่งออก</button></div><div class="bd flush"><div class="tw"><table id="uTable"></table></div></div></div>
         <div class="card"><div class="hd"><h3>บทบาทและสิทธิ์</h3></div><div class="bd flush"><div class="tw"><table id="roleTable"></table></div></div></div>
       </section>
 
@@ -1843,12 +1838,12 @@ body.lock{ overflow:hidden; }
       <!-- ============ 23. รายงาน ============ -->
       <section class="screen" id="s-report">
         <div class="tabs" id="rpTabs"></div>
+        <!-- ช่วงเวลาเป็นแถบชิปนอกการ์ด (v1.24) — เป็นตัวกรองหลักของทุกแท็บ ต้องเห็นตลอดไม่ต้องเปิดแผ่น -->
+        <div id="rpPer"></div>
         <div class="card"><div class="hd"><h3 id="rpTitle">รายงาน</h3><div class="sp"></div>
-          <input class="inp ct noprint" type="date" id="rpDay" style="display:none">
           <select class="inp ct noprint" id="rpDim" style="display:none">
             <option value="model">แยกตามรุ่น</option><option value="sales">แยกตามเซลล์</option><option value="branch">แยกตามสาขา</option>
           </select>
-          <select class="inp ct" id="rpMonth"></select>
           <select class="inp ct" id="rpBranch"></select>
           <button class="btn sec sm fbtn noprint" id="rpFilt"><svg class="i i-sm"><use href="#i-sliders"/></svg> ตัวกรอง</button>
           <button class="btn sec sm noprint" id="rpPrint"><svg class="i i-sm"><use href="#i-print"/></svg> พิมพ์</button>
@@ -2615,6 +2610,98 @@ function csvMoney(name, head, rows, moneyCols){
   const keep = head.map((_,i)=> moneyCols.indexOf(i)<0);
   csv(name, head.filter((_,i)=>keep[i]), rows.map(r=>r.filter((_,i)=>keep[i])));
 }
+/* ============================= ส่งออกรายหน้า (v1.24) =============================
+   เจ้าของสั่ง: "ปุ่มส่งออกอยากให้อยู่ในแต่ละหน้าที่ส่งออกได้ด้วย ไม่ต้อง export จากหน้ารายงานอย่างเดียว"
+   กติกาเดียวกันทุกตัว:
+   · ส่งออกเท่าที่หน้านั้นแสดงอยู่จริง (ช่วงเวลา + ตัวกรอง + ขอบเขตสาขา) ไฟล์กับจอจึงตรงกันเสมอ
+   · **ด่านอยู่ในฟังก์ชันนี้ ไม่ใช่ที่ปุ่ม (§9b)** — เรียกตรง ๆ ด้วยบทบาทต้องห้ามก็ต้องไม่มีไฟล์ออก
+   · คอลัมน์เงินตัดตามสิทธิ์ผ่าน csvMoney · เลขบัตร/บัญชีปิดกลางเสมอเว้นบทบาทที่ได้สิทธิ์ (กฎข้อ 13) */
+const expDeny = why => { toast('ไม่มีสิทธิ์ส่งออกข้อมูลนี้', why||'', 1); return false; };
+function expWholesale(){
+  const rows=WSALES.filter(w=>inScope(w.branch)&&inPer('ws',w.at))
+    .sort((a,b)=>String(a.at).localeCompare(String(b.at)));
+  csvMoney('บิลขายส่ง_'+perFile('ws'),
+    ['วันที่','เลขที่บิล','คู่ค้า','สาขา','จำนวนคัน','ยอดรวม','สถานะการเงิน','หมายเหตุ'],
+    rows.map(w=>[w.at, w.docNo||'', (WS_PARTNERS.find(x=>x.id===w.partnerId)||{}).name||'—',
+      bName(w.branch), (w.items||[]).length, w.total, finApStatus(w), w.note||'']), [5]);
+}
+function expQuotes(){
+  const rows=QUOTES.filter(q=>inScope(q.branch)&&inPer('quote',q.at))
+    .sort((a,b)=>String(a.at).localeCompare(String(b.at)));
+  csvMoney('ใบเสนอราคา_'+perFile('quote'),
+    ['วันที่','เลขที่','ลูกค้า','เบอร์โทร','ยืนราคาถึง','รุ่นที่ 1','รุ่นที่ 2','เงินดาวน์','ผู้เสนอ','สาขา'],
+    rows.map(q=>[q.at, q.no||'', q.name||'', q.phone||'', q.until||'', q.v1||'', q.v2||'',
+      q.down||0, q.by||'', bName(q.branch)]), [7]);
+}
+/* เตือนเช็กระยะเป็นวันที่ "จะถึง" ในอนาคต — ช่วงย้อนหลังจะได้ไฟล์เปล่า จึงส่งออกทั้งหมดตามขอบเขตสิทธิ์ */
+function expReminds(){
+  const rows=REMIND.filter(r=>{ const c=CUSTOMERS.find(x=>x.id===r.custId);
+      return c && inScope(c.branch); })
+    .sort((a,b)=>String(a.due).localeCompare(String(b.due)));
+  csv('เตือนเช็กระยะ',
+    ['ครบกำหนด','ลูกค้า','เบอร์โทร','เลขเครื่อง','รอบ (กม.)','สถานะ'],
+    rows.map(r=>{ const c=CUSTOMERS.find(x=>x.id===r.custId), u=UNITS.find(x=>x.id===r.unitId);
+      return [r.due, c?c.name:'—', c?c.phone:'', u?u.engine:'', r.km, r.status]; }));
+}
+function expTransfers(){
+  const rows=TRANSFERS.filter(t=>(inScope(t.from)||inScope(t.to))&&inPer('transfer',t.at))
+    .sort((a,b)=>String(a.at).localeCompare(String(b.at)));
+  csv('การโอนย้ายสาขา_'+perFile('transfer'),
+    ['วันที่','เลขเครื่อง','รุ่น','จากสาขา','ไปสาขา','สถานะ','เหตุผล'],
+    rows.map(t=>{ const u=UNITS.find(x=>x.id===t.unitId);
+      return [t.at, u?u.engine:'', u?u.model:'', bName(t.from), bName(t.to), t.status, t.note||'']; }));
+}
+function expCareList(){
+  const rows=CARE.filter(r=>inScope(r.branch)&&inPer('care',r.createdAt));
+  csv('ดูแลหลังส่งมอบ_'+perFile('care'),
+    ['วันส่งมอบ','ลูกค้า','เบอร์โทร','รุ่น','สาขา','checklist ครบ','งานติดตามเสร็จ','รอบถัดไป','เลยกำหนด'],
+    rows.map(r=>{ const c=CUSTOMERS.find(x=>x.id===r.custId), s=SALES.find(x=>x.id===r.saleId);
+      const u=s&&UNITS.find(x=>x.id===s.unitId), nx=r.tasks.find(t=>!t.done);
+      return [r.createdAt, c?c.name:'—', c?c.phone:'', u?u.model:'—', bName(r.branch),
+        r.check.filter(x=>x.done).length+'/'+r.check.length,
+        r.tasks.filter(t=>t.done).length+'/'+r.tasks.length,
+        nx?nx.kind+' · '+nx.due:'ครบแล้ว', nx&&nx.due<=TODAY?'ใช่':'']; }));
+}
+function expMoves(){
+  const rows=PMOVES.filter(m=>inScope(m.branch)&&inPer('move',m.at))
+    .sort((a,b)=>String(a.at).localeCompare(String(b.at)));
+  csvMoney('การเคลื่อนไหวอะไหล่_'+perFile('move'),
+    ['วันที่','รหัส','อะไหล่','ประเภท','จำนวน','สาขา','มูลค่าขาย'],
+    rows.map(m=>{ const p=PARTS.find(x=>x.id===m.partId);
+      return [m.at, p?p.code:'', p?p.name:'—', m.type==='job'?'เข้าใบงาน':'ขายหน้าร้าน',
+        m.qty, bName(m.branch), p&&m.qty<0? p.price*-m.qty : 0]; }), [6]);
+}
+function expGifts(){
+  csvMoney('สต๊อกของแถม',
+    ['ชื่อของแถม','สาขา','คงเหลือ','จุดสั่งซื้อ','ทุน/ชิ้น','ราคาขาย','สถานะ'],
+    GIFTS.filter(g=>inScope(g.branch)).map(g=>[g.name, bName(g.branch), g.qty, g.min, g.cost||0, g.price||0,
+      g.qty===0?'หมด':(g.qty<g.min?'ใกล้หมด':'ปกติ')]), [4,5]);
+}
+/* ใบลา: ประเภทการลาเป็นข้อมูลสุขภาพ (กฎข้อ 13) — คนทั่วไปส่งออกได้เฉพาะใบของตัวเอง */
+function expLeaves(){
+  const boss=canFixAtt();
+  const rows=LEAVES.filter(l=>{ const s=STAFF.find(x=>x.id===l.staffId)||(l.staffId===ME.id?ME:null);
+      if(!s) return false;
+      if(!boss && l.staffId!==ME.id) return false;
+      return inScope(s.branch); })                        /* ใบลามีทั้งที่ผ่านมาและที่ยื่นล่วงหน้า — ไม่ตัดด้วยช่วงย้อนหลัง */
+    .sort((a,b)=>String(a.from).localeCompare(String(b.from)));
+  if(!rows.length && !boss) return expDeny('ไม่มีใบลาของตัวเอง');
+  csv('ใบลา',
+    ['ตั้งแต่','ถึง','พนักงาน','สาขา','ประเภท','เหตุผล','สถานะ','ผู้ตัดสิน','วันที่ตัดสิน'],
+    rows.map(l=>{ const s=STAFF.find(x=>x.id===l.staffId)||ME;
+      return [l.from, l.to, s.name, bName(s.branch), l.type, l.reason||'',
+        l.status, l.decidedBy||'', l.decidedAt||'']; }));
+}
+/* รายชื่อพนักงาน: เงินเดือน/บัญชี/ปกส. เป็นข้อมูลส่วนตัวของแต่ละคน — เปิดให้เฉพาะบทบาทที่ดูแลคน */
+function expStaffList(){
+  if(!canFixAtt()) return expDeny('เฉพาะฝ่ายบุคคลและผู้บริหาร');
+  const full=canSeeId();                                   /* เลขบัญชี/ปกส. เต็ม เฉพาะบทบาทที่ได้สิทธิ์ */
+  const cut = v => { const d=String(v||''); return d.length>4? '···'+d.slice(-4) : d; };
+  csvMoney('รายชื่อพนักงาน',
+    ['ชื่อ','ชื่อเล่น','ตำแหน่ง','สาขา','เบอร์โทร','เงินเดือน','เลขบัญชี','เลขประกันสังคม'],
+    STAFF.filter(s=>inScope(s.branch)).map(s=>[s.name, s.nick, ROLES[s.role].name, bName(s.branch),
+      s.phone, s.salary, full?s.bank:cut(s.bank), full?s.ssn:cut(s.ssn)]), [5]);
+}
 /* จอ ≤600px: ตารางที่ส่ง cards มาด้วยจะแสดงเป็นการ์ดแทนแถว — เปลี่ยนขนาดจอแล้ววาดใหม่ */
 const MQ_CARD = matchMedia('(max-width:600px)');
 MQ_CARD.addEventListener('change', ()=>{ closeFilters(); if(ME) refreshAll(); });   /* คืนตัวกรองเข้าที่ก่อนสลับ layout */
@@ -2780,7 +2867,7 @@ function buildTabs(){
    โดยไม่ต้องแก้โค้ดหน้าไหน ปิดแล้วย้ายกลับที่เดิมด้วย comment marker */
 const FILTERS = {
   report:{ t:'ตัวกรองรายงาน', sum:'rpFsum',
-    f:[['rpDay','วันที่'],['rpDim','แยกตาม'],['rpMonth','งวดเดือน'],['rpBranch','สาขา']] },
+    f:[['rpDim','แยกตาม'],['rpBranch','สาขา']] },   /* ช่วงเวลาอยู่บนหน้าเป็นชิป ไม่ต้องเข้าแผ่น (v1.24) */
   hrday :{ t:'เลือกวันลงเวลา', sum:'attFsum', f:[['attDay','วันที่']] },
   payrol:{ t:'เลือกงวดเงินเดือน', sum:'prFsum', f:[['prMonth','งวดเดือน']] },
   attend:{ t:'ตัวกรองการเข้างาน', sum:'abFsum', f:[['abBranch','สาขา']] },
@@ -2908,44 +2995,93 @@ function promoBar(){
 const uAvail = () => UNITS.filter(u=>u.status!=='sold' && inScope(u.branch));
 const sScoped = () => SALES.filter(s=>!s.void && inScope(s.branch));   /* การขายที่ยกเลิกไม่นับทุกยอด */
 
-/* ============================= 1. DASHBOARD ============================= */
-/* ---------- ช่วงเวลาของหน้าแรก (ข้อ 2 ของบรีฟ) ----------
-   เจ้าของสั่งว่า "เลือกช่วงเวลาได้เหมือน agoda และมี quick button (1D, 7D, 1M) และ export รายงานเอกสารได้"
-   ปุ่มลัดกับการเลือกวันเองเป็นเรื่องเดียวกัน: ปุ่มลัดคือการตั้ง dFrom/dTo ให้เอง
-   ทุกอย่างบนหน้าจึงอ่านจาก dPeriod() ที่เดียว — กราฟ ตัวเลข ส่งออก และการพิมพ์ตรงกันเสมอ */
-let dRange=7, dBranch='', dFrom='', dTo='';
-function dPeriod(){
+/* ============================= ช่วงเวลาที่ใช้ร่วมกันทุกหน้า (v1.24) =============================
+   เจ้าของสั่งว่า "เลือกช่วงเวลาได้เหมือน agoda และมี quick button" — รอบแรกทำไว้เฉพาะหน้าแรก
+   รอบนี้ยกขึ้นเป็นของกลาง: เครื่องเดียว สถานะแยกต่อหน้าด้วย key
+   ปุ่มลัดกับการเลือกวันเองเป็นเรื่องเดียวกัน: กดปุ่มลัด = ล้างวันที่ที่กรอกเองทิ้ง
+   ทุกอย่างของหน้านั้นอ่านจาก perOf(key) ที่เดียว — ตัวเลขบนจอ ไฟล์ที่ส่งออก และกระดาษที่พิมพ์จึงตรงกันเสมอ */
+const PER_PRESETS=[[1,'วันนี้'],[7,'7 วัน'],[15,'15 วัน'],[30,'1 เดือน'],
+                   [90,'3 เดือน'],[180,'6 เดือน'],[365,'1 ปี']];
+const PERIOD={};
+const perSt = key => PERIOD[key] || (PERIOD[key]={r:30, from:'', to:''});
+function perOf(key){
   /* เลือกวันเองมาก่อนปุ่มลัด · สลับให้ถ้ากรอกกลับด้าน · กรอกด้านเดียวถือว่าเปิดปลาย */
-  if(dFrom || dTo){
-    const a=dFrom||dTo, b=dTo||dFrom;
+  const s=perSt(key);
+  if(s.from || s.to){
+    const a=s.from||s.to, b=s.to||s.from;
     return a<=b? {from:a, to:b, custom:true} : {from:b, to:a, custom:true};
   }
-  return {from:addDays(TODAY, -(dRange-1)), to:TODAY, custom:false};
+  return {from:addDays(TODAY, -(s.r-1)), to:TODAY, custom:false};
 }
-const dPeriodText = () => { const p=dPeriod();
+/* วันที่ของระเบียนมาหลายรูปแบบ (บางที่มีเวลาต่อท้าย) — ตัดเหลือ 10 ตัวก่อนเทียบเสมอ */
+const inPer = (key,d) => { const p=perOf(key), x=String(d||'').slice(0,10);
+  return !!x && x>=p.from && x<=p.to; };
+const perText = key => { const p=perOf(key);
   return p.from===p.to? thDate(p.from) : thDate(p.from)+' – '+thDate(p.to); };
-const inPeriod = d => { const p=dPeriod(); return d>=p.from && d<=p.to; };
+const perFile = key => { const p=perOf(key);
+  return p.from===p.to? p.from : p.from+'_ถึง_'+p.to; };
+/* เดือนทั้งหมดที่ช่วงนี้แตะ — ใช้กับของที่คิดเป็นงวดเดือนโดยธรรมชาติ (เงินเดือน) */
+function perMonths(key){
+  const p=perOf(key), out=[]; let m=p.from.slice(0,7); const last=p.to.slice(0,7);
+  while(m<=last && out.length<64){ out.push(m);
+    const y=+m.slice(0,4), mo=+m.slice(5,7);
+    m = mo===12? (y+1)+'-01' : y+'-'+String(mo+1).padStart(2,'0'); }
+  return out;
+}
+/* วาดแถบเลือกช่วงลงในกล่องที่ให้มา — เรียกซ้ำได้ ผูก handler ครั้งเดียว
+   tail = element เดิมในหน้า (เช่น ตัวเลือกสาขา) ย้ายเข้ามาต่อท้ายแถบ ไม่ได้สร้างใหม่ handler จึงอยู่ครบ */
+function perBar(hostId, key, onChange, tail){
+  const host=$('#'+hostId); if(!host) return;
+  const st=perSt(key);
+  if(!host.dataset.per){
+    host.dataset.per=key; host.classList.add('perbar');
+    host.innerHTML='<div class="chips"><span class="perlab">ช่วงเวลา</span>'
+      +PER_PRESETS.map(([r,t])=>'<button class="chip" data-pr="'+r+'">'+esc(t)+'</button>').join('')
+      +'<button class="chip" data-pcus>กำหนดเอง</button><span class="perflex"></span></div>'
+      +'<div class="chips perbox" style="display:none">'
+      +'<label class="fl">ตั้งแต่</label><input class="inp ct" type="date" data-pf>'
+      +'<label class="fl">ถึง</label><input class="inp ct" type="date" data-pt>'
+      +'<button class="btn sec sm" data-pclr>ล้าง</button></div>';
+    if(tail) host.querySelector('.perflex').after(tail);
+    host.querySelectorAll('[data-pr]').forEach(c=> c.onclick=()=>{
+      st.from=''; st.to=''; st.r=+c.dataset.pr; onChange(); });
+    host.querySelector('[data-pcus]').onclick=()=>{
+      const box=host.querySelector('.perbox'), open=box.style.display==='none';
+      box.style.display=open?'flex':'none';
+      if(open){ const p=perOf(key); st.from=p.from; st.to=p.to; } else { st.from=''; st.to=''; }
+      onChange(); };
+    host.querySelectorAll('[data-pf],[data-pt]').forEach(i=> i.onchange=()=>{
+      st.from=host.querySelector('[data-pf]').value; st.to=host.querySelector('[data-pt]').value; onChange(); });
+    host.querySelector('[data-pclr]').onclick=()=>{ st.from=''; st.to=''; onChange(); };
+  }
+  /* ชิปที่ไฮไลต์ต้องตรงกับช่วงที่ใช้จริงเสมอ — เลือกวันเองแล้วปุ่มลัดต้องคลายออกทั้งหมด */
+  const p=perOf(key);
+  host.querySelectorAll('[data-pr]').forEach(c=> c.classList.toggle('on', !p.custom && +c.dataset.pr===st.r));
+  host.querySelector('[data-pcus]').classList.toggle('on', p.custom);
+  const box=host.querySelector('.perbox');
+  if(p.custom && box.style.display==='none') box.style.display='flex';
+  host.querySelector('[data-pf]').value=st.from||'';
+  host.querySelector('[data-pt]').value=st.to||'';
+}
+
+/* ============================= 1. DASHBOARD ============================= */
+let dBranch='';
+const dPeriod     = () => perOf('dash');
+const dPeriodText = () => perText('dash');
+const inPeriod    = d  => inPer('dash', d);
 function dSales(){ return sScoped().filter(s=>(!dBranch||s.branch===dBranch) && inPeriod(s.soldAt)); }
 function dUnits(){ return uAvail().filter(u=>!dBranch||u.branch===dBranch); }
 function rDash(){
   rPunch();
   const sel=$('#dBranch');
+  perBar('dPer','dash', rDash, sel);
   if(!sel.dataset.init){ sel.dataset.init=1;
     sel.innerHTML='<option value="">ทุกสาขาที่เห็นได้</option>'+BRANCHES.filter(b=>inScope(b.code))
       .map(b=>'<option value="'+b.code+'">'+esc(b.name)+'</option>').join('');
     sel.onchange=()=>{ dBranch=sel.value; rDash(); };
-    $$('#s-dash .chips [data-r]').forEach(c=> c.onclick=()=>{
-      dFrom=''; dTo=''; $('#dFrom').value=''; $('#dTo').value='';   /* ปุ่มลัดล้างช่วงที่เลือกเองทิ้ง */
-      dRange=+c.dataset.r; rDash(); });
-    $('#dCustom').onclick=()=>{ const box=$('#dRangeBox'); const open=box.style.display==='none';
-      box.style.display=open? 'flex' : 'none';
-      if(open && !dFrom && !dTo){ const p=dPeriod(); $('#dFrom').value=p.from; $('#dTo').value=p.to; }
-      rDash(); };
-    ['dFrom','dTo'].forEach(k=> $('#'+k).onchange=()=>{ dFrom=$('#dFrom').value; dTo=$('#dTo').value; rDash(); });
-    $('#dRangeClr').onclick=()=>{ dFrom=''; dTo=''; $('#dFrom').value=''; $('#dTo').value=''; rDash(); };
     /* ส่งออกและพิมพ์ต้องเคารพช่วงเวลาและสาขาที่เลือกอยู่ — ของเดิมส่งออกทั้งหมดเสมอ
        ซึ่งขัดกับสิ่งที่หน้าจอกำลังแสดง และเป็นกับดักตอนเอาไปทำบัญชี */
-    $('#expSales').onclick=()=> csvMoney('รายการขาย_'+dPeriod().from+'_ถึง_'+dPeriod().to,
+    $('#expSales').onclick=()=> csvMoney('รายการขาย_'+perFile('dash'),
       ['วันที่','สาขา','รุ่น','เลขเครื่อง','ลูกค้า','ราคาสุทธิ','กำไร','ชำระ','เซลล์'],
       dSales().slice().sort((a,b)=>a.soldAt.localeCompare(b.soldAt)).map(s=>{
         const u=UNITS.find(x=>x.id===s.unitId), c=CUSTOMERS.find(x=>x.id===s.custId);
@@ -2953,16 +3089,11 @@ function rDash(){
       [5,6]);
     $('#dPrint').onclick=dashPrint;
   }
-  /* ชิปที่ไฮไลต์ต้องตรงกับช่วงที่ใช้จริงเสมอ — เลือกวันเองแล้วปุ่มลัดต้องคลายออกทั้งหมด */
-  const cus=dPeriod().custom;
-  $$('#s-dash .chips [data-r]').forEach(c=> c.classList.toggle('on', !cus && +c.dataset.r===dRange));
-  $('#dCustom').classList.toggle('on', cus);
-  if(cus && $('#dRangeBox').style.display==='none') $('#dRangeBox').style.display='flex';
   $('#dPeriod').innerHTML='ช่วงที่ดูอยู่ <b>'+esc(dPeriodText())+'</b>'
     +' · '+esc(dBranch? bName(dBranch) : 'ทุกสาขาที่เห็นได้');
   const su=dUnits(), ss=dSales();
   const stuck=su.filter(u=>age(u)>CFG.aging);
-  /* ช่วงก่อนหน้าที่ยาวเท่ากัน ใช้เทียบว่าดีขึ้นหรือแย่ลง — คิดจากช่วงที่เลือกจริง ไม่ใช่จาก dRange
+  /* ช่วงก่อนหน้าที่ยาวเท่ากัน ใช้เทียบว่าดีขึ้นหรือแย่ลง — คิดจากช่วงที่เลือกจริง ไม่ใช่จากปุ่มลัด
      ไม่งั้นพอเลือกวันเองแล้วเปอร์เซ็นต์เทียบจะเทียบกับช่วงที่ไม่เกี่ยวกันเลย */
   const per=dPeriod(), perLen=days(per.from, per.to)+1;
   const prevTo=addDays(per.from,-1), prevFrom=addDays(prevTo,-(perLen-1));
@@ -4038,7 +4169,9 @@ function rWsSale(){
   $$('#wsCart [data-wci]').forEach(inp=> inp.onchange=()=>{ WS_CART[+inp.dataset.wci].price=num(inp.value); rWsSale(); });
   $$('#wsCart [data-wcd]').forEach(b=> b.onclick=()=>{ WS_CART.splice(+b.dataset.wcd,1); rWsSale(); });
   /* บิลย้อนหลัง */
-  const list=WSALES.filter(w=>inScope(w.branch)).slice().sort((a,b)=>b.at.localeCompare(a.at));
+  perBar('wsPer','ws', rWsSale);
+  $('#expWs').onclick=expWholesale;
+  const list=WSALES.filter(w=>inScope(w.branch)&&inPer('ws',w.at)).slice().sort((a,b)=>b.at.localeCompare(a.at));
   $('#wsList').innerHTML = list.length? list.map(w=>{
       const pt=wsPartnerById(w.partnerId), st=finApStatus(w);
       return '<div class="acblk"><b>'+esc(pt?pt.name:'—')+'</b> '+pill(st, st==='ผ่าน'?'good':(st==='ไม่ผ่าน'?'bad':'warn'))
@@ -4359,7 +4492,9 @@ function rTransfer(){
   $('#tTo').innerHTML=COMPANIES.map(co=>'<optgroup label="'+esc(co.name)+'">'
     +branchesOf(co.id).map(b=>'<option value="'+b.code+'">'+esc(b.name)+'</option>').join('')+'</optgroup>').join('');
   const u0=UNITS.find(x=>x.id===$('#tUnit').value); $('#tFrom').value=u0?bName(u0.branch):'';
-  const trL=TRANSFERS.map(t=>({t, u:UNITS.find(x=>x.id===t.unitId)}));
+  perBar('trPer','transfer', rTransfer);
+  $('#expTr').onclick=expTransfers;
+  const trL=TRANSFERS.filter(t=>inPer('transfer',t.at)).map(t=>({t, u:UNITS.find(x=>x.id===t.unitId)}));
   tbl($('#tList'), ['วันที่','รุ่น','จาก','ไป','สถานะ',''],
     trL.map(({t,u})=>'<tr><td>'+thDate(t.at)+'</td><td><b>'+esc(u?u.model:'—')+'</b><div class="tsub mono">'+esc(u?u.engine:'')+'</div></td>'
         +'<td>'+esc(bName(t.from))+'</td><td>'+esc(bName(t.to))+'</td>'
@@ -4410,7 +4545,9 @@ function saveQuote(){
   return q;
 }
 function rQuoteList(){
-  const qs=QUOTES.filter(q=>inScope(q.branch));
+  perBar('quotePer','quote', rQuoteList);
+  $('#expQuote').onclick=expQuotes;
+  const qs=QUOTES.filter(q=>inScope(q.branch)&&inPer('quote',q.at));
   const mdl=v=>esc(PRICE[v]?PRICE[v].m:(v||'—'));
   tbl($('#qList'), ['เลขที่','วันที่','ลูกค้า','รุ่น',{t:'ดาวน์',n:1},''],
     qs.map(q=>'<tr><td class="mono">'+esc(q.no)+'</td><td>'+thDate(q.at)+'</td>'
@@ -5393,6 +5530,7 @@ function rService(){
       b.classList.add('on'); $$('#s-service .pane').forEach(p=>p.classList.toggle('on',p.id===b.dataset.p)); });
     $('#svTech').innerHTML=STAFF.filter(s=>s.role==='tech'||s.role==='stock').map(s=>'<option>'+esc(s.nick)+'</option>').join('')||'<option>ช่างเอก</option>';
     $('#svFind').onclick=svLookup;
+    $('#expRemind').onclick=expReminds;
     $('#svSearch').onkeydown=e=>{ if(e.key==='Enter') svLookup(); };
     $('#svDate').value=TODAY;
     $('#svSave').onclick=svSave;
@@ -5536,7 +5674,9 @@ function careBrief(saleId){
     +(nxt? ' · รอบต่อไป '+nxt.kind+' ('+thDate(nxt.due)+')' : ' · ครบทุกรอบแล้ว');
 }
 function rCare(){
-  const rows=CARE.filter(r=>inScope(r.branch))
+  perBar('carePer','care', rCare);
+  $('#expCare').onclick=expCareList;
+  const rows=CARE.filter(r=>inScope(r.branch)&&inPer('care',r.createdAt))
     .map(r=>({r, c:CUSTOMERS.find(x=>x.id===r.custId), s:SALES.find(x=>x.id===r.saleId)}))
     .filter(x=>x.c && x.s && !x.s.void)
     .sort((a,b)=>{ const na=(a.r.tasks.find(t=>!t.done)||{}).due||'9999',
@@ -5647,7 +5787,9 @@ function rPartSale(){
   }
   $('#msPart').innerHTML=PARTS.filter(p=>inScope(p.branch)).map(p=>'<option value="'+p.id+'">'+esc(p.name)+' (เหลือ '+p.qty+')</option>').join('');
   msPrev();
-  const msL=PMOVES.filter(m=>inScope(m.branch)).slice().reverse().slice(0,15);
+  perBar('movePer','move', rPartSale);
+  $('#expMove').onclick=expMoves;
+  const msL=PMOVES.filter(m=>inScope(m.branch)&&inPer('move',m.at)).slice().reverse();
   tbl($('#msTable'), ['วันที่','อะไหล่','ประเภท',{t:'จำนวน',n:1},'สาขา'],
     msL.map(m=>{ const p=PARTS.find(x=>x.id===m.partId);
       return '<tr><td>'+thDate(m.at)+'</td><td>'+esc(p?p.name:'—')+'</td>'
@@ -5667,6 +5809,7 @@ function msPrev(){ const p=PARTS.find(x=>x.id===$('#msPart').value); const q=num
 /* ============================= 15. ของแถม ============================= */
 function rGift(){
   if(!$('#gSave').dataset.init){ $('#gSave').dataset.init=1;
+    $('#expGift').onclick=expGifts;
     $('#gBranch').innerHTML=BRANCHES.filter(b=>inScope(b.code)).map(b=>'<option value="'+b.code+'">'+esc(b.name)+'</option>').join('');
     $('#gSave').onclick=()=>{ const n=$('#gName').value.trim(); if(!n){ toast('กรอกชื่อของแถม','',1); return; }
       const ex=GIFTS.find(g=>g.name===n&&g.branch===$('#gBranch').value);
@@ -5710,8 +5853,9 @@ let eFilesArr=[];
 /* ชุดส่งบัญชีรายเดือน — ขาย / ค่าใช้จ่าย / รับเงิน ของงวดที่เลือก */
 function bookkeeperPack(){
   if(noMoney()){ toast('ไม่มีสิทธิ์ส่งออกชุดบัญชี','',1); return; }
-  const m=$('#acMonth').value, inM=d=>String(d||'').slice(0,7)===m;
-  const label='บัญชี_'+m;
+  /* v1.24: ออกตามช่วงที่เลือกบนหน้าค่าใช้จ่าย ไม่ผูกกับเดือนเดียวอีกแล้ว */
+  const inM=d=>inPer('expense', d);
+  const label='บัญชี_'+perFile('expense');
   const sale=sScoped().filter(s=>inM(s.soldAt));
   csv(label+'_ขาย',['วันที่','สาขา','ลูกค้า','เบอร์โทร','รุ่น','เลขเครื่อง','ราคาก่อน VAT','VAT 7%','ราคาสุทธิ','วิธีชำระ','เซลล์'],
     sale.map(s=>{ const u=UNITS.find(x=>x.id===s.unitId), c=CUSTOMERS.find(x=>x.id===s.custId);
@@ -5734,7 +5878,7 @@ function bookkeeperPack(){
   csv(label+'_ขายอะไหล่',['วันที่','สาขา','รหัส','ชื่ออะไหล่','จำนวน','ราคา/ชิ้น','รวม'],
     pm.map(x=>{ const p=PARTS.find(y=>y.id===x.partId);
       return [x.at,bName(x.branch),p?p.code:'',p?p.name:'',-x.qty,p?p.price:0,p?p.price*-x.qty:0]; }));
-  toast('ส่งออกชุดส่งบัญชีแล้ว','5 ไฟล์ · งวด '+m);
+  toast('ส่งออกชุดส่งบัญชีแล้ว','5 ไฟล์ · '+perText('expense'));
 }
 function rExpense(){
   if(!$('#eSave').dataset.init){ $('#eSave').dataset.init=1;
@@ -5767,15 +5911,10 @@ function rExpense(){
         $('#eAmt').value=0; $('#eVendor').value=''; $('#eInv').value=''; $('#eNote').value='';
         eFilesArr=[]; eDraw(); refreshAll();
       }); };
-    /* 12 เดือนย้อนหลังให้เลือกงวดส่งบัญชี */
-    $('#acMonth').innerHTML=Array.from({length:12},(_,i)=>{
-      const d=new Date(NOW.getFullYear(), NOW.getMonth()-i, 1);
-      const v=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
-      return '<option value="'+v+'">'+TH_M[d.getMonth()]+' '+(d.getFullYear()+543)+'</option>'; }).join('');
     $('#expBook').onclick=bookkeeperPack;
-    $('#expExp').onclick=()=> csvMoney('ค่าใช้จ่าย',
+    $('#expExp').onclick=()=> csvMoney('ค่าใช้จ่าย_'+perFile('expense'),
       ['วันที่','สาขา','หมวดหมู่','พนักงานที่เบิก','ผู้ขาย','เลขที่ใบกำกับ','จำนวนเงิน','ใบเสร็จ'],
-      EXPENSES.filter(e=>inScope(e.branch)).map(e=>[e.at,bName(e.branch),e.cat,e.byName||'—',
+      EXPENSES.filter(e=>inScope(e.branch)&&inPer('expense',e.at)).map(e=>[e.at,bName(e.branch),e.cat,e.byName||'—',
         e.vendor,e.inv,e.amt,e.files.length?'แนบแล้ว':'หาย']), [6]);
     function eDraw(){ $('#eFiles').innerHTML=eFilesArr.map((f,i)=>'<div class="frow">'+ic('clip','i i-sm')+'<span>'+esc(f)+'</span><button class="fx" data-i="'+i+'">'+ic('x','i i-sm')+'</button></div>').join('');
       $$('#eFiles .fx').forEach(b=> b.onclick=()=>{ eFilesArr.splice(+b.dataset.i,1); eDraw(); }); }
@@ -5789,7 +5928,8 @@ function rExpense(){
     const list=STAFF.filter(x=>inScope(x.branch));
     el.innerHTML=list.map(x=>'<option value="'+x.id+'">'+esc(x.name)+' · '+esc(ROLES[x.role].name)+'</option>').join('');
     el.value = list.some(x=>x.id===want)? want : (list.some(x=>x.id===ME.id)? ME.id : (list[0]||{}).id||''); })();
-  const es=EXPENSES.filter(e=>inScope(e.branch));
+  perBar('expPer','expense', rExpense);
+  const es=EXPENSES.filter(e=>inScope(e.branch)&&inPer('expense',e.at));
   const mtd=es.filter(e=>e.at>=TODAY.slice(0,8)+'01');
   const noRcpt=es.filter(e=>!e.files.length);
   const byCat={}; es.forEach(e=>byCat[e.cat]=(byCat[e.cat]||0)+e.amt);
@@ -6912,6 +7052,7 @@ function ofDecide(id, ok, note){
 }
 function rHr(){
   if(!$('#lvSave').dataset.init){ $('#lvSave').dataset.init=1;
+    $('#expLeave').onclick=expLeaves;
     $$('#hrTabs button').forEach(b=> b.onclick=()=>{ $$('#hrTabs button').forEach(x=>x.classList.remove('on'));
       b.classList.add('on'); $$('#s-hr .pane').forEach(p=>p.classList.toggle('on',p.id===b.dataset.p)); });
     $('#lvFrom').value=TODAY; $('#lvTo').value=TODAY; $('#ofDate').value=addDays(TODAY,1);
@@ -7320,6 +7461,7 @@ function prSlip(){
 
 /* ============================= 19. ผู้ใช้ ============================= */
 function rUsers(){
+  $('#expStaff').onclick=expStaffList;
   tbl($('#uTable'), ['ชื่อ','ชื่อเล่น','บทบาท','สาขา','เห็นทุกสาขา','เห็นตัวเงิน','อนุมัติได้'],
     STAFF.map(s=>{ const p=ROLES[s.role];
       return '<tr><td><b>'+esc(s.name)+'</b></td><td>'+esc(s.nick)+'</td><td>'+pill(p.name,'info')+'</td>'
@@ -8018,9 +8160,10 @@ function rFlow(){
 }
 
 /* ============================= 23. รายงาน ============================= */
-/* 9 ประเภท แยกแท็บตามที่เจ้าของร้านขอ — ทุกแท็บ: ตัวกรองเดือน/สาขา + KPI + ตาราง + CSV + พิมพ์
+/* 9 ประเภท แยกแท็บตามที่เจ้าของร้านขอ — ทุกแท็บ: ช่วงเวลา/สาขา + KPI + ตาราง + CSV + พิมพ์
    คอลัมน์เงินถูกตัดตามสิทธิ์ทั้งบนจอ ใน CSV และตอนพิมพ์ (ผ่านธง money ต่อคอลัมน์)
-   แท็บ daily ใช้ตัวกรองวัน (rpDay) แทนเดือน · แท็บ monthly มีตัวสลับมิติ (rpDim) */
+   v1.24: ทุกแท็บกรองด้วยช่วงเวลาชุดเดียวกัน (perOf('report')) ไม่มีแท็บไหนมีกติกาวันของตัวเองอีก
+   สองแท็บสต็อกเป็นภาพนิ่ง ณ ปัจจุบันตามธรรมชาติของมัน · แท็บ monthly มีตัวสลับมิติ (rpDim) */
 const RP_TABS=[
   {k:'vstock',  n:'สต็อกรถ',          r:['admin','manager','acct','stock']},
   {k:'pstock',  n:'สต็อกอะไหล่',      r:['admin','manager','acct','stock']},
@@ -8033,23 +8176,13 @@ const RP_TABS=[
   {k:'payroll', n:'เงินเดือน + ค่าคอม', r:['admin','manager','acct','hr']}
 ];
 let RP_SEL='';
-function rpMonths(){
-  const set=new Set([TODAY.slice(0,7)]);
-  SALES.forEach(s=>set.add(s.soldAt.slice(0,7)));
-  EXPENSES.forEach(e=>set.add(String(e.at).slice(0,7)));
-  SERVICE.forEach(v=>set.add(String(v.at).slice(0,7)));
-  PMOVES.forEach(x=>set.add(String(x.at).slice(0,7)));
-  AR.forEach(a=>(a.pays||[]).forEach(p=>set.add(String(p.at).slice(0,7))));
-  return [...set].sort().reverse();
-}
 const rpMonthTh = m => m? TH_M[+m.slice(5,7)-1]+' '+(+m.slice(0,4)+543) : 'ทุกช่วงเวลา';
-/* ตัวกรองที่เลือกอยู่ — สาขาเคารพ scope เสมอ · d/dim ใช้เฉพาะแท็บ daily/monthly */
+/* ตัวกรองที่เลือกอยู่ — สาขาเคารพ scope เสมอ · ช่วงเวลามาจาก perOf('report') ที่เดียว (v1.24)
+   ทุกแท็บใช้ inR ตัวเดียวกัน จะได้ไม่มีแท็บไหนกรองด้วยกติกาของตัวเองแล้วหลุดจากช่วงที่เลือก */
 function rpScope(){
-  const m=$('#rpMonth').value, b=$('#rpBranch').value;
-  const d=($('#rpDay')&&$('#rpDay').value)||TODAY;
-  return { m, b, d, dim:($('#rpDim')&&$('#rpDim').value)||'model',
-    inB:c=>inScope(c)&&(!b||c===b), inM:x=>!m||String(x||'').slice(0,7)===m,
-    inD:x=>String(x||'').slice(0,10)===d };
+  const b=$('#rpBranch').value, p=perOf('report');
+  return { p, b, dim:($('#rpDim')&&$('#rpDim').value)||'model',
+    inB:c=>inScope(c)&&(!b||c===b), inR:x=>inPer('report',x) };
 }
 /* แต่ละแท็บคืน {kpi:[[หัว,ค่า,รอง]], head:[{t,n,money}], rows:[[ค่าดิบ]], note} — ตัวเดียวใช้ทั้งจอ/CSV/พิมพ์ */
 function rpBuild(tab){
@@ -8066,22 +8199,22 @@ function rpBuild(tab){
         ['ทุนจมรวม', money(av.reduce((s,u)=>s+u.cost,0)),''],
         ['ค้างเกิน '+CFG.aging+' วัน', av.filter(u=>age(u)>CFG.aging).length+' <small>คัน</small>','ต้องเร่งระบาย']],
       head:[{t:'รุ่น'},{t:'รหัส'},{t:'สี'},{t:'คงเหลือ',n:1},{t:'มูลค่าทุน',n:1,money:1},{t:'มูลค่าขาย',n:1},{t:'อายุเฉลี่ย (วัน)',n:1},{t:'ค้างเกินเกณฑ์',n:1},{t:'รอราคา'}],
-      rows, note:'สต็อก ณ ปัจจุบัน — ตัวกรองเดือนไม่มีผลกับแท็บนี้' };
+      rows, note:'สต็อก ณ ปัจจุบัน — ช่วงเวลาไม่มีผลกับแท็บนี้ (นับรถที่มีอยู่ตอนนี้ ไม่ใช่ที่เคยมีในช่วง)' };
   }
   if(tab==='pstock'){
     const ps=PARTS.filter(p=>sc.inB(p.branch));
-    const mv=PMOVES.filter(x=>sc.inB(x.branch)&&sc.inM(x.at)&&x.qty<0).reduce((s,x)=>s-x.qty,0);
+    const mv=PMOVES.filter(x=>sc.inB(x.branch)&&sc.inR(x.at)&&x.qty<0).reduce((s,x)=>s-x.qty,0);
     return { card:{title:1,right:3}, kpi:[['รายการอะไหล่',ps.length,''],
         ['ต่ำกว่าจุดสั่งซื้อ',ps.filter(p=>p.qty<p.min).length,'ต้องสั่งเพิ่ม'],
         ['มูลค่าสต๊อก (ทุน)', money(ps.reduce((s,p)=>s+p.cost*p.qty,0)),'']],
       head:[{t:'รหัส'},{t:'ชื่อ'},{t:'สาขา'},{t:'คงเหลือ',n:1},{t:'จุดสั่งซื้อ',n:1},{t:'ทุน/ชิ้น',n:1,money:1},{t:'มูลค่าทุนรวม',n:1,money:1},{t:'สถานะ'}],
       rows: ps.map(p=>[p.code,p.name,bName(p.branch),p.qty,p.min,p.cost,p.cost*p.qty,
         p.qty===0?'หมด':(p.qty<p.min?'ใกล้หมด':'ปกติ')]),
-      note:'เบิก/ขายออกช่วง'+rpMonthTh(sc.m)+' รวม '+mv+' ชิ้น' };
+      note:'เบิก/ขายออกช่วง'+perText('report')+' รวม '+mv+' ชิ้น' };
   }
   if(tab==='sales'){
-    const ss=SALES.filter(s=>!s.void&&sc.inB(s.branch)&&sc.inM(s.soldAt)).sort((a,b)=>a.soldAt.localeCompare(b.soldAt));
-    return { card:{title:1,right:8}, kpi:[['ขายได้',ss.length+' <small>คัน</small>',rpMonthTh(sc.m)],
+    const ss=SALES.filter(s=>!s.void&&sc.inB(s.branch)&&sc.inR(s.soldAt)).sort((a,b)=>a.soldAt.localeCompare(b.soldAt));
+    return { card:{title:1,right:8}, kpi:[['ขายได้',ss.length+' <small>คัน</small>',perText('report')],
         ['ยอดขายรวม', money(ss.reduce((s,x)=>s+x.net,0)),''],
         ['กำไรขั้นต้นรวม', money(ss.reduce((s,x)=>s+x.gp,0)),'หลังหักของแถม']],
       head:[{t:'วันที่'},{t:'ลูกค้า'},{t:'รุ่น'},{t:'สาขา'},{t:'เซลล์'},{t:'ชำระ'},{t:'ก่อน VAT',n:1},{t:'VAT',n:1},{t:'สุทธิ',n:1},{t:'ทุน',n:1,money:1},{t:'กำไร',n:1,money:1}],
@@ -8092,22 +8225,22 @@ function rpBuild(tab){
       note:'' };
   }
   if(tab==='money'){
-    const recv=[]; AR.filter(a=>sc.inB(a.branch)).forEach(a=>{ (a.pays||[]).filter(p=>sc.inM(p.at)).forEach(p=>{
+    const recv=[]; AR.filter(a=>sc.inB(a.branch)).forEach(a=>{ (a.pays||[]).filter(p=>sc.inR(p.at)).forEach(p=>{
       const s=SALES.find(x=>x.id===a.saleId), c=s&&CUSTOMERS.find(x=>x.id===s.custId);
       recv.push([thDate(p.at),'รับเงิน', (a.kind==='finance'?(finById(a.finId)||{}).name||'ไฟแนนซ์':'ลูกค้า')+(c?' — '+c.name:''), bName(a.branch), p.way||'', p.amt]); }); });
     /* รายได้ศูนย์ซ่อม + ขายอะไหล่หน้าร้าน — ที่เจ้าของขอให้รวมเข้ารายงานการเงิน */
-    const svc=SERVICE.filter(v=>sc.inB(v.branch)&&sc.inM(v.at)).map(v=>{
+    const svc=SERVICE.filter(v=>sc.inB(v.branch)&&sc.inR(v.at)).map(v=>{
       const c=CUSTOMERS.find(x=>x.id===v.custId);
       return [thDate(v.at),'งานซ่อม', (v.no||'ใบงาน')+' — '+v.type+(c?' · '+c.name:''), bName(v.branch), v.status, v.labor+v.parts]; });
-    const pts=PMOVES.filter(x=>x.qty<0&&x.type==='sale'&&sc.inB(x.branch)&&sc.inM(x.at)).map(x=>{
+    const pts=PMOVES.filter(x=>x.qty<0&&x.type==='sale'&&sc.inB(x.branch)&&sc.inR(x.at)).map(x=>{
       const p=PARTS.find(y=>y.id===x.partId);
       return [thDate(x.at),'ขายอะไหล่', (p?p.name:'—')+' × '+(-x.qty), bName(x.branch), '', p?p.price*-x.qty:0]; });
-    const exp=EXPENSES.filter(e=>sc.inB(e.branch)&&sc.inM(e.at))
+    const exp=EXPENSES.filter(e=>sc.inB(e.branch)&&sc.inR(e.at))
       .map(e=>[thDate(e.at),'จ่ายออก', e.cat+' — '+e.vendor, bName(e.branch), e.inv||'', -e.amt]);
     const rows=recv.concat(svc, pts, exp);
     const rin=recv.concat(svc,pts).reduce((s,r)=>s+r[5],0), rout=-exp.reduce((s,r)=>s+r[5],0);
     const owe=AR.filter(a=>sc.inB(a.branch)).reduce((s,a)=>s+(a.due-a.paid),0);
-    return { card:{title:2,right:5}, kpi:[['รับเงินจริง', money(rin), rpMonthTh(sc.m)],
+    return { card:{title:2,right:5}, kpi:[['รับเงินจริง', money(rin), perText('report')],
         ['จ่ายออก', money(rout),''],
         ['ค้างรับคงเหลือ', money(owe),'ทุกงวดรวมกัน']],
       head:[{t:'วันที่'},{t:'ประเภท'},{t:'รายการ'},{t:'สาขา'},{t:'อ้างอิง/วิธี'},{t:'จำนวน (฿)',n:1,money:1}],
@@ -8115,41 +8248,44 @@ function rpBuild(tab){
         +' · งานซ่อมนับตามวันเปิดใบงาน · อะไหล่นับเฉพาะขายหน้าร้าน (เบิกเข้าใบงานรวมในค่าอะไหล่งานซ่อมแล้ว) ราคาอ้างอิงปัจจุบัน' };
   }
   if(tab==='daily'){
-    /* ปิดยอดรายวัน — เงินเข้า/ออกของวันเดียว ใช้ปิดร้านตอนเย็น (กรองด้วย rpDay ไม่ใช่เดือน) */
-    const day=sc.d, rows=[];
-    SALES.filter(s=>!s.void&&s.pay==='cash'&&sc.inB(s.branch)&&s.soldAt===day).forEach(s=>{
+    /* ปิดยอด — เงินเข้า/ออกของช่วงที่เลือก ใช้ปิดร้านตอนเย็น (เลือกชิป "วันนี้" = ใบปิดยอดวันเดียวเหมือนเดิม)
+       v1.24: เลิกผูกวันเดียว ใช้ช่วงเดียวกับทุกแท็บ จึงต้องมีคอลัมน์วันที่ ไม่งั้นแถวหลายวันแยกกันไม่ออก */
+    const rows=[];
+    SALES.filter(s=>!s.void&&s.pay==='cash'&&sc.inB(s.branch)&&sc.inR(s.soldAt)).forEach(s=>{
       const u=UNITS.find(x=>x.id===s.unitId), c=CUSTOMERS.find(x=>x.id===s.custId);
       const ar=AR.find(a=>a.saleId===s.id);                      /* ตั้งลูกหนี้ไว้เท่าไร ไปนับวันรับชำระจริง */
       const amt=s.net-(ar?ar.due:0);
-      if(amt>0) rows.push(['ขายรถ (สด)', (c?c.name:'—')+' — '+(u?u.model:'—'), bName(s.branch), s.docNo||'', amt]); });
-    SALES.filter(s=>!s.void&&s.pay==='finance'&&s.down>0&&sc.inB(s.branch)&&s.soldAt===day).forEach(s=>{
+      if(amt>0) rows.push([s.soldAt,'ขายรถ (สด)', (c?c.name:'—')+' — '+(u?u.model:'—'), bName(s.branch), s.docNo||'', amt]); });
+    SALES.filter(s=>!s.void&&s.pay==='finance'&&s.down>0&&sc.inB(s.branch)&&sc.inR(s.soldAt)).forEach(s=>{
       const u=UNITS.find(x=>x.id===s.unitId), c=CUSTOMERS.find(x=>x.id===s.custId);
-      rows.push(['เงินดาวน์', (c?c.name:'—')+' — '+(u?u.model:'—'), bName(s.branch), s.docNo||'', s.down]); });
-    AR.filter(a=>sc.inB(a.branch)).forEach(a=>{ (a.pays||[]).filter(p=>sc.inD(p.at)).forEach(p=>{
+      rows.push([s.soldAt,'เงินดาวน์', (c?c.name:'—')+' — '+(u?u.model:'—'), bName(s.branch), s.docNo||'', s.down]); });
+    AR.filter(a=>sc.inB(a.branch)).forEach(a=>{ (a.pays||[]).filter(p=>sc.inR(p.at)).forEach(p=>{
       const s=SALES.find(x=>x.id===a.saleId), c=s&&CUSTOMERS.find(x=>x.id===s.custId);
-      rows.push(['รับชำระ', (a.kind==='finance'?(finById(a.finId)||{}).name||'ไฟแนนซ์':'ลูกค้า')+(c?' — '+c.name:''), bName(a.branch), p.way||'', p.amt]); }); });
-    PMOVES.filter(x=>x.qty<0&&x.type==='sale'&&sc.inB(x.branch)&&sc.inD(x.at)).forEach(x=>{
+      rows.push([String(p.at).slice(0,10),'รับชำระ', (a.kind==='finance'?(finById(a.finId)||{}).name||'ไฟแนนซ์':'ลูกค้า')+(c?' — '+c.name:''), bName(a.branch), p.way||'', p.amt]); }); });
+    PMOVES.filter(x=>x.qty<0&&x.type==='sale'&&sc.inB(x.branch)&&sc.inR(x.at)).forEach(x=>{
       const p=PARTS.find(y=>y.id===x.partId);
-      rows.push(['ขายอะไหล่', (p?p.name:'—')+' × '+(-x.qty), bName(x.branch), '', p?p.price*-x.qty:0]); });
-    SERVICE.filter(v=>sc.inB(v.branch)&&sc.inD(v.at)).forEach(v=>{
+      rows.push([String(x.at).slice(0,10),'ขายอะไหล่', (p?p.name:'—')+' × '+(-x.qty), bName(x.branch), '', p?p.price*-x.qty:0]); });
+    SERVICE.filter(v=>sc.inB(v.branch)&&sc.inR(v.at)).forEach(v=>{
       const c=CUSTOMERS.find(x=>x.id===v.custId);
-      rows.push(['ศูนย์ซ่อม', (v.no||'ใบงาน')+' — '+v.type+(c?' · '+c.name:''), bName(v.branch), v.status, v.labor+v.parts]); });
+      rows.push([String(v.at).slice(0,10),'ศูนย์ซ่อม', (v.no||'ใบงาน')+' — '+v.type+(c?' · '+c.name:''), bName(v.branch), v.status, v.labor+v.parts]); });
     const nIn=rows.length;
-    EXPENSES.filter(e=>sc.inB(e.branch)&&sc.inD(e.at)).forEach(e=>
-      rows.push(['จ่ายออก', e.cat+' — '+e.vendor, bName(e.branch), e.inv||'', -e.amt]));
-    const inn=rows.slice(0,nIn).reduce((s,r)=>s+r[4],0);
-    const out=-rows.slice(nIn).reduce((s,r)=>s+r[4],0);
-    return { card:{title:1,right:4}, kpi:[['รับเข้ารวม', money(inn), thDate(day)],
+    EXPENSES.filter(e=>sc.inB(e.branch)&&sc.inR(e.at)).forEach(e=>
+      rows.push([String(e.at).slice(0,10),'จ่ายออก', e.cat+' — '+e.vendor, bName(e.branch), e.inv||'', -e.amt]));
+    const inn=rows.slice(0,nIn).reduce((s,r)=>s+r[5],0);
+    const out=-rows.slice(nIn).reduce((s,r)=>s+r[5],0);
+    rows.sort((a,b)=>String(a[0]).localeCompare(String(b[0])));
+    rows.forEach(r=> r[0]=thDate(r[0]));
+    return { card:{title:2,right:5}, kpi:[['รับเข้ารวม', money(inn), perText('report')],
         ['จ่ายออกรวม', money(out), (rows.length-nIn)+' รายการ'],
-        ['เงินสุทธิของวัน', money(inn-out), 'รับเข้า − จ่ายออก']],
-      head:[{t:'ประเภท'},{t:'รายการ'},{t:'สาขา'},{t:'อ้างอิง/วิธี'},{t:'จำนวน (฿)',n:1,money:1}],
-      rows, note:'ปิดยอดวันเดียว — เลือกวันได้จากช่องวันที่ด้านบน (ตัวกรองเดือนไม่มีผล)'
-        +' · ขายสดนับเงินรับวันขาย ยอดที่ตั้งเป็นลูกหนี้ไปนับวันรับชำระจริง · งานซ่อมนับทุกใบงานที่เปิดในวัน'
+        ['เงินสุทธิของช่วง', money(inn-out), 'รับเข้า − จ่ายออก']],
+      head:[{t:'วันที่'},{t:'ประเภท'},{t:'รายการ'},{t:'สาขา'},{t:'อ้างอิง/วิธี'},{t:'จำนวน (฿)',n:1,money:1}],
+      rows, note:'เลือกชิป "วันนี้" ด้านบน = ใบปิดยอดของวันเดียวเหมือนเดิม'
+        +' · ขายสดนับเงินรับวันขาย ยอดที่ตั้งเป็นลูกหนี้ไปนับวันรับชำระจริง · งานซ่อมนับทุกใบงานที่เปิดในช่วง'
         +' · อะไหล่นับเฉพาะขายหน้าร้าน ราคาอ้างอิงราคาขายปัจจุบัน' };
   }
   if(tab==='monthly'){
     /* ยอดขายรายเดือนแยกมิติ — สลับ รุ่น/เซลล์/สาขา ด้วย rpDim */
-    const ss=SALES.filter(s=>!s.void&&sc.inB(s.branch)&&sc.inM(s.soldAt));
+    const ss=SALES.filter(s=>!s.void&&sc.inB(s.branch)&&sc.inR(s.soldAt));
     const keyOf=s=> sc.dim==='sales'? s.sales
       : sc.dim==='branch'? bName(s.branch)
       : (UNITS.find(x=>x.id===s.unitId)||{}).model||'—';
@@ -8159,7 +8295,7 @@ function rpBuild(tab){
     const keys=Object.keys(grp).sort((a,b)=>grp[b].net-grp[a].net);
     const tot=ss.reduce((s,x)=>s+x.net,0);
     const dimTh={model:'รุ่น',sales:'เซลล์',branch:'สาขา'}[sc.dim];
-    return { card:{title:0,right:2}, kpi:[['ขายได้', ss.length+' <small>คัน</small>', rpMonthTh(sc.m)],
+    return { card:{title:0,right:2}, kpi:[['ขายได้', ss.length+' <small>คัน</small>', perText('report')],
         ['ยอดขายรวม', money(tot), keys.length+' '+dimTh],
         ['อันดับ 1', keys.length?esc(keys[0]):'—', keys.length&&tot? Math.round(grp[keys[0]].net/tot*100)+'% ของยอดขาย':'']],
       head:[{t:dimTh},{t:'ขายได้ (คัน)',n:1},{t:'ยอดขายรวม',n:1,money:1},{t:'สัดส่วน',n:1},
@@ -8169,8 +8305,8 @@ function rpBuild(tab){
       note:'สลับมุมมอง รุ่น/เซลล์/สาขา จากตัวเลือกด้านบน — นับเฉพาะการขายที่ไม่ถูกยกเลิก' };
   }
   if(tab==='finsum'){
-    /* สรุปไฟแนนซ์รายบริษัท — อัตราอนุมัติ เวลารอผล ยอดจัด ค่าคอม (กรองตามเดือนที่ยื่นเรื่อง) */
-    const cs=FINCASES.filter(c=>sc.inB(c.branch)&&sc.inM(c.at));
+    /* สรุปไฟแนนซ์รายบริษัท — อัตราอนุมัติ เวลารอผล ยอดจัด ค่าคอม (กรองตามวันที่ยื่นเรื่อง) */
+    const cs=FINCASES.filter(c=>sc.inB(c.branch)&&sc.inR(c.at));
     const rows=FIN_CO.map(f=>{
       const g=cs.filter(c=>c.finId===f.id);
       const aL=g.filter(c=>c.status==='อนุมัติแล้ว'), rL=g.filter(c=>c.status==='ปฏิเสธ');
@@ -8182,37 +8318,47 @@ function rpBuild(tab){
       return [f.name, g.length, aL.length, rL.length, pend,
         g.length?Math.round(aL.length/g.length*100)+'%':'—', dn?Math.round(dsum/dn):'—',
         amt, aL.length*(f.commission||0)];
-    }).filter(r=>r[1]>0 || !sc.m);                      /* เดือนที่เลือกไม่มีเคสของเจ้าไหน ตัดแถวนั้นออก */
+    }).filter(r=>r[1]>0);                               /* ช่วงที่เลือกไม่มีเคสของเจ้าไหน ตัดแถวนั้นออก */
     const aAll=cs.filter(c=>c.status==='อนุมัติแล้ว').length;
     const totComm=rows.reduce((s,r)=>s+r[8],0);
-    return { card:{title:0,right:5}, kpi:[['เคสยื่นในงวด', cs.length+' <small>เคส</small>', rpMonthTh(sc.m)],
+    return { card:{title:0,right:5}, kpi:[['เคสยื่นในงวด', cs.length+' <small>เคส</small>', perText('report')],
         ['อัตราอนุมัติรวม', cs.length?Math.round(aAll/cs.length*100)+'%':'—', 'อนุมัติ '+aAll+' จาก '+cs.length+' เคส'],
         ['ค่าคอมคาดรับ', money(totComm), 'เคสอนุมัติ × เรตต่อสัญญา']],
       head:[{t:'ไฟแนนซ์'},{t:'ยื่น',n:1},{t:'อนุมัติ',n:1},{t:'ปฏิเสธ',n:1},{t:'รอผล',n:1},
         {t:'อัตราอนุมัติ',n:1},{t:'เฉลี่ยรอผล (วัน)',n:1},{t:'ยอดจัดอนุมัติ',n:1,money:1},{t:'ค่าคอมคาดรับ',n:1,money:1}],
-      rows, note:'นับเคสตามเดือนที่ยื่นเรื่อง · เวลารอผลนับจากวันส่งเรื่องถึงวันตัดสิน (จากประวัติเคส)'
+      rows, note:'นับเคสตามวันที่ยื่นเรื่อง · เวลารอผลนับจากวันส่งเรื่องถึงวันตัดสิน (จากประวัติเคส)'
         +' · ค่าคอมประมาณจากเรตต่อสัญญาของแต่ละเจ้า' };
   }
   if(tab==='tax'){
-    const ss=SALES.filter(s=>!s.void&&sc.inB(s.branch)&&sc.inM(s.soldAt)).sort((a,b)=>a.soldAt.localeCompare(b.soldAt));
+    const ss=SALES.filter(s=>!s.void&&sc.inB(s.branch)&&sc.inR(s.soldAt)).sort((a,b)=>a.soldAt.localeCompare(b.soldAt));
     const rows=ss.map(s=>{ const c=CUSTOMERS.find(x=>x.id===s.custId), u=UNITS.find(x=>x.id===s.unitId);
       const base=Math.round(s.net/(1+CFG.vat/100));
       return [thDate(s.soldAt), (s.docs&&s.docs.TAXINV)||s.docNo||'(ยังไม่ออกใบกำกับ)', c?c.name:'—',
         u?u.model:'—', base, s.net-base, s.net]; });
     const outVat=ss.reduce((s,x)=>s+(x.net-Math.round(x.net/(1+CFG.vat/100))),0);
-    const expInv=EXPENSES.filter(e=>sc.inB(e.branch)&&sc.inM(e.at)&&e.inv);
+    const expInv=EXPENSES.filter(e=>sc.inB(e.branch)&&sc.inR(e.at)&&e.inv);
     const inVat=Math.round(expInv.reduce((s,e)=>s+e.amt,0)*CFG.vat/(100+CFG.vat));
-    return { card:{title:2,right:6}, kpi:[['ภาษีขาย', money(outVat), ss.length+' ใบ · '+rpMonthTh(sc.m)],
+    return { card:{title:2,right:6}, kpi:[['ภาษีขาย', money(outVat), ss.length+' ใบ · '+perText('report')],
         ['ภาษีซื้อ (ประมาณ)', money(inVat), 'จากรายจ่ายที่มีเลขใบกำกับ '+expInv.length+' ใบ'],
         ['ต้องนำส่ง (ประมาณ)', money(outVat-inVat),'ภาษีขาย − ภาษีซื้อ']],
       head:[{t:'วันที่'},{t:'เลขที่ใบกำกับ'},{t:'ลูกค้า'},{t:'รายการ'},{t:'ก่อนภาษี',n:1,money:1},{t:'VAT '+CFG.vat+'%',n:1,money:1},{t:'รวม',n:1,money:1}],
       rows, note:'ภาษีซื้อเป็น<b>ประมาณการ</b>จากรายจ่ายที่มีเลขใบกำกับ (คิด '+CFG.vat+'/107) — ตัวจริงต้องดูใบกำกับภาษีซื้อทีละใบ' };
   }
   if(tab==='payroll'){
-    const ym=sc.m||curDate().slice(0,7);
-    const rows=prCalc(ym).filter(r=>sc.inB(r.s.branch));
+    /* งวดเงินเดือนเป็นรายเดือนโดยธรรมชาติ — ช่วงที่เลือกคร่อมกี่เดือนก็รวมทุกเดือนนั้นมาบวกกันต่อคน
+       (ช่วงที่คร่อมครึ่งเดือนจะได้ทั้งเดือน เขียนบอกไว้ใน note ไม่ปล่อยให้เดาเอง) */
+    const yms=perMonths('report');
+    const agg=new Map();
+    yms.forEach(ym=> prCalc(ym).filter(r=>sc.inB(r.s.branch)).forEach(r=>{
+      const g=agg.get(r.s.id);
+      if(!g){ agg.set(r.s.id, {s:r.s, base:r.base, ot:r.ot, comm:r.comm, lateD:r.lateD, ssn:r.ssn, net:r.net,
+        att:{workDays:r.att.workDays, hrs:r.att.hrs, otH:r.att.otH, lateMin:r.att.lateMin, missDays:r.att.missDays}}); return; }
+      ['base','ot','comm','lateD','ssn','net'].forEach(k=> g[k]+=r[k]);
+      ['workDays','hrs','otH','lateMin','missDays'].forEach(k=> g.att[k]+=r.att[k]);
+    }));
+    const rows=[...agg.values()];
     const miss=rows.reduce((n,r)=>n+r.att.missDays,0);
-    return { card:{title:0,right:12}, kpi:[['จ่ายสุทธิรวม', money(rows.reduce((s,r)=>s+r.net,0)), rpMonthTh(ym)+' · '+rows.length+' คน'],
+    return { card:{title:0,right:12}, kpi:[['จ่ายสุทธิรวม', money(rows.reduce((s,r)=>s+r.net,0)), yms.map(rpMonthTh).join(' · ')+' · '+rows.length+' คน'],
         ['ค่าคอมรวม', money(rows.reduce((s,r)=>s+r.comm,0)), CFG.commPct+'% ของกำไร'],
         ['OT รวม', money(rows.reduce((s,r)=>s+r.ot,0)), hm1(rows.reduce((s,r)=>s+r.att.otH,0))+' ชม.']],
       head:[{t:'พนักงาน'},{t:'ตำแหน่ง'},{t:'สาขา'},{t:'วันทำงาน',n:1},{t:'ชม.รวม',n:1},{t:'OT (ชม.)',n:1},{t:'นาทีสาย',n:1},
@@ -8221,6 +8367,8 @@ function rpBuild(tab){
         r.att.workDays, +hm1(r.att.hrs), +hm1(r.att.otH), Math.round(r.att.lateMin),
         r.base, r.ot, r.comm, r.lateD, r.ssn, r.net]),
       note:'ใช้สูตรเดียวกับหน้าเงินเดือน — ชั่วโมง OT และนาทีสายมาจากบันทึกลงเวลาจริงทั้งเดือน'
+        +' · <b>งวดเงินเดือนคิดเป็นรายเดือน</b> ช่วงที่เลือกคร่อมเดือนไหนจะนับทั้งเดือนนั้น'
+        +' (รวมอยู่ '+yms.length+' งวด: '+yms.map(rpMonthTh).join(', ')+')'
         +(miss? ' · <b style="color:var(--attn)">มีวันไม่มีบันทึกลงเวลารวม '+miss+' วัน</b> ระบบไม่หักเงินอัตโนมัติ ต้องให้ผู้จัดการตรวจก่อนปิดงวด':'') };
   }
 }
@@ -8230,32 +8378,22 @@ function rReport(){
   if(!RP_SEL || !tabs.some(t=>t.k===RP_SEL)) RP_SEL=tabs[0].k;
   $('#rpTabs').innerHTML=tabs.map(t=>'<button class="'+(t.k===RP_SEL?'on':'')+'" data-rp="'+t.k+'">'+esc(t.n)+'</button>').join('');
   $$('#rpTabs [data-rp]').forEach(b=> b.onclick=()=>{ RP_SEL=b.dataset.rp; rReport(); });
-  /* ตัวกรองเฉพาะแท็บ — daily ใช้วันแทนเดือน · monthly มีตัวสลับมิติ (ค่าคงอยู่เพราะไม่ถูก rebuild) */
-  const isDaily=RP_SEL==='daily', isMon=RP_SEL==='monthly';
-  if(isDaily && !$('#rpDay').value) $('#rpDay').value=TODAY;
-  fsShow('rpDay', isDaily);
-  fsShow('rpDim', isMon);
-  fsShow('rpMonth', !isDaily);
-  /* ตัวกรอง */
-  /* ครั้งแรก default เดือนปัจจุบัน — หลังจากนั้นเคารพค่าที่เลือกจริง รวมถึง "ทุกช่วงเวลา" (ค่าว่าง) */
-  (function(){ const el=$('#rpMonth'), want=el.value, first=!el.dataset.ready;
-    el.innerHTML='<option value="">ทุกช่วงเวลา</option>'+rpMonths().map(m=>'<option value="'+m+'"'+(first&&m===TODAY.slice(0,7)?' selected':'')+'>'+rpMonthTh(m)+'</option>').join('');
-    if(!first) el.value=want; el.dataset.ready=1; })();
+  /* ช่วงเวลาเป็นตัวกรองหลักของทุกแท็บ (v1.24) — ตัวสลับมิติมีเฉพาะแท็บขายรายเดือน */
+  perBar('rpPer','report', rReport);
+  fsShow('rpDim', RP_SEL==='monthly');
   (function(){ const el=$('#rpBranch'), want=el.value;
     el.innerHTML='<option value="">ทุกสาขาที่ดูแล</option>'+BRANCHES.filter(b=>inScope(b.code)).map(b=>'<option value="'+b.code+'">'+esc(b.name)+'</option>').join('');
     if(want) el.value=want; })();
-  if(!$('#rpMonth').dataset.init){ $('#rpMonth').dataset.init=1;
-    $('#rpMonth').onchange=rReport; $('#rpBranch').onchange=rReport;
-    $('#rpDay').onchange=rReport; $('#rpDim').onchange=rReport;
+  if(!$('#rpBranch').dataset.init){ $('#rpBranch').dataset.init=1;
+    $('#rpBranch').onchange=rReport; $('#rpDim').onchange=rReport;
     $('#rpFilt').onclick=()=>openFilters('report');
     $('#rpCsv').onclick=()=>{ const d=rpBuild(RP_SEL);
-      csvMoney('รายงาน'+RP_TABS.find(t=>t.k===RP_SEL).n.replace(/\s/g,''),
+      csvMoney('รายงาน'+RP_TABS.find(t=>t.k===RP_SEL).n.replace(/\s/g,'')+'_'+perFile('report'),
         d.head.map(h=>h.t), d.rows, d.head.map((h,i)=>h.money?i:-1).filter(i=>i>=0)); };
     $('#rpPrint').onclick=()=>{ const d=rpBuild(RP_SEL), t=RP_TABS.find(x=>x.k===RP_SEL);
       const keep=d.head.map((h,i)=> noMoney()&&h.money? -1:i).filter(i=>i>=0);
-      const period = RP_SEL==='daily'? thDate($('#rpDay').value||TODAY)
-        : rpMonthTh($('#rpMonth').value)
-          +(RP_SEL==='monthly'?' · แยกตาม'+({model:'รุ่น',sales:'เซลล์',branch:'สาขา'}[$('#rpDim').value||'model']):'');
+      const period = perText('report')
+        +(RP_SEL==='monthly'?' · แยกตาม'+({model:'รุ่น',sales:'เซลล์',branch:'สาขา'}[$('#rpDim').value||'model']):'');
       printHTML('<div class="doc"><h2>'+esc(CFG.company)+'</h2>'
         +'<div class="dsub">รายงาน'+esc(t.n)+' · '+esc($('#rpBranch').value?bName($('#rpBranch').value):'ทุกสาขาที่ดูแล')
         +' · '+esc(period)+' · พิมพ์ '+thDate(TODAY)+'</div>'

@@ -32,19 +32,20 @@ const { chromium, EXE, BASE } = require('./env');
     await page.waitForTimeout(120);
     const nk = await page.$$eval('#rpKpi .kpi', els => els.length);
     if (nk !== 3) fails.push(`tab ${t}: kpi count ${nk}`);
-    // ตัวกรองเฉพาะแท็บโชว์ถูกตัว
+    // v1.24: ช่วงเวลาเป็นแถบชิปของทุกแท็บ · ตัวสลับมิติโชว์เฉพาะแท็บขายรายเดือน
     const vis = await page.evaluate(() => ({
-      day: $('#rpDay').style.display !== 'none',
+      per: !!document.querySelector('#rpPer [data-pr]'),
       dim: $('#rpDim').style.display !== 'none',
-      mon: $('#rpMonth').style.display !== 'none',
     }));
-    if (t === 'daily' && (!vis.day || vis.mon || vis.dim)) fails.push('daily controls wrong: ' + JSON.stringify(vis));
-    if (t === 'monthly' && (!vis.dim || vis.day || !vis.mon)) fails.push('monthly controls wrong: ' + JSON.stringify(vis));
-    if (t === 'sales' && (vis.day || vis.dim || !vis.mon)) fails.push('sales controls wrong: ' + JSON.stringify(vis));
+    if (!vis.per) fails.push(`tab ${t}: ไม่มีแถบช่วงเวลา`);
+    if (t === 'monthly' && !vis.dim) fails.push('monthly: ไม่มีตัวสลับมิติ');
+    if (t !== 'monthly' && vis.dim) fails.push(`tab ${t}: ตัวสลับมิติไม่ควรโชว์`);
   }
 
   // ---------- daily: ยอดตรงค่าที่คำนวณมือ + สูตรอิสระ ----------
-  await page.evaluate(() => { RP_SEL = 'daily'; rReport(); });
+  // v1.24: แท็บปิดยอดใช้ช่วงเวลาเดียวกับทุกแท็บ — เลือกชิป "วันนี้" คือใบปิดยอดวันเดียวแบบเดิม
+  await page.evaluate(() => { const st = perSt('report'); st.from = ''; st.to = ''; st.r = 1;
+    RP_SEL = 'daily'; rReport(); });
   await page.waitForTimeout(150);
   const daily = await page.evaluate(() => {
     const d = rpBuild('daily');
@@ -99,14 +100,15 @@ const { chromium, EXE, BASE } = require('./env');
   const finCur = await page.evaluate(() => { RP_SEL = 'finsum'; rReport(); const d = rpBuild('finsum');
     return { rows: d.rows.length, cases: d.kpi[0][1] }; });
   if (!finCur.rows) fails.push('finsum (current month): no rows despite today\'s submission');
-  const fin = await page.evaluate(() => { $('#rpMonth').value = ''; rReport(); const d = rpBuild('finsum');
+  const fin = await page.evaluate(() => { const st = perSt('report'); st.from = ''; st.to = ''; st.r = 365;
+    rReport(); const d = rpBuild('finsum');
     return { rows: d.rows, kpi: d.kpi.map(k => k[1]) }; });
   if (!fin.rows.length) fails.push('finsum (all time): no rows');
   const hasAvg = fin.rows.some(r => typeof r[6] === 'number');
   if (!hasAvg) fails.push('finsum: no avg-days computed from any log');
   const hasComm = fin.rows.some(r => r[8] > 0);
   if (!hasComm) fails.push('finsum: no commission > 0');
-  await page.evaluate(() => { $('#rpMonth').value = TODAY.slice(0, 7); rReport(); });
+  await page.evaluate(() => { const st = perSt('report'); st.r = 30; rReport(); });
 
   // ---------- money: มีแถวงานซ่อม + ขายอะไหล่ ----------
   const money = await page.evaluate(() => { const d = rpBuild('money');

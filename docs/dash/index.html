@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="th"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Dashboard 5 แบบ — Famai Motor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{ --bg:#F5F6F8; --card:#fff; --ink:#0F1419; --dim:#667085; --line:#E4E7EC; --key:#B3000E; }
+@media (prefers-color-scheme:dark){ :root{ --bg:#0D0F13; --card:#171A20; --ink:#E9ECF1; --dim:#98A1AF; --line:#262B34; --key:#FF6B74; } }
+*{box-sizing:border-box;margin:0;padding:0}
+body{ background:var(--bg); color:var(--ink); font-family:'Noto Sans Thai',system-ui,sans-serif; padding:32px 18px 56px; }
+.wrap{ max-width:960px; margin:0 auto; }
+h1{ font-size:27px; font-weight:700; letter-spacing:-.02em; }
+.lede{ color:var(--dim); margin:8px 0 26px; line-height:1.7; }
+.lede b{ color:var(--ink); font-weight:600; }
+.list{ display:grid; gap:12px; }
+a.card{ display:block; background:var(--card); border:1px solid var(--line); border-radius:14px;
+  padding:18px 20px; text-decoration:none; color:inherit; }
+@media (hover:hover){ a.card:hover{ border-color:var(--key); } }
+a.card .n{ font-size:12px; color:var(--key); font-weight:600; letter-spacing:.06em; }
+a.card h2{ font-size:18px; font-weight:600; margin:3px 0 6px; }
+a.card p{ color:var(--dim); font-size:14px; line-height:1.65; }
+a.card .tag{ display:inline-block; font-size:11px; color:var(--dim); border:1px solid var(--line);
+  border-radius:99px; padding:2px 9px; margin:9px 5px 0 0; }
+.note{ margin-top:26px; padding:16px 18px; background:var(--card); border:1px solid var(--line);
+  border-radius:12px; font-size:13px; color:var(--dim); line-height:1.7; }
+</style></head><body><div class="wrap">
+<h1>Dashboard 5 แบบให้เลือก</h1>
+<p class="lede">ห้าแนวคิดที่<b>ต่างกันจริง</b> ไม่ใช่แค่สลับสี — ทุกแบบใช้<b>ชุดตัวเลขเดียวกัน</b>จากข้อมูลสาธิตของระบบจริง
+จะได้เทียบกันตรง ๆ ว่าแบบไหนอ่านง่ายกว่าสำหรับงานที่ทำอยู่ทุกวัน · เปิดบนมือถือได้ทุกแบบ และมีโหมดมืดในตัว</p>
+<div class="list">
+  <a class="card" href="1.html"><div class="n">แบบ 1</div><h2>ห้องควบคุม</h2>
+    <p>จอเดียวจบแบบห้องควบคุม ตัวเลขใหญ่อ่านจากไกลได้ มีสัญญาณไฟบอกว่าอะไรปกติ อะไรต้องดู อะไรแดง
+       เหมาะกับเปิดค้างไว้บนจอที่ร้าน</p>
+    <span class="tag">โหมดมืดเป็นหลัก</span><span class="tag">ตัวเลขใหญ่</span><span class="tag">สัญญาณสถานะ</span></a>
+  <a class="card" href="2.html"><div class="n">แบบ 2</div><h2>สรุปผู้บริหาร</h2>
+    <p>หนึ่งหน้ากระดาษที่อ่านจบใน 30 วินาที เปิดด้วยประโยคสรุปภาษาไทยว่าเกิดอะไรขึ้น แล้วค่อยตามด้วยตัวเลข
+       พิมพ์ออกกระดาษหรือส่งต่อได้เลย</p>
+    <span class="tag">อ่านเป็นประโยค</span><span class="tag">พิมพ์ได้</span><span class="tag">เทียบช่วงก่อนหน้า</span></a>
+  <a class="card" href="3.html"><div class="n">แบบ 3</div><h2>เบนโตะ</h2>
+    <p>การ์ดขนาดไม่เท่ากันจัดเป็นช่องเบนโตะ เรื่องสำคัญกินพื้นที่มากกว่าโดยธรรมชาติ มีสีประจำเรื่อง
+       เลื่อนดูทีละการ์ดบนมือถือได้สบาย</p>
+    <span class="tag">มือถือลื่น</span><span class="tag">สีแยกเรื่อง</span><span class="tag">กราฟในการ์ด</span></a>
+  <a class="card" href="4.html"><div class="n">แบบ 4</div><h2>กระดานงาน</h2>
+    <p>กลับลำดับความสำคัญ — เอา “สิ่งที่ต้องทำ” ขึ้นก่อน ตัวเลขเป็นแถบเล็กด้านบน
+       แบ่งเป็นต้องทำวันนี้ / สัปดาห์นี้ / เฝ้าดู ทุกบรรทัดกดไปทำต่อได้</p>
+    <span class="tag">งานมาก่อนตัวเลข</span><span class="tag">กดแล้วไปทำต่อ</span><span class="tag">สามกอง</span></a>
+  <a class="card" href="5.html"><div class="n">แบบ 5</div><h2>วิเคราะห์</h2>
+    <p>ข้อมูลแน่นแบบเครื่องมือวิเคราะห์ ทุกตัวเลขมีตัวเทียบ มีกราฟแท่ง+เส้นสะสม ปฏิทินความร้อนรายวัน
+       และตารางอันดับหลายมิติ เหมาะกับนั่งดูจริงจังบนจอใหญ่</p>
+    <span class="tag">เทียบทุกตัว</span><span class="tag">ปฏิทินความร้อน</span><span class="tag">จอใหญ่</span></a>
+</div>
+<p class="note">เลือกได้มากกว่าหนึ่งแบบ — เช่น เอาโครงของแบบ 3 มาผสมคิวงานของแบบ 4 ก็ได้
+บอกมาว่าชอบส่วนไหนของแบบไหน แล้วจะทำของจริงลงในระบบให้ตรงตามนั้น</p>
+</div></body></html>

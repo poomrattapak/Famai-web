@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="th"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>แบบ 4 · กระดานงาน — Famai Motor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ============ แบบ 4 · กระดานงาน ============
+   แนวคิด: กลับลำดับความสำคัญ — เอา "สิ่งที่ต้องทำ" ขึ้นก่อน ตัวเลขเป็นแถบเล็กด้านบน
+   ทุกบรรทัดมีปุ่มที่กดแล้วไปทำงานต่อได้ทันที · ใช้เมื่อ: เปิดตอนเช้าแล้วไล่เคลียร์ทีละอัน */
+:root{
+  --bg:#FAFAFA; --card:#FFFFFF; --ink:#111418; --dim:#6B7280; --line:#E8E9EC;
+  --now:#DC2626; --soon:#D97706; --later:#2563EB; --done:#059669; --hover:#F3F4F6;
+}
+html[data-theme="dark"]{ --bg:#0E1013; --card:#171A1E; --ink:#E9EBEE; --dim:#98A0AB; --line:#262A30;
+  --now:#F87171; --soon:#FBBF24; --later:#60A5FA; --done:#34D399; --hover:#1E2228; }
+@media (prefers-color-scheme:dark){ html:not([data-theme="light"]){ --bg:#0E1013; --card:#171A1E; --ink:#E9EBEE;
+  --dim:#98A0AB; --line:#262A30; --now:#F87171; --soon:#FBBF24; --later:#60A5FA; --done:#34D399; --hover:#1E2228; } }
+*{box-sizing:border-box;margin:0;padding:0}
+body{ background:var(--bg); color:var(--ink); font-family:'Noto Sans Thai',system-ui,sans-serif; padding:18px; }
+.wrap{ max-width:1200px; margin:0 auto; }
+.switch{ display:flex; gap:6px; flex-wrap:wrap; align-items:center; font-size:12px; margin-bottom:14px; }
+.switch a{ color:var(--dim); text-decoration:none; padding:6px 11px; border:1px solid var(--line); border-radius:7px; background:var(--card); }
+.switch a.on{ color:var(--ink); border-color:var(--ink); font-weight:600; }
+.switch a.home{ border-color:transparent; background:none; padding-left:0; }
+.switch .tg{ margin-left:auto; background:var(--card); border:1px solid var(--line); color:var(--dim); border-radius:7px; width:32px; height:32px; cursor:pointer; }
+h1{ font-size:22px; font-weight:700; margin-bottom:3px; }
+.sub{ color:var(--dim); font-size:13px; margin-bottom:16px; }
+/* แถบตัวเลขเล็ก ๆ ด้านบน — ตัวเลขไม่ใช่พระเอกของหน้านี้ */
+.strip{ display:flex; gap:8px; overflow-x:auto; padding-bottom:4px; margin-bottom:18px; }
+.st{ background:var(--card); border:1px solid var(--line); border-radius:10px; padding:9px 13px; white-space:nowrap; }
+.st b{ font-size:16px; font-variant-numeric:tabular-nums; } .st span{ font-size:11px; color:var(--dim); display:block; }
+.cols{ display:grid; grid-template-columns:repeat(3,1fr); gap:14px; align-items:start; }
+.col{ background:var(--card); border:1px solid var(--line); border-radius:14px; overflow:hidden; }
+.col>h2{ font-size:13px; padding:13px 16px; display:flex; align-items:center; gap:9px; border-bottom:1px solid var(--line); }
+.col>h2 .n{ margin-left:auto; font-size:12px; color:var(--dim); font-variant-numeric:tabular-nums; }
+.bt{ width:8px; height:8px; border-radius:50%; }
+.now .bt{ background:var(--now); } .soon .bt{ background:var(--soon); } .later .bt{ background:var(--later); }
+.item{ padding:13px 16px; border-bottom:1px solid var(--line); display:flex; gap:12px; align-items:flex-start; }
+.item:last-child{ border-bottom:0; }
+@media (hover:hover){ .item:hover{ background:var(--hover); } }
+.item .txt{ min-width:0; flex:1; }
+.item .t{ font-size:14px; font-weight:500; }
+.item .m{ font-size:12px; color:var(--dim); margin-top:2px; }
+.item .go{ font-size:12px; padding:5px 11px; border:1px solid var(--line); border-radius:7px;
+  background:none; color:var(--ink); cursor:pointer; white-space:nowrap; }
+@media (hover:hover){ .item .go:hover{ border-color:var(--ink); } }
+.badge{ font-size:11px; padding:2px 8px; border-radius:99px; background:var(--hover); color:var(--dim); }
+.empty{ padding:22px 16px; color:var(--dim); font-size:13px; text-align:center; }
+.foot{ margin-top:18px; text-align:center; font-size:12px; color:var(--dim); }
+@media (max-width:900px){ .cols{ grid-template-columns:1fr; } }
+</style></head><body>
+<div class="wrap"><div id="sw"></div>
+<h1>วันนี้ต้องทำอะไรบ้าง</h1>
+<div class="sub" id="sub"></div>
+<div class="strip" id="strip"></div>
+<div class="cols" id="app"></div>
+<p class="foot">ตัวอย่างการออกแบบ · ตัวเลขจากข้อมูลสาธิตของระบบจริง — ทั้ง 5 แบบใช้ชุดตัวเลขเดียวกัน</p></div>
+<script src="data.js"></script><script src="common.js"></script>
+<script>
+const k=D.kpi;
+/* จัดงานเป็นสามกอง: ต้องทำวันนี้ · สัปดาห์นี้ · เฝ้าดู — เรียงตามความเสียหายถ้าไม่ทำ */
+const dayTo = d => Math.round((new Date(d+'T00:00:00') - new Date(D.today+'T00:00:00'))/86400000);
+const now=[], soon=[], later=[];
+if(k.ar>0) now.push({t:'ตามเก็บเงินค้างรับ '+B(k.ar)+' บาท', m:k.arN+' ราย · เงินที่ควรเข้าบัญชีแล้ว', go:'เปิดรายการ'});
+if(k.careDue>0) now.push({t:'โทรตามลูกค้าที่ถึงรอบดูแล', m:k.careDue+' ราย · หลังส่งมอบตามรอบที่ตั้งไว้', go:'ดูรายชื่อ'});
+D.todo.forEach(t=>{ const d=dayTo(t.due);
+  const row={t:'งานทะเบียน — '+t.cust, m:t.stage+' · ครบกำหนด '+thDate(t.due)+(d<0?' (เลย '+(-d)+' วัน)':' (อีก '+d+' วัน)'), go:'เปิดดีล'};
+  (d<0? now : d<=7? soon : later).push(row); });
+if(k.lowParts>0) soon.push({t:'สั่งอะไหล่ที่ต่ำกว่าจุดสั่งซื้อ', m:k.lowParts+' รายการ · เสี่ยงงานซ่อมค้างเพราะของขาด', go:'ดูสต๊อก'});
+if(k.svOpen>0) soon.push({t:'ปิดใบงานซ่อมที่ค้างอยู่', m:k.svOpen+' ใบ · รถลูกค้ายังอยู่ที่ร้าน', go:'ศูนย์ซ่อม'});
+if(k.stuck>0) later.push({t:'วางแผนระบายรถค้างเกิน '+D.aging+' วัน', m:k.stuck+' คัน จาก '+k.stock+' คัน · ทุนจมไม่หมุน', go:'ดูสต๊อก'});
+later.push({t:'ตรวจการลงเวลาก่อนปิดงวดเงินเดือน', m:'ทำก่อนสิ้นเดือน จะได้ไม่ต้องย้อนแก้', go:'เปิดหน้าลงเวลา'});
+const cols=[['now','ต้องทำวันนี้',now],['soon','ภายในสัปดาห์นี้',soon],['later','เฝ้าดูไว้',later]];
+
+document.getElementById('sw').innerHTML = switcher('4');
+document.getElementById('sub').textContent = thDate(D.today)+' · '+D.branches.join(' · ');
+document.getElementById('strip').innerHTML = [
+  ['ยอดขายช่วงนี้', B(k.rev)+' ฿'], ['ขายได้', k.sold+' คัน'], ['กำไรขั้นต้น', B(k.gp)+' ฿'],
+  ['รถพร้อมขาย', k.stock+' คัน'], ['เงินค้างรับ', B(k.ar)+' ฿'], ['ทะเบียนค้าง', k.regWait+' คัน']
+].map(s=>'<div class="st"><b>'+s[1]+'</b><span>'+s[0]+'</span></div>').join('');
+document.getElementById('app').innerHTML = cols.map(([c,title,list])=>
+  '<section class="col '+c+'"><h2><span class="bt"></span>'+title+'<span class="n">'+list.length+' งาน</span></h2>'
+  + (list.length? list.map(x=>'<div class="item"><div class="txt"><div class="t">'+x.t+'</div><div class="m">'+x.m+'</div></div>'
+      +'<button class="go">'+x.go+'</button></div>').join('')
+    : '<div class="empty">ไม่มีงานค้างในกองนี้</div>')
+  + '</section>').join('');
+setTheme();
+</script>
+</body></html>

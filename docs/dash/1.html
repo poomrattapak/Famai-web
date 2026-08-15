@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="th" data-theme="dark"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>แบบ 1 · ห้องควบคุม — Famai Motor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+/* ============ แบบ 1 · ห้องควบคุม ============
+   แนวคิด: จอเดียวจบแบบห้องควบคุมโรงงาน — ตัวเลขใหญ่อ่านจากไกลได้ สัญญาณไฟบอกว่าอะไรปกติ/ต้องดู/แดง
+   ใช้เมื่อ: เปิดค้างไว้บนจอที่ร้าน ดูผ่าน ๆ ก็รู้สถานะทั้งกิจการ */
+:root{
+  --bg:#0B0E14; --panel:#131826; --panel2:#0F131E; --line:rgba(255,255,255,.09);
+  --ink:#E8ECF4; --dim:#8892A6; --ok:#31D0A0; --warn:#FFB020; --bad:#FF5A6E; --key:#4EA8FF;
+  --mono:'JetBrains Mono',ui-monospace,monospace;
+}
+html[data-theme="light"]{ --bg:#EEF1F6; --panel:#fff; --panel2:#F6F8FB; --line:rgba(10,20,40,.10);
+  --ink:#0E1524; --dim:#5C6880; --ok:#0E9E76; --warn:#B4740A; --bad:#D63A50; --key:#1668C7; }
+*{box-sizing:border-box;margin:0;padding:0}
+body{ background:var(--bg); color:var(--ink); font-family:'Noto Sans Thai',system-ui,sans-serif;
+  min-height:100vh; padding:18px; }
+.switch{ display:flex; gap:6px; flex-wrap:wrap; align-items:center; margin-bottom:14px; font-size:12px; }
+.switch a{ color:var(--dim); text-decoration:none; padding:5px 10px; border:1px solid var(--line); border-radius:99px; }
+.switch a.on{ color:var(--ink); border-color:var(--key); }
+.switch a.home{ color:var(--key); border-color:transparent; padding-left:0; }
+.switch .tg{ margin-left:auto; background:none; border:1px solid var(--line); color:var(--dim);
+  border-radius:99px; width:30px; height:30px; cursor:pointer; font-size:14px; }
+.hd{ display:flex; align-items:baseline; gap:12px; flex-wrap:wrap; margin-bottom:14px; }
+.hd h1{ font-size:19px; font-weight:700; letter-spacing:.02em; }
+.hd .per{ font-family:var(--mono); font-size:12px; color:var(--dim); }
+.hd .live{ margin-left:auto; display:flex; align-items:center; gap:7px; font-size:12px; color:var(--dim); }
+.dot{ width:8px; height:8px; border-radius:50%; background:var(--ok); box-shadow:0 0 0 4px rgba(49,208,160,.15); }
+.dot.warn{ background:var(--warn); box-shadow:0 0 0 4px rgba(255,176,32,.15); }
+.dot.bad{ background:var(--bad); box-shadow:0 0 0 4px rgba(255,90,110,.15); }
+.grid{ display:grid; grid-template-columns:300px 1fr 340px; gap:14px; align-items:start; }
+.panel{ background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:14px; }
+.panel h2{ font-size:11px; font-weight:500; letter-spacing:.14em; color:var(--dim); margin-bottom:12px; text-transform:uppercase; }
+/* ตัวเลขหลัก */
+.big{ display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-bottom:14px; }
+.big .v{ font-family:var(--mono); font-size:clamp(30px,4.6vw,52px); font-weight:700; line-height:1; letter-spacing:-.02em; }
+.big .l{ font-size:12px; color:var(--dim); margin-bottom:8px; }
+.big .s{ font-size:12px; color:var(--dim); margin-top:8px; }
+.up{ color:var(--ok); } .dn{ color:var(--bad); }
+/* แถวสัญญาณ */
+.sig{ display:flex; align-items:center; gap:10px; padding:10px 0; border-top:1px solid var(--line); font-size:13px; }
+.sig:first-of-type{ border-top:0; }
+.sig .n{ margin-left:auto; font-family:var(--mono); font-weight:700; font-size:16px; }
+.sig .t{ color:var(--dim); font-size:11px; display:block; }
+/* คิวงาน */
+.q{ display:flex; gap:10px; padding:9px 0; border-top:1px solid var(--line); font-size:13px; align-items:baseline; }
+.q b{ font-weight:500; } .q .due{ margin-left:auto; font-family:var(--mono); font-size:11px; color:var(--dim); }
+.tag{ font-size:10px; padding:2px 7px; border-radius:99px; border:1px solid var(--line); color:var(--dim); }
+.bars{ display:grid; gap:8px; }
+.bar{ font-size:12px; }
+.bar .row{ display:flex; justify-content:space-between; margin-bottom:4px; }
+.bar .track{ height:6px; background:var(--panel2); border-radius:99px; overflow:hidden; }
+.bar .fill{ height:100%; background:var(--key); border-radius:99px; }
+.bar.w .fill{ background:var(--warn); } .bar.b .fill{ background:var(--bad); }
+.foot{ margin-top:14px; font-size:11px; color:var(--dim); text-align:center; }
+@media (max-width:1100px){ .grid{ grid-template-columns:1fr 1fr; } .col3{ grid-column:1/-1; } }
+@media (max-width:700px){ body{padding:12px} .grid{ grid-template-columns:1fr; } .big{ grid-template-columns:1fr; gap:10px; }
+  .big .v{ font-size:38px; } }
+</style></head><body>
+<div id="app"></div>
+<script src="data.js"></script><script src="common.js"></script>
+<script>
+const dd = daily(), lp = linePath(dd.map(x=>x.v), 320, 90, 6);
+const k = D.kpi, revDelta = pct(k.rev, k.prevRev);
+const sig = [
+  ['ทะเบียนค้าง', k.regWait, 'คัน', k.regWait>8?'bad':(k.regWait?'warn':'ok')],
+  ['เงินค้างรับ', B(k.ar), '฿ · '+k.arN+' ราย', k.ar>100000?'bad':'warn'],
+  ['รถค้างเกิน '+D.aging+' วัน', k.stuck, 'คัน', k.stuck>10?'bad':'warn'],
+  ['อะไหล่ต่ำกว่าจุดสั่ง', k.lowParts, 'รายการ', k.lowParts?'warn':'ok'],
+  ['ใบงานซ่อมค้าง', k.svOpen, 'ใบ', k.svOpen?'warn':'ok'],
+  ['ถึงรอบตามลูกค้า', k.careDue, 'ราย', k.careDue?'warn':'ok']
+];
+const stock = Object.entries(D.stockModel).sort((a,b)=>b[1]-a[1]);
+const maxStock = Math.max(...stock.map(x=>x[1]));
+document.getElementById('app').innerHTML = switcher('1')
++ '<div class="hd"><h1>ห้องควบคุม FAMAI MOTOR</h1>'
++ '<span class="per">'+D.period.text+'</span>'
++ '<span class="live"><span class="dot"></span>ข้อมูลสด · ปรับล่าสุด '+thDate(D.today)+'</span></div>'
+
++ '<div class="big">'
++ '<div class="panel"><div class="l">ยอดขายในช่วง</div><div class="v">'+B(k.rev)+'</div>'
++   '<div class="s"><span class="'+(revDelta>=0?'up':'dn')+'">'+(revDelta>=0?'▲':'▼')+' '+Math.abs(revDelta)+'%</span> เทียบช่วงก่อนหน้า ('+B(k.prevRev)+' ฿)</div></div>'
++ '<div class="panel"><div class="l">ขายได้</div><div class="v">'+k.sold+'<span style="font-size:20px;color:var(--dim)"> คัน</span></div>'
++   '<div class="s">ช่วงก่อนหน้า '+k.prevSold+' คัน · กำไรขั้นต้น '+B(k.gp)+' ฿</div></div>'
++ '<div class="panel"><div class="l">รถในสต๊อก</div><div class="v">'+k.stock+'<span style="font-size:20px;color:var(--dim)"> คัน</span></div>'
++   '<div class="s">ทุนจม '+B(k.cost)+' ฿ · ค้างเกินเกณฑ์ '+k.stuck+' คัน</div></div>'
++ '</div>'
+
++ '<div class="grid">'
++ '<div class="panel"><h2>สัญญาณสถานะ</h2>'
++   sig.map(s=>'<div class="sig"><span class="dot '+(s[3]==='ok'?'':s[3])+'"></span>'
++     '<span>'+s[0]+'<span class="t">'+s[2]+'</span></span><span class="n">'+s[1]+'</span></div>').join('')
++ '</div>'
+
++ '<div class="panel"><h2>ยอดขายรายวัน</h2>'
++   '<svg viewBox="0 0 320 90" width="100%" height="120" preserveAspectRatio="none">'
++   '<defs><linearGradient id="g1" x1="0" y1="0" x2="0" y2="1">'
++   '<stop offset="0" stop-color="var(--key)" stop-opacity=".38"/><stop offset="1" stop-color="var(--key)" stop-opacity="0"/></linearGradient></defs>'
++   '<path d="'+lp.area+'" fill="url(#g1)"/><path d="'+lp.line+'" fill="none" stroke="var(--key)" stroke-width="2"/>'
++   lp.pts.filter((p,i)=>dd[i].v>0).map(p=>'<circle cx="'+p[0].toFixed(1)+'" cy="'+p[1].toFixed(1)+'" r="2.6" fill="var(--key)"/>').join('')
++   '</svg>'
++   '<div style="display:flex;justify-content:space-between;font-size:11px;color:var(--dim);margin-top:4px">'
++   '<span>'+thShort(D.period.from)+'</span><span>สูงสุดวันละ '+B(lp.max)+' ฿</span><span>'+thShort(D.period.to)+'</span></div>'
++   '<h2 style="margin-top:18px">อันดับเซลล์ในช่วงนี้</h2>'
++   '<div class="bars">'+Object.entries(D.byStaff).sort((a,b)=>b[1].net-a[1].net).map(([n,v])=>{
+       const mx=Math.max(...Object.values(D.byStaff).map(x=>x.net));
+       return '<div class="bar"><div class="row"><span>'+n+' · '+v.n+' คัน</span><b>'+B(v.net)+' ฿</b></div>'
+         +'<div class="track"><div class="fill" style="width:'+Math.round(v.net/mx*100)+'%"></div></div></div>'; }).join('')
++   '</div></div>'
+
++ '<div class="panel col3"><h2>คิวงานที่ต้องเดิน</h2>'
++   D.todo.map(t=>'<div class="q"><span class="tag">'+t.stage+'</span><b>'+t.cust+'</b>'
++     '<span class="due">ครบ '+thShort(t.due)+'</span></div>').join('')
++   '<h2 style="margin-top:18px">สต๊อกแยกรุ่น</h2><div class="bars">'
++   stock.map(([m,n])=>'<div class="bar'+(n<=2?' b':(n<=4?' w':''))+'"><div class="row"><span>'+m+'</span><b>'+n+' คัน</b></div>'
++     '<div class="track"><div class="fill" style="width:'+Math.round(n/maxStock*100)+'%"></div></div></div>').join('')
++   '</div></div>'
++ '</div>'
++ '<p class="foot">ตัวอย่างการออกแบบ · ตัวเลขจากข้อมูลสาธิตของระบบจริง — ทั้ง 5 แบบใช้ชุดตัวเลขเดียวกัน</p>';
+setTheme();
+</script>
+</body></html>
