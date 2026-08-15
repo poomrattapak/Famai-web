@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="th"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>แบบ 6 · เบนโตะอ่านง่าย — Famai Motor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ============ แบบ 6 · เบนโตะอ่านง่าย ============
+   ต่างจากตัวอื่นตรง: พาสเทลอ่อนมาก การ์ดใหญ่ที่สุดในชุด ตัวอักษรใหญ่ ระยะห่างเยอะ ·
+   หนึ่งการ์ดเล่าเรื่องเดียว มีประโยคไทยกำกับทุกใบ ไม่มีตาราง ไม่มีแกนกราฟ ·
+   ใช้เมื่อ: ดูบนทีวีในร้าน หรือคนที่ไม่อยากตีความตัวเลขเอง */
+:root{
+  --bg:#F7F7FB; --ink:#171A21; --dim:#6A7180; --line:rgba(23,26,33,.07);
+  --a:#EAF1FF; --ai:#2C5FD3; --b:#E6F7EF; --bi:#0B7A55; --c:#FFF3E4; --ci:#B4680F;
+  --d:#FFEBEF; --di:#C42F52; --e:#F1ECFF; --ei:#5B3FBF; --r:30px;
+}
+html[data-theme="dark"]{ --bg:#0C0E12; --ink:#EDEFF3; --dim:#98A0AE; --line:rgba(237,239,243,.09);
+  --a:#151F31; --ai:#7FA8FA; --b:#112418; --bi:#4FCB94; --c:#2A1E10; --ci:#F0AE55;
+  --d:#2B141C; --di:#FF7D97; --e:#1D1830; --ei:#B49BFF; }
+@media (prefers-color-scheme:dark){ html:not([data-theme="light"]){ --bg:#0C0E12; --ink:#EDEFF3; --dim:#98A0AE;
+  --line:rgba(237,239,243,.09); --a:#151F31; --ai:#7FA8FA; --b:#112418; --bi:#4FCB94;
+  --c:#2A1E10; --ci:#F0AE55; --d:#2B141C; --di:#FF7D97; --e:#1D1830; --ei:#B49BFF; } }
+*{box-sizing:border-box;margin:0;padding:0}
+body{ background:var(--bg); color:var(--ink); font-family:'Noto Sans Thai',system-ui,sans-serif;
+  padding:26px 22px 40px; font-size:16px; }
+.wrap{ max-width:1080px; margin:0 auto; }
+.switch{ display:flex; gap:7px; flex-wrap:wrap; align-items:center; font-size:13px; margin-bottom:22px; }
+.switch a{ color:var(--dim); text-decoration:none; padding:8px 14px; border-radius:99px; background:rgba(127,127,127,.09); }
+.switch a.on{ color:var(--ink); font-weight:600; }
+.switch a.home{ background:none; padding-left:0; }
+.switch .tg{ margin-left:auto; background:rgba(127,127,127,.09); border:0; color:var(--dim);
+  border-radius:99px; width:38px; height:38px; cursor:pointer; font-size:15px; }
+.top{ margin-bottom:22px; }
+.top h1{ font-size:30px; font-weight:700; letter-spacing:-.025em; }
+.top .p{ color:var(--dim); font-size:15px; margin-top:4px; }
+.bento{ display:grid; grid-template-columns:repeat(3,1fr); gap:18px; }
+.c{ border-radius:var(--r); padding:30px 30px 28px; display:flex; flex-direction:column;
+  min-height:210px; background:var(--a); }
+.c .lab{ font-size:15px; color:var(--dim); }
+.c .val{ font-size:clamp(40px,4.6vw,58px); font-weight:700; letter-spacing:-.04em; line-height:1;
+  margin-top:auto; font-variant-numeric:tabular-nums; color:var(--ai); }
+.c .val small{ font-size:20px; font-weight:500; color:var(--dim); letter-spacing:0; }
+.c .say{ font-size:15px; line-height:1.65; margin-top:12px; }
+.c.big{ grid-column:span 2; }
+/* ชื่อคลาสสีต้องไม่ใช่ตัวอักษรเดียว — .c.c จะกลายเป็น .c เฉย ๆ แล้วทับทุกการ์ด (เคยพลาดมาแล้วกับ g2/g3) */
+.c.tB{ background:var(--b); } .c.tB .val{ color:var(--bi); }
+.c.tC{ background:var(--c); } .c.tC .val{ color:var(--ci); }
+.c.tD{ background:var(--d); } .c.tD .val{ color:var(--di); }
+.c.tE{ background:var(--e); } .c.tE .val{ color:var(--ei); }
+.spark{ margin-top:16px; }
+.foot{ margin-top:24px; text-align:center; font-size:13px; color:var(--dim); }
+@media (max-width:900px){ .bento{ grid-template-columns:repeat(2,1fr); } .c.big{ grid-column:1/-1; } }
+@media (max-width:600px){ body{padding:18px 16px 30px; font-size:15px} .bento{ grid-template-columns:1fr; gap:14px; }
+  .c{ min-height:0; padding:24px 22px; } .top h1{ font-size:25px; } }
+</style></head><body>
+<div class="wrap"><div id="sw"></div><div class="top" id="top"></div><div class="bento" id="app"></div>
+<p class="foot">ตัวอย่างการออกแบบ · ตัวเลขจากข้อมูลสาธิตของระบบจริง — ทั้ง 6 แบบใช้ชุดตัวเลขเดียวกัน</p></div>
+<script src="data.js"></script><script src="common.js"></script>
+<script>
+const k=D.kpi, dd=daily(), dRev=pct(k.rev,k.prevRev);
+const sp=curvePath(dd.map(x=>x.v), 320, 66, 6);
+const best=Object.entries(D.byStaff).sort((a,b)=>b[1].net-a[1].net)[0];
+const bestModel=Object.entries(D.byModel).sort((a,b)=>b[1].n-a[1].n)[0];
+document.getElementById('sw').innerHTML = switcher('6');
+document.getElementById('top').innerHTML = '<h1>วันนี้ร้านเป็นยังไง</h1>'
+  + '<div class="p">'+D.period.text+' · '+D.branches.length+' สาขา</div>';
+document.getElementById('app').innerHTML =
+  '<div class="c big"><div class="lab">ยอดขายในช่วงนี้</div>'
++ '<div class="val">'+B(k.rev)+' <small>บาท</small></div>'
++ '<div class="say">ขายได้ <b>'+k.sold+' คัน</b> '
++ (dRev>=0? 'มากกว่าช่วงก่อนหน้า':'น้อยกว่าช่วงก่อนหน้า')+' <b>'+Math.abs(dRev)+'%</b> '
++ 'รุ่นที่ขายดีที่สุดคือ '+bestModel[0]+'</div>'
++ '<div class="spark"><svg viewBox="0 0 320 66" width="100%" height="66" preserveAspectRatio="none">'
++ '<path d="'+sp.line+'" fill="none" stroke="var(--ai)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></div></div>'
+
++ '<div class="c tB"><div class="lab">กำไรขั้นต้น</div>'
++ '<div class="val">'+B(k.gp)+' <small>฿</small></div>'
++ '<div class="say">คิดเป็น '+(k.rev?(k.gp/k.rev*100).toFixed(1):0)+'% ของยอดขาย</div></div>'
+
++ '<div class="c tD"><div class="lab">เงินที่ยังเก็บไม่ได้</div>'
++ '<div class="val">'+B(k.ar)+' <small>฿</small></div>'
++ '<div class="say">ค้างอยู่ '+k.arN+' ราย — ถ้าเก็บครบเท่ากับขายรถได้อีก '
++ Math.round(k.ar/Math.max(1,(k.rev/Math.max(1,k.sold))))+' คัน</div></div>'
+
++ '<div class="c tC"><div class="lab">รถที่ยังไม่ออก</div>'
++ '<div class="val">'+k.stock+' <small>คัน</small></div>'
++ '<div class="say">ในนั้นจอดเกิน '+D.aging+' วันแล้ว <b>'+k.stuck+' คัน</b> เป็นเงินที่ยังไม่หมุน</div></div>'
+
++ '<div class="c tE"><div class="lab">ลูกค้าที่ยังรอ</div>'
++ '<div class="val">'+k.regWait+' <small>ราย</small></div>'
++ '<div class="say">รับรถไปแล้วแต่ยังไม่ได้ป้ายทะเบียน</div></div>'
+
++ '<div class="c"><div class="lab">คนที่ทำยอดสูงสุด</div>'
++ '<div class="val" style="font-size:clamp(28px,3.4vw,40px)">'+best[0]+'</div>'
++ '<div class="say">'+best[1].n+' คัน · '+B(best[1].net)+' บาท</div></div>'
+
++ '<div class="c big tB"><div class="lab">งานที่ต้องตามต่อ</div>'
++ '<div class="val">'+(k.svOpen+k.careDue+k.lowParts)+' <small>เรื่อง</small></div>'
++ '<div class="say">ใบงานซ่อมยังไม่ปิด '+k.svOpen+' ใบ · ถึงรอบโทรตามลูกค้า '+k.careDue+' ราย · '
++ 'อะไหล่ใกล้หมดต้องสั่งเพิ่ม '+k.lowParts+' รายการ</div></div>';
+setTheme();
+</script>
+</body></html>

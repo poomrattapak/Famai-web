@@ -2,118 +2,110 @@
 <html lang="th"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex">
-<title>แบบ 2 · สรุปผู้บริหาร — Famai Motor</title>
+<title>แบบ 2 · เบนโตะเน้นเงิน — Famai Motor</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-/* ============ แบบ 2 · สรุปผู้บริหาร ============
-   แนวคิด: หนึ่งหน้ากระดาษที่อ่านจบใน 30 วินาที — ประโยคสรุปภาษาไทยก่อน ตัวเลขรอง กราฟเส้นเดียว
-   ใช้เมื่อ: เจ้าของเปิดดูตอนเช้าหรือส่งให้ผู้ถือหุ้น · พิมพ์ออกกระดาษได้เลย */
+/* ============ แบบ 2 · เบนโตะเน้นเงิน ============
+   ต่างจากตัวตั้งต้นตรง: โทนขาว-ดำเรียบ ใช้สีเน้นสีเดียว (เขียวเงิน) · การ์ดน้อยแต่ใหญ่ ·
+   เรื่องที่เล่าคือ "เงินเข้า-เงินจม-เงินค้าง" ล้วน ๆ · กราฟเป็นเส้นโค้งใหญ่เต็มการ์ด
+   ใช้เมื่อ: อยากรู้เรื่องเงินก่อนอย่างอื่น ไม่อยากให้สีมาดึงความสนใจ */
 :root{
-  --paper:#FFFFFF; --wash:#F7F7F5; --ink:#14161A; --dim:#6B7280; --line:#E5E5E2;
-  --key:#111827; --pos:#0F7B54; --neg:#B4232F; --hi:#FDF3D3;
+  --bg:#F6F6F4; --card:#FFFFFF; --ink:#0D0F12; --dim:#71767E; --line:rgba(13,15,18,.09);
+  --key:#0B7A55; --key-soft:#E6F4EE; --warn:#B4541A; --r:26px;
 }
-html[data-theme="dark"]{ --paper:#15171C; --wash:#1C1F26; --ink:#ECEDEF; --dim:#9AA1AC;
-  --line:#2A2E37; --key:#ECEDEF; --pos:#3FBE8C; --neg:#F2707E; --hi:#3A3320; }
-@media (prefers-color-scheme:dark){ html:not([data-theme="light"]){ --paper:#15171C; --wash:#1C1F26;
-  --ink:#ECEDEF; --dim:#9AA1AC; --line:#2A2E37; --key:#ECEDEF; --pos:#3FBE8C; --neg:#F2707E; --hi:#3A3320; } }
+html[data-theme="dark"]{ --bg:#0B0C0E; --card:#151719; --ink:#EDEEEF; --dim:#969BA3;
+  --line:rgba(255,255,255,.09); --key:#38C593; --key-soft:#12241D; --warn:#E08A4A; }
+@media (prefers-color-scheme:dark){ html:not([data-theme="light"]){ --bg:#0B0C0E; --card:#151719; --ink:#EDEEEF;
+  --dim:#969BA3; --line:rgba(255,255,255,.09); --key:#38C593; --key-soft:#12241D; --warn:#E08A4A; } }
 *{box-sizing:border-box;margin:0;padding:0}
-body{ background:var(--wash); color:var(--ink); font-family:'IBM Plex Sans Thai',system-ui,sans-serif;
-  line-height:1.55; padding:24px 16px 40px; }
-.sheet{ max-width:860px; margin:0 auto; background:var(--paper); border:1px solid var(--line);
-  border-radius:6px; padding:44px 48px 40px; }
-.switch{ max-width:860px; margin:0 auto 14px; display:flex; gap:6px; flex-wrap:wrap; align-items:center; font-size:12px; }
-.switch a{ color:var(--dim); text-decoration:none; padding:5px 10px; border:1px solid var(--line); border-radius:3px; background:var(--paper); }
-.switch a.on{ color:var(--ink); border-color:var(--ink); }
-.switch a.home{ border-color:transparent; background:none; padding-left:0; }
-.switch .tg{ margin-left:auto; background:var(--paper); border:1px solid var(--line); color:var(--dim); border-radius:3px; width:30px; height:30px; cursor:pointer; }
-.eyebrow{ font-size:11px; letter-spacing:.18em; text-transform:uppercase; color:var(--dim); }
-h1{ font-size:30px; font-weight:600; letter-spacing:-.02em; margin:6px 0 2px; }
-.sub{ color:var(--dim); font-size:14px; margin-bottom:26px; }
-.lede{ font-size:17px; line-height:1.75; padding:18px 20px; background:var(--wash);
-  border-left:3px solid var(--key); margin-bottom:30px; }
-.lede b{ font-weight:600; } .lede .mark{ background:var(--hi); padding:0 3px; }
-.nums{ display:grid; grid-template-columns:repeat(4,1fr); gap:0; border-top:1px solid var(--line);
-  border-bottom:1px solid var(--line); margin-bottom:30px; }
-.nums div{ padding:18px 16px 18px 0; }
-.nums div+div{ padding-left:22px; border-left:1px solid var(--line); }
-.nums .l{ font-size:12px; color:var(--dim); }
-.nums .v{ font-size:26px; font-weight:600; letter-spacing:-.02em; font-variant-numeric:tabular-nums; margin:2px 0; }
-.nums .d{ font-size:12px; } .pos{ color:var(--pos); } .neg{ color:var(--neg); }
-h2{ font-size:12px; letter-spacing:.12em; text-transform:uppercase; color:var(--dim);
-  font-weight:500; margin:0 0 12px; }
-.chart{ margin-bottom:32px; }
-.chart .axis{ display:flex; justify-content:space-between; font-size:11px; color:var(--dim); margin-top:6px; }
-table{ width:100%; border-collapse:collapse; font-size:14px; margin-bottom:28px; }
-th{ text-align:left; font-weight:500; font-size:11px; letter-spacing:.08em; text-transform:uppercase;
-  color:var(--dim); border-bottom:1px solid var(--line); padding:0 8px 8px 0; }
-td{ padding:11px 8px 11px 0; border-bottom:1px solid var(--line); font-variant-numeric:tabular-nums; }
-th.n,td.n{ text-align:right; padding-right:0; }
-.flag{ display:flex; gap:10px; align-items:baseline; padding:10px 0; border-bottom:1px solid var(--line); font-size:14px; }
-.flag:last-child{ border-bottom:0; }
-.flag .b{ width:6px; height:6px; border-radius:50%; background:var(--neg); flex:0 0 6px; transform:translateY(-2px); }
-.flag .b.w{ background:#C08A1E; }
-.sig{ margin-top:34px; padding-top:16px; border-top:1px solid var(--line); font-size:12px; color:var(--dim);
-  display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px; }
-@media (max-width:760px){ .sheet{ padding:26px 16px 30px; } h1{font-size:23px}
-  .nums{ grid-template-columns:1fr 1fr; }
-  .nums div{ min-width:0; padding:15px 10px 15px 0; }
-  .nums div+div{ border-left:0; padding-left:0; }
-  .nums div:nth-child(2n){ padding-left:14px; border-left:1px solid var(--line); }
-  .nums .v{ font-size:21px; }
-  .lede{ font-size:15px; padding:15px 14px; }
-  table{ font-size:13px; } td,th{ padding-right:5px; } }
-@media print{ body{background:#fff;padding:0} .switch{display:none} .sheet{border:0;max-width:none} }
+body{ background:var(--bg); color:var(--ink); font-family:'Noto Sans Thai',system-ui,sans-serif; padding:22px 20px 30px; }
+.wrap{ max-width:1120px; margin:0 auto; }
+.switch{ display:flex; gap:6px; flex-wrap:wrap; align-items:center; font-size:12px; margin-bottom:18px; }
+.switch a{ color:var(--dim); text-decoration:none; padding:6px 12px; border-radius:99px; background:var(--card); }
+.switch a.on{ color:var(--ink); font-weight:600; }
+.switch a.home{ background:none; padding-left:0; }
+.switch .tg{ margin-left:auto; background:var(--card); border:0; color:var(--dim); border-radius:99px; width:32px; height:32px; cursor:pointer; }
+.top{ display:flex; align-items:flex-end; gap:12px; flex-wrap:wrap; margin-bottom:18px; }
+.top h1{ font-size:25px; font-weight:700; letter-spacing:-.025em; }
+.top .p{ color:var(--dim); font-size:13px; }
+.bento{ display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }
+.c{ background:var(--card); border-radius:var(--r); padding:26px 26px 24px; border:1px solid var(--line);
+  display:flex; flex-direction:column; min-height:150px; }
+.c .lab{ font-size:13px; color:var(--dim); }
+.c .val{ font-size:40px; font-weight:700; letter-spacing:-.035em; line-height:1.05;
+  font-variant-numeric:tabular-nums; margin-top:auto; }
+.c .val small{ font-size:18px; font-weight:500; color:var(--dim); letter-spacing:0; }
+.c .sub{ font-size:12.5px; color:var(--dim); margin-top:8px; }
+/* การ์ดใหญ่ = เรื่องเงินหลัก กินสองแถวสองคอลัมน์ */
+.c.hero{ grid-column:span 2; grid-row:span 2; padding-bottom:0; overflow:hidden; }
+.c.hero .val{ font-size:clamp(44px,6.4vw,74px); margin-top:14px; }
+.c.wide{ grid-column:span 2; }
+.c.tall{ grid-row:span 2; }
+.delta{ display:inline-flex; align-items:center; gap:6px; font-size:12.5px; font-weight:600;
+  padding:5px 12px; border-radius:99px; background:var(--key-soft); color:var(--key); width:fit-content; }
+.delta.dn{ color:var(--warn); background:transparent; box-shadow:inset 0 0 0 1px var(--line); }
+.chart{ margin:16px -26px 0; }
+.rowline{ display:flex; align-items:center; gap:12px; font-size:13.5px; padding:11px 0; border-top:1px solid var(--line); }
+.rowline:first-of-type{ border-top:0; }
+.rowline b{ margin-left:auto; font-variant-numeric:tabular-nums; }
+.track{ flex:1; height:8px; border-radius:99px; background:var(--line); overflow:hidden; min-width:40px; }
+.track i{ display:block; height:100%; border-radius:99px; background:var(--key); }
+.gauge{ display:flex; align-items:center; gap:18px; margin-top:auto; }
+.gauge .n{ font-size:30px; font-weight:700; letter-spacing:-.03em; }
+.foot{ margin-top:20px; text-align:center; font-size:12px; color:var(--dim); }
+@media (max-width:900px){ .bento{ grid-template-columns:repeat(2,1fr); }
+  .c.hero{ grid-column:1/-1; grid-row:auto; } .c.wide{ grid-column:1/-1; } .c.tall{ grid-row:auto; } }
+@media (max-width:560px){ body{padding:14px} .bento{ grid-template-columns:1fr; gap:12px; }
+  .c{ min-height:0; padding:20px; } .chart{ margin:14px -20px 0; } .c .val{ font-size:34px; } }
 </style></head><body>
-<div id="sw"></div><div class="sheet" id="app"></div>
+<div class="wrap"><div id="sw"></div><div class="top" id="top"></div><div class="bento" id="app"></div>
+<p class="foot">ตัวอย่างการออกแบบ · ตัวเลขจากข้อมูลสาธิตของระบบจริง — ทั้ง 6 แบบใช้ชุดตัวเลขเดียวกัน</p></div>
 <script src="data.js"></script><script src="common.js"></script>
 <script>
-const k=D.kpi, dRev=pct(k.rev,k.prevRev), dSold=k.sold-k.prevSold;
-const dd=daily(), lp=linePath(dd.map(x=>x.v), 800, 150, 8);
-const best=Object.entries(D.byStaff).sort((a,b)=>b[1].net-a[1].net)[0];
-const bestModel=Object.entries(D.byModel).sort((a,b)=>b[1].n-a[1].n)[0];
-const marginPct = k.rev? (k.gp/k.rev*100).toFixed(1) : '0';
+const k=D.kpi, dRev=pct(k.rev,k.prevRev), dd=daily();
+const cv=curvePath(dd.map(x=>x.v), 640, 190, 14);
+const margin = k.rev? k.gp/k.rev*100 : 0;
+const collected = (k.rev+k.ar)? k.rev/(k.rev+k.ar)*100 : 100;
+const staff=Object.entries(D.byStaff).sort((a,b)=>b[1].net-a[1].net);
+const smax=Math.max(...staff.map(x=>x[1].net));
 document.getElementById('sw').innerHTML = switcher('2');
+document.getElementById('top').innerHTML = '<h1>เงินเข้า เงินจม เงินค้าง</h1>'
+  + '<span class="p">'+D.period.text+' · อัปเดต '+thDate(D.today)+'</span>';
 document.getElementById('app').innerHTML =
-  '<div class="eyebrow">รายงานผู้บริหาร · Famai Motor Group</div>'
-+ '<h1>สรุปผลประกอบการ</h1>'
-+ '<div class="sub">'+D.period.text+' · '+D.branches.length+' สาขา · ออกรายงาน '+thDate(D.today)+'</div>'
+  '<div class="c hero"><div class="lab">ยอดขายในช่วงที่เลือก</div>'
++ '<div class="val">'+B(k.rev)+' <small>บาท</small></div>'
++ '<div class="sub" style="margin-bottom:14px"><span class="delta '+(dRev>=0?'':'dn')+'">'
++ (dRev>=0?'▲':'▼')+' '+Math.abs(dRev)+'% เทียบช่วงก่อนหน้า</span>'
++ '&nbsp;&nbsp;ขายได้ '+k.sold+' คัน · เฉลี่ยคันละ '+B(k.sold?Math.round(k.rev/k.sold):0)+' ฿</div>'
++ '<div class="chart"><svg viewBox="0 0 640 190" width="100%" height="190" preserveAspectRatio="none">'
++ '<defs><linearGradient id="gk" x1="0" y1="0" x2="0" y2="1">'
++ '<stop offset="0" stop-color="var(--key)" stop-opacity=".26"/><stop offset="1" stop-color="var(--key)" stop-opacity="0"/></linearGradient></defs>'
++ '<path d="'+cv.area+'" fill="url(#gk)"/>'
++ '<path d="'+cv.line+'" fill="none" stroke="var(--key)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>'
++ '</svg></div></div>'
 
-+ '<p class="lede">ช่วงนี้ขายได้ <b>'+k.sold+' คัน</b> คิดเป็นยอดขาย <b>'+B(k.rev)+' บาท</b> '
-+ (dRev>=0? 'เพิ่มขึ้น':'ลดลง')+' <span class="'+(dRev>=0?'pos':'neg')+'">'+Math.abs(dRev)+'%</span> จากช่วงก่อนหน้า '
-+ 'กำไรขั้นต้น '+B(k.gp)+' บาท (อัตรากำไร '+marginPct+'%) · '
-+ 'รุ่นที่ขายดีที่สุดคือ <b>'+bestModel[0]+'</b> '+bestModel[1].n+' คัน และคนที่ทำยอดสูงสุดคือ <b>'+best[0]+'</b> '
-+ 'สิ่งที่ต้องดูคือ <span class="mark">เงินค้างรับ '+B(k.ar)+' บาท จาก '+k.arN+' ราย</span> '
-+ 'และรถที่ค้างสต๊อกเกิน '+D.aging+' วันอีก <b>'+k.stuck+' คัน</b> คิดเป็นทุนจมที่ยังไม่หมุน</p>'
++ '<div class="c"><div class="lab">กำไรขั้นต้น</div><div class="val">'+B(k.gp)+' <small>฿</small></div>'
++ '<div class="gauge" style="margin-top:14px"><svg width="76" height="76" viewBox="0 0 42 42">'
++ ringGauge(margin, 'var(--key)', 'var(--line)', 6)
++ '<text x="21" y="23.6" text-anchor="middle" font-size="8" font-weight="700" fill="currentColor">'+margin.toFixed(1)+'%</text></svg>'
++ '<div class="sub" style="margin:0">อัตรากำไรจากยอดขาย<br>ทั้งช่วงที่เลือก</div></div></div>'
 
-+ '<div class="nums">'
-+ '<div><div class="l">ยอดขาย</div><div class="v">'+B(k.rev)+'</div><div class="d '+(dRev>=0?'pos':'neg')+'">'+(dRev>=0?'+':'−')+Math.abs(dRev)+'% เทียบช่วงก่อน</div></div>'
-+ '<div><div class="l">ขายได้</div><div class="v">'+k.sold+' คัน</div><div class="d '+(dSold>=0?'pos':'neg')+'">'+(dSold>=0?'+':'−')+Math.abs(dSold)+' คัน</div></div>'
-+ '<div><div class="l">กำไรขั้นต้น</div><div class="v">'+B(k.gp)+'</div><div class="d">อัตรากำไร '+marginPct+'%</div></div>'
-+ '<div><div class="l">ทุนจมในสต๊อก</div><div class="v">'+B(k.cost)+'</div><div class="d">'+k.stock+' คันคงเหลือ</div></div>'
-+ '</div>'
++ '<div class="c"><div class="lab">เงินค้างรับ</div><div class="val">'+B(k.ar)+' <small>฿</small></div>'
++ '<div class="gauge" style="margin-top:14px"><svg width="76" height="76" viewBox="0 0 42 42">'
++ ringGauge(collected, 'var(--key)', 'var(--line)', 6)
++ '<text x="21" y="23.6" text-anchor="middle" font-size="8" font-weight="700" fill="currentColor">'+Math.round(collected)+'%</text></svg>'
++ '<div class="sub" style="margin:0">เก็บเงินได้แล้วเทียบกับ<br>ที่ควรได้ · ค้าง '+k.arN+' ราย</div></div></div>'
 
-+ '<div class="chart"><h2>ยอดขายรายวัน</h2>'
-+ '<svg viewBox="0 0 800 150" width="100%" height="150" preserveAspectRatio="none">'
-+ '<line x1="0" y1="149" x2="800" y2="149" stroke="var(--line)"/>'
-+ '<path d="'+lp.line+'" fill="none" stroke="var(--key)" stroke-width="1.6" vector-effect="non-scaling-stroke"/>'
-+ lp.pts.filter((p,i)=>dd[i].v>0).map(p=>'<circle cx="'+p[0].toFixed(1)+'" cy="'+p[1].toFixed(1)+'" r="3" fill="var(--paper)" stroke="var(--key)" stroke-width="1.6"/>').join('')
-+ '</svg>'
-+ '<div class="axis"><span>'+thShort(D.period.from)+'</span><span>วันที่ขายได้สูงสุด '+B(lp.max)+' บาท</span><span>'+thShort(D.period.to)+'</span></div></div>'
++ '<div class="c wide"><div class="lab" style="margin-bottom:14px">ใครทำเงินให้ร้านบ้าง</div>'
++ staff.map(([n,v])=>'<div class="rowline"><span>'+n+'</span>'
++   '<span class="track"><i style="width:'+Math.round(v.net/smax*100)+'%"></i></span>'
++   '<b>'+B(v.net)+' ฿</b></div>').join('')
++ '<div class="sub">กำไรต่อคันบอกคุณภาพของดีล — '+staff.map(([n,v])=>n+' '+B(Math.round(v.gp/v.n))+' ฿').join(' · ')+'</div></div>'
 
-+ '<h2>ผลงานรายบุคคล</h2><table><thead><tr><th>พนักงานขาย</th><th class="n">คัน</th><th class="n">ยอดขาย</th><th class="n">กำไรขั้นต้น</th><th class="n">สัดส่วน</th></tr></thead><tbody>'
-+ Object.entries(D.byStaff).sort((a,b)=>b[1].net-a[1].net).map(([n,v])=>
-    '<tr><td>'+n+'</td><td class="n">'+v.n+'</td><td class="n">'+B(v.net)+'</td><td class="n">'+B(v.gp)+'</td>'
-    +'<td class="n">'+Math.round(v.net/k.rev*100)+'%</td></tr>').join('')
-+ '</tbody></table>'
-
-+ '<h2>เรื่องที่ต้องตัดสินใจ</h2>'
-+ '<div class="flag"><span class="b"></span><span>เงินค้างรับ <b>'+B(k.ar)+' บาท</b> จาก '+k.arN+' ราย — ถ้าเก็บได้ครบจะเท่ากับยอดขาย '+Math.round(k.ar/(k.rev/Math.max(1,k.sold)))+' คัน</span></div>'
-+ '<div class="flag"><span class="b"></span><span>รถค้างเกิน '+D.aging+' วัน <b>'+k.stuck+' คัน</b> จาก '+k.stock+' คัน — ควรตั้งราคาระบายหรือย้ายสาขาที่ขายออก</span></div>'
-+ '<div class="flag"><span class="b w"></span><span>งานทะเบียนค้าง <b>'+k.regWait+' คัน</b> — ลูกค้ารับรถแล้วแต่ยังไม่ได้ป้าย กระทบความพอใจโดยตรง</span></div>'
-+ '<div class="flag"><span class="b w"></span><span>อะไหล่ต่ำกว่าจุดสั่งซื้อ <b>'+k.lowParts+' รายการ</b> — เสี่ยงงานซ่อมค้างเพราะของขาด</span></div>'
-
-+ '<div class="sig"><span>ตัวอย่างการออกแบบ — ตัวเลขจากข้อมูลสาธิตของระบบจริง</span><span>ทั้ง 5 แบบใช้ชุดตัวเลขเดียวกัน</span></div>';
++ '<div class="c"><div class="lab">ทุนจมในสต๊อก</div><div class="val">'+B(k.cost)+' <small>฿</small></div>'
++ '<div class="sub">'+k.stock+' คันที่ยังไม่ออก · ในนั้นค้างเกิน '+D.aging+' วัน '+k.stuck+' คัน '
++ 'คิดเป็น '+Math.round(k.stuck/Math.max(1,k.stock)*100)+'% ของสต๊อก</div></div>';
 setTheme();
 </script>
 </body></html>

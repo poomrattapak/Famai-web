@@ -2,90 +2,122 @@
 <html lang="th"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex">
-<title>แบบ 4 · กระดานงาน — Famai Motor</title>
+<title>แบบ 4 · เบนโตะเน้นสต๊อก — Famai Motor</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-/* ============ แบบ 4 · กระดานงาน ============
-   แนวคิด: กลับลำดับความสำคัญ — เอา "สิ่งที่ต้องทำ" ขึ้นก่อน ตัวเลขเป็นแถบเล็กด้านบน
-   ทุกบรรทัดมีปุ่มที่กดแล้วไปทำงานต่อได้ทันที · ใช้เมื่อ: เปิดตอนเช้าแล้วไล่เคลียร์ทีละอัน */
+/* ============ แบบ 4 · เบนโตะเน้นสต๊อก ============
+   ต่างจากตัวอื่นตรง: โทนเย็น (น้ำเงิน-มิ้นต์) · การ์ดเล็กเยอะ ข้อมูลแน่นที่สุดในชุด ·
+   เรื่องที่เล่าคือ "รถอยู่ไหน อายุเท่าไร รุ่นอะไร" · กราฟเป็นโดนัทซ้อนวงและแท่งแนวนอนหัวมน
+   ใช้เมื่อ: ดูบนจอคอมที่ร้าน อยากเห็นสต๊อกทั้งหมดในหน้าจอเดียว */
 :root{
-  --bg:#FAFAFA; --card:#FFFFFF; --ink:#111418; --dim:#6B7280; --line:#E8E9EC;
-  --now:#DC2626; --soon:#D97706; --later:#2563EB; --done:#059669; --hover:#F3F4F6;
+  --bg:#EFF4F8; --card:#FFFFFF; --ink:#0C1B26; --dim:#5E7386; --line:rgba(12,27,38,.09);
+  --c1:#1D6FC7; --c2:#17A398; --c3:#5B9BD5; --c4:#0E4F82; --c5:#7FCFC4; --c6:#9AB6CC;
+  --hot:#C0392B; --tint:#E4EEF7; --r:20px;
 }
-html[data-theme="dark"]{ --bg:#0E1013; --card:#171A1E; --ink:#E9EBEE; --dim:#98A0AB; --line:#262A30;
-  --now:#F87171; --soon:#FBBF24; --later:#60A5FA; --done:#34D399; --hover:#1E2228; }
-@media (prefers-color-scheme:dark){ html:not([data-theme="light"]){ --bg:#0E1013; --card:#171A1E; --ink:#E9EBEE;
-  --dim:#98A0AB; --line:#262A30; --now:#F87171; --soon:#FBBF24; --later:#60A5FA; --done:#34D399; --hover:#1E2228; } }
+html[data-theme="dark"]{ --bg:#080F16; --card:#111C26; --ink:#E4EDF4; --dim:#8FA6B8;
+  --line:rgba(228,237,244,.10); --c1:#5AA9F5; --c2:#3FD6C6; --c3:#8CC0EE; --c4:#3D89C9;
+  --c5:#A8E5DC; --c6:#7C97AC; --hot:#F0705F; --tint:#16242F; }
+@media (prefers-color-scheme:dark){ html:not([data-theme="light"]){ --bg:#080F16; --card:#111C26; --ink:#E4EDF4;
+  --dim:#8FA6B8; --line:rgba(228,237,244,.10); --c1:#5AA9F5; --c2:#3FD6C6; --c3:#8CC0EE;
+  --c4:#3D89C9; --c5:#A8E5DC; --c6:#7C97AC; --hot:#F0705F; --tint:#16242F; } }
 *{box-sizing:border-box;margin:0;padding:0}
 body{ background:var(--bg); color:var(--ink); font-family:'Noto Sans Thai',system-ui,sans-serif; padding:18px; }
-.wrap{ max-width:1200px; margin:0 auto; }
+.wrap{ max-width:1240px; margin:0 auto; }
 .switch{ display:flex; gap:6px; flex-wrap:wrap; align-items:center; font-size:12px; margin-bottom:14px; }
-.switch a{ color:var(--dim); text-decoration:none; padding:6px 11px; border:1px solid var(--line); border-radius:7px; background:var(--card); }
-.switch a.on{ color:var(--ink); border-color:var(--ink); font-weight:600; }
-.switch a.home{ border-color:transparent; background:none; padding-left:0; }
-.switch .tg{ margin-left:auto; background:var(--card); border:1px solid var(--line); color:var(--dim); border-radius:7px; width:32px; height:32px; cursor:pointer; }
-h1{ font-size:22px; font-weight:700; margin-bottom:3px; }
-.sub{ color:var(--dim); font-size:13px; margin-bottom:16px; }
-/* แถบตัวเลขเล็ก ๆ ด้านบน — ตัวเลขไม่ใช่พระเอกของหน้านี้ */
-.strip{ display:flex; gap:8px; overflow-x:auto; padding-bottom:4px; margin-bottom:18px; }
-.st{ background:var(--card); border:1px solid var(--line); border-radius:10px; padding:9px 13px; white-space:nowrap; }
-.st b{ font-size:16px; font-variant-numeric:tabular-nums; } .st span{ font-size:11px; color:var(--dim); display:block; }
-.cols{ display:grid; grid-template-columns:repeat(3,1fr); gap:14px; align-items:start; }
-.col{ background:var(--card); border:1px solid var(--line); border-radius:14px; overflow:hidden; }
-.col>h2{ font-size:13px; padding:13px 16px; display:flex; align-items:center; gap:9px; border-bottom:1px solid var(--line); }
-.col>h2 .n{ margin-left:auto; font-size:12px; color:var(--dim); font-variant-numeric:tabular-nums; }
-.bt{ width:8px; height:8px; border-radius:50%; }
-.now .bt{ background:var(--now); } .soon .bt{ background:var(--soon); } .later .bt{ background:var(--later); }
-.item{ padding:13px 16px; border-bottom:1px solid var(--line); display:flex; gap:12px; align-items:flex-start; }
-.item:last-child{ border-bottom:0; }
-@media (hover:hover){ .item:hover{ background:var(--hover); } }
-.item .txt{ min-width:0; flex:1; }
-.item .t{ font-size:14px; font-weight:500; }
-.item .m{ font-size:12px; color:var(--dim); margin-top:2px; }
-.item .go{ font-size:12px; padding:5px 11px; border:1px solid var(--line); border-radius:7px;
-  background:none; color:var(--ink); cursor:pointer; white-space:nowrap; }
-@media (hover:hover){ .item .go:hover{ border-color:var(--ink); } }
-.badge{ font-size:11px; padding:2px 8px; border-radius:99px; background:var(--hover); color:var(--dim); }
-.empty{ padding:22px 16px; color:var(--dim); font-size:13px; text-align:center; }
-.foot{ margin-top:18px; text-align:center; font-size:12px; color:var(--dim); }
-@media (max-width:900px){ .cols{ grid-template-columns:1fr; } }
+.switch a{ color:var(--dim); text-decoration:none; padding:6px 12px; border-radius:99px; background:var(--card); }
+.switch a.on{ color:var(--ink); font-weight:600; }
+.switch a.home{ background:none; padding-left:0; }
+.switch .tg{ margin-left:auto; background:var(--card); border:0; color:var(--dim); border-radius:99px; width:32px; height:32px; cursor:pointer; }
+.top{ display:flex; align-items:flex-end; gap:12px; flex-wrap:wrap; margin-bottom:14px; }
+.top h1{ font-size:22px; font-weight:700; letter-spacing:-.02em; }
+.top .p{ color:var(--dim); font-size:12.5px; }
+.bento{ display:grid; grid-template-columns:repeat(6,1fr); gap:11px; }
+.c{ background:var(--card); border-radius:var(--r); padding:15px 16px; border:1px solid var(--line);
+  display:flex; flex-direction:column; min-height:104px; }
+.c .lab{ font-size:11.5px; color:var(--dim); }
+.c .val{ font-size:27px; font-weight:700; letter-spacing:-.03em; line-height:1.1; margin-top:auto;
+  font-variant-numeric:tabular-nums; }
+.c .val small{ font-size:13px; font-weight:500; color:var(--dim); letter-spacing:0; }
+.c .sub{ font-size:11.5px; color:var(--dim); margin-top:5px; }
+.c.w2{ grid-column:span 2; } .c.w3{ grid-column:span 3; } .c.w4{ grid-column:span 4; }
+.c.h2{ grid-row:span 2; }
+.c.tint{ background:var(--tint); border-color:transparent; }
+.rings{ display:flex; align-items:center; gap:16px; margin-top:10px; flex-wrap:wrap; }
+.lg{ font-size:11.5px; display:grid; gap:5px; }
+.lg span{ display:flex; align-items:center; gap:7px; color:var(--dim); }
+.lg i{ width:9px; height:9px; border-radius:99px; flex:0 0 9px; }
+.hbar{ display:grid; gap:9px; margin-top:11px; }
+.hbar .r{ display:flex; align-items:center; gap:9px; font-size:12px; }
+.hbar .r span:first-child{ width:138px; flex:0 0 138px; color:var(--dim); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.hbar .tr{ flex:1; height:10px; border-radius:99px; background:var(--line); overflow:hidden; }
+.hbar .tr i{ display:block; height:100%; border-radius:99px; }
+.hbar b{ font-variant-numeric:tabular-nums; width:34px; text-align:right; }
+.foot{ margin-top:16px; text-align:center; font-size:12px; color:var(--dim); }
+@media (max-width:1000px){ .bento{ grid-template-columns:repeat(4,1fr); } .c.w4{ grid-column:span 4; } }
+@media (max-width:700px){ .bento{ grid-template-columns:repeat(2,1fr); }
+  .c.w3,.c.w4{ grid-column:1/-1; } .c.h2{ grid-row:auto; } }
+@media (max-width:430px){ body{padding:13px} .bento{ gap:10px; } .c{ min-height:0; } .c .val{ font-size:24px; }
+  /* จอแคบ: ชื่อขึ้นบรรทัดบน ไม่ตัดคำ — "Famai Motor Group" กับ "Famai Motor" ต้องแยกออกจากกัน */
+  .hbar .r{ flex-wrap:wrap; }
+  .hbar .r span:first-child{ width:auto; flex:1 1 100%; margin-bottom:2px; } }
 </style></head><body>
-<div class="wrap"><div id="sw"></div>
-<h1>วันนี้ต้องทำอะไรบ้าง</h1>
-<div class="sub" id="sub"></div>
-<div class="strip" id="strip"></div>
-<div class="cols" id="app"></div>
-<p class="foot">ตัวอย่างการออกแบบ · ตัวเลขจากข้อมูลสาธิตของระบบจริง — ทั้ง 5 แบบใช้ชุดตัวเลขเดียวกัน</p></div>
+<div class="wrap"><div id="sw"></div><div class="top" id="top"></div><div class="bento" id="app"></div>
+<p class="foot">ตัวอย่างการออกแบบ · ตัวเลขจากข้อมูลสาธิตของระบบจริง — ทั้ง 6 แบบใช้ชุดตัวเลขเดียวกัน</p></div>
 <script src="data.js"></script><script src="common.js"></script>
 <script>
 const k=D.kpi;
-/* จัดงานเป็นสามกอง: ต้องทำวันนี้ · สัปดาห์นี้ · เฝ้าดู — เรียงตามความเสียหายถ้าไม่ทำ */
-const dayTo = d => Math.round((new Date(d+'T00:00:00') - new Date(D.today+'T00:00:00'))/86400000);
-const now=[], soon=[], later=[];
-if(k.ar>0) now.push({t:'ตามเก็บเงินค้างรับ '+B(k.ar)+' บาท', m:k.arN+' ราย · เงินที่ควรเข้าบัญชีแล้ว', go:'เปิดรายการ'});
-if(k.careDue>0) now.push({t:'โทรตามลูกค้าที่ถึงรอบดูแล', m:k.careDue+' ราย · หลังส่งมอบตามรอบที่ตั้งไว้', go:'ดูรายชื่อ'});
-D.todo.forEach(t=>{ const d=dayTo(t.due);
-  const row={t:'งานทะเบียน — '+t.cust, m:t.stage+' · ครบกำหนด '+thDate(t.due)+(d<0?' (เลย '+(-d)+' วัน)':' (อีก '+d+' วัน)'), go:'เปิดดีล'};
-  (d<0? now : d<=7? soon : later).push(row); });
-if(k.lowParts>0) soon.push({t:'สั่งอะไหล่ที่ต่ำกว่าจุดสั่งซื้อ', m:k.lowParts+' รายการ · เสี่ยงงานซ่อมค้างเพราะของขาด', go:'ดูสต๊อก'});
-if(k.svOpen>0) soon.push({t:'ปิดใบงานซ่อมที่ค้างอยู่', m:k.svOpen+' ใบ · รถลูกค้ายังอยู่ที่ร้าน', go:'ศูนย์ซ่อม'});
-if(k.stuck>0) later.push({t:'วางแผนระบายรถค้างเกิน '+D.aging+' วัน', m:k.stuck+' คัน จาก '+k.stock+' คัน · ทุนจมไม่หมุน', go:'ดูสต๊อก'});
-later.push({t:'ตรวจการลงเวลาก่อนปิดงวดเงินเดือน', m:'ทำก่อนสิ้นเดือน จะได้ไม่ต้องย้อนแก้', go:'เปิดหน้าลงเวลา'});
-const cols=[['now','ต้องทำวันนี้',now],['soon','ภายในสัปดาห์นี้',soon],['later','เฝ้าดูไว้',later]];
-
+const COL=['var(--c1)','var(--c2)','var(--c3)','var(--c4)','var(--c5)','var(--c6)'];
+const model=Object.entries(D.stockModel).sort((a,b)=>b[1]-a[1]);
+const tot=model.reduce((s,x)=>s+x[1],0);
+let acc=0; const seg=model.map(([m,n],i)=>{ const from=acc/tot*100; acc+=n;
+  return {m,n,c:COL[i%COL.length], from, to:acc/tot*100}; });
+const br=Object.entries(D.stockBr), brMax=Math.max(...br.map(x=>x[1]));
+const age=Object.entries(D.ageB), ageMax=Math.max(...age.map(x=>x[1]));
+const dd=daily(), cv=curvePath(dd.map(x=>x.v), 300, 70, 8);
 document.getElementById('sw').innerHTML = switcher('4');
-document.getElementById('sub').textContent = thDate(D.today)+' · '+D.branches.join(' · ');
-document.getElementById('strip').innerHTML = [
-  ['ยอดขายช่วงนี้', B(k.rev)+' ฿'], ['ขายได้', k.sold+' คัน'], ['กำไรขั้นต้น', B(k.gp)+' ฿'],
-  ['รถพร้อมขาย', k.stock+' คัน'], ['เงินค้างรับ', B(k.ar)+' ฿'], ['ทะเบียนค้าง', k.regWait+' คัน']
-].map(s=>'<div class="st"><b>'+s[1]+'</b><span>'+s[0]+'</span></div>').join('');
-document.getElementById('app').innerHTML = cols.map(([c,title,list])=>
-  '<section class="col '+c+'"><h2><span class="bt"></span>'+title+'<span class="n">'+list.length+' งาน</span></h2>'
-  + (list.length? list.map(x=>'<div class="item"><div class="txt"><div class="t">'+x.t+'</div><div class="m">'+x.m+'</div></div>'
-      +'<button class="go">'+x.go+'</button></div>').join('')
-    : '<div class="empty">ไม่มีงานค้างในกองนี้</div>')
-  + '</section>').join('');
+document.getElementById('top').innerHTML = '<h1>สต๊อกรถทั้งเครือ</h1>'
+  + '<span class="p">'+D.branches.length+' สาขา · '+D.period.text+' · อัปเดต '+thDate(D.today)+'</span>';
+document.getElementById('app').innerHTML =
+  '<div class="c w2 tint"><div class="lab">รถพร้อมขาย</div><div class="val">'+k.stock+' <small>คัน</small></div>'
++ '<div class="sub">ทุนจม '+B(k.cost)+' ฿</div></div>'
++ '<div class="c"><div class="lab">ค้างเกิน '+D.aging+' วัน</div><div class="val" style="color:var(--hot)">'+k.stuck+'</div><div class="sub">'+Math.round(k.stuck/Math.max(1,k.stock)*100)+'% ของสต๊อก</div></div>'
++ '<div class="c"><div class="lab">ขายออกในช่วง</div><div class="val">'+k.sold+'</div><div class="sub">'+B(k.rev)+' ฿</div></div>'
++ '<div class="c"><div class="lab">รุ่นที่มี</div><div class="val">'+model.length+'</div><div class="sub">แบบในสต๊อก</div></div>'
++ '<div class="c"><div class="lab">เฉลี่ยต่อสาขา</div><div class="val">'+Math.round(k.stock/Math.max(1,br.length))+'</div><div class="sub">คัน/สาขา</div></div>'
+
++ '<div class="c w3 h2"><div class="lab">สต๊อกแยกรุ่น</div>'
++ '<div class="rings"><svg width="148" height="148" viewBox="0 0 42 42">'
++ seg.map(s=>ringArc(s.from, s.to, s.c, 6.4)).join('')
++ '<text x="21" y="20.6" text-anchor="middle" font-size="7.4" font-weight="700" fill="currentColor">'+tot+'</text>'
++ '<text x="21" y="25.4" text-anchor="middle" font-size="3.2" fill="currentColor" opacity=".6">คันทั้งหมด</text></svg>'
++ '<div class="lg">'+seg.map(s=>'<span><i style="background:'+s.c+'"></i>'+s.m+' · <b>'+s.n+'</b>&nbsp;คัน</span>').join('')+'</div></div></div>'
+
++ '<div class="c w3"><div class="lab">คงเหลือรายสาขา</div><div class="hbar">'
++ br.map(([b,n],i)=>'<div class="r"><span>'+b+'</span>'
++   '<span class="tr"><i style="width:'+Math.round(n/brMax*100)+'%;background:'+COL[i%COL.length]+'"></i></span>'
++   '<b>'+n+'</b></div>').join('')
++ '</div></div>'
+
++ '<div class="c w3"><div class="lab">อายุรถในสต๊อก</div><div class="hbar">'
++ age.map(([a,n])=>'<div class="r"><span>'+a+' วัน</span>'
++   '<span class="tr"><i style="width:'+Math.round(n/ageMax*100)+'%;background:'+(a==='180+'?'var(--hot)':(a==='91-180'?'var(--c4)':'var(--c2)'))+'"></i></span>'
++   '<b>'+n+'</b></div>').join('')
++ '</div><div class="sub">แถบแดงคือเงินที่จอดอยู่เฉย ๆ นานที่สุด</div></div>'
+
++ '<div class="c w4"><div class="lab">จังหวะการขายในช่วงที่เลือก</div>'
++ '<svg viewBox="0 0 300 70" width="100%" height="74" preserveAspectRatio="none" style="margin-top:8px">'
++ '<defs><linearGradient id="g4" x1="0" y1="0" x2="0" y2="1">'
++ '<stop offset="0" stop-color="var(--c1)" stop-opacity=".3"/><stop offset="1" stop-color="var(--c1)" stop-opacity="0"/></linearGradient></defs>'
++ '<path d="'+cv.area+'" fill="url(#g4)"/>'
++ '<path d="'+cv.line+'" fill="none" stroke="var(--c1)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>'
++ '<div class="sub">'+thShort(D.period.from)+' – '+thShort(D.period.to)+' · วันที่ขายดีสุด '+B(cv.max)+' ฿</div></div>'
+
++ '<div class="c w2"><div class="lab">รุ่นที่ขายออกช่วงนี้</div><div class="hbar" style="margin-top:9px">'
++ Object.entries(D.byModel).sort((a,b)=>b[1].n-a[1].n).map(([m,v],i)=>{
+    const mx=Math.max(...Object.values(D.byModel).map(x=>x.n));
+    return '<div class="r"><span>'+m+'</span><span class="tr"><i style="width:'+Math.round(v.n/mx*100)+'%;background:'+COL[i%COL.length]+'"></i></span><b>'+v.n+'</b></div>'; }).join('')
++ '</div></div>';
 setTheme();
 </script>
 </body></html>
