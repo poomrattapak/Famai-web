@@ -68,6 +68,13 @@
   --grp-cur:var(--accent);
   /* -- ขั้นตอนสีเขียว (I1) -- */
   --pos-wash:rgba(31,122,77,.14);
+  /* -- สีกราฟหน้าแรก (v1.25) — โทนเย็นน้ำเงิน-มิ้นต์ ตามแบบ 4 ที่เจ้าของเลือก --
+     ใช้เป็นพื้นของแท่ง/วง จึงวัดด้วยเกณฑ์วัตถุกราฟิก 3:1 (ไม่ใช่ 4.5:1 ของตัวอักษร)
+     เทียบทั้ง --card และ --paper ครบ 4 ธีม — dash-r25 วัดจริงในหน้าเว็บ
+     ธีม warm/cool เปลี่ยนแค่กระดาษกับหมึก จึงรับชุดนี้ต่อได้เลย ไม่ต้อง override */
+  --ch1:#1D6FC7; --ch2:#0F8A80; --ch3:#3E7FB5;
+  --ch4:#0E4F82; --ch5:#4A9086; --ch6:#5A7488;
+  --ch-wash:rgba(29,111,199,.07);
   /* -- กระดาษเอกสาร — ค่าคงที่ไม่ตามธีม ใบกำกับต้องเป็นกระดาษขาวเสมอ -- */
   --doc-paper:#FFFFFF; --doc-ink:#16181D;
 
@@ -91,6 +98,8 @@ html[data-theme="dark"]{
   --pos:#3DBA7A; --attn:#D98A2B; --pos-wash:rgba(61,186,122,.16);
   --st-in:#3DBA7A; --st-late:#D98A2B; --st-leave:#6E9FD6; --st-none:#F2606B;
   --grp1:#FF6B74; --grp2:#6EA8D9; --grp3:#3DBA7A; --grp4:#D98A2B; --grp5:#A97FD6; --grp6:#9BA3B2;
+  --ch1:#5AA9F5; --ch2:#3FD6C6; --ch3:#8CC0EE; --ch4:#3D89C9; --ch5:#A8E5DC; --ch6:#93A9BC;
+  --ch-wash:rgba(90,169,245,.10);
   --sh-sm:0 1px 2px rgba(0,0,0,.42); --sh-md:0 8px 24px rgba(0,0,0,.5); --sh-lg:0 20px 50px rgba(0,0,0,.6);
   --glow:0 0 30px rgba(255,59,71,.22);
 }
@@ -527,15 +536,77 @@ textarea.inp{ height:auto; padding:var(--s1) var(--s2); resize:vertical; line-he
   border-top:1px solid var(--hairline-2); padding-top:var(--s2); }
 .f > .fsh:first-child{ border-top:0; padding-top:0; }
 
+/* -------------------- BENTO — เฉพาะหน้าแรก (v1.25) --------------------
+   ผสมแบบ 3 (งานค้าง) กับแบบ 4 (สต๊อก) จาก docs/dash/ ตามที่เจ้าของเลือก
+   ห้ามใช้ .g2/.g2e ที่นี่ (อีก 20 หน้าจอใช้อยู่) และห้ามแก้ .kpi ตรง ๆ (อีก 6 หน้าจอใช้อยู่)
+   — ทับได้เฉพาะแบบมีขอบเขต `.bento .kpi` เท่านั้น */
+.bento{ display:grid; grid-template-columns:repeat(6,1fr); gap:var(--s2);
+  align-items:start; margin-bottom:var(--s3); }
+.bento > *{ min-width:0; }
+.bento .w2{ grid-column:span 2; } .bento .w3{ grid-column:span 3; }
+.bento .w4{ grid-column:span 4; } .bento .w6{ grid-column:1/-1; }
+.bento .h2{ grid-row:span 2; }
+/* ให้ลูกของ #dKpis กลายเป็นช่องของกริดใบเดียวกัน — จะได้เป็น "กริดเดียวทั้งหน้า" จริง
+   ไม่ใช่กริดซ้อนกริด (ซึ่งจะทำให้การ์ดสองกลุ่มไม่เรียงคอลัมน์ตรงกัน) */
+.bento .ctn{ display:contents; }
+/* การ์ดในเบนโตะเป็นกล่องชั้นเดียว (§9c) — ข้างในแบ่งด้วยเส้นคั่นอย่างเดียว ไม่มีกล่องซ้อน */
+.bento .card{ padding:var(--s2); margin-bottom:0; display:flex; flex-direction:column; }
+.bento .card > .hd{ padding:0 0 var(--s1); min-height:0; }
+.bento .card > .bd{ padding:0; }
+.bento .card > .bd.flush{ padding:var(--s1) calc(var(--s2) * -1) 0; }
+.bento .kpi{ padding:var(--s2); display:flex; flex-direction:column; }
+.bento .kpi .v{ margin-top:auto; padding-top:var(--s1); }
+.bento .kpi.tint{ background:var(--ch-wash); box-shadow:none; }
+/* วงแหวน + คำอธิบายวางคู่กัน — คำอธิบายหดได้ วงแหวนไม่หด */
+.rgrow{ display:flex; align-items:center; gap:var(--s2); margin-top:auto; padding-top:var(--s1); }
+.rgrow .rg{ flex:0 0 auto; }
+.rgrow .t{ min-width:0; font-size:var(--t-label); color:var(--muted); line-height:1.5; }
+/* คิวงานเรียงตามวันครบกำหนด (แบบ 3) — จุดสีเป็นตัวช่วย ข้อความด้านขวาคือตัวบอกจริง (กฎข้อ 3) */
+.q{ display:flex; align-items:center; gap:var(--s1); padding:var(--s1) 0;
+  border-top:1px solid var(--hairline-2); font-size:var(--t-table); }
+.q:first-child{ border-top:0; }
+.q .dot{ flex:0 0 8px; width:8px; height:8px; border-radius:var(--r-pill); background:var(--ch2); }
+.q .dot.late{ background:var(--accent); } .q .dot.soon{ background:var(--attn); }
+.q .nm{ flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.q .nm .tsub{ display:block; }
+.q .when{ flex:0 0 auto; font-size:var(--t-label); color:var(--muted); white-space:nowrap; }
+.q .when.late{ color:var(--accent); font-weight:600; }
+/* กราฟเส้นโค้งกินขอบการ์ด — ลบระยะขอบซ้ายขวาของการ์ดออกเฉพาะกล่องกราฟ */
+.spark{ margin:var(--s1) calc(var(--s2) * -1) 0; }
+.spark svg{ display:block; width:100%; }
+/* รายการชื่อ-จำนวนแบบกระชับ ใช้ทั้งขั้นตอนทะเบียนและเตือนสต๊อก */
+.kv2{ display:flex; justify-content:space-between; gap:var(--s2);
+  padding:var(--s-half) 0; font-size:var(--t-table); }
+.kv2 + .kv2{ border-top:1px solid var(--hairline-2); }
+.kv2 b{ font-variant-numeric:tabular-nums; }
+.lgd{ display:grid; gap:var(--s-half); font-size:var(--t-label); min-width:0; }
+.lgd span{ display:flex; align-items:center; gap:var(--s1); color:var(--muted); }
+.lgd i{ flex:0 0 9px; width:9px; height:9px; border-radius:var(--r-pill); }
+.lgd b{ color:var(--ink); font-variant-numeric:tabular-nums; }
+.dnt{ display:flex; align-items:center; gap:var(--s2); flex-wrap:wrap; margin-top:var(--s1); }
+@media (max-width:1200px){ .bento{ grid-template-columns:repeat(4,1fr); }
+  .bento .w4,.bento .w3{ grid-column:span 4; } }
+@media (max-width:900px){ .bento{ grid-template-columns:repeat(2,1fr); }
+  .bento .w2,.bento .w3,.bento .w4{ grid-column:1/-1; } .bento .h2{ grid-row:auto; } }
+@media (max-width:600px){ .bento{ gap:var(--s1); } }
+
 /* -------------------- CHARTS — หมึก/เทา แดงเฉพาะที่ต้องสนใจ -------------------- */
 .bars{ display:grid; gap:var(--s2); }
 .bar .bl{ display:flex; justify-content:space-between; align-items:baseline;
   font-size:var(--t-table); margin-bottom:var(--s-half); gap:var(--s2); }
 .bar .bl b{ font-weight:600; font-variant-numeric:tabular-nums; }
-.bar .bt{ height:6px; border-radius:var(--r-pill); background:var(--hairline-2); overflow:hidden; }
-.bar .bf{ height:100%; border-radius:var(--r-pill); background:var(--ink); }
-.bar .bf.g{ background:var(--pos); } .bar .bf.w{ background:var(--attn); }
-.bar .bf.d{ background:var(--accent); }
+/* แท่งเป็นแคปซูล — รางกับตัวแท่งมนเท่ากัน แท่งค่าน้อยยังต้องเห็นเป็นเม็ด ไม่ใช่ขีดบาง */
+/* รางกับตัวแท่งใช้ร่วมกันทั้งกราฟแท่ง (.bar) และรายการงานค้าง (.trow) */
+.bt{ height:10px; border-radius:var(--r-pill); background:var(--hairline-2); overflow:hidden; }
+.bf{ height:100%; border-radius:var(--r-pill); background:var(--ink); }
+.bf.g{ background:var(--pos); } .bf.w{ background:var(--attn); }
+.bf.d{ background:var(--accent); }
+/* งานค้าง (แบบ 3) — บรรทัดชื่อ+จำนวน แล้วแถบแคปซูลเทียบสัดส่วนกับงานที่เยอะที่สุดในการ์ด */
+.trow{ padding:var(--s1) 0; border-top:1px solid var(--hairline-2); }
+.trow:first-child{ border-top:0; }
+.trow .tl{ display:flex; align-items:center; gap:var(--s1);
+  font-size:var(--t-table); margin-bottom:var(--s-half); }
+.trow .tl span{ flex:1; min-width:0; }
 
 /* -------------------- PSTEP — แถบความคืบหน้าแบบไอคอน --------------------
    ใช้แทนกระดานคัมบังในงานติดตามลูกค้า บรรทัดเดียวบอกครบว่าอยู่ขั้นไหน เหลืออีกกี่ขั้น
@@ -600,17 +671,6 @@ textarea.inp{ height:auto; padding:var(--s1) var(--s2); resize:vertical; line-he
 /* ทางออกฉุกเฉิน — จางกว่าปุ่มหลัก แต่ยังเป็นสีเตือน */
 .dlact.dlrisk{ margin-top:var(--s1); }
 .dlact.dlrisk .btn{ color:var(--accent); }
-.vbars{ display:flex; align-items:flex-end; gap:var(--s2); height:160px; padding-top:var(--s3); }
-.vb{ flex:1; display:flex; flex-direction:column; justify-content:flex-end; align-items:center; height:100%; }
-.vb .col{ width:100%; max-width:40px; height:100%; background:var(--hairline-2);
-  border-radius:var(--r-input); display:flex; flex-direction:column; justify-content:flex-end;
-  position:relative; }
-.vb .fill{ width:100%; background:var(--ink); border-radius:var(--r-input); min-height:2px; }
-.vb .fill.hot{ background:var(--accent); }
-.vb .cv{ position:absolute; top:-20px; left:0; right:0; text-align:center;
-  font-size:var(--t-label); font-weight:600; font-variant-numeric:tabular-nums; }
-.vb .cl{ font-size:var(--t-label); color:var(--muted); margin-top:var(--s1); text-align:center; }
-
 .flow{ display:flex; align-items:stretch; gap:var(--s1); flex-wrap:wrap; }
 .fstep{ flex:1; min-width:104px; padding:var(--s2) 0; text-align:center;
   border-top:2px solid var(--hairline); }
@@ -1096,26 +1156,29 @@ body.lock{ overflow:hidden; }
         <div id="dPer"></div>
         <select class="inp ct" id="dBranch"></select>
         <div class="dper" id="dPeriod"></div>
-        <div class="kpis k6" id="dKpis"></div>
-        <div class="g2">
-          <div>
-            <div class="card"><div class="hd"><h3>ยอดขายตามช่วงเวลา</h3></div><div class="bd"><div class="vbars" id="chTrend"></div></div></div>
-            <div class="g2e">
-              <div class="card"><div class="hd"><h3>สต๊อกแยกสาขา</h3></div><div class="bd"><div class="bars" id="chBranch"></div></div></div>
-              <div class="card"><div class="hd"><h3>รถค้างนานแค่ไหน</h3></div><div class="bd"><div class="vbars" id="chAge" style="height:150px"></div></div></div>
-            </div>
-            <div class="card"><div class="hd"><h3>สต๊อกแยกตามรุ่น</h3></div><div class="bd"><div class="bars" id="chModel"></div></div></div>
-          </div>
-          <div>
-            <div class="card"><div class="hd"><h3>สิ่งที่ต้องจัดการวันนี้</h3></div><div class="bd" id="todo"></div></div>
-            <div class="card"><div class="hd"><h3>ทะเบียน</h3><div class="sp"></div><button class="lnk" data-go="deal">ดูทั้งหมด</button></div><div class="bd" id="dReg"></div></div>
-            <div class="card"><div class="hd"><h3>อันดับเซลล์</h3></div><div class="bd flush"><div class="tw"><table id="chStaff"></table></div></div></div>
-            <div class="card"><div class="hd"><h3>เตือนสต๊อกใกล้หมด</h3></div><div class="bd" id="dAlert"></div></div>
-          </div>
+        <!-- เบนโตะกริดเดียวทั้งหน้า — ผสมแบบ 3 (งานค้างนำ) กับแบบ 4 (สต๊อกแน่น) จาก docs/dash/
+             ลำดับเรื่อง: ตัวเลขรวม → อะไรค้างอยู่ → สต๊อกทั้งเครือ → คนกับของ → รายการขาย -->
+        <div class="bento">
+          <div class="ctn" id="dKpis"></div>
+
+          <div class="card w2"><div class="hd"><h3>งานทะเบียนที่ลูกค้ายังรอป้าย</h3></div><div class="bd" id="dReg"></div></div>
+          <div class="card w2 h2"><div class="hd"><h3>คิวงานใกล้ครบกำหนด</h3><div class="sp"></div>
+            <button class="lnk" data-go="deal">ดูทั้งหมด</button></div><div class="bd" id="dQueue"></div></div>
+          <div class="card w2 h2"><div class="hd"><h3>สิ่งที่ต้องจัดการวันนี้</h3></div><div class="bd" id="todo"></div></div>
+          <div class="card w2" id="dArCard"><div class="hd"><h3>เงินค้างรับ</h3></div><div class="bd" id="dAr"></div></div>
+
+          <div class="card w3"><div class="hd"><h3>สต๊อกแยกตามรุ่น</h3></div><div class="bd" id="chModel"></div></div>
+          <div class="card w3"><div class="hd"><h3>คงเหลือรายสาขา</h3></div><div class="bd"><div class="bars" id="chBranch"></div></div></div>
+          <div class="card w3"><div class="hd"><h3>อายุรถในสต๊อก</h3></div><div class="bd"><div class="bars" id="chAge"></div></div></div>
+          <div class="card w3"><div class="hd"><h3>ยอดขายตามช่วงเวลา</h3></div><div class="bd" id="chTrend"></div></div>
+
+          <div class="card w4"><div class="hd"><h3>อันดับเซลล์</h3></div><div class="bd flush"><div class="tw"><table id="chStaff"></table></div></div></div>
+          <div class="card w2"><div class="hd"><h3>เตือนสต๊อกใกล้หมด</h3></div><div class="bd" id="dAlert"></div></div>
+
+          <div class="card w6"><div class="hd"><h3>รายการขายในช่วงที่เลือก</h3><div class="sp"></div>
+            <button class="btn sec sm noprint" id="dPrint"><svg class="i i-sm"><use href="#i-print"/></svg> พิมพ์สรุป</button>
+            <button class="lnk noprint" id="expSales"><svg class="i i-sm"><use href="#i-download"/></svg> ส่งออก</button></div><div class="bd flush"><div class="tw"><table id="recentSales"></table></div></div></div>
         </div>
-        <div class="card"><div class="hd"><h3>รายการขายในช่วงที่เลือก</h3><div class="sp"></div>
-          <button class="btn sec sm noprint" id="dPrint"><svg class="i i-sm"><use href="#i-print"/></svg> พิมพ์สรุป</button>
-          <button class="lnk noprint" id="expSales"><svg class="i i-sm"><use href="#i-download"/></svg> ส่งออก</button></div><div class="bd flush"><div class="tw"><table id="recentSales"></table></div></div></div>
         <p class="foot">รถ 50 คันเป็นข้อมูลจริงจากไฟล์ยามาฮ่า · การขาย ลูกค้า พนักงาน และอะไหล่ เป็นข้อมูลสมมุติสำหรับสาธิต</p>
       </section>
 
@@ -3104,46 +3167,110 @@ function rDash(){
   /* เงินค้างรับตัวแดงเด่นบนหน้าแรก (บรีฟ G4) — กดแล้วไปหน้าเงินค้างรับได้เลย */
   const arLeft=AR.filter(a=>inScope(a.branch)).reduce((s,a)=>s+Math.max(0,a.due-a.paid),0);
   const arCnt=AR.filter(a=>inScope(a.branch)&&a.due-a.paid>0).length;
+  /* ① ตัวเลขรวม — การ์ดเล็กแน่นแบบ 4 · ใบแรกกว้างสองช่องและมีพื้นอ่อน เป็นจุดเริ่มสายตา
+     "รอทะเบียน" กับ "ค้างจ่าย/ค้างรับ" ย้ายไปเป็นการ์ดวงแหวนของตัวเอง ไม่ได้หายไปไหน */
   $('#dKpis').innerHTML=[
-    ['สต๊อกคงเหลือ', su.length+' <small>คัน</small>', 'ต้นทุนจม '+money(su.reduce((s,u)=>s+u.cost,0)),''],
-    ['ขายได้ในช่วงนี้', ss.length+' <small>คัน</small>', perLen+' วัน', dt(ss.length,prev.length)],
-    ['ยอดขายรวม', fmt(rev)+' <small>฿</small>', ss.length? 'เฉลี่ย '+baht(rev/ss.length)+'/คัน':'—', dt(rev,prevRev)],
-    ['กำไรขั้นต้น', noMoney()?'—':fmt(gp)+' <small>฿</small>', noMoney()?'ซ่อนตามสิทธิ์':(rev?Math.round(gp/rev*100)+'% ของยอดขาย':'—'),''],
-    canSee('ar')? ['ค้างจ่าย/ค้างรับ',
-      '<b style="color:var(--accent)">'+(noMoney()?arCnt+' <small>รายการ</small>':fmt(arLeft)+' <small>฿</small>')+'</b>',
-      arCnt? arCnt+' รายการยังไม่ชำระ — กดเพื่อดู':'ไม่มียอดค้าง', '', 'ar'] : null,
-    ['รอทะเบียน', REGS.filter(r=>inScope(r.branch)&&['ขายแล้ว','ส่งไฟแนนซ์','อนุมัติ','รอทะเบียน'].indexOf(r.stage)>=0).length+' <small>คัน</small>','ยังไม่ได้ป้าย',''],
-    ['ค้างเกิน '+CFG.aging+' วัน', stuck.length+' <small>คัน</small>', 'ต้นทุนจม '+money(stuck.reduce((s,u)=>s+u.cost,0)),'']
-  ].filter(Boolean).map(k=>'<div class="kpi'+(k[4]?' clk" data-kgo="'+k[4]:'')+'"><div class="l">'+k[0]+'</div><div class="v">'+k[1]+'</div><div class="s">'+k[2]+'</div>'+(k[3]||'')+'</div>').join('');
+    {l:'รถพร้อมขาย', v:su.length+' <small>คัน</small>', s:'ทุนจม '+money(su.reduce((s,u)=>s+u.cost,0)), cls:'w2 tint'},
+    {l:'ขายได้ในช่วงนี้', v:ss.length+' <small>คัน</small>', s:perLen+' วัน', d:dt(ss.length,prev.length)},
+    {l:'ยอดขายรวม', v:fmt(rev)+' <small>฿</small>', s:ss.length? 'เฉลี่ย '+baht(rev/ss.length)+'/คัน':'—', d:dt(rev,prevRev)},
+    {l:'กำไรขั้นต้น', v:noMoney()?'—':fmt(gp)+' <small>฿</small>',
+      s:noMoney()?'ซ่อนตามสิทธิ์':(rev?Math.round(gp/rev*100)+'% ของยอดขาย':'—')},
+    {l:'ค้างเกิน '+CFG.aging+' วัน', v:stuck.length+' <small>คัน</small>',
+      s:'ทุนจม '+money(stuck.reduce((s,u)=>s+u.cost,0))}
+  ].map(k=>'<div class="kpi '+(k.cls||'')+(k.go?' clk':'')+'"'+(k.go?' data-kgo="'+k.go+'"':'')+'>'
+    +'<div class="l">'+k.l+'</div><div class="v">'+k.v+'</div><div class="s">'+k.s+'</div>'+(k.d||'')+'</div>').join('');
   $$('#dKpis [data-kgo]').forEach(el=> el.onclick=()=>go(el.dataset.kgo));
 
-  /* กราฟยอดขาย — แบ่งช่วงที่เลือกเป็นช่วงย่อยเท่า ๆ กันแล้วนับของจริง
-     ของเดิมนับเฉพาะวันเดียวต่อแท่งแล้วบวกเลขปลอม (i%3===0?1:0) ให้กราฟดูมีข้อมูล
-     ผลคือกราฟไม่ตรงกับตัวเลข KPI ที่อยู่เหนือมันเอง */
-  const nb=Math.max(1, Math.min(7, perLen)), step=perLen/nb, buckets=[];
+  /* ② อะไรค้างอยู่ (แบบ 3) — ทะเบียน · คิวงานตามวันครบกำหนด · เงินค้างรับ
+     วงแหวนบอกความคืบหน้า ตัวเลขกลางวงต้องเป็นค่าเดียวกับที่ส่งเข้า ringBox เสมอ */
+  const rc={}; REG_STAGES.forEach(s=>rc[s]=0);
+  const rgAll=REGS.filter(r=>inScope(r.branch));
+  rgAll.forEach(r=>rc[r.stage]++);
+  const rgWait=rgAll.filter(r=>r.stage!=='ส่งมอบแล้ว');
+  const rgPct = rgAll.length? Math.round(rc['ส่งมอบแล้ว']/rgAll.length*100) : 100;
+  $('#dReg').innerHTML='<div class="v" style="font-family:var(--f-display);font-size:var(--t-stat);'
+      +'font-weight:600;line-height:1.05;color:var(--attn)">'+rgWait.length+' <small style="font-size:var(--t-table);color:var(--muted)">คัน</small></div>'
+    +'<div class="rgrow">'+ringBox(rgPct,'var(--ch1)',rgPct+'%')
+    +'<div class="t">ส่งมอบครบแล้ว '+rc['ส่งมอบแล้ว']+' จาก '+rgAll.length+' คัน<br>ยิ่งวงเต็ม ยิ่งไม่มีใครรอ</div></div>'
+    +'<div style="margin-top:var(--s2)">'+REG_STAGES.map(s=>'<div class="kv2"><span>'+esc(s)+'</span><b>'+rc[s]+'</b></div>').join('')+'</div>';
+
+  /* คิวงานเรียงตามวันครบกำหนด — เลยกำหนดต้องขึ้นเป็น "ข้อความ" ไม่ใช่แค่จุดแดง (กฎข้อ 3) */
+  const q=rgWait.slice().sort((a,b)=>String(a.due).localeCompare(String(b.due))).slice(0,6).map(r=>{
+    const sa=SALES.find(x=>x.id===r.saleId), cu=sa&&CUSTOMERS.find(x=>x.id===sa.custId);
+    return {nm: cu?cu.name:'—', stage:r.stage, d: -days(r.due, TODAY)}; });
+  $('#dQueue').innerHTML = q.length? q.map(t=>'<div class="q">'
+      +'<span class="dot '+(t.d<0?'late':(t.d<=7?'soon':''))+'"></span>'
+      +'<span class="nm">'+esc(t.nm)+'<span class="tsub">'+esc(t.stage)+'</span></span>'
+      +'<span class="when'+(t.d<0?' late':'')+'">'+(t.d<0? 'เลย '+(-t.d)+' วัน' : (t.d===0?'ครบวันนี้':'อีก '+t.d+' วัน'))+'</span></div>').join('')
+    : '<div class="empty"><b>ไม่มีคิวงานทะเบียน</b>ส่งมอบครบทุกคันแล้ว</div>';
+
+  /* เงินค้างรับ — การ์ดทั้งใบซ่อนถ้าไม่มีสิทธิ์ ar · คนไม่มีสิทธิ์เงินเห็นจำนวนรายแทนตัวเลขเงิน */
+  const arDue=AR.filter(a=>inScope(a.branch)).reduce((s,a)=>s+a.due,0);
+  const arPaid=AR.filter(a=>inScope(a.branch)).reduce((s,a)=>s+Math.min(a.paid,a.due),0);
+  const arPct = arDue? Math.round(arPaid/arDue*100) : 100;
+  $('#dArCard').style.display = canSee('ar')? '' : 'none';
+  if(canSee('ar')) $('#dAr').innerHTML='<div class="v" style="font-family:var(--f-display);font-size:var(--t-stat);'
+      +'font-weight:600;line-height:1.05;color:var(--accent)">'
+      +(noMoney()? arCnt+' <small style="font-size:var(--t-table);color:var(--muted)">รายการ</small>'
+                 : fmt(arLeft)+' <small style="font-size:var(--t-table);color:var(--muted)">฿</small>')+'</div>'
+    +'<div class="rgrow">'+ringBox(arPct,'var(--ch2)',arPct+'%')
+    +'<div class="t">เก็บได้แล้วเทียบกับที่ควรได้<br>ค้าง '+arCnt+' ราย</div></div>'
+    +'<button class="lnk" data-go="ar" style="margin-top:var(--s1);align-self:flex-start">ดูเงินค้างรับทั้งหมด</button>';
+
+  /* ③ สต๊อกทั้งเครือ (แบบ 4) — โดนัทซ้อนวง · แท่งนอนหัวมน · เส้นโค้งยอดขาย
+     ทุกตัวเลขมาจาก su/ss ชุดเดียวกับ KPI ข้างบน กราฟกับตัวเลขจึงตรงกันเสมอ */
+  const CH=['var(--ch1)','var(--ch2)','var(--ch3)','var(--ch4)','var(--ch5)','var(--ch6)'];
+
+  /* รุ่น — โดนัทซ้อนวง · ชื่อรุ่นกับจำนวนอยู่ใน legend ข้าง ๆ สีจึงไม่ใช่ตัวสื่อความหมายเดี่ยว */
+  const mm={}; su.forEach(u=>{ mm[u.model]=mm[u.model]||{n:0,age:0}; mm[u.model].n++; mm[u.model].age+=age(u); });
+  const mk=Object.keys(mm).sort((a,b)=>mm[b].n-mm[a].n);
+  const mTot=mk.reduce((s,k)=>s+mm[k].n,0);
+  let mAcc=0; const mSeg=mk.map((k,i)=>{ const from=mAcc/Math.max(1,mTot)*100; mAcc+=mm[k].n;
+    return {k, n:mm[k].n, c:CH[i%CH.length], from, to:mAcc/Math.max(1,mTot)*100}; });
+  $('#chModel').innerHTML = mTot? '<div class="dnt"><svg width="132" height="132" viewBox="0 0 42 42">'
+      + mSeg.map(s=>ringArc(s.from, s.to, s.c, 6.6)).join('')
+      + '<text x="21" y="20.4" text-anchor="middle" font-size="7" font-weight="700" fill="currentColor">'+mTot+'</text>'
+      + '<text x="21" y="25.6" text-anchor="middle" font-size="3.2" fill="currentColor" opacity=".6">คัน</text></svg>'
+      + '<div class="lgd">'+mSeg.map(s=>'<span><i style="background:'+s.c+'"></i>'+esc(s.k)
+        +' · <b>'+s.n+'</b> คัน · อายุเฉลี่ย '+Math.round(mm[s.k].age/s.n)+' วัน</span>').join('')+'</div></div>'
+    : '<div class="empty"><b>ไม่มีรถในสต๊อก</b>ตามสาขาและช่วงที่เลือก</div>';
+
+  /* สาขา — นับทุกสาขาที่เห็นได้เสมอ ไม่ตัดตาม dBranch เพราะการ์ดนี้คือ "เทียบระหว่างสาขา" */
+  const bs=BRANCHES.filter(b=>inScope(b.code)).map((b,i)=>({l:b.name,
+    v:uAvail().filter(u=>u.branch===b.code).length, c:CH[i%CH.length],
+    s:money(uAvail().filter(u=>u.branch===b.code).reduce((s,u)=>s+u.cost,0))}));
+  hbar($('#chBranch'), bs);
+
+  /* อายุรถ — ช่วงที่เกินเกณฑ์เป็นสีเตือน และมีข้อความกำกับด้วย ไม่ใช่สีอย่างเดียว */
+  const bk=[[0,30],[31,60],[61,90],[91,9999]];
+  hbar($('#chAge'), bk.map((b,i)=>({ l:b[1]>9000? '91 วันขึ้นไป' : (b[0]+'–'+b[1]+' วัน'),
+    v:su.filter(u=>age(u)>=b[0]&&age(u)<=b[1]).length,
+    s:b[1]>9000? 'เงินจอดนานที่สุด' : '',
+    cls:b[1]>9000?'d':'', c:b[1]>9000? null : CH[i%CH.length] })));
+
+  /* ยอดขาย — เส้นโค้ง + พื้นที่ใต้เส้น
+     แบ่งช่วงที่เลือกเป็นช่วงย่อยเท่า ๆ กันแล้วนับของจริง ห้ามเติมเลขปลอมให้กราฟดูมีข้อมูล
+     (ของเดิมเคยบวก i%3===0?1:0 ผลคือกราฟไม่ตรงกับ KPI ที่อยู่เหนือมันเอง) */
+  /* 12 ช่วงย่อย — หยาบกว่านี้ (เช่น 7 ช่วงใน 26 วัน) ยอดจะเฉลี่ยเป็น 1 เท่ากันทุกช่วง
+     เส้นแบนราบจนไม่บอกอะไรเลย · 12 ช่วงยังเห็นว่า "ขายวันไหน" ซึ่งคือสิ่งที่การ์ดนี้มีไว้ตอบ */
+  const nb=Math.max(1, Math.min(12, perLen)), step=perLen/nb, buckets=[];
   for(let i=0;i<nb;i++){
     const a=addDays(per.from, Math.floor(i*step));
     const z=addDays(per.from, Math.max(Math.floor(i*step), Math.floor((i+1)*step)-1));
     buckets.push({ l:thShort(a), v: ss.filter(x=>x.soldAt>=a && x.soldAt<=z).length });
   }
-  vbar($('#chTrend'), buckets);
-
-  /* สาขา */
-  const bs=BRANCHES.filter(b=>inScope(b.code)).map(b=>({l:b.name,
-    v:uAvail().filter(u=>u.branch===b.code).length,
-    s:money(uAvail().filter(u=>u.branch===b.code).reduce((s,u)=>s+u.cost,0))}));
-  hbar($('#chBranch'), bs);
-
-  /* อายุ */
-  const bk=[[0,30],[31,60],[61,90],[91,9999]];
-  vbar($('#chAge'), bk.map(b=>({l:b[1]>9000?'90+':(b[0]+'–'+b[1]),
-    v:su.filter(u=>age(u)>=b[0]&&age(u)<=b[1]).length, hot:b[1]>9000})));
-
-  /* รุ่น */
-  const mm={}; su.forEach(u=>{ mm[u.model]=mm[u.model]||{n:0,age:0}; mm[u.model].n++; mm[u.model].age+=age(u); });
-  hbar($('#chModel'), Object.keys(mm).sort((a,b)=>mm[b].n-mm[a].n).map(k=>({l:k, v:mm[k].n,
-    s:'อายุเฉลี่ย '+Math.round(mm[k].age/mm[k].n)+' วัน',
-    cls: mm[k].n<=CFG.lowStock?'d' : (mm[k].age/mm[k].n>CFG.aging?'w':'')})));
+  const cv = buckets.length>1? curvePath(buckets.map(b=>b.v), 320, 96, 8) : null;
+  $('#chTrend').innerHTML = cv
+    ? '<div class="spark"><svg viewBox="0 0 320 96" height="96" preserveAspectRatio="none" aria-hidden="true">'
+      + '<defs><linearGradient id="gTrend" x1="0" y1="0" x2="0" y2="1">'
+      + '<stop offset="0" stop-color="var(--ch1)" stop-opacity=".28"/>'
+      + '<stop offset="1" stop-color="var(--ch1)" stop-opacity="0"/></linearGradient></defs>'
+      + '<path d="'+cv.area+'" fill="url(#gTrend)"/>'
+      + '<path d="'+cv.line+'" fill="none" stroke="var(--ch1)" stroke-width="2.4"'
+      + ' stroke-linecap="round" stroke-linejoin="round"/></svg></div>'
+      + '<div class="tsub" style="margin-top:var(--s2)">'+esc(buckets[0].l)+' – '+esc(buckets[buckets.length-1].l)
+      + ' · แบ่ง '+nb+' ช่วง · ช่วงที่ขายดีที่สุด '+cv.max+' คัน</div>'
+    : '<div class="empty"><b>'+ss.length+' คัน</b>ช่วงที่เลือกเป็นวันเดียว ยังไม่มีเส้นให้ลาก</div>';
 
   /* งานวันนี้ */
   const od=TASKS.filter(t=>!t.done&&inScope(t.branch)&&t.due<=TODAY).length;
@@ -3152,22 +3279,22 @@ function rDash(){
   const arn=AR.filter(a=>inScope(a.branch)&&a.due-a.paid>0).length;
   const np=UNITS.filter(u=>inScope(u.branch)&&u.status==='available'&&u.retail==null);
   const npCost=np.reduce((a,u)=>a+u.cost,0);
-  $('#todo').innerHTML=[
+  const tRows=[
     ...(np.length? [[np.length,'รอกำหนดราคา'+(noMoney()?'':' — ทุนจม '+fmt(npCost)+' ฿'),'stock','warn']] : []),
     [od,'งานติดตามที่ถึงกำหนด','deal', od?'bad':'good'],
     [rw,'ทะเบียนเลยกำหนด '+CFG.regDays+' วัน','deal', rw?'warn':'good'],
     [stuck.length,'รถค้างเกิน '+CFG.aging+' วัน','stock', stuck.length?'warn':'good'],
     [arn,'รายการเงินค้างรับ','ar', arn?'warn':'good'],
     [lp,'อะไหล่ต่ำกว่าจุดสั่งซื้อ','parts', lp?'warn':'good']
-  ].filter(r=>canSee(r[2])).map(r=>'<div style="display:flex;align-items:center;gap:var(--s2);padding:var(--s1) 0;border-bottom:1px solid var(--hairline-2)">'
-    +pill(r[0],r[3])+'<span style="flex:1;font-size:var(--t-table)">'+esc(r[1])+'</span>'
-    +'<button class="lnk" data-go="'+r[2]+'">'+ic('right','i i-sm')+'</button></div>').join('') || '<div class="empty"><b>ไม่มีงานค้าง</b>เยี่ยมมาก</div>';
-
-  /* ทะเบียน mini */
-  const rc={}; REG_STAGES.forEach(s=>rc[s]=0);
-  REGS.filter(r=>inScope(r.branch)).forEach(r=>rc[r.stage]++);
-  $('#dReg').innerHTML=REG_STAGES.map(s=>'<div style="display:flex;justify-content:space-between;padding:var(--s-half) 0">'
-    +'<span>'+esc(s)+'</span><b>'+rc[s]+'</b></div>').join('');
+  ].filter(r=>canSee(r[2]));
+  /* แถบเทียบสัดส่วนกับงานที่ค้างเยอะที่สุดในการ์ดนี้ — ไม่ใช่สเกลสมมุติ ตัวเลขข้างหน้าคือความจริง */
+  const tMax=Math.max(1,...tRows.map(r=>r[0]));
+  $('#todo').innerHTML= tRows.length? tRows.map(r=>'<div class="trow">'
+    +'<div class="tl">'+pill(r[0],r[3])+'<span>'+esc(r[1])+'</span>'
+    +'<button class="lnk" data-go="'+r[2]+'">'+ic('right','i i-sm')+'</button></div>'
+    +'<div class="bt"><div class="bf '+(r[3]==='good'?'g':(r[3]==='bad'?'d':'w'))+'" style="width:'
+    +(r[0]/tMax*100)+'%'+(r[0]?';min-width:10px':'')+'"></div></div></div>').join('')
+    : '<div class="empty"><b>ไม่มีงานค้าง</b>เยี่ยมมาก</div>';
 
   /* เซลล์ */
   const sp={}; ss.forEach(s=>{ sp[s.sales]=sp[s.sales]||{n:0,rev:0,gp:0}; sp[s.sales].n++; sp[s.sales].rev+=s.net; sp[s.sales].gp+=s.gp; });
@@ -3181,7 +3308,7 @@ function rDash(){
   /* สต๊อกใกล้หมด */
   const cnt={}; su.forEach(u=>cnt[u.model]=(cnt[u.model]||0)+1);
   const low=Object.keys(cnt).filter(k=>cnt[k]<=CFG.lowStock);
-  $('#dAlert').innerHTML = low.length? low.map(k=>'<div style="display:flex;justify-content:space-between;padding:var(--s-half) 0">'
+  $('#dAlert').innerHTML = low.length? low.map(k=>'<div class="kv2">'
     +'<span>'+esc(k)+'</span>'+pill('เหลือ '+cnt[k],'bad')+'</div>').join('')
     : '<div class="empty"><b>สต๊อกทุกรุ่นเพียงพอ</b>ไม่มีรุ่นไหนต่ำกว่า '+CFG.lowStock+' คัน</div>';
 
@@ -3225,17 +3352,57 @@ function dashPrint(){
       : '<tr><td colspan="6">ไม่มีการขายในช่วงนี้</td></tr>')
     +'</tbody></table></div>');
 }
-function vbar(el, data){
-  const mx=Math.max(1,...data.map(d=>d.v));
-  el.innerHTML=data.map(d=>'<div class="vb"><div class="col"><div class="cv">'+d.v+'</div>'
-    +'<div class="fill'+(d.hot?' hot':'')+'" style="height:'+Math.max(2,d.v/mx*100)+'%"></div></div>'
-    +'<div class="cl">'+esc(d.l)+'</div></div>').join('');
-}
+/* ---------- กราฟ ----------
+   เจ้าของสั่งไว้ว่า "กราฟทุกกราฟ อยากให้ดูมีความโค้งมน ไม่เอาแบบหยักหรือเหลี่ยม"
+   → เส้นเป็นเบซิเยร์ · วงแหวนปลายมน · แท่งเป็นแคปซูล (มุมโค้งมาจาก --r-pill ใน CSS) */
 function hbar(el, data){
   const mx=Math.max(1,...data.map(d=>d.v));
   el.innerHTML=data.map(d=>'<div class="bar"><div class="bl"><span>'+esc(d.l)+(d.s?' <span class="tsub">'+esc(d.s)+'</span>':'')+'</span><b>'+d.v+'</b></div>'
-    +'<div class="bt"><div class="bf '+(d.cls||'')+'" style="width:'+(d.v/mx*100)+'%"></div></div></div>').join('');
+    /* ค่า 0 = แท่งหายไปเลย ไม่ใช่เม็ดเล็ก ๆ (เม็ดจะอ่านเหมือนมีของ) · ค่ามากกว่า 0 ดันให้กว้าง
+       อย่างน้อยเท่าความสูงราง จะได้เป็นแคปซูลกลม ไม่ใช่ขีดแบน */
+    +'<div class="bt"><div class="bf '+(d.cls||'')+'" style="width:'+(d.v/mx*100)+'%'
+    +(d.v? ';min-width:10px':'')+(d.c?';background:'+d.c:'')+'"></div></div></div>').join('');
 }
+/* Catmull-Rom → เบซิเยร์ลูกบาศก์ — เส้นลอดทุกจุดจริงแต่ไม่มีมุมหัก
+   หนีบค่า y ของจุดคุมไม่ให้ทะลุขอบบน-ล่าง ไม่งั้นช่วงที่ขึ้นชันจะแอ่นออกนอกกรอบ */
+function curvePath(vals, w, h, pad){
+  pad = pad||0;
+  const max = Math.max(1, ...vals), lo = pad, hi = h - pad;
+  /* ยอดต่อช่วงน้อย (0-2 คัน) ให้เผื่อแกนตั้งอีกหนึ่งขั้น — ถ้าสเกลชนค่าสูงสุดพอดี ชุดที่มีแต่ 0 กับ 1
+     จะกลายเป็นเส้นแปะขอบบนกับพื้นทึบเต็มการ์ด ดูไม่ออกว่าเป็นกราฟ · ป้ายใต้กราฟยังบอกยอดจริง */
+  const top = max<=2 ? max+1 : max;
+  const step = vals.length>1 ? (w-pad*2)/(vals.length-1) : 0;
+  const pts = vals.map((v,i)=>[pad+i*step, hi-(v/top)*(hi-lo)]);
+  const cl = y => Math.min(hi, Math.max(lo, y));
+  let line = 'M'+pts[0][0].toFixed(1)+' '+pts[0][1].toFixed(1);
+  for(let i=0;i<pts.length-1;i++){
+    const p0=pts[i-1]||pts[i], p1=pts[i], p2=pts[i+1], p3=pts[i+2]||p2;
+    const c1=[p1[0]+(p2[0]-p0[0])/12, cl(p1[1]+(p2[1]-p0[1])/12)];
+    const c2=[p2[0]-(p3[0]-p1[0])/12, cl(p2[1]-(p3[1]-p1[1])/12)];
+    line += ' C'+c1[0].toFixed(1)+' '+c1[1].toFixed(1)+', '+c2[0].toFixed(1)+' '+c2[1].toFixed(1)
+          + ', '+p2[0].toFixed(1)+' '+p2[1].toFixed(1);
+  }
+  return {line, area: line+' L'+pts[pts.length-1][0].toFixed(1)+' '+hi+' L'+pts[0][0].toFixed(1)+' '+hi+' Z', max};
+}
+/* ส่วนโค้งของวงแหวน — วาดด้วย stroke-dasharray บนวงกลม r=15.9155 (เส้นรอบวง = 100 พอดี)
+   ปลายมนด้วย stroke-linecap · gap เว้นช่องท้ายส่วนโค้งไม่ให้ปลายมนของสองสีทับกัน */
+function ringArc(fromPct, toPct, color, width, gap){
+  const C = 2*Math.PI*15.9155;
+  const len = Math.max(0, (toPct-fromPct)/100*C - (gap==null?1.2:gap));
+  if(len<=0) return '';
+  return '<circle cx="21" cy="21" r="15.9155" fill="none" stroke="'+color+'"'
+    + ' stroke-width="'+(width||7)+'" stroke-linecap="round"'
+    + ' stroke-dasharray="'+len.toFixed(2)+' '+C.toFixed(2)+'"'
+    + ' stroke-dashoffset="'+(-(fromPct/100*C)).toFixed(2)+'" transform="rotate(-90 21 21)"/>';
+}
+/* วงแหวนความคืบหน้าวงเดียว = ราง + ส่วนที่ทำได้ · p หนีบไว้ 0-100 เสมอ */
+const ringGauge = (p, color, width) =>
+  ringArc(0, 100, 'var(--hairline-2)', width, 0) + ringArc(0, Math.max(0,Math.min(100,p)), color, width);
+/* วงแหวน + ตัวเลขกลางวง — ตัวเลขต้องเป็นค่าเดียวกับที่ส่งเข้า ringGauge เสมอ (ด่าน dash-r25 ข้อ 4 วัด) */
+const ringBox = (p, color, cap, size) =>
+  '<svg class="rg" width="'+(size||76)+'" height="'+(size||76)+'" viewBox="0 0 42 42" data-pct="'+Math.round(p)+'">'
+  + ringGauge(p, color, 6)
+  + '<text x="21" y="23.8" text-anchor="middle" font-size="8.6" font-weight="700" fill="currentColor">'+cap+'</text></svg>';
 function wireGo(){ $$('[data-go]').forEach(b=> b.onclick=()=>go(b.dataset.go)); }
 function wireUnitRows(){ $$('tr[data-unit],.crow[data-unit]').forEach(r=> r.onclick=()=>unitDrawer(r.dataset.unit)); }
 
