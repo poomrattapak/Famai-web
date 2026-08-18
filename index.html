@@ -722,11 +722,15 @@ textarea.inp{ height:auto; padding:var(--s1) var(--s2); resize:vertical; line-he
 .ov{ position:fixed; inset:0; background:rgba(14,15,18,.36); z-index:60; opacity:0;
   pointer-events:none; transition:opacity var(--dur-ui) var(--ease); }
 .ov.on{ opacity:1; pointer-events:auto; }
-.drw{ position:fixed; top:0; right:0; bottom:0; width:min(520px,94vw); background:var(--card);
-  z-index:61; box-shadow:var(--sh-lg); transform:translateX(102%); overflow-y:auto;
-  transition:transform var(--dur-ui) var(--ease); }
+/* v1.26: ป๊อปอัพทุกตัวเป็นกล่องกลางจอแนวเดียวกันทั้งแอป (คำสั่งเจ้าของ — เดิมเลื่อนจากขวา)
+   เปลี่ยนเฉพาะ CSS — กลไก class .on/visibility เดิมทุกตัวอักษร call site ของ openDrawer ไม่ต้องแก้
+   คงสองโฮสต์ .drw < .modal (z 61 < 62) เพราะ modal ต้องเปิดซ้อนบน drawer ได้ (review-r4) */
+.drw{ position:fixed; top:50%; left:50%; width:min(560px,94vw); max-height:85dvh;
+  background:var(--card); z-index:61; box-shadow:var(--sh-lg); border-radius:var(--r-lg);
+  transform:translate(-50%,-50%) scale(.97); opacity:0; overflow-y:auto;
+  transition:transform var(--dur-ui) var(--ease), opacity var(--dur-ui) var(--ease); }
 .drw:not(.on){ visibility:hidden; }
-.drw.on{ transform:none; visibility:visible; }
+.drw.on{ transform:translate(-50%,-50%) scale(1); opacity:1; visibility:visible; }
 .drw .dh{ position:sticky; top:0; background:var(--card); padding:var(--s3);
   display:flex; align-items:center; gap:var(--s2); border-bottom:1px solid var(--hairline); }
 .drw .dh .x,.mbox .mh .x{ margin-left:auto; color:var(--muted);
@@ -735,9 +739,14 @@ textarea.inp{ height:auto; padding:var(--s1) var(--s2); resize:vertical; line-he
 .drw .db{ padding:var(--s3) var(--s3) var(--s6); }
 .kv{ display:grid; grid-template-columns:132px 1fr; gap:var(--s1) var(--s2); font-size:var(--t-table); }
 .kv dt{ color:var(--muted); } .kv dd{ margin:0; }
+/* v1.26: modal ได้ฉากหลังทึบเหมือน drawer (ค่าเดียวกับ .ov) — เดิมลอยโดดไม่มีฉาก ขัด "แนวทางเดียวกันหมด" */
 .modal{ position:fixed; z-index:62; inset:0; display:none; align-items:center;
-  justify-content:center; padding:var(--s3); }
+  justify-content:center; padding:var(--s3); background:rgba(14,15,18,.36); }
 .modal.on{ display:flex; }
+/* v1.26: เปิดด้วยเฟด+สเกลชุดเดียวกับ .drw — .modal สลับ display จึงต้องใช้ animation ไม่ใช่ transition
+   ใส่เฉพาะตอนเปิด: closeModal ต้องปล่อยกล้อง/นาฬิกาทันที ห้ามหน่วง */
+@keyframes popin{ from{ opacity:0; transform:scale(.97) } }
+.modal.on .mbox{ animation:popin var(--dur-ui) var(--ease); }
 .mbox{ background:var(--card); border-radius:var(--r-lg); box-shadow:var(--sh-lg);
   width:min(720px,100%); max-height:86vh; max-height:86dvh; overflow-y:auto; }
 .mbox .mh{ padding:var(--s3); border-bottom:1px solid var(--hairline); display:flex; align-items:center; }
@@ -1008,11 +1017,10 @@ body.lock{ overflow:hidden; }
   #fsBody .inp.ct{ display:block; width:100%; height:44px; font-size:16px; }
   .kv{ grid-template-columns:96px 1fr; }
   .kv dd{ min-width:0; overflow-wrap:anywhere; }
-  .drw{ top:auto; left:0; right:0; bottom:0; width:100%; max-height:88dvh;
-    border-radius:var(--r-lg) var(--r-lg) 0 0; transform:translateY(102%); }
-  .drw.on{ transform:none; }
-  .modal{ align-items:flex-end; padding:0; }
-  .mbox{ width:100%; max-height:88dvh; border-radius:var(--r-lg) var(--r-lg) 0 0; }
+  /* v1.26: มือถือก็กลางจอเหมือนจอใหญ่ (เดิมเป็นแผ่นล่าง) — กว้างเกือบเต็มจอ เหลือขอบข้างนิดเดียว */
+  .drw{ width:calc(100vw - 16px); max-height:85dvh; }
+  .modal{ padding:var(--s2); }
+  .mbox{ width:100%; max-height:85dvh; }
   /* แผ่นด้านข้างกับกล่องลอยกินเต็มจอบนมือถือ ระยะขอบ 24px จึงมากเกินไปเหมือน .card>.bd */
   .drw .dh,.drw .db,.mbox .mh,.mbox .mb{ padding-left:var(--s2); padding-right:var(--s2); }
   /* เอกสารที่พิมพ์ได้เป็นกระดาษของมันเอง ไม่ต้องมี .bd หุ้มอีกชั้น */
@@ -2627,7 +2635,10 @@ function toast(msg, sub, tone){
 }
 function openDrawer(title, html){ $('#drwT').textContent=title; $('#drwB').innerHTML=html;
   $('#drw').classList.add('on'); $('#ov').classList.add('on'); syncLock(); }
-function closeDrawer(){ $('#drw').classList.remove('on'); $('#ov').classList.remove('on'); syncLock(); }
+function closeDrawer(){ $('#drw').classList.remove('on'); $('#ov').classList.remove('on'); syncLock();
+  /* ล้างเนื้อในหลังเฟดจบ — id ในแผ่นเก่า (เช่น psNext) เคยค้างแล้วชนกับจออื่น (ดูคอมเมนต์ที่ punchSheet)
+     เช็ค .on อีกรอบกันเคสเปิดแผ่นใหม่เร็วกว่า 350ms แล้วเนื้อหาโดนลบทิ้ง */
+  setTimeout(()=>{ if(!$('#drw').classList.contains('on')) $('#drwB').innerHTML=''; }, 350); }
 function openModal(title, html){ $('#mdT').textContent=title; $('#mdB').innerHTML=html; $('#modal').classList.add('on'); syncLock(); }
 /* ปิดกล้องทุกครั้งที่กล่องลอยปิด ไม่ว่าจะปิดด้วยปุ่ม X, ESC หรือกดยืนยัน
    ถ้าไม่ทำ MediaStream ค้างและไฟกล้องไม่ดับเพราะ closeModal ไม่ล้าง innerHTML */
