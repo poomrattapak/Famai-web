@@ -11,8 +11,10 @@ const { chromium, EXE, BASE } = require('./env');
   await p.evaluate(() => go('report')); await p.waitForTimeout(300);
   if (!await p.isVisible('#rpFilt')) fails.push('report: ตัวกรอง button hidden at 390');
   if (await p.isVisible('#rpBranch')) fails.push('report: rpBranch still in header at 390');
-  // v1.24: ช่วงเวลาย้ายมาเป็นชิปบนหน้า ต้องเห็นตลอดที่ 390 ไม่ต้องเปิดแผ่น
-  if (!await p.isVisible('#rpPer [data-pcus]')) fails.push('report: แถบช่วงเวลาไม่โผล่ที่ 390');
+  // v1.26 ข้อ 3: ช่วงเวลาย้ายขึ้น navbar — ที่ 390 เปิดแผ่นจาก #npBtn แล้วต้องเห็นปุ่มกำหนดเอง
+  await p.click('#npBtn'); await p.waitForTimeout(250);
+  if (!await p.isVisible('#navPerBox [data-pcus]')) fails.push('report: แถบช่วงเวลาไม่โผล่ที่ 390 (ในแผ่น navbar)');
+  await p.keyboard.press('Escape'); await p.waitForTimeout(150);
   const sum0 = await p.$eval('#rpFsum', e => e.textContent.trim());
   if (!sum0) fails.push('report: summary line empty');
   await p.click('#rpFilt'); await p.waitForTimeout(300);
@@ -69,8 +71,8 @@ const { chromium, EXE, BASE } = require('./env');
   await p.evaluate(() => go('report')); await p.waitForTimeout(300);
   if (await p.isVisible('#rpFilt')) fails.push('desktop: ตัวกรอง button should be hidden');
   if (!await p.isVisible('#rpBranch')) fails.push('desktop: rpBranch should be in header');
-  // v1.24: แถบช่วงเวลาอยู่บนหน้าเสมอ ทั้งเดสก์ท็อปและมือถือ
-  if (!await p.isVisible('#rpPer [data-pr="7"]')) fails.push('desktop: แถบช่วงเวลาไม่โผล่');
+  // v1.26 ข้อ 3: แถบช่วงเวลาอยู่บน navbar เห็นตลอดบนเดสก์ท็อป
+  if (!await p.isVisible('#navPerBox [data-pr="7"]')) fails.push('desktop: แถบช่วงเวลาบน navbar ไม่โผล่');
 
   console.log(fails.length ? 'FAILS:\n' + fails.join('\n') : 'ALL_CHECKS_PASS');
   await b.close();

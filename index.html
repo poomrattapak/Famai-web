@@ -224,8 +224,33 @@ h6[data-grp].mg6{ color:var(--grp6); border-bottom-color:var(--grp6); }
 
 .main{ flex:1; min-width:0; display:flex; flex-direction:column; }
 .top{ position:sticky; top:0; z-index:30; padding:var(--s3) var(--s5) var(--s2);
-  display:flex; align-items:center; gap:var(--s2);
+  display:flex; align-items:center; gap:var(--s2); flex-wrap:wrap;
   background:linear-gradient(180deg, var(--paper) 62%, rgba(250,250,248,0)); }
+/* ช่วงเวลา+สาขาบนแถบบน (v1.26 ข้อ 3) — จอกว้าง: แถวสองของ .top เห็นตลอดไม่ต้องเลื่อนขึ้นสุด
+   ≤600px: กลายเป็นแผ่นล่าง (fixed — ไม่นับชั้นกล่อง ไม่กิน layout) เปิดจากปุ่ม #npBtn
+   ห้ามยืม element ของหน้ามาวางในนี้ — closeFilters() คืนของหน้าด้วย comment marker จะดึงกลับกลางคัน */
+#navCtl{ flex:0 0 100%; display:none; align-items:flex-start; gap:var(--s2); }
+#navCtl.has{ display:flex; }
+#navCtl #navPerBox{ flex:1; min-width:0; }
+#navCtl #navBrSel{ max-width:220px; height:36px; flex:0 0 auto; }
+/* ปุ่มห้ามโดนบีบ (ไม่งั้นป้ายเหลือตัวเดียว) — ป้ายยาวให้ตัดด้วย … ที่ตัวมันเอง
+   ถ้าแถวไม่พอ .top มี flex-wrap ให้ปุ่มตกบรรทัดแทนการดันจอให้ล้น */
+#npBtn{ display:none; flex-shrink:0; }
+#npBtn #npLbl{ margin-left:6px; max-width:26vw; overflow:hidden; text-overflow:ellipsis;
+  white-space:nowrap; font-size:var(--t-label); }
+@media (max-width:600px){
+  #navCtl.has{ display:none; position:fixed; left:0; right:0; bottom:0; z-index:60;
+    background:var(--card); border-radius:var(--r-lg) var(--r-lg) 0 0; box-shadow:var(--sh-lg);
+    padding:var(--s3) var(--s2); max-height:70dvh; overflow-y:auto;
+    flex-direction:column; align-items:stretch; }
+  #navCtl.has.on{ display:flex; }
+  #navCtl #navBrSel{ max-width:none; height:44px; }
+  /* กฎ .tbtn{width:44px} ของมือถือบีบปุ่มเป็นสี่เหลี่ยมไอคอน — ปุ่มนี้ต้องมีป้ายข้อความ */
+  #npBtn.has{ display:inline-flex; width:auto; padding:0 var(--s2); }
+}
+/* หน้าที่ navbar รับช่วงเวลาไปแล้ว ซ่อนแถบในหน้า — state/handler ยังอยู่ครบ (ด่านที่ยิงตรงใช้ต่อได้)
+   #wsPer/#movePer ไม่ซ่อน: เป็นช่วงเวลาของแท็บย่อยในหน้า sell/parts ไม่ใช่ของทั้งหน้า */
+#dPer,#rpPer,#trPer,#quotePer,#carePer,#expPer{ display:none; }
 .burger{ display:none; width:40px; height:40px; border-radius:var(--r-input);
   align-items:center; justify-content:center; color:var(--ink); }
 .top .sub{ font-size:var(--t-label); color:var(--muted); margin-top:2px; }
@@ -1162,6 +1187,9 @@ body.lock{ overflow:hidden; }
       <div class="sp"></div>
       <div class="srch noprint"><span class="mag"><svg class="i i-sm"><use href="#i-search"/></svg></span><input id="gsInput" placeholder="ค้นหา" readonly></div>
       <button class="tbtn noprint" id="gsBtn" aria-label="ค้นหา"><svg class="i i-sm"><use href="#i-search"/></svg></button>
+      <!-- ปุ่มย่อช่วงเวลา+สาขาบนมือถือ (v1.26 ข้อ 3) — เปิดแผ่นล่าง #navCtl -->
+      <button class="tbtn noprint" id="npBtn" aria-label="ช่วงเวลาและสาขา">
+        <svg class="i i-sm"><use href="#i-calendar"/></svg><span id="npLbl"></span></button>
       <!-- ศูนย์แจ้งเตือน (บรีฟรอบ 1 · J1-J2) — ตัวเลขคืองานค้างที่คิดสดจากระเบียนจริง -->
       <button class="tbtn noprint" id="bellBtn" aria-label="แจ้งเตือน" style="position:relative">
         <svg class="i i-sm"><use href="#i-bell"/></svg>
@@ -1169,6 +1197,10 @@ body.lock{ overflow:hidden; }
           border-radius:var(--r-pill);background:var(--accent);color:#fff;font-size:10px;font-weight:700;
           line-height:16px;padding:0 4px">0</span>
       </button>
+      <!-- ช่วงเวลา+สาขาของหน้าปัจจุบัน (v1.26 ข้อ 3) — element ของตัวเองทั้งชุด ไม่ยืมของหน้าใด
+           จอกว้างเป็นแถวสองเห็นตลอด · มือถือเป็นแผ่นล่างเปิดจาก #npBtn -->
+      <div id="navCtl" class="noprint"><div id="navPerBox"></div>
+        <select class="inp ct" id="navBrSel" aria-label="เลือกสาขา" style="display:none"></select></div>
     </header>
 
     <div class="wrap">
@@ -3056,7 +3088,48 @@ function render(){
   if(f) f();
   badges();
   notifSync();   /* กระดิ่งเดินคู่กับ badge เสมอ — คิดสดจากระเบียนชุดเดียวกัน */
+  navPer();      /* ตัวกรองบนแถบบนตามหน้าปัจจุบัน (v1.26 ข้อ 3) */
 }
+/* ---------- ช่วงเวลา+สาขาบนแถบบน (v1.26 ข้อ 3) ----------
+   ช่วงเวลา: perBar ผูกกับ host ของตัวเอง (#navPerBox) ใช้ perSt(key) ร่วมกับแถบในหน้า
+   สาขา: proxy ล้วน — อ่าน/เขียน select ของหน้าปัจจุบันแล้วยิง onchange เดิม ไม่มี state กลางใหม่
+   จึงไม่แตะ closeFilters()/fsheet และพฤติกรรมรายหน้าเหมือนผู้ใช้กดที่หน้าเป๊ะ */
+const NAV_PER={dash:'dash',report:'report',transfer:'transfer',quote:'quote',aftercare:'care',expense:'expense'};
+const NAV_BR ={dash:'dBranch',stock:'stBranch',deal:'dlBranch',attend:'abBranch',report:'rpBranch'};
+function perLbl(key){
+  const st=perSt(key), p=perOf(key);
+  if(p.custom) return thShort(p.from)+' – '+thShort(p.to);
+  const pr=PER_PRESETS.find(x=>x[0]===st.r); return pr? pr[1] : st.r+' วัน';
+}
+function navBrSync(brId){
+  const sel=$('#navBrSel'), src=brId&&$('#'+brId);
+  if(!src || !src.options.length){ sel.style.display='none'; return; }
+  sel.style.display='';
+  sel.innerHTML=[...src.options].map(o=>'<option value="'+esc(o.value)+'">'+esc(o.textContent)+'</option>').join('');
+  sel.value=src.value;
+  sel.onchange=()=>{ src.value=sel.value; src.onchange&&src.onchange(); };
+  /* เปลี่ยนที่ตัวจริงในหน้า (หน้าที่ไม่มี perBar จะไม่ผ่าน hook) → ป้ายบนแถบบนต้องตาม */
+  if(!src.dataset.navSync){ src.dataset.navSync=1; src.addEventListener('change', ()=>navPer()); }
+}
+function navPer(){
+  const key=NAV_PER[CUR], brId=NAV_BR[CUR], ctl=$('#navCtl'), has=!!(key||brId);
+  ctl.classList.toggle('has', has);
+  $('#npBtn').classList.toggle('has', has);
+  if(!has){ ctl.classList.remove('on'); return; }
+  const h=$('#navPerBox');
+  if(key){
+    h.style.display='';
+    if(h.dataset.per && h.dataset.per!==key){ h.dataset.per=''; h.innerHTML=''; }  /* เปลี่ยนหน้า → ผูก key ใหม่ */
+    perBar('navPerBox', key, ()=>render(), null);   /* ห้ามส่ง tail — tail คือกลไกยืม element */
+  } else { h.style.display='none'; }
+  navBrSync(brId);
+  const src=brId&&$('#'+brId);
+  const br=src&&src.value? (src.options[src.selectedIndex]||{}).textContent : 'ทุกสาขา';
+  $('#npLbl').textContent=(key? perLbl(key)+' · ' : '')+(br||'ทุกสาขา');
+}
+$('#npBtn').onclick=()=>$('#navCtl').classList.toggle('on');
+addEventListener('pointerdown', e=>{ const c=$('#navCtl');
+  if(c.classList.contains('on') && !e.target.closest('#navCtl,#npBtn')) c.classList.remove('on'); }, true);
 function badges(){
   const CNT={};
   const set=(k,n)=>{ CNT[k]=n;
@@ -3167,6 +3240,9 @@ function perBar(hostId, key, onChange, tail){
   if(p.custom && box.style.display==='none') box.style.display='flex';
   host.querySelector('[data-pf]').value=st.from||'';
   host.querySelector('[data-pt]').value=st.to||'';
+  /* หน้าเรียก perBar ของตัวเอง (รวมด่านที่ยิงผ่าน evaluate) → แถบบนต้องสะท้อนช่วงเดียวกัน
+     เช็ค host กัน recursion — navPer() เองก็เรียก perBar ของ navPerBox */
+  if(hostId!=='navPerBox' && typeof NAV_PER!=='undefined' && NAV_PER[CUR]===key) navPer();
 }
 
 /* ============================= 1. DASHBOARD ============================= */
@@ -9264,7 +9340,8 @@ $('#mdX').onclick=closeModal;
 $('#gsInput').onclick=gsOpen; $('#gsBtn').onclick=gsOpen; $('#gsQ').oninput=gsSearch;
 $('#gs').onclick=e=>{ if(e.target.id==='gs') closeGs(); };
 document.addEventListener('keydown', e=>{
-  if(e.key==='Escape'){ closeDrawer(); closeModal(); closeGs(); closeMore(); closeFilters(); }
+  if(e.key==='Escape'){ closeDrawer(); closeModal(); closeGs(); closeMore(); closeFilters();
+    $('#navCtl').classList.remove('on'); }
   if(e.key==='/' && ME && ['INPUT','TEXTAREA','SELECT'].indexOf(document.activeElement.tagName)<0){ e.preventDefault(); gsOpen(); }
 });
 </script>
