@@ -822,6 +822,10 @@ textarea.inp{ height:auto; padding:var(--s1) var(--s2); resize:vertical; line-he
 .gsi{ display:flex; align-items:center; gap:var(--s2); padding:var(--s1) var(--s2);
   border-radius:var(--r-input); cursor:pointer; transition:background var(--dur-ui) var(--ease); }
 @media (hover:hover){ .gsi:hover{ background:var(--paper); } }
+.gsi.on{ background:var(--paper); }
+/* หัวกลุ่มผลค้นหา: หน้า · แท็บ · ข้อมูล (v1.26 ข้อ 4) */
+.gsh{ padding:var(--s2) var(--s2) var(--s-half); font-size:var(--t-label); color:var(--muted);
+  font-weight:600; }
 .gsi .ik{ color:var(--muted); }
 .gsi b{ font-size:var(--t-table); font-weight:600; }
 .gsi span{ font-size:var(--t-label); color:var(--muted); }
@@ -1990,7 +1994,7 @@ body.lock{ overflow:hidden; }
 <div class="ov" id="ov"></div>
 <aside class="drw" id="drw"><div class="dh"><h3 id="drwT">รายละเอียด</h3><button class="x" id="drwX"><svg class="i i-sm"><use href="#i-x"/></svg></button></div><div class="db" id="drwB"></div></aside>
 <div class="modal" id="modal"><div class="mbox"><div class="mh"><h3 id="mdT">—</h3><button class="x" id="mdX"><svg class="i i-sm"><use href="#i-x"/></svg></button></div><div class="mb" id="mdB"></div></div></div>
-<div id="gs"><div class="gsbox"><input id="gsQ" placeholder="ลูกค้า · เบอร์ · เลขเครื่อง · รุ่น"><div class="gsres" id="gsR"></div></div></div>
+<div id="gs"><div class="gsbox"><input id="gsQ" placeholder="ค้นหาหน้า แท็บ ลูกค้า เลขเครื่อง รุ่น อะไหล่"><div class="gsres" id="gsR"></div></div></div>
 <div id="toasts"></div>
 <div id="tip" role="status"></div>
 <nav class="bnav noprint" id="bnav"></nav>
@@ -3060,7 +3064,17 @@ function doLogout(){
 
 /* ============================= NAV ============================= */
 let CUR='dash';
-function go(k){
+/* เปิดแท็บย่อยหลังเข้าหน้า (v1.26 ข้อ 4 — ทางไปของผลค้นหาแท็บ)
+   หน้า report/parts/stock/sell มีฟังก์ชันสลับอยู่แล้วเรียกตรง · หน้าอื่นแท็บเป็นปุ่มล้วน
+   ส่ง selector มาคลิก — handler ถูกผูกตอน render ของหน้านั้นแล้วเสมอ ณ จุดนี้ */
+function goSub(k, sub){
+  if(k==='report'){ RP_SEL=sub; rReport(); return; }
+  if(k==='parts')  return void ptTab(sub);
+  if(k==='stock')  return void stTab(sub);
+  if(k==='sell')   return void sellTab(sub);
+  const el=document.querySelector(sub); if(el) el.click();
+}
+function go(k, sub){
   if(!canSee(k)){ toast('ไม่มีสิทธิ์เข้าถึงหน้านี้','บทบาท '+ROLES[ME.role].name+' ไม่ได้รับสิทธิ์',1); return; }
   closeFilters();   /* ออกจากหน้าไปแล้วอย่าทิ้งตัวกรองค้างอยู่ในแผ่น */
   /* เข้าหน้าดีลจากเมนู = เริ่มที่รายการเสมอ · เข้าจาก dealGo() = เปิดดีลที่เลือกไว้ */
@@ -3075,7 +3089,7 @@ function go(k){
   const mbtn=$('#bnav .bnb[data-more]');
   if(mbtn) mbtn.classList.toggle('on', !$('#bnav [data-s="'+k+'"]'));
   const m=menuOf(k); $('#pgT').textContent=m.t; $('#pgS').textContent=m.s;
-  render(); window.scrollTo(0,0);
+  render(); if(sub) goSub(k, sub); window.scrollTo(0,0);
 }
 
 /* ============================= RENDER ทั้งหมด ============================= */
@@ -8928,33 +8942,71 @@ function rpCards(d, cell){
     subs.map(i=>{ const v=cell(r[i],H[i]); return v==='—'? '' : H[i].t+' '+v; }).filter(Boolean).join(' · ')));
 }
 
-/* ============================= ค้นหารวม ============================= */
-function gsOpen(){ $('#gs').classList.add('on'); $('#gsQ').value=''; $('#gsR').innerHTML=''; $('#gsQ').focus(); syncLock(); }
+/* ============================= ค้นหารวม =============================
+   v1.26 ข้อ 4: ค้นได้ทั้ง หน้า · แท็บ · ข้อมูล และลดการพิมพ์ — เปิดมาเห็นตัวเลือกกดได้เลย
+   หมวดข้อมูลมีด่านสิทธิ์รายหมวด: เดิม role ที่เข้าหน้าไม่ได้ ค้นแล้วเปิด unitDrawer
+   คร่อมด่านของ go() ได้ (ช่องที่ปิดในรอบนี้) */
+function gsOpen(){ $('#gs').classList.add('on'); $('#gsQ').value=''; GS_SEL=-1; gsSearch(); $('#gsQ').focus(); syncLock(); }
+/* ดัชนีหน้า+แท็บ สร้างสดตอนเปิดตามสิทธิ์คนที่ล็อกอิน — อ้างตารางจริง (MENU/RP_TABS/PT_TABS)
+   ไม่มีสำเนารายชื่อแยก จะได้ไม่หลุดจากของจริงเมื่อเพิ่มหน้า/แท็บใหม่ */
+function gsIndex(){
+  const out=[];
+  MENU.forEach(m=>{ if(m.k && canSee(m.k))
+    out.push({ik:m.ic||'right', t:m.t, s:m.s||'', kind:'page', go:()=>{ closeGs(); go(m.k); }}); });
+  const tab=(page,t,run)=>{ if(canSee(page))
+    out.push({ik:'right', t, s:'แท็บในหน้า '+menuOf(page).t, kind:'tab', go:()=>{ closeGs(); run(); }}); };
+  RP_TABS.filter(x=>x.r.indexOf(ME.role)>=0).forEach(x=> tab('report','รายงาน'+x.n, ()=>go('report',x.k)));
+  PT_TABS.filter(x=>x.r.indexOf(ME.role)>=0).forEach(x=> tab('parts', x.n, ()=>go('parts',x.p)));
+  [['gal','สต๊อกรถ — แกลเลอรี'],['table','สต๊อกรถ — ตาราง'],['grp','สต๊อกรถ — คงเหลือรายรุ่น']]
+    .forEach(([v,t])=> tab('stock', t, ()=>go('stock',v)));
+  [['p1','เปิดการขาย'],['p2','คำนวณค่างวด'],['p3','ขายส่ง (B2B)']]
+    .forEach(([pn,t])=> tab('sell', t, ()=>go('sell',pn)));
+  tab('cal','ปฏิทินบริษัท', ()=>go('cal','#calTabs [data-c="veh"]'));
+  tab('cal','ปฏิทินผู้บริหาร', ()=>go('cal','#calExecTab'));
+  [['v1','เปิดใบงานซ่อม'],['v2','ใบงานซ่อมทั้งหมด'],['v3','เตือนเช็กระยะ']]
+    .forEach(([v,t])=> tab('service', t, ()=>go('service','#svTabs [data-p="'+v+'"]')));
+  tab('hr','ลงเวลาเข้า-ออก', ()=>go('hr','#hrTabs [data-p="h1"]'));
+  tab('hr','ใบลา', ()=>go('hr','#hrTabs [data-p="h2"]'));
+  if(canFixAtt()) tab('hr','ตรวจการลงเวลา', ()=>go('hr','#hrTabRv'));   /* กติกาเดียวกับที่ rHr ใช้ซ่อนแท็บ */
+  [['cf1','เกณฑ์ระบบ'],['cf2','รุ่นรถและสี'],['cf3','บริษัทไฟแนนซ์'],['cf4','จุดลงเวลา'],
+   ['cf5','บริษัทและสาขา'],['cf6','ขายส่ง'],['cf7','สิทธิ์การเข้าถึง']]
+    .forEach(([pn,t])=> tab('settings', 'ตั้งค่า — '+t, ()=>go('settings','#cfTabs [data-p="'+pn+'"]')));
+  return out;
+}
+let GS_LIST=[], GS_SEL=-1;
+function gsPaint(){
+  const gh={page:'ไปที่หน้า', tab:'แท็บ', data:'ข้อมูล'};
+  let html='', last='';
+  GS_LIST.forEach((r,i)=>{ const g=r.kind||'data';
+    if(g!==last){ html+='<div class="gsh">'+gh[g]+'</div>'; last=g; }
+    html+='<div class="gsi'+(i===GS_SEL?' on':'')+'" data-i="'+i+'"><span class="ik">'+ic(r.ik,'i i-sm')+'</span>'
+      +'<div><b>'+esc(r.t)+'</b><br><span>'+esc(r.s)+'</span></div></div>'; });
+  $('#gsR').innerHTML = html || '<div class="empty"><b>ไม่พบผลลัพธ์</b>ลองค้นชื่อหน้า แท็บ เลขเครื่อง ชื่อลูกค้า หรือชื่อรุ่น</div>';
+  $$('#gsR .gsi').forEach(e=> e.onclick=()=>GS_LIST[+e.dataset.i].go());
+  const on=$('#gsR .gsi.on'); if(on) on.scrollIntoView({block:'nearest'});
+}
 function gsSearch(){
   const q=$('#gsQ').value.trim().toLowerCase();
-  if(q.length<2){ $('#gsR').innerHTML='<div class="empty">พิมพ์อย่างน้อย 2 ตัวอักษร</div>'; return; }
-  const res=[];
-  UNITS.filter(u=>inScope(u.branch)).forEach(u=>{
+  const idx=gsIndex();
+  if(q.length<2){ GS_LIST=idx; GS_SEL=-1; gsPaint(); return; }   /* zero-state: เลือกได้เลยไม่ต้องพิมพ์ */
+  const res=idx.filter(x=>(x.t+' '+x.s).toLowerCase().indexOf(q)>=0);
+  if(canSee('stock')) UNITS.filter(u=>inScope(u.branch)).forEach(u=>{
     if((u.engine+u.frame+u.model+u.variant+u.color).toLowerCase().indexOf(q)>=0)
       res.push({ik:'bike',t:u.model+' · '+u.color,s:u.engine+' · '+bName(u.branch)+' · '+statusText(u.status),go:()=>{ closeGs(); go('stock'); setTimeout(()=>unitDrawer(u.id),120); }});
   });
-  CUSTOMERS.filter(c=>inScope(c.branch)).forEach(c=>{
+  if(canSee('deal')) CUSTOMERS.filter(c=>inScope(c.branch)).forEach(c=>{
     if((c.name+(c.phone||'')).toLowerCase().indexOf(q)>=0)
       res.push({ik:'user',t:c.name,s:(c.phone||'')+' · '+c.stage,go:()=>{ closeGs(); dealGo(c.id); }});
   });
-  sScoped().forEach(s=>{ const u=UNITS.find(x=>x.id===s.unitId), c=CUSTOMERS.find(x=>x.id===s.custId);
+  if(canSee('stock')) sScoped().forEach(s=>{ const u=UNITS.find(x=>x.id===s.unitId), c=CUSTOMERS.find(x=>x.id===s.custId);
     if(((c?c.name:'')+u.engine+u.model).toLowerCase().indexOf(q)>=0)
       res.push({ik:'tag',t:'ใบขาย '+u.model,s:(c?c.name:'')+' · '+thDate(s.soldAt)+' · '+baht(s.net),go:()=>{ closeGs(); go('stock'); setTimeout(()=>unitDrawer(u.id),120); }});
   });
-  PARTS.filter(p=>inScope(p.branch)).forEach(p=>{
+  if(canSee('parts')) PARTS.filter(p=>inScope(p.branch)).forEach(p=>{
     if((p.code+p.name).toLowerCase().indexOf(q)>=0)
       res.push({ik:'cog',t:p.name,s:p.code+' · เหลือ '+p.qty,go:()=>{ closeGs(); go('parts'); }});
   });
-  const uniq=res.slice(0,20);
-  $('#gsR').innerHTML= uniq.length? uniq.map((r,i)=>'<div class="gsi" data-i="'+i+'"><span class="ik">'+ic(r.ik,'i i-sm')+'</span>'
-    +'<div><b>'+esc(r.t)+'</b><br><span>'+esc(r.s)+'</span></div></div>').join('')
-    : '<div class="empty"><b>ไม่พบผลลัพธ์</b>ลองค้นด้วยเลขเครื่อง ชื่อลูกค้า หรือชื่อรุ่น</div>';
-  $$('#gsR .gsi').forEach(e=> e.onclick=()=>uniq[+e.dataset.i].go());
+  GS_LIST=res.slice(0,20); GS_SEL=-1; gsPaint();
 }
 function statusText(s){ return {available:'พร้อมขาย',reserved:'จองแล้ว',in_transfer:'กำลังโอนย้าย',sold:'ขายแล้ว'}[s]||s; }
 function closeGs(){ $('#gs').classList.remove('on'); syncLock(); }
@@ -9338,6 +9390,12 @@ $('#drwX').onclick=closeDrawer; $('#ov').onclick=()=>{ closeDrawer(); closeMore(
 $('#fsX').onclick=closeFilters; $('#fsDone').onclick=closeFilters;
 $('#mdX').onclick=closeModal;
 $('#gsInput').onclick=gsOpen; $('#gsBtn').onclick=gsOpen; $('#gsQ').oninput=gsSearch;
+/* คีย์บอร์ด: ↑↓ เลือก Enter เปิด (v1.26 ข้อ 4) — Escape มี handler รวมอยู่แล้ว */
+$('#gsQ').onkeydown=e=>{
+  if(e.key==='ArrowDown'){ e.preventDefault(); GS_SEL=Math.min(GS_LIST.length-1, GS_SEL+1); gsPaint(); }
+  if(e.key==='ArrowUp'){ e.preventDefault(); GS_SEL=Math.max(0, GS_SEL-1); gsPaint(); }
+  if(e.key==='Enter' && GS_LIST[GS_SEL]) GS_LIST[GS_SEL].go();
+};
 $('#gs').onclick=e=>{ if(e.target.id==='gs') closeGs(); };
 document.addEventListener('keydown', e=>{
   if(e.key==='Escape'){ closeDrawer(); closeModal(); closeGs(); closeMore(); closeFilters();
