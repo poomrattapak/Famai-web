@@ -25,7 +25,7 @@ const { chromium, EXE, BASE } = require('./env');
     if (!chip) return null;
     chip.click();
     return { stateMoved: dPeriod().from !== from0, screenSame: $('#dKpis').textContent === kpi0,
-      dirty: !!$('#navPerBox').dataset.dirty, okOn: !document.querySelector('#navPerBox [data-pok]').disabled,
+      dirty: !!$('#navPerBox').dataset.dirty, okOn: !$('#navOk').disabled,   /* v1.27.1 ปุ่มยืนยันเป็นของทั้งแถบ */
       chipOn: chip.classList.contains('on') };
   });
   if (!t1) fails.push('[1] ไม่มีชิปช่วงเวลาบนแถบบน');
@@ -47,10 +47,10 @@ const { chromium, EXE, BASE } = require('./env');
   /* 2 · กดยืนยันแล้วจอต้องวาดใหม่ตรงกับข้อมูลจริง และธงต้องหมด */
   const t2 = await p.evaluate(() => {
     const kpi0 = $('#dKpis').textContent;
-    document.querySelector('#navPerBox [data-pok]').click();
+    $('#navOk').click();
     const n = dSales().length;
     return { drew: $('#dKpis').textContent !== kpi0, dirty: !!$('#navPerBox').dataset.dirty,
-      okOff: document.querySelector('#navPerBox [data-pok]').disabled,
+      okOff: $('#navOk').disabled,
       match: ($('#dKpis').textContent.replace(/\s/g, '')).indexOf(n + 'คัน') >= 0 };
   });
   if (!t2.drew)   fails.push('[2] กดยืนยันแล้วจอไม่วาดใหม่');

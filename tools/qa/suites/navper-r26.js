@@ -55,21 +55,26 @@ const { chromium, EXE, BASE } = require('./env');
   if (t3.lbl.indexOf('15 วัน') < 0) fails.push('[3] แก้ perSt ตรง+rDash แล้วป้ายแถบบนไม่ตาม: "' + t3.lbl + '"');
   if (!t3.chip15) fails.push('[3] แก้ perSt ตรงแล้วชิป 15 วันบนแถบบนไม่ไฮไลต์');
 
-  /* 4 · สาขาเป็น proxy จริง — เปลี่ยนบนแถบแล้ว select ของหน้าเปลี่ยนและข้อมูลกรองตาม */
+  /* 4 · สาขาเป็น proxy จริง — v1.27.1 เจ้าของสั่งให้ "กดยืนยันถึงจะเอาไปใช้"
+     ด่านนี้จึงพิสูจน์สองท่อน: เลือกแล้วยังไม่กรอง · กดยืนยันแล้วกรองจริง (เดิมพิสูจน์แค่ท่อนหลัง) */
   const t4 = await p.evaluate(() => {
     perSt('dash').r = 30; rDash();
     const all = dUnits().length;
     const sel = $('#navBrSel'), opt = [...sel.options].find(o => o.value);
     if (!opt) return null;
     sel.value = opt.value; sel.onchange();
-    const r = { all, one: dUnits().length, page: $('#dBranch').value, want: opt.value };
-    sel.value = ''; sel.onchange();
+    const staged = { one: dUnits().length, page: $('#dBranch').value };
+    $('#navOk').click();
+    const r = { all, staged, one: dUnits().length, page: $('#dBranch').value, want: opt.value };
+    sel.value = ''; sel.onchange(); $('#navOk').click();
     return r;
   });
   if (!t4) fails.push('[4] แถบบนไม่มีตัวเลือกสาขาให้ทดสอบ');
   else {
-    if (t4.page !== t4.want) fails.push('[4] เปลี่ยนสาขาบนแถบแล้ว #dBranch ของหน้าไม่เปลี่ยน');
-    if (t4.one >= t4.all)    fails.push('[4] เปลี่ยนสาขาแล้วสต๊อกไม่ลด (' + t4.all + ' → ' + t4.one + ') — ไม่ได้กรองจริง');
+    if (t4.staged.page === t4.want) fails.push('[4] เลือกสาขาแล้วลงที่ #dBranch ทันที — ต้องรอกดยืนยันก่อน');
+    if (t4.staged.one !== t4.all)   fails.push('[4] เลือกสาขาแล้วข้อมูลถูกกรองทันทีทั้งที่ยังไม่ยืนยัน');
+    if (t4.page !== t4.want) fails.push('[4] กดยืนยันแล้ว #dBranch ของหน้าไม่เปลี่ยน');
+    if (t4.one >= t4.all)    fails.push('[4] กดยืนยันแล้วสต๊อกไม่ลด (' + t4.all + ' → ' + t4.one + ') — ไม่ได้กรองจริง');
   }
 
   /* 5 · สลับหน้าแล้วชิปต้องผูกกับ key ของหน้านั้น ไม่ใช่ค้างของหน้าก่อน */

@@ -273,6 +273,12 @@ h6[data-grp].mg6{ color:var(--grp6); border-bottom-color:var(--grp6); }
 #navCtl.has{ display:flex; }
 #navCtl #navPerBox{ flex:1; min-width:0; }
 #navCtl #navBrSel{ max-width:220px; height:36px; flex:0 0 auto; }
+/* เรียงหัวแถวเดียวกับช่องสาขา — .top ให้ชิปตกบรรทัดได้ ถ้า center ปุ่มจะลอยไม่ตรงกับอะไรเลย */
+#navCtl #navSum,#navCtl #navOk{ flex:0 0 auto; align-self:flex-start; }
+#navCtl #navOk{ height:36px; }
+/* สาขาที่เลือกไว้แต่ยังไม่ได้ใช้ = ข้อความ + จุดสี ไม่ใช่สีอย่างเดียว (กฎข้อ 3) */
+#navSum i{ display:none; }
+#navSum.on i{ display:inline-block; }
 /* ปุ่มห้ามโดนบีบ (ไม่งั้นป้ายเหลือตัวเดียว) — ป้ายยาวให้ตัดด้วย … ที่ตัวมันเอง
    ถ้าแถวไม่พอ .top มี flex-wrap ให้ปุ่มตกบรรทัดแทนการดันจอให้ล้น */
 #npBtn{ display:none; flex-shrink:0; }
@@ -287,6 +293,9 @@ h6[data-grp].mg6{ color:var(--grp6); border-bottom-color:var(--grp6); }
     overflow-y:auto; flex-direction:column; align-items:stretch; }
   #navCtl.has.on{ display:flex; }
   #navCtl #navBrSel{ max-width:none; height:44px; }
+  /* ในแผ่นเป็นคอลัมน์: ปุ่มยืนยันคือปุ่มหลักของแผ่น ต้องเต็มความกว้างและนิ้วโดนง่าย */
+  #navCtl #navSum,#navCtl #navOk{ align-self:stretch; text-align:left; }
+  #navCtl #navOk{ height:44px; text-align:center; }
   /* กฎ .tbtn{width:44px} ของมือถือบีบปุ่มเป็นสี่เหลี่ยมไอคอน — ปุ่มนี้ต้องมีป้ายข้อความ */
   #npBtn.has{ display:inline-flex; width:auto; padding:0 var(--s2); }
 }
@@ -598,7 +607,7 @@ textarea.inp{ height:auto; padding:var(--s1) var(--s2); resize:vertical; line-he
    (ปฏิทินเขียนค่าลงช่องนี้แล้วปล่อยให้ทางเดินเดิมทำงาน) แค่ไม่ต้องให้คนเห็นซ้ำสองที่ */
 .perbar .perbox .fl,.perbar .perbox input[type=date]{
   position:absolute; width:1px; height:1px; opacity:0; pointer-events:none; }
-/* สรุปช่วง + ปุ่มยืนยัน (v1.27) — เลือกแล้วต้องกด "ใช้ช่วงนี้" จอถึงวาดใหม่
+/* สรุปช่วง + ปุ่มยืนยัน (v1.27) — เลือกแล้วต้องกด "ยืนยัน" จอถึงวาดใหม่
    ระหว่างยังไม่ยืนยันบอกด้วยข้อความ+จุด ไม่ใช่สีอย่างเดียว (กฎข้อ 3) */
 .perbar .psum{ display:inline-flex; align-items:center; gap:6px; font-size:var(--t-label);
   color:var(--muted); min-width:0; overflow-wrap:anywhere; }
@@ -1289,7 +1298,11 @@ body.lock{ overflow:hidden; }
       <!-- ช่วงเวลา+สาขาของหน้าปัจจุบัน (v1.26 ข้อ 3) — element ของตัวเองทั้งชุด ไม่ยืมของหน้าใด
            จอกว้างเป็นแถวสองเห็นตลอด · มือถือเป็นแผ่นบนเปิดจาก #npBtn -->
       <div id="navCtl" class="noprint"><div id="navPerBox"></div>
-        <select class="inp ct" id="navBrSel" aria-label="เลือกสาขา" style="display:none"></select></div>
+        <select class="inp ct" id="navBrSel" aria-label="เลือกสาขา" style="display:none"></select>
+        <!-- ปุ่มยืนยันของ "ทั้งแถบ" ไม่ใช่ของช่วงเวลาอย่างเดียว (v1.27.1 คำสั่งเจ้าของ)
+             อยู่ขวาสุด — ทุกอย่างที่มันคุมอยู่ทางซ้ายหมด จึงอ่านออกว่ายืนยันอะไร -->
+        <span class="psum" id="navSum"></span>
+        <button class="btn sm" id="navOk" disabled>ยืนยัน</button></div>
     </header>
 
     <div class="wrap">
@@ -3208,15 +3221,35 @@ function perLbl(key){
   if(p.custom) return thShort(p.from)+' – '+thShort(p.to);
   const pr=PER_PRESETS.find(x=>x[0]===st.r); return pr? pr[1] : st.r+' วัน';
 }
+/* สาขาที่เลือกไว้แต่ยังไม่ได้กดยืนยัน (null = ไม่มีอะไรค้าง) — v1.27.1
+   เดิมเลือกปุ๊บลงปั๊บ เจ้าของบอกว่าต้องกดยืนยันพร้อมช่วงเวลาทีเดียว */
+let NAV_BRP=null;
 function navBrSync(brId){
   const sel=$('#navBrSel'), src=brId&&$('#'+brId);
+  NAV_BRP=null;                       /* เปลี่ยนหน้า/วาดใหม่ = ทิ้งของที่เลือกค้างไว้ */
   if(!src || !src.options.length){ sel.style.display='none'; return; }
   sel.style.display='';
   sel.innerHTML=[...src.options].map(o=>'<option value="'+esc(o.value)+'">'+esc(o.textContent)+'</option>').join('');
   sel.value=src.value;
-  sel.onchange=()=>{ src.value=sel.value; src.onchange&&src.onchange(); };
+  sel.onchange=()=>{ NAV_BRP=sel.value; navSync(); };   /* พักไว้เฉย ๆ ยังไม่แตะ select ของหน้า */
   /* เปลี่ยนที่ตัวจริงในหน้า (หน้าที่ไม่มี perBar จะไม่ผ่าน hook) → ป้ายบนแถบบนต้องตาม */
   if(!src.dataset.navSync){ src.dataset.navSync=1; src.addEventListener('change', ()=>navPer()); }
+}
+/* ป้ายของค่าสาขาหนึ่งค่า อ่านจากตัวเลือกบนแถบบนเอง (ชื่อสาขาเดียวกับที่ผู้ใช้เพิ่งกด) */
+function navBrText(v){
+  const o=[...$('#navBrSel').options].find(x=>x.value===v);
+  return o? o.textContent : (v||'ทุกสาขา');
+}
+/* สาขาที่พักไว้ลงไปที่ select ตัวจริงของหน้า แล้วยิง handler เดิมของหน้าเอง
+   ไม่เขียน state เอง เพราะแต่ละหน้าเก็บสาขาคนละที่ (dash เก็บใน dBranch · สต๊อกอ่านจาก .value ตรง ๆ)
+   รู้เองทั้ง 5 แบบ = เก็บซ้ำ = ที่อยู่ของบั๊ก (กฎข้อ 8) · คืน true = handler ของหน้าวาดจอให้แล้ว */
+function navBrApply(){
+  if(NAV_BRP===null) return false;
+  const src=NAV_BR[CUR] && $('#'+NAV_BR[CUR]), v=NAV_BRP;
+  NAV_BRP=null;
+  if(!src) return false;
+  src.value=v; src.onchange && src.onchange();
+  return true;
 }
 function navPer(){
   const key=NAV_PER[CUR], brId=NAV_BR[CUR], ctl=$('#navCtl'), has=!!(key||brId);
@@ -3238,7 +3271,26 @@ function navLbl(){
   const br=src&&src.value? (src.options[src.selectedIndex]||{}).textContent : 'ทุกสาขา';
   const el=$('#npLbl'); if(el) el.textContent=(key? perLbl(key)+' · ' : '')+(br||'ทุกสาขา');
 }
-/* แผ่นบนมือถือ: จับค่าไว้ตอนเปิด — ปิดโดยไม่กด "ใช้ช่วงนี้" ต้องคืนค่าเดิม
+/* หน้าตาของแถบบนทั้งแถบ: ป้ายปุ่มย่อ + สถานะสาขาที่ยังไม่ได้ใช้ + ปุ่มยืนยัน
+   #npLbl ยังบอก "ค่าที่ใช้อยู่จริง" เสมอ — สาขายังไม่ลง state จึงยังโชว์ของเดิม (ถูกแล้ว)
+   ส่วนช่วงเวลาเขียน perSt ทันทีตั้งแต่ v1.27 ป้ายจึงตามทันที */
+function navSync(){
+  navLbl();
+  const h=$('#navPerBox'), sum=$('#navSum'), ok=$('#navOk');
+  const perD = h.style.display!=='none' && !!h.dataset.dirty, brD = NAV_BRP!==null;
+  if(sum){ sum.innerHTML = brD? '<i></i>ยังไม่ได้ใช้ · สาขา '+esc(navBrText(NAV_BRP)) : '';
+    sum.classList.toggle('on', brD); }
+  if(ok) ok.disabled = !(perD || brD);   /* ไม่มีอะไรให้ใช้ = กดไม่ได้ ไม่ใช่ปุ่มตาย (กฎข้อ 3) */
+}
+$('#navOk').onclick=()=>{
+  const h=$('#navPerBox'); delete h.dataset.dirty;
+  /* ลงสาขาก่อน: handler ของหน้าจะวาดจอด้วย "ช่วงเวลาล่าสุด + สาขาใหม่" พร้อมกันในรอบเดียว
+     (ช่วงเวลาเขียน perSt ไปตั้งแต่ตอนเลือกแล้ว §9o) จอจึงไม่วาดสองรอบ */
+  if(!navBrApply()) render();   /* ไม่มีสาขาค้าง = ช่วงเวลาอย่างเดียว เดินทางเดิม */
+  else navPer();                /* หน้าวาดแล้ว เหลือแถบบน — badge/กระดิ่งไม่ขึ้นกับตัวกรอง */
+  navCtlClose(false);
+};
+/* แผ่นบนมือถือ: จับค่าไว้ตอนเปิด — ปิดโดยไม่กด "ยืนยัน" ต้องคืนค่าเดิม
    ไม่งั้นช่วงที่เลือกค้างอยู่ในสถานะทั้งที่จอไม่เคยวาดด้วยค่านั้น */
 let NAV_SNAP=null;
 $('#npBtn').onclick=()=>{
@@ -3246,15 +3298,22 @@ $('#npBtn').onclick=()=>{
   if(c.classList.contains('on')){ navCtlClose(); return; }
   const k=NAV_PER[CUR];
   NAV_SNAP = k? Object.assign({k}, perSt(k)) : null;
+  NAV_BRP=null; navSync();
   c.classList.add('on');
 };
 function navCtlClose(revert){
   const c=$('#navCtl'); if(!c.classList.contains('on')) return;
   c.classList.remove('on');
   const h=$('#navPerBox');
-  if(revert!==false && NAV_SNAP && h && h.dataset.dirty && NAV_PER[CUR]===NAV_SNAP.k){
-    const st=perSt(NAV_SNAP.k); st.r=NAV_SNAP.r; st.from=NAV_SNAP.from; st.to=NAV_SNAP.to;
-    delete h.dataset.dirty; perSync(h, NAV_SNAP.k);
+  if(revert!==false){
+    if(NAV_SNAP && h && h.dataset.dirty && NAV_PER[CUR]===NAV_SNAP.k){
+      const st=perSt(NAV_SNAP.k); st.r=NAV_SNAP.r; st.from=NAV_SNAP.from; st.to=NAV_SNAP.to;
+      delete h.dataset.dirty; perSync(h, NAV_SNAP.k);
+    }
+    /* สาขาที่เลือกค้างไว้ก็ต้องคืน — ตัวเลือกบนแถบต้องกลับไปตรงกับค่าที่ใช้อยู่จริง */
+    if(NAV_BRP!==null){ NAV_BRP=null;
+      const src=NAV_BR[CUR] && $('#'+NAV_BR[CUR]); if(src) $('#navBrSel').value=src.value; }
+    navSync();
   }
   NAV_SNAP=null;
 }
@@ -3356,7 +3415,7 @@ function perSync(host, key){
     +esc(perText(key))+' · '+(days(p.from,p.to)+1)+' วัน';
   const ok=host.querySelector('[data-pok]');
   if(ok) ok.disabled = !host.dataset.dirty;      /* ไม่มีอะไรให้ใช้ = ปุ่มต้องกดไม่ได้ ไม่ใช่ปุ่มตาย */
-  if(host.id==='navPerBox') navLbl();
+  if(host.id==='navPerBox') navSync();
 }
 function perBar(hostId, key, onChange, tail){
   const host=$('#'+hostId); if(!host) return;
@@ -3368,7 +3427,8 @@ function perBar(hostId, key, onChange, tail){
       +'<button class="chip" data-pcus>กำหนดเอง</button><span class="perflex"></span>'
       +'<span class="psum" data-psum></span>'
       +'<button class="btn sec sm" data-pclr>ล้าง</button>'
-      +'<button class="btn sm" data-pok disabled>ใช้ช่วงนี้</button></div>'
+      /* บนแถบบนปุ่มยืนยันเป็นของ #navCtl (คุมสาขาด้วย) — ห้ามสร้างซ้อนที่นี่ */
+      +(hostId==='navPerBox'? '' : '<button class="btn sm" data-pok disabled>ยืนยัน</button>')+'</div>'
       /* ช่องวันที่ซ่อนไว้แต่ยังอยู่จริง — ปฏิทินเขียนค่าลงตรงนี้แล้วปล่อยให้ทางเดินเดิมทำงานต่อ */
       +'<div class="chips perbox" style="display:none">'
       +'<label class="fl">ตั้งแต่</label><input class="inp ct" type="date" data-pf>'
@@ -3376,7 +3436,7 @@ function perBar(hostId, key, onChange, tail){
     if(tail) host.querySelector('.perflex').after(tail);
     /* v1.27 (คำสั่งเจ้าของ): เลือกเสร็จแล้วค่อยกดยืนยัน จอจะได้ไม่กระพริบระหว่างเลือก
        แต่ "สถานะ" ต้องเปลี่ยนทันทีทุกครั้ง เพราะทั้งแอปอ่านช่วงจาก perOf(key) ตัวเดียว
-       ปุ่ม "ใช้ช่วงนี้" จึงคุมแค่การวาดจอใหม่ ไม่ใช่คุมการเขียนสถานะ */
+       ปุ่ม "ยืนยัน" จึงคุมแค่การวาดจอใหม่ ไม่ใช่คุมการเขียนสถานะ */
     const stage=()=>{ host.dataset.dirty='1'; perSync(host,key); };
     host.querySelectorAll('[data-pr]').forEach(c=> c.onclick=()=>{
       st.from=''; st.to=''; st.r=+c.dataset.pr; stage(); });
@@ -3389,10 +3449,9 @@ function perBar(hostId, key, onChange, tail){
     host.querySelectorAll('[data-pf],[data-pt]').forEach(i=> i.onchange=()=>{
       st.from=host.querySelector('[data-pf]').value; st.to=host.querySelector('[data-pt]').value; stage(); });
     host.querySelector('[data-pclr]').onclick=()=>{ st.from=''; st.to=''; stage(); };
-    host.querySelector('[data-pok]').onclick=()=>{
-      delete host.dataset.dirty; onChange();
-      if(host.id==='navPerBox') navCtlClose(false);   /* ยืนยันแล้วปิดแผ่น โดยไม่คืนค่า */
-    };
+    /* บนแถบบนไม่มีปุ่มนี้ — ปุ่มยืนยันอยู่ที่ #navOk เพราะต้องคุมสาขาด้วย (v1.27.1) */
+    const pok=host.querySelector('[data-pok]');
+    if(pok) pok.onclick=()=>{ delete host.dataset.dirty; onChange(); };
   }
   /* จอรอบนี้วาดด้วยค่าปัจจุบันไปแล้ว ธงรอยืนยันจึงหมดอายุตรงนี้เสมอ */
   delete host.dataset.dirty;
@@ -3468,7 +3527,7 @@ $('#perCal').onclick=e=>{
   else if(ds<PC.a){ PC.b=PC.a; PC.a=ds; }                    /* กดย้อน = สลับให้ */
   else PC.b=ds;
   perCalWrite(); perCalRender();
-  /* เลือกครบสองวันแล้วปิดปฏิทินให้เอง — ไม่งั้นมันบังแถบสรุปกับปุ่ม "ใช้ช่วงนี้" ที่ต้องกดต่อ */
+  /* เลือกครบสองวันแล้วปิดปฏิทินให้เอง — ไม่งั้นมันบังแถบสรุปกับปุ่ม "ยืนยัน" ที่ต้องกดต่อ */
   if(PC.a && PC.b) setTimeout(perCalClose, 260);
 };
 addEventListener('pointerdown', e=>{
