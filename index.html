@@ -45,6 +45,9 @@
   --sh-md:0 8px 24px rgba(22,24,29,.10);
   --sh-lg:0 20px 50px rgba(22,24,29,.16);
   --glow:0 0 30px rgba(230,0,18,.28);
+  /* แสงเรืองบนหน้าล็อกอิน — เดิมเขียนเป็น rgba ลอยอยู่ใน CSS ยกขึ้นมาเป็น token (v1.27) */
+  --login-glow-1:rgba(230,0,18,.18); --login-glow-2:rgba(230,0,18,.10);
+  --login-fg:#FFFFFF; --login-sub:rgba(255,255,255,.66);
 
   /* -- Type -- แปดขนาด ไม่มีนอกเหนือจากนี้ -- */
   --t-label:12px; --t-table:14px; --t-body:15px; --t-lead:18px;
@@ -144,29 +147,65 @@ h1{ font-size:var(--t-h1); line-height:1.15; letter-spacing:-.02em; }
 h2,h3{ font-size:var(--t-h2); line-height:1.3; letter-spacing:-.01em; }
 .tsub{ font-size:var(--t-label); color:var(--muted); }
 
-/* -------------------- LOGIN -------------------- */
-#login{ position:fixed; inset:0; z-index:500; padding:var(--s3);
+/* -------------------- LOGIN (v1.27 · ออกแบบใหม่ทั้งหน้า) --------------------
+   เจ้าของสั่ง "ไม่ต้องเอาโครงเดิม" — สองฝั่ง: ซ้ายบอกว่าระบบนี้ทำอะไร ขวาคือทางเข้า
+   การ์ดครอบไม่มีพื้นและไม่มีระยะใน สองฝั่งถือพื้นของตัวเอง
+   นับจากขอบจอถึงตัวหนังสือจึงเป็น 2 ชั้น (#login → ฝั่ง) ตาม §9c */
+#login{ position:fixed; inset:0; z-index:500; padding:var(--s3); overflow-y:auto;
   display:flex; align-items:center; justify-content:center;
   background:var(--dark);
-  background-image:radial-gradient(circle at 78% 18%, rgba(230,0,18,.16), transparent 46%),
-                   radial-gradient(circle at 12% 88%, rgba(230,0,18,.10), transparent 42%); }
+  background-image:radial-gradient(circle at 78% 18%, var(--login-glow-1), transparent 46%),
+                   radial-gradient(circle at 12% 88%, var(--login-glow-2), transparent 42%); }
 #login.off{ display:none; }
-.lg-card{ width:min(400px,100%); background:var(--card); border-radius:var(--r-lg);
-  padding:var(--s4); box-shadow:var(--sh-lg); max-height:94vh; max-height:94dvh; overflow-y:auto; }
+.lg-wrap{ display:grid; grid-template-columns:1.02fr 1fr; width:min(940px,100%);
+  border-radius:var(--r-lg); overflow:hidden; box-shadow:var(--sh-lg); }
+.lg-brand{ background:var(--dark); color:var(--login-fg); padding:var(--s5) var(--s4);
+  display:flex; flex-direction:column; gap:var(--s3);
+  background-image:radial-gradient(circle at 18% 8%, var(--login-glow-1), transparent 58%); }
 .lg-logo{ font-family:var(--f-display); font-weight:600; font-size:var(--t-h2);
-  letter-spacing:.08em; color:var(--ink); }
+  letter-spacing:.08em; color:var(--login-fg); }
 .lg-logo b{ color:var(--accent); font-weight:600; }
-.lg-card h2{ margin:var(--s3) 0 var(--s1); }
-.lg-users{ display:grid; gap:var(--s-half); margin-bottom:var(--s3);
-  max-height:min(40vh,296px); overflow-y:auto; }
+.lg-tag{ font-size:var(--t-h1); line-height:1.35; font-weight:600; color:var(--login-fg); }
+.lg-pts{ display:grid; gap:var(--s2); margin:0; padding:0; list-style:none; }
+.lg-pts li{ display:flex; align-items:flex-start; gap:var(--s2);
+  font-size:var(--t-table); color:var(--login-sub); line-height:1.5; }
+.lg-pts .i{ color:var(--accent); flex:0 0 20px; margin-top:1px; }
+.lg-co{ margin-top:auto; font-size:var(--t-label); color:var(--login-sub); }
+.lg-form{ background:var(--card); padding:var(--s5) var(--s4); }
+.lg-form h2{ font-size:var(--t-h2); margin-bottom:var(--s-half); }
+.lg-form .hint{ margin-bottom:var(--s3); }
+.lg-users{ display:grid; grid-template-columns:1fr 1fr; gap:var(--s1); margin-bottom:var(--s3); }
 .lg-u{ display:flex; align-items:center; gap:var(--s2); width:100%; text-align:left;
-  padding:var(--s1); border-radius:var(--r-input); transition:background var(--dur-ui) var(--ease); }
+  padding:var(--s1); border-radius:var(--r-input); border:1px solid var(--hairline-2);
+  transition:border-color var(--dur-ui) var(--ease), background var(--dur-ui) var(--ease); }
 @media (hover:hover){ .lg-u:hover{ background:var(--paper-2); } }
-.lg-u.on{ background:var(--paper-2); box-shadow:inset 2px 0 0 var(--accent); }
-.lg-u .av{ width:32px; height:32px; border-radius:var(--r-pill); background:var(--ink); color:var(--card);
-  display:grid; place-items:center; font-size:var(--t-label); font-weight:600; flex:0 0 32px; }
-.lg-u b{ font-size:var(--t-table); font-weight:600; display:block; }
-.lg-u span{ font-size:var(--t-label); color:var(--muted); }
+.lg-u.on{ background:var(--paper-2); border-color:var(--ink); }
+.lg-u .av{ width:34px; height:34px; flex:0 0 34px; border-radius:var(--r-pill);
+  display:grid; place-items:center; color:var(--card); font-size:var(--t-table); font-weight:700; }
+.lg-u .tx{ min-width:0; }
+.lg-u b{ font-size:var(--t-table); font-weight:600; display:block;
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.lg-u .tx span{ font-size:var(--t-label); color:var(--muted); display:block;
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.lg-fld{ margin-bottom:var(--s2); }
+.lg-swap{ margin-top:var(--s3); padding-top:var(--s2); border-top:1px solid var(--hairline);
+  text-align:center; }
+@media (max-width:900px){
+  #login{ padding:var(--s2); align-items:flex-start; }
+  .lg-wrap{ grid-template-columns:1fr; width:min(520px,100%); margin:auto; }
+  .lg-brand{ padding:var(--s3); gap:var(--s1); }
+  .lg-tag{ font-size:var(--t-lead); }
+  .lg-pts,.lg-co{ display:none; }            /* มือถือเอาที่ว่างไปให้รายชื่อคน */
+  .lg-form{ padding:var(--s3); }
+}
+@media (max-width:600px){
+  /* มือถือ: บีบการ์ดคนให้เตี้ยลง ปุ่มเข้าสู่ระบบจะได้อยู่ในระยะเลื่อนสั้น ๆ ไม่ใช่ท้ายหน้ายาว */
+  .lg-users{ grid-template-columns:1fr; gap:var(--s-half); }
+  .lg-tag{ font-size:var(--t-table); }
+  .lg-u{ padding:var(--s-half) var(--s1); }
+  .lg-u .av{ width:30px; height:30px; flex:0 0 30px; font-size:var(--t-label); }
+  .lg-form .hint,.lg-users{ margin-bottom:var(--s2); }
+}
 
 /* -------------------- SHELL -------------------- */
 .app{ display:flex; min-height:100vh; min-height:100dvh; }
@@ -1179,32 +1218,43 @@ body.lock{ overflow:hidden; }
 <body>
 <!-- ================= LOGIN ================= -->
 <div id="login">
-  <div class="lg-card">
-    <div class="lg-logo">FAMAI <b>MOTOR</b></div>
-    <h2>เข้าสู่ระบบ</h2>
-    <p class="hint">เลือกผู้ใช้เพื่อดูระบบตามสิทธิ์ของบทบาทนั้น</p>
-    <div id="lgDemo">
-      <div class="lg-users" id="lgUsers"></div>
-      <div style="margin-bottom:var(--s2)">
-        <label class="fl">รหัสผ่าน</label>
-        <input class="inp" type="password" value="demo1234" id="lgPw">
+  <div class="lg-wrap">
+    <!-- ฝั่งซ้าย: บอกว่าระบบนี้ทำอะไร (มือถือย่อเหลือหัวสั้น ๆ) -->
+    <aside class="lg-brand">
+      <div class="lg-logo">FAMAI <b>MOTOR</b></div>
+      <div class="lg-tag">ระบบหลังบ้านของร้าน<br>ตั้งแต่รับรถเข้าสต๊อก จนส่งมอบและดูแลต่อ</div>
+      <ul class="lg-pts">
+        <li><svg class="i"><use href="#i-bike"/></svg><span>สต๊อกรถ การขาย และงานทะเบียน อยู่ที่เดียวกัน</span></li>
+        <li><svg class="i"><use href="#i-cash"/></svg><span>เงินค้างรับ ไฟแนนซ์ และรายงานส่งบัญชี</span></li>
+        <li><svg class="i"><use href="#i-clock"/></svg><span>ลงเวลาเข้า-ออก พร้อมรูปและตำแหน่งจริง</span></li>
+      </ul>
+      <div class="lg-co" id="lgCo"></div>
+    </aside>
+    <!-- ฝั่งขวา: ทางเข้า -->
+    <main class="lg-form">
+      <div id="lgDemo">
+        <h2>เลือกผู้ใช้เพื่อเข้าระบบ</h2>
+        <p class="hint">ระบบจะแสดงเฉพาะส่วนที่บทบาทนั้นมีสิทธิ์เห็น</p>
+        <div class="lg-users" id="lgUsers"></div>
+        <button class="btn wide" id="lgGo">เข้าสู่ระบบ <svg class="i i-sm"><use href="#i-arrow"/></svg></button>
       </div>
-      <button class="btn wide" id="lgGo">เข้าสู่ระบบ <svg class="i i-sm"><use href="#i-arrow"/></svg></button>
-    </div>
-    <div id="lgLive" style="display:none">
-      <div style="margin-bottom:var(--s2)">
-        <label class="fl">อีเมล</label>
-        <input class="inp" type="email" id="lgEmail" placeholder="sales2@famai.local" autocomplete="username">
+      <div id="lgLive" style="display:none">
+        <h2>เข้าด้วยบัญชีจริง</h2>
+        <p class="hint">ใช้อีเมลและรหัสผ่านที่ผู้ดูแลระบบออกให้</p>
+        <div class="lg-fld">
+          <label class="fl">อีเมล</label>
+          <input class="inp" type="email" id="lgEmail" placeholder="sales2@famai.local" autocomplete="username">
+        </div>
+        <div class="lg-fld">
+          <label class="fl">รหัสผ่าน</label>
+          <input class="inp" type="password" id="lgPw2" autocomplete="current-password">
+        </div>
+        <button class="btn wide" id="lgGo2">เข้าสู่ระบบ <svg class="i i-sm"><use href="#i-arrow"/></svg></button>
       </div>
-      <div style="margin-bottom:var(--s2)">
-        <label class="fl">รหัสผ่าน</label>
-        <input class="inp" type="password" id="lgPw2" autocomplete="current-password">
+      <div class="lg-swap">
+        <button class="lnk" id="lgSwap">ใช้ข้อมูลจริงจากฐานข้อมูล</button>
       </div>
-      <button class="btn wide" id="lgGo2">เข้าสู่ระบบ <svg class="i i-sm"><use href="#i-arrow"/></svg></button>
-    </div>
-    <div style="margin-top:var(--s2);text-align:center">
-      <button class="lnk" id="lgSwap">ใช้ข้อมูลจริงจากฐานข้อมูล</button>
-    </div>
+    </main>
   </div>
 </div>
 
@@ -2945,11 +2995,18 @@ function ageTag(d){ const a=CFG.aging; if(d<=a*0.34) return pill(d+' วัน',
   if(d<=a) return pill(d+' วัน','warn'); return pill(d+' วัน','bad'); }
 
 /* ============================= LOGIN ============================= */
+/* สีวงกลมประจำบทบาท — ใช้ชุดสีกลุ่มเมนูเดิม ไม่เพิ่มสีใหม่ · สีเป็นตัวช่วยเท่านั้น
+   ชื่อบทบาทเขียนเป็นข้อความอยู่ใต้ชื่อคนเสมอ (กฎข้อ 3) */
+const LG_GRP={admin:1,manager:1,sales:2,stock:3,acct:4,hr:5,tech:6,care:6};
+/* อักษรย่อในวงกลม — ไทยมีสระนำหน้า (เ แ โ ใ ไ) ตัวเดียวอ่านไม่ออก ต้องเอาพยัญชนะมาด้วย */
+function lgInit(n){ return /^[\u0E40-\u0E44]/.test(n) ? n.slice(0,2) : n.slice(0,1); }
 function renderLogin(){
+  const co=$('#lgCo'); if(co) co.textContent=CFG.company;
   $('#lgUsers').innerHTML = STAFF.filter(s=>['admin','manager','sales','stock','acct','hr','tech','care'].indexOf(s.role)>=0)
     .map((s,i)=>'<button class="lg-u'+(i===0?' on':'')+'" data-id="'+s.id+'">'
-      +'<div class="av">'+esc(s.nick.slice(0,2))+'</div>'
-      +'<div><b>'+esc(s.name)+'</b><span>'+esc(ROLES[s.role].name)+' · '+esc(bName(s.branch))+'</span></div></button>').join('');
+      +'<span class="av" style="background:var(--grp'+(LG_GRP[s.role]||1)+')">'+esc(lgInit(s.name))+'</span>'
+      +'<span class="tx"><b>'+esc(s.name)+'</b><span>'+esc(ROLES[s.role].name)+' · '+esc(bName(s.branch))+'</span></span>'
+      +'</button>').join('');
   $$('#lgUsers .lg-u').forEach(b=> b.onclick=()=>{ $$('#lgUsers .lg-u').forEach(x=>x.classList.remove('on')); b.classList.add('on'); });
 }
 function doLogin(){
@@ -9542,7 +9599,6 @@ $('#lgGo2').onclick=liveLogin;
 $('#lgPw2').onkeydown=e=>{ if(e.key==='Enter') liveLogin(); };
 agePhotosIdle();          /* เก็บกวาดรูปเก่าตอนเครื่องว่าง ไม่หน่วงตอนเปิดแอป */
 $('#lgGo').onclick=doLogin;
-$('#lgPw').onkeydown=e=>{ if(e.key==='Enter') doLogin(); };
 $('#btnOut').onclick=doLogout;
 $('#burger').onclick=()=> $('#side').classList.toggle('open');
 $('#drwX').onclick=closeDrawer; $('#ov').onclick=()=>{ closeDrawer(); closeMore(); closeFilters(); };
