@@ -575,8 +575,23 @@ textarea.inp{ height:auto; padding:var(--s1) var(--s2); resize:vertical; line-he
 .q .when{ flex:0 0 auto; font-size:var(--t-label); color:var(--muted); white-space:nowrap; }
 .q .when.late{ color:var(--accent); font-weight:600; }
 /* กราฟเส้นโค้งกินขอบการ์ด — ลบระยะขอบซ้ายขวาของการ์ดออกเฉพาะกล่องกราฟ */
-.spark{ margin:var(--s1) calc(var(--s2) * -1) 0; }
+/* กราฟเส้น + แกน (v1.26 ข้อ 1) — ป้ายแกนเป็น HTML นอก SVG เพราะ preserveAspectRatio="none"
+   ยืดทุกอย่างใน SVG ตามสัดส่วนจอ ตัวอักษร/จุดในนั้นจะเบี้ยว · เส้นกริดใน SVG ต้องเป็น <line>
+   ห้ามเป็น <path> ไม่มี C — ด่าน dash-r25 ข้อ 2 สแกน path ทุกตัวแล้วนับเป็นเส้นหัก */
+.trw{ display:flex; gap:var(--s1); margin-top:var(--s1); }
+.trw .axy{ display:flex; flex-direction:column; justify-content:space-between; text-align:right;
+  font-size:var(--t-label); color:var(--muted); font-variant-numeric:tabular-nums; padding:2px 0; }
+.trw .trplot{ flex:1; min-width:0; }
+.spark{ position:relative; touch-action:manipulation; }
 .spark svg{ display:block; width:100%; }
+.spark .tdot{ position:absolute; width:8px; height:8px; margin:-4px 0 0 -4px; border-radius:var(--r-pill);
+  background:var(--ch1); border:2px solid var(--card); pointer-events:none; }
+.axx{ display:flex; justify-content:space-between; font-size:var(--t-label); color:var(--muted); margin-top:2px; }
+/* ป้ายลอยของกราฟ — ตัวเดียวทั้งแอป · fixed จึงไม่กิน layout (390 ไม่ล้น) และไม่นับชั้นกล่อง §9c */
+#tip{ position:fixed; z-index:65; display:none; max-width:260px; background:var(--card);
+  color:var(--ink); border:1px solid var(--hairline); border-radius:var(--r-input);
+  box-shadow:var(--sh-md); padding:var(--s1) var(--s2); font-size:var(--t-label); pointer-events:none; }
+#tip b{ font-weight:600; }
 /* รายการชื่อ-จำนวนแบบกระชับ ใช้ทั้งขั้นตอนทะเบียนและเตือนสต๊อก */
 .kv2{ display:flex; justify-content:space-between; gap:var(--s2);
   padding:var(--s-half) 0; font-size:var(--t-table); }
@@ -1945,6 +1960,7 @@ body.lock{ overflow:hidden; }
 <div class="modal" id="modal"><div class="mbox"><div class="mh"><h3 id="mdT">—</h3><button class="x" id="mdX"><svg class="i i-sm"><use href="#i-x"/></svg></button></div><div class="mb" id="mdB"></div></div></div>
 <div id="gs"><div class="gsbox"><input id="gsQ" placeholder="ลูกค้า · เบอร์ · เลขเครื่อง · รุ่น"><div class="gsres" id="gsR"></div></div></div>
 <div id="toasts"></div>
+<div id="tip" role="status"></div>
 <nav class="bnav noprint" id="bnav"></nav>
 <div class="sheet noprint" id="more"><div id="moreB"></div></div>
 <div class="sheet noprint" id="fsheet">
@@ -2649,6 +2665,17 @@ function closeModal(){ camStop(); geoStop(); if(psClock){ clearInterval(psClock)
 /* ล็อก scroll พื้นหลังเมื่อมี overlay ใดเปิดอยู่ — จำเป็นบนมือถือ */
 function syncLock(){ document.body.classList.toggle('lock',
   ['#drw','#modal','#gs','#more','#fsheet'].some(s=>{ const e=$(s); return e && e.classList.contains('on'); })); }
+/* ป้ายลอยของกราฟ (v1.26 ข้อ 1) — ตัวเดียวทั้งแอป โชว์เมื่อกด ปิดเมื่อกดที่อื่นหรือเลื่อนจอ
+   วางเหนือจุดกดเสมอ (นิ้วไม่บัง) และหนีบไม่ให้ล้นขอบจอ — จอ 390 จึงไม่มีทางเลื่อนข้าง */
+function tipShow(html, x, y){
+  const t=$('#tip'); t.innerHTML=html; t.style.display='block';
+  const r=t.getBoundingClientRect();
+  t.style.left=Math.max(6, Math.min(x+12, innerWidth -r.width -6))+'px';
+  t.style.top =Math.max(6, Math.min(y-r.height-12, innerHeight-r.height-6))+'px';
+}
+function tipHide(){ $('#tip').style.display='none'; }
+addEventListener('scroll', tipHide, true);
+addEventListener('pointerdown', e=>{ if(!e.target.closest('[data-hi],[data-seg],.spark')) tipHide(); }, true);
 /* ---------- ยืนยันก่อนบันทึก (บรีฟรอบ 1: "ข้อมูลถูกต้องแล้วใช่ไหม") ----------
    โชว์ข้อมูลที่กรอกจริงให้อ่านทวน ไม่ใช่ถามลอย ๆ — ถามลอย ๆ คนจะกดผ่านโดยไม่อ่านแล้ว popup ไร้ความหมาย
    rows = [[หัวข้อ, ค่า], ...] แถวที่ค่าว่างถูกตัดทิ้งเอง · ใช้กับทุกจุดที่เกี่ยวกับเงินและเอกสาร
@@ -3243,12 +3270,17 @@ function rDash(){
   let mAcc=0; const mSeg=mk.map((k,i)=>{ const from=mAcc/Math.max(1,mTot)*100; mAcc+=mm[k].n;
     return {k, n:mm[k].n, c:CH[i%CH.length], from, to:mAcc/Math.max(1,mTot)*100}; });
   $('#chModel').innerHTML = mTot? '<div class="dnt"><svg width="132" height="132" viewBox="0 0 42 42">'
-      + mSeg.map(s=>ringArc(s.from, s.to, s.c, 6.6)).join('')
+      + mSeg.map((s,i)=>ringArc(s.from, s.to, s.c, 6.6, null, 'data-seg="'+i+'"')).join('')
       + '<text x="21" y="20.4" text-anchor="middle" font-size="7" font-weight="700" fill="currentColor">'+mTot+'</text>'
       + '<text x="21" y="25.6" text-anchor="middle" font-size="3.2" fill="currentColor" opacity=".6">คัน</text></svg>'
       + '<div class="lgd">'+mSeg.map(s=>'<span><i style="background:'+s.c+'"></i>'+esc(s.k)
         +' · <b>'+s.n+'</b> คัน · อายุเฉลี่ย '+Math.round(mm[s.k].age/s.n)+' วัน</span>').join('')+'</div></div>'
     : '<div class="empty"><b>ไม่มีรถในสต๊อก</b>ตามสาขาและช่วงที่เลือก</div>';
+  /* กดที่วงเพื่อดูรุ่น/จำนวน/สัดส่วนเป็นป้ายลอย (v1.26 ข้อ 1) — legend มีตัวเลขครบอยู่แล้ว นี่คือทางลัดตอนกดที่วง */
+  if(mTot) $('#chModel').onpointerdown=e=>{ const c=e.target.closest('[data-seg]'); if(!c) return;
+    const s=mSeg[+c.dataset.seg];
+    tipShow('<b>'+esc(s.k)+'</b> · '+s.n+' คัน · '+Math.round(s.n/mTot*100)+'%'
+      +'<br>อายุเฉลี่ย '+Math.round(mm[s.k].age/s.n)+' วัน', e.clientX, e.clientY); };
 
   /* สาขา — นับทุกสาขาที่เห็นได้เสมอ ไม่ตัดตาม dBranch เพราะการ์ดนี้คือ "เทียบระหว่างสาขา" */
   const bs=BRANCHES.filter(b=>inScope(b.code)).map((b,i)=>({l:b.name,
@@ -3272,20 +3304,37 @@ function rDash(){
   for(let i=0;i<nb;i++){
     const a=addDays(per.from, Math.floor(i*step));
     const z=addDays(per.from, Math.max(Math.floor(i*step), Math.floor((i+1)*step)-1));
-    buckets.push({ l:thShort(a), v: ss.filter(x=>x.soldAt>=a && x.soldAt<=z).length });
+    const bss=ss.filter(x=>x.soldAt>=a && x.soldAt<=z);
+    buckets.push({ l:thShort(a), a, z, v:bss.length, m:bss.reduce((s,x)=>s+x.net,0) });
   }
   const cv = buckets.length>1? curvePath(buckets.map(b=>b.v), 320, 96, 8) : null;
+  /* แกน/กริด/จุด (v1.26 ข้อ 1): กริดใน SVG เป็น <line> เท่านั้น · ป้ายแกนกับจุดเป็น HTML นอก SVG
+     เหตุผลเรื่อง preserveAspectRatio="none" อยู่ที่คอมเมนต์ CSS .trw · ป้ายบนของแกน y = cv.top (สเกลจริง) */
   $('#chTrend').innerHTML = cv
-    ? '<div class="spark"><svg viewBox="0 0 320 96" height="96" preserveAspectRatio="none" aria-hidden="true">'
+    ? '<div class="trw"><div class="axy"><span>'+cv.top+'</span><span>0</span></div>'
+      + '<div class="trplot"><div class="spark"><svg viewBox="0 0 320 96" height="96" preserveAspectRatio="none" aria-hidden="true">'
       + '<defs><linearGradient id="gTrend" x1="0" y1="0" x2="0" y2="1">'
       + '<stop offset="0" stop-color="var(--ch1)" stop-opacity=".28"/>'
       + '<stop offset="1" stop-color="var(--ch1)" stop-opacity="0"/></linearGradient></defs>'
+      + [8,48,88].map(gy=>'<line x1="8" x2="312" y1="'+gy+'" y2="'+gy+'" stroke="var(--hairline-2)" stroke-width="1"/>').join('')
       + '<path d="'+cv.area+'" fill="url(#gTrend)"/>'
       + '<path d="'+cv.line+'" fill="none" stroke="var(--ch1)" stroke-width="2.4"'
-      + ' stroke-linecap="round" stroke-linejoin="round"/></svg></div>'
-      + '<div class="tsub" style="margin-top:var(--s2)">'+esc(buckets[0].l)+' – '+esc(buckets[buckets.length-1].l)
-      + ' · แบ่ง '+nb+' ช่วง · ช่วงที่ขายดีที่สุด '+cv.max+' คัน</div>'
+      + ' stroke-linecap="round" stroke-linejoin="round"/></svg>'
+      + cv.pts.map(pt=>'<i class="tdot" style="left:'+(pt[0]/320*100).toFixed(1)+'%;top:'+(pt[1]/96*100).toFixed(1)+'%"></i>').join('')
+      + '</div><div class="axx"><span>'+esc(buckets[0].l)+'</span><span>'+esc(buckets[nb-1].l)+'</span></div></div></div>'
+      + '<div class="tsub" style="margin-top:var(--s2)">แตะบนเส้นเพื่อดูตัวเลขรายช่วง · แบ่ง '+nb+' ช่วง · ช่วงที่ขายดีที่สุด '+cv.max+' คัน</div>'
     : '<div class="empty"><b>'+ss.length+' คัน</b>ช่วงที่เลือกเป็นวันเดียว ยังไม่มีเส้นให้ลาก</div>';
+  /* กดดูตัวเลขรายช่วง — แปลงพิกัดจอ→viewBox ด้วยสัดส่วนความกว้างจริง (จำเป็นเพราะ "none" ยืดแกน x)
+     บรรทัดเงินมีเฉพาะคนมีสิทธิ์ — ไม่มีสิทธิ์คือไม่มีบรรทัดนั้นเลย ไม่ใช่เลขจาง */
+  if(cv){ const sp=$('#chTrend .spark');
+    sp.onpointerdown=e=>{
+      const r=sp.getBoundingClientRect();
+      const vx=(e.clientX-r.left)/r.width*320;
+      const i=Math.max(0, Math.min(nb-1, Math.round((vx-8)/cv.step)));
+      const bk=buckets[i];
+      tipShow('<b>'+esc(thShort(bk.a))+(bk.z>bk.a? ' – '+esc(thShort(bk.z)) : '')+'</b> · '+bk.v+' คัน'
+        +(noMoney()||!bk.v? '' : '<br>ยอดขาย '+fmt(bk.m)+' ฿'), e.clientX, e.clientY); };
+  }
 
   /* งานวันนี้ */
   const od=TASKS.filter(t=>!t.done&&inScope(t.branch)&&t.due<=TODAY).length;
@@ -3372,11 +3421,16 @@ function dashPrint(){
    → เส้นเป็นเบซิเยร์ · วงแหวนปลายมน · แท่งเป็นแคปซูล (มุมโค้งมาจาก --r-pill ใน CSS) */
 function hbar(el, data){
   const mx=Math.max(1,...data.map(d=>d.v));
-  el.innerHTML=data.map(d=>'<div class="bar"><div class="bl"><span>'+esc(d.l)+(d.s?' <span class="tsub">'+esc(d.s)+'</span>':'')+'</span><b>'+d.v+'</b></div>'
+  el.innerHTML=data.map((d,i)=>'<div class="bar" data-hi="'+i+'"><div class="bl"><span>'+esc(d.l)+(d.s?' <span class="tsub">'+esc(d.s)+'</span>':'')+'</span><b>'+d.v+'</b></div>'
     /* ค่า 0 = แท่งหายไปเลย ไม่ใช่เม็ดเล็ก ๆ (เม็ดจะอ่านเหมือนมีของ) · ค่ามากกว่า 0 ดันให้กว้าง
        อย่างน้อยเท่าความสูงราง จะได้เป็นแคปซูลกลม ไม่ใช่ขีดแบน */
     +'<div class="bt"><div class="bf '+(d.cls||'')+'" style="width:'+(d.v/mx*100)+'%'
     +(d.v? ';min-width:10px':'')+(d.c?';background:'+d.c:'')+'"></div></div></div>').join('');
+  /* กดที่แถวเพื่อดูตัวเลขเป็นป้ายลอย (v1.26 ข้อ 1) — ค่าที่เป็นเงินใน d.s ผ่าน money() มาแล้ว
+     จึงถูก mask ตามสิทธิ์ตั้งแต่ต้นทาง ไม่ต้องเช็คซ้ำที่นี่ */
+  el.onpointerdown=e=>{ const b=e.target.closest('[data-hi]'); if(!b) return;
+    const d=data[+b.dataset.hi];
+    tipShow('<b>'+esc(d.l)+'</b> · '+d.v+(d.s? '<br>'+esc(d.s):''), e.clientX, e.clientY); };
 }
 /* Catmull-Rom → เบซิเยร์ลูกบาศก์ — เส้นลอดทุกจุดจริงแต่ไม่มีมุมหัก
    หนีบค่า y ของจุดคุมไม่ให้ทะลุขอบบน-ล่าง ไม่งั้นช่วงที่ขึ้นชันจะแอ่นออกนอกกรอบ */
@@ -3397,18 +3451,20 @@ function curvePath(vals, w, h, pad){
     line += ' C'+c1[0].toFixed(1)+' '+c1[1].toFixed(1)+', '+c2[0].toFixed(1)+' '+c2[1].toFixed(1)
           + ', '+p2[0].toFixed(1)+' '+p2[1].toFixed(1);
   }
-  return {line, area: line+' L'+pts[pts.length-1][0].toFixed(1)+' '+hi+' L'+pts[0][0].toFixed(1)+' '+hi+' Z', max};
+  /* top/step/pts ให้ผู้เรียกวาดแกนกับจุดได้โดยไม่ต้องคิดสเกลซ้ำ — ป้ายแกน y ต้องใช้ top ไม่ใช่ max */
+  return {line, area: line+' L'+pts[pts.length-1][0].toFixed(1)+' '+hi+' L'+pts[0][0].toFixed(1)+' '+hi+' Z', max, top, step, pts};
 }
 /* ส่วนโค้งของวงแหวน — วาดด้วย stroke-dasharray บนวงกลม r=15.9155 (เส้นรอบวง = 100 พอดี)
    ปลายมนด้วย stroke-linecap · gap เว้นช่องท้ายส่วนโค้งไม่ให้ปลายมนของสองสีทับกัน */
-function ringArc(fromPct, toPct, color, width, gap){
+function ringArc(fromPct, toPct, color, width, gap, extra){
   const C = 2*Math.PI*15.9155;
   const len = Math.max(0, (toPct-fromPct)/100*C - (gap==null?1.2:gap));
   if(len<=0) return '';
   return '<circle cx="21" cy="21" r="15.9155" fill="none" stroke="'+color+'"'
     + ' stroke-width="'+(width||7)+'" stroke-linecap="round"'
     + ' stroke-dasharray="'+len.toFixed(2)+' '+C.toFixed(2)+'"'
-    + ' stroke-dashoffset="'+(-(fromPct/100*C)).toFixed(2)+'" transform="rotate(-90 21 21)"/>';
+    + ' stroke-dashoffset="'+(-(fromPct/100*C)).toFixed(2)+'" transform="rotate(-90 21 21)"'
+    + (extra? ' '+extra : '')+'/>';
 }
 /* วงแหวนความคืบหน้าวงเดียว = ราง + ส่วนที่ทำได้ · p หนีบไว้ 0-100 เสมอ */
 const ringGauge = (p, color, width) =>
