@@ -229,7 +229,8 @@ h6[data-grp].mg6{ color:var(--grp6); border-bottom-color:var(--grp6); }
 /* ช่วงเวลา+สาขาบนแถบบน (v1.26 ข้อ 3) — จอกว้าง: แถวสองของ .top เห็นตลอดไม่ต้องเลื่อนขึ้นสุด
    ≤600px: กลายเป็นแผ่นล่าง (fixed — ไม่นับชั้นกล่อง ไม่กิน layout) เปิดจากปุ่ม #npBtn
    ห้ามยืม element ของหน้ามาวางในนี้ — closeFilters() คืนของหน้าด้วย comment marker จะดึงกลับกลางคัน */
-#navCtl{ flex:0 0 100%; display:none; align-items:flex-start; gap:var(--s2); }
+/* พื้นทึบของตัวเอง — gradient ของ .top ออกแบบไว้สำหรับแถวเดียว เลื่อนจอแล้วเนื้อหาจะลอดหลังชิป */
+#navCtl{ flex:0 0 100%; display:none; align-items:flex-start; gap:var(--s2); background:var(--paper); }
 #navCtl.has{ display:flex; }
 #navCtl #navPerBox{ flex:1; min-width:0; }
 #navCtl #navBrSel{ max-width:220px; height:36px; flex:0 0 auto; }
