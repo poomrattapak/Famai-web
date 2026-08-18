@@ -3176,6 +3176,18 @@ const dPeriodText = () => perText('dash');
 const inPeriod    = d  => inPer('dash', d);
 function dSales(){ return sScoped().filter(s=>(!dBranch||s.branch===dBranch) && inPeriod(s.soldAt)); }
 function dUnits(){ return uAvail().filter(u=>!dBranch||u.branch===dBranch); }
+/* คิวทะเบียนที่ยังไม่ส่งมอบ + จำนวนตามขั้น — การ์ดหน้าแรกกับป๊อปอัพใช้สูตรเดียวกัน
+   เลขบนการ์ดกับในป๊อปอัพจึงตรงกันเสมอ ไม่มีสอง copy ให้เพี้ยน (§9g) */
+function regQueue(){
+  const rc={}; REG_STAGES.forEach(s=>rc[s]=0);
+  const all=REGS.filter(r=>inScope(r.branch));
+  all.forEach(r=>rc[r.stage]++);
+  const wait=all.filter(r=>r.stage!=='ส่งมอบแล้ว')
+    .map(r=>{ const sa=SALES.find(x=>x.id===r.saleId), cu=sa&&CUSTOMERS.find(x=>x.id===sa.custId);
+      return {r, cu, nm:cu?cu.name:'—', stage:r.stage, d:-days(r.due,TODAY)}; })
+    .sort((a,b)=>String(a.r.due).localeCompare(String(b.r.due)));
+  return {all, wait, rc};
+}
 function rDash(){
   rPunch();
   const sel=$('#dBranch');
@@ -3225,10 +3237,7 @@ function rDash(){
 
   /* ② อะไรค้างอยู่ (แบบ 3) — ทะเบียน · คิวงานตามวันครบกำหนด · เงินค้างรับ
      วงแหวนบอกความคืบหน้า ตัวเลขกลางวงต้องเป็นค่าเดียวกับที่ส่งเข้า ringBox เสมอ */
-  const rc={}; REG_STAGES.forEach(s=>rc[s]=0);
-  const rgAll=REGS.filter(r=>inScope(r.branch));
-  rgAll.forEach(r=>rc[r.stage]++);
-  const rgWait=rgAll.filter(r=>r.stage!=='ส่งมอบแล้ว');
+  const {all:rgAll, wait:rgWait, rc}=regQueue();
   const rgPct = rgAll.length? Math.round(rc['ส่งมอบแล้ว']/rgAll.length*100) : 100;
   $('#dReg').innerHTML='<div class="v" style="font-family:var(--f-display);font-size:var(--t-stat);'
       +'font-weight:600;line-height:1.05;color:var(--attn)">'+rgWait.length+' <small style="font-size:var(--t-table);color:var(--muted)">คัน</small></div>'
@@ -3236,10 +3245,9 @@ function rDash(){
     +'<div class="t">ส่งมอบครบแล้ว '+rc['ส่งมอบแล้ว']+' จาก '+rgAll.length+' คัน<br>ยิ่งวงเต็ม ยิ่งไม่มีใครรอ</div></div>'
     +'<div style="margin-top:var(--s2)">'+REG_STAGES.map(s=>'<div class="kv2"><span>'+esc(s)+'</span><b>'+rc[s]+'</b></div>').join('')+'</div>';
 
-  /* คิวงานเรียงตามวันครบกำหนด — เลยกำหนดต้องขึ้นเป็น "ข้อความ" ไม่ใช่แค่จุดแดง (กฎข้อ 3) */
-  const q=rgWait.slice().sort((a,b)=>String(a.due).localeCompare(String(b.due))).slice(0,6).map(r=>{
-    const sa=SALES.find(x=>x.id===r.saleId), cu=sa&&CUSTOMERS.find(x=>x.id===sa.custId);
-    return {nm: cu?cu.name:'—', stage:r.stage, d: -days(r.due, TODAY)}; });
+  /* คิวงานเรียงตามวันครบกำหนด — เลยกำหนดต้องขึ้นเป็น "ข้อความ" ไม่ใช่แค่จุดแดง (กฎข้อ 3)
+     regQueue() เรียงตาม due ให้แล้ว การ์ดโชว์ 6 อันดับแรก ป๊อปอัพโชว์ทั้งหมด */
+  const q=rgWait.slice(0,6);
   $('#dQueue').innerHTML = q.length? q.map(t=>'<div class="q">'
       +'<span class="dot '+(t.d<0?'late':(t.d<=7?'soon':''))+'"></span>'
       +'<span class="nm">'+esc(t.nm)+'<span class="tsub">'+esc(t.stage)+'</span></span>'
@@ -5714,6 +5722,13 @@ function custDropModal(saleId){
 }
 
 /* ============================= 11. เงินค้างรับ ============================= */
+/* แถวเงินค้างรับพร้อมลูกค้า/รถ/ไฟแนนซ์ เรียงตามคงค้างมาก→น้อย — หน้าเงินค้างรับกับ
+   ป๊อปอัพหน้าแรกใช้ตัวเดียวกัน เลขสองที่จึงไม่มีวันเถียงกัน (§9g) */
+function arRows(){
+  return AR.filter(a=>inScope(a.branch)).slice().sort((a,b)=>(b.due-b.paid)-(a.due-a.paid)).map(a=>{
+    const s=SALES.find(x=>x.id===a.saleId), u=UNITS.find(x=>x.id===s.unitId), c=CUSTOMERS.find(x=>x.id===s.custId);
+    return {a, u, c, f:FIN_CO.find(x=>x.id===a.finId), left:a.due-a.paid, od:days(a.dueAt,TODAY)}; });
+}
 function rAr(){
   if(!$('#expAr').dataset.init){ $('#expAr').dataset.init=1;
     $('#expAr').onclick=()=> csvMoney('เงินค้างรับ',['ลูกค้า','รุ่น','ประเภท','ผู้จ่าย','ยอดที่ต้องรับ','รับแล้ว','คงค้าง','ครบกำหนด'],[4,5,6],
@@ -5729,9 +5744,7 @@ function rAr(){
     ['เลยกำหนดแล้ว', fmt(overdue.reduce((s,a)=>s+a.due-a.paid,0))+' <small>฿</small>', overdue.length+' รายการ'],
     ['รับแล้วเดือนนี้', fmt(list.reduce((s,a)=>s+a.paid,0))+' <small>฿</small>','เข้าบัญชีแล้ว']
   ].map(k=>'<div class="kpi"><div class="l">'+k[0]+'</div><div class="v">'+k[1]+'</div><div class="s">'+k[2]+'</div></div>').join('');
-  const arL=list.slice().sort((a,b)=>(b.due-b.paid)-(a.due-a.paid)).map(a=>{
-      const s=SALES.find(x=>x.id===a.saleId), u=UNITS.find(x=>x.id===s.unitId), c=CUSTOMERS.find(x=>x.id===s.custId);
-      return {a, u, c, f:FIN_CO.find(x=>x.id===a.finId), left:a.due-a.paid, od:days(a.dueAt,TODAY)}; });
+  const arL=arRows();
   tbl($('#arTable'), ['ลูกค้า','รุ่น','ประเภท','ผู้จ่าย',{t:'ต้องรับ',n:1},{t:'รับแล้ว',n:1},{t:'คงค้าง',n:1},'ครบกำหนด',''],
     arL.map(({a,u,c,f,left,od})=>'<tr><td><b>'+esc(c?c.name:'—')+'</b></td><td>'+esc(u.model)+'</td>'
         +'<td>'+(a.kind==='finance'?pill('ไฟแนนซ์','info'):pill('ลูกค้า','mut'))+'</td>'
