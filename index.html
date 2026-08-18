@@ -384,6 +384,9 @@ h6[data-grp].mg6{ color:var(--grp6); border-bottom-color:var(--grp6); }
 .pc .pcGo:disabled{ opacity:.55; }
 .pc .pcDone{ display:inline-flex; align-items:center; gap:var(--s1);
   font-size:var(--t-table); font-weight:600; color:var(--pos); }
+/* แถวเตือนลืมลงเวลาออก (v1.26 ข้อ 5) — กินเต็มแถว คั่นด้วยเส้นตามกฎกล่อง 2 ชั้น */
+.pc .pcOpen{ flex:1 1 100%; font-size:var(--t-label); color:var(--ink);
+  border-top:1px solid var(--hairline); padding-top:var(--s2); }
 @media (max-width:600px){
   .pc>.bd{ gap:var(--s2); }
   .pc .pcL{ flex:1 1 100%; }
@@ -2465,10 +2468,11 @@ let ATT = (function(){
     if(!isWorkDay(date)) continue;
     STAFF.forEach((s,i)=>{
       const k=(i*7+back*3)%20;                       /* ตัวแปรคงที่แทนการสุ่ม */
-      if(back===0){                                  /* วันนี้ — ยังไม่มีใครเลิกงาน */
+      if(back===0){                                  /* วันนี้ — แถวว่างรอพนักงานกดเอง (v1.26 ข้อ 5)
+        เดิม seed เวลาเข้าให้ทุกคน การ์ดเลยขึ้น "เข้างานแล้ว" ทุกครั้งที่เปิดแอปทั้งที่ไม่มีใครกด
+        ต้องคงแถวไว้ (att-r4 นับวันสุดท้ายจากวันที่ของแถว) แค่ปล่อย in/out ว่าง */
         if(i===5){ rows.push({staffId:s.id,date,in:null,out:null,status:'ลา'}); return; }
-        rows.push({staffId:s.id,date,status:'',
-          in: i===2? '09:14:22' : hms(inRef-15*60+i*97), out:null});
+        rows.push({staffId:s.id,date,in:null,out:null,status:''});
         return;
       }
       if(k===0) return;                              /* ไม่มีบันทึกทั้งวัน — ให้ผู้จัดการตามแก้ */
@@ -6190,6 +6194,13 @@ function attCalc(a){
   return { inS, outS, workSec, otSec, lateSec, hrs:workSec/3600, otH:otSec/3600,
     lateMin:lateSec/60, late:lateSec>0, openIn: !!inS && !outS };
 }
+/* วันก่อนหน้าที่ลืมลงเวลาออกของคนนี้ (v1.26 ข้อ 5) — เงื่อนไขเดียวกับธง open ใน attFlags
+   มองย้อนแค่ 7 วัน: เก่ากว่านั้นอยู่ในคิวตรวจของผู้จัดการอยู่แล้ว ไม่ใช่เรื่องที่เจ้าตัวช่วยอะไรได้ */
+function attOpenPast(staffId){
+  const today=curDate(), floor=addDays(today,-7);
+  return ATT.filter(a=> a.staffId===staffId && a.date<today && a.date>=floor && a.in && !a.out)
+    .sort((x,y)=> String(y.date).localeCompare(String(x.date)));
+}
 function monthDays(ym, upto){
   const out=[], last=new Date(+ym.slice(0,4), +ym.slice(5,7), 0).getDate();
   for(let d=1; d<=last; d++){ const s=ym+'-'+String(d).padStart(2,'0');
@@ -6645,6 +6656,11 @@ function punch(staffId, side, proof){
   const now=punchNow();
   const t=hhmmss(now);
   const a=attEnsure(staffId, punchDate());
+  /* กันสถานะเพี้ยน (v1.26 ข้อ 5): กดเข้าซ้ำ = ทับเวลาเดิมเงียบ ๆ · ออกโดยไม่เคยเข้า = แถวขยะ
+     การแก้เวลาเป็นงานของผู้จัดการผ่าน attFixModal เท่านั้น — โหมดจริงมีด่านเดียวกันใน punch_clock */
+  if(side==='in'  && a.in)  { toast('วันนี้ลงเวลาเข้าแล้ว '+a.in,'ถ้าเวลาผิด ให้ผู้จัดการแก้ไขให้',1); return null; }
+  if(side==='out' && !a.in) { toast('ยังไม่ได้ลงเวลาเข้า','ลงเวลาเข้าก่อนจึงลงเวลาออกได้',1); return null; }
+  if(side==='out' && a.out) { toast('วันนี้ลงเวลาออกแล้ว '+a.out,'ถ้าออกช้ากว่านั้นจริง ให้ผู้จัดการแก้ไขให้',1); return null; }
   a[side]=t;
   a[side+'Proof']=Object.assign({ by:ME.id, byName:ME.name,
     device:navigator.userAgent.slice(0,80), deviceId:deviceId(),
@@ -6877,6 +6893,11 @@ function rPunch(){
   else if(!a.out)      right='<button class="btn pcGo out" id="pcOut">'+ic('clock')+' ลงเวลาออก</button>';
   else                 right='<span class="pcDone">'+ic('check-circle','i i-sm')+' ลงเวลาครบแล้ววันนี้</span>';
   el.innerHTML=head+right;
+  /* เตือนเจ้าตัวเมื่อวันก่อนลืมลงเวลาออก (v1.26 ข้อ 5) — เจ้าตัวแก้ย้อนหลังเองไม่ได้ตามสิทธิ์เดิม
+     จึงชี้ให้แจ้งผู้ตรวจ ไม่ใช่เปิดช่องเขียนทับ */
+  const op=attOpenPast(ME.id);
+  if(op.length) el.innerHTML+='<div class="pcOpen">'+pill('ลืมลงเวลาออก','warn')
+    +' เมื่อ'+op.map(x=>' '+thDate(x.date)).join(' ·')+' — แจ้งผู้จัดการ/ฝ่ายบุคคลแก้ไขให้</div>';
   const tick=()=>{
     const s=$('#pcState'), b=$('#pcSub');
     if(!s || CUR!=='dash'){ clearInterval(punchTimer); punchTimer=null; return; }
@@ -7764,6 +7785,10 @@ function notifItems(){
     if(l.staffId===ME.id && l.decidedAt)
       it.push({id:'lvd:'+l.id+':'+l.status, k:'hr', t:'ใบลาของคุณ'+l.status,
         sub:(l.decideNote? 'เหตุผล: '+l.decideNote : 'โดย '+(l.decidedBy||'')), go:'hr'}); });
+  /* เตือนเจ้าตัว: วันก่อนลืมลงเวลาออก (v1.26 ข้อ 5) — อยู่นอกบล็อก canFixAtt
+     เพราะคนที่ต้องรู้ก่อนใครคือเจ้าของบันทึก ไม่ใช่แค่ผู้ตรวจ */
+  attOpenPast(ME.id).forEach(a=> it.push({id:'openout:'+a.date, k:'hr',
+    t:'คุณลืมลงเวลาออกเมื่อ '+thDate(a.date), sub:'แจ้งผู้จัดการ/ฝ่ายบุคคลแก้ไขให้', go:'hr'}));
   if(canFixAtt()){
     OFFS.filter(o=>o.status==='รออนุมัติ' && o.staffId!==ME.id).forEach(o=>{
       const s=STAFF.find(x=>x.id===o.staffId);
@@ -8860,7 +8885,7 @@ async function liveLogin(){
   /* QA A9: ล็อกอินพังกลางทางต้องคืนสภาพเดโมได้ครบ — เดิม global ชุดองค์กรถูกทับก่อนจุดที่พังบ่อยสุด
      แล้ว catch คืนแค่ LIVE/SB_TOKEN ทำให้เดโมอ้างสาขาที่หายไป เลขเอกสารออก prefix ผิดทั้งเซสชัน */
   const snap={ COMPANIES, BRANCHES, WS_PARTNERS, WS_PRICES, HOLIDAYS, EXEC_EVENTS, PERMS,
-    BR_IDS, VARIANT_IDS, LEAVES, OFFS, FIN_DBID: FIN_CO.map(f=>f.dbId) };
+    BR_IDS, VARIANT_IDS, LEAVES, OFFS, ATT, FIN_DBID: FIN_CO.map(f=>f.dbId) };
   try{
     SB_TOKEN = null;
     const auth = await sbFetch('/auth/v1/token?grant_type=password',
@@ -8906,6 +8931,13 @@ async function liveLogin(){
        .catch เพราะสามตัวนี้พังไม่ควรล้มการล็อกอินทั้งกระบวน — ลงเวลา/ปฏิทินยังใช้ต่อได้ */
     const emp = await sbSelect('employee', { select:'id', user_id:'eq.'+auth.user.id }).catch(()=>null);
     const empId = (emp && emp[0] && emp[0].id) || null;
+    /* ลงเวลาของตัวเองย้อนหลัง 45 วัน (v1.26 ข้อ 5) — ไม่โหลดกลับ = การ์ดรีเซ็ตทุก refresh
+       เปิดช่องกดเข้าซ้ำ และคำเตือนลืมลงเวลาออกไม่มีข้อมูลให้เช็ค · RLS คัดให้เห็นเฉพาะของตัวเองอยู่แล้ว */
+    const att = empId ? await sbSelect('attendance', {
+      select:'work_date,check_in,check_out',
+      employee_id:'eq.'+empId, work_date:'gte.'+addDays(curDate(),-45) }).catch(()=>null) : null;
+    const tsHms = ts => ts ? new Date(ts).toLocaleTimeString('en-GB',
+      { timeZone:'Asia/Bangkok', hour12:false }) : null;
     const hols = await sbSelect('company_holiday', { select:'id,on_date,name' }).catch(()=>null);
     if(hols) HOLIDAYS = hols.map(h=>({ id:h.id, d:h.on_date, name:h.name }));
     const evs = await sbSelect('company_event',
@@ -8950,7 +8982,10 @@ async function liveLogin(){
     }));
 
     /* ข้อมูลจริงมีแต่รถ — ไม่สร้างยอดขาย/ลูกค้าปลอมทับ · ใบลา/คำขอสาธิตก็ต้องไม่ปนโหมดจริง (QA P10) */
-    SALES=[]; CUSTOMERS=[]; TASKS=[]; REGS=[]; FINCASES=[]; AR=[]; SERVICE=[]; REMIND=[]; TRANSFERS=[]; QUOTES=[]; CARE=[]; WSALES=[]; WS_CART=[]; LEAVES=[]; OFFS=[];
+    SALES=[]; CUSTOMERS=[]; TASKS=[]; REGS=[]; FINCASES=[]; AR=[]; SERVICE=[]; REMIND=[]; TRANSFERS=[]; QUOTES=[]; CARE=[]; WSALES=[]; WS_CART=[]; LEAVES=[]; OFFS=[]; ATT=[];
+    /* ลงเวลาโหมดจริง: เฉพาะแถวจริงของบัญชีนี้ — ข้อมูลสาธิต ST1-10 ห้ามปนหน้าเข้างาน/เงินเดือน (v1.26 ข้อ 5) */
+    if(att) ATT = att.map(r=>({ staffId: me.id, date: r.work_date,
+      in: tsHms(r.check_in), out: tsHms(r.check_out), status:'' }));
     LIVE = true;
     ME = { id:me.id, name:me.full_name, nick:me.nickname||me.full_name.slice(0,2),
            role:roleCode, branch:homeBranch, salary:0, bank:'', ssn:'', empId };
@@ -8966,7 +9001,7 @@ async function liveLogin(){
     /* คืนสภาพเดโมครบชุด (QA A9) — ไม่งั้นเดโมอ้างสาขา/บริษัทที่ถูกทับไปแล้ว เลขเอกสารผิด prefix ทั้งเซสชัน */
     COMPANIES=snap.COMPANIES; BRANCHES=snap.BRANCHES; WS_PARTNERS=snap.WS_PARTNERS;
     WS_PRICES=snap.WS_PRICES; HOLIDAYS=snap.HOLIDAYS; EXEC_EVENTS=snap.EXEC_EVENTS; PERMS=snap.PERMS;
-    BR_IDS=snap.BR_IDS; VARIANT_IDS=snap.VARIANT_IDS; LEAVES=snap.LEAVES; OFFS=snap.OFFS;
+    BR_IDS=snap.BR_IDS; VARIANT_IDS=snap.VARIANT_IDS; LEAVES=snap.LEAVES; OFFS=snap.OFFS; ATT=snap.ATT;
     FIN_CO.forEach((f,i)=>{ f.dbId=snap.FIN_DBID[i]; });
     console.error('liveLogin ล้มเหลว', err);
     toast('เชื่อมฐานข้อมูลไม่สำเร็จ', String(err.message||err).slice(0,80)+' — ใช้โหมดสาธิตต่อได้', 1);
