@@ -1189,7 +1189,7 @@ body.lock{ overflow:hidden; }
 
           <div class="card w2"><div class="hd"><h3>งานทะเบียนที่ลูกค้ายังรอป้าย</h3></div><div class="bd" id="dReg"></div></div>
           <div class="card w2 h2"><div class="hd"><h3>คิวงานใกล้ครบกำหนด</h3><div class="sp"></div>
-            <button class="lnk" data-go="deal">ดูทั้งหมด</button></div><div class="bd" id="dQueue"></div></div>
+            <button class="lnk" data-pop="reg">ดูทั้งหมด</button></div><div class="bd" id="dQueue"></div></div>
           <div class="card w2 h2"><div class="hd"><h3>สิ่งที่ต้องจัดการวันนี้</h3></div><div class="bd" id="todo"></div></div>
           <div class="card w2" id="dArCard"><div class="hd"><h3>เงินค้างรับ</h3></div><div class="bd" id="dAr"></div></div>
 
@@ -3223,17 +3223,17 @@ function rDash(){
   const arCnt=AR.filter(a=>inScope(a.branch)&&a.due-a.paid>0).length;
   /* ① ตัวเลขรวม — การ์ดเล็กแน่นแบบ 4 · ใบแรกกว้างสองช่องและมีพื้นอ่อน เป็นจุดเริ่มสายตา
      "รอทะเบียน" กับ "ค้างจ่าย/ค้างรับ" ย้ายไปเป็นการ์ดวงแหวนของตัวเอง ไม่ได้หายไปไหน */
+  /* ทุกใบกดได้ (v1.26 ข้อ 2) — เปิดป๊อปอัพรายละเอียดผ่าน kpiDrawer ไม่เด้งไปหน้าอื่น */
   $('#dKpis').innerHTML=[
-    {l:'รถพร้อมขาย', v:su.length+' <small>คัน</small>', s:'ทุนจม '+money(su.reduce((s,u)=>s+u.cost,0)), cls:'w2 tint'},
-    {l:'ขายได้ในช่วงนี้', v:ss.length+' <small>คัน</small>', s:perLen+' วัน', d:dt(ss.length,prev.length)},
-    {l:'ยอดขายรวม', v:fmt(rev)+' <small>฿</small>', s:ss.length? 'เฉลี่ย '+baht(rev/ss.length)+'/คัน':'—', d:dt(rev,prevRev)},
+    {l:'รถพร้อมขาย', v:su.length+' <small>คัน</small>', s:'ทุนจม '+money(su.reduce((s,u)=>s+u.cost,0)), cls:'w2 tint', pop:'stock'},
+    {l:'ขายได้ในช่วงนี้', v:ss.length+' <small>คัน</small>', s:perLen+' วัน', d:dt(ss.length,prev.length), pop:'sold'},
+    {l:'ยอดขายรวม', v:fmt(rev)+' <small>฿</small>', s:ss.length? 'เฉลี่ย '+baht(rev/ss.length)+'/คัน':'—', d:dt(rev,prevRev), pop:'rev'},
     {l:'กำไรขั้นต้น', v:noMoney()?'—':fmt(gp)+' <small>฿</small>',
-      s:noMoney()?'ซ่อนตามสิทธิ์':(rev?Math.round(gp/rev*100)+'% ของยอดขาย':'—')},
+      s:noMoney()?'ซ่อนตามสิทธิ์':(rev?Math.round(gp/rev*100)+'% ของยอดขาย':'—'), pop:'gp'},
     {l:'ค้างเกิน '+CFG.aging+' วัน', v:stuck.length+' <small>คัน</small>',
-      s:'ทุนจม '+money(stuck.reduce((s,u)=>s+u.cost,0))}
-  ].map(k=>'<div class="kpi '+(k.cls||'')+(k.go?' clk':'')+'"'+(k.go?' data-kgo="'+k.go+'"':'')+'>'
+      s:'ทุนจม '+money(stuck.reduce((s,u)=>s+u.cost,0)), pop:'stuck'}
+  ].map(k=>'<div class="kpi '+(k.cls||'')+' clk" data-pop="kpi|'+k.pop+'">'
     +'<div class="l">'+k.l+'</div><div class="v">'+k.v+'</div><div class="s">'+k.s+'</div>'+(k.d||'')+'</div>').join('');
-  $$('#dKpis [data-kgo]').forEach(el=> el.onclick=()=>go(el.dataset.kgo));
 
   /* ② อะไรค้างอยู่ (แบบ 3) — ทะเบียน · คิวงานตามวันครบกำหนด · เงินค้างรับ
      วงแหวนบอกความคืบหน้า ตัวเลขกลางวงต้องเป็นค่าเดียวกับที่ส่งเข้า ringBox เสมอ */
@@ -3265,7 +3265,7 @@ function rDash(){
                  : fmt(arLeft)+' <small style="font-size:var(--t-table);color:var(--muted)">฿</small>')+'</div>'
     +'<div class="rgrow">'+ringBox(arPct,'var(--ch2)',arPct+'%')
     +'<div class="t">เก็บได้แล้วเทียบกับที่ควรได้<br>ค้าง '+arCnt+' ราย</div></div>'
-    +'<button class="lnk" data-go="ar" style="margin-top:var(--s1);align-self:flex-start">ดูเงินค้างรับทั้งหมด</button>';
+    +'<button class="lnk" data-pop="ar" style="margin-top:var(--s1);align-self:flex-start">ดูเงินค้างรับทั้งหมด</button>';
 
   /* ③ สต๊อกทั้งเครือ (แบบ 4) — โดนัทซ้อนวง · แท่งนอนหัวมน · เส้นโค้งยอดขาย
      ทุกตัวเลขมาจาก su/ss ชุดเดียวกับ KPI ข้างบน กราฟกับตัวเลขจึงตรงกันเสมอ */
@@ -3352,18 +3352,18 @@ function rDash(){
   const np=UNITS.filter(u=>inScope(u.branch)&&u.status==='available'&&u.retail==null);
   const npCost=np.reduce((a,u)=>a+u.cost,0);
   const tRows=[
-    ...(np.length? [[np.length,'รอกำหนดราคา'+(noMoney()?'':' — ทุนจม '+fmt(npCost)+' ฿'),'stock','warn']] : []),
-    [od,'งานติดตามที่ถึงกำหนด','deal', od?'bad':'good'],
-    [rw,'ทะเบียนเลยกำหนด '+CFG.regDays+' วัน','deal', rw?'warn':'good'],
-    [stuck.length,'รถค้างเกิน '+CFG.aging+' วัน','stock', stuck.length?'warn':'good'],
-    [arn,'รายการเงินค้างรับ','ar', arn?'warn':'good'],
-    [lp,'อะไหล่ต่ำกว่าจุดสั่งซื้อ','parts', lp?'warn':'good']
+    ...(np.length? [[np.length,'รอกำหนดราคา'+(noMoney()?'':' — ทุนจม '+fmt(npCost)+' ฿'),'stock','warn','price']] : []),
+    [od,'งานติดตามที่ถึงกำหนด','deal', od?'bad':'good','task'],
+    [rw,'ทะเบียนเลยกำหนด '+CFG.regDays+' วัน','deal', rw?'warn':'good','reg'],
+    [stuck.length,'รถค้างเกิน '+CFG.aging+' วัน','stock', stuck.length?'warn':'good','stuck'],
+    [arn,'รายการเงินค้างรับ','ar', arn?'warn':'good','ar'],
+    [lp,'อะไหล่ต่ำกว่าจุดสั่งซื้อ','parts', lp?'warn':'good','parts']
   ].filter(r=>canSee(r[2]));
   /* แถบเทียบสัดส่วนกับงานที่ค้างเยอะที่สุดในการ์ดนี้ — ไม่ใช่สเกลสมมุติ ตัวเลขข้างหน้าคือความจริง */
   const tMax=Math.max(1,...tRows.map(r=>r[0]));
   $('#todo').innerHTML= tRows.length? tRows.map(r=>'<div class="trow">'
     +'<div class="tl">'+pill(r[0],r[3])+'<span>'+esc(r[1])+'</span>'
-    +'<button class="lnk" data-go="'+r[2]+'">'+ic('right','i i-sm')+'</button></div>'
+    +'<button class="lnk" data-pop="todo|'+r[4]+'">'+ic('right','i i-sm')+'</button></div>'
     +'<div class="bt"><div class="bf '+(r[3]==='good'?'g':(r[3]==='bad'?'d':'w'))+'" style="width:'
     +(r[0]/tMax*100)+'%'+(r[0]?';min-width:10px':'')+'"></div></div></div>').join('')
     : '<div class="empty"><b>ไม่มีงานค้าง</b>เยี่ยมมาก</div>';
@@ -3398,7 +3398,158 @@ function rDash(){
       thDate(s.soldAt)+' · '+esc(bName(s.branch))+' · '+esc(s.sales),
       (s.pay==='cash'?pill('เงินสด','mut'):pill('ผ่อน','info'))
         +'<span style="flex:1"></span><button class="lnk" data-sdet="'+s.id+'">ดูการขาย</button>')));
-  wireGo(); wireUnitRows(); wireSaleLinks();
+  wireGo(); wireUnitRows(); wireSaleLinks(); wirePop();
+}
+/* ---------- ป๊อปอัพเนื้อหาบนหน้าแรก (v1.26 ข้อ 2) ----------
+   ดูข้อมูลจบในหน้าแรกผ่าน openDrawer เดิม (กล่องกลางจอ) ไม่เด้งไปหน้าอื่น —
+   ปุ่ม "ไปหน้า..." เหลือเฉพาะงานที่ต้องเขียนข้อมูลจริง เช่น ลงรับเงิน/ตั้งราคา
+   ด่านสิทธิ์อยู่ในฟังก์ชันเนื้อหาแต่ละตัว ไม่ใช่ที่ปุ่มบนการ์ด (§9b) */
+function dashPop(kind, arg){
+  if(kind==='reg')  return regDrawer();
+  if(kind==='ar')   return arDrawer();
+  if(kind==='todo') return todoDrawer(arg);
+  if(kind==='kpi')  return kpiDrawer(arg);
+}
+function wirePop(){ $$('#s-dash [data-pop]').forEach(b=> b.onclick=e=>{ e.stopPropagation();
+  const [kind,arg]=b.dataset.pop.split('|'); dashPop(kind,arg); }); }
+/* แถวรายการในป๊อปอัพ — โครงเดียวกับ .q ของการ์ดคิว: ข้อความ+จุดสีเสมอ ไม่ใช่สีเดี่ยว (กฎข้อ 3) */
+const popRow = (dot, nm, sub, when, attr) => '<div class="q'+(attr?' clk':'')+'"'+(attr||'')+'>'
+  +'<span class="dot '+dot+'"></span><span class="nm">'+nm+(sub?'<span class="tsub">'+sub+'</span>':'')+'</span>'
+  +'<span class="when'+(dot==='late'?' late':'')+'">'+when+'</span></div>';
+const popGo = (label, page) => canSee(page)
+  ? '<button class="btn sec sm" data-pgo="'+page+'" style="margin-top:var(--s2)">'+label+' '+ic('right','i i-sm')+'</button>' : '';
+/* เดินสายปุ่ม/แถวในป๊อปอัพหลังเปิด — เนื้อหาเพิ่งถูกเขียนลง #drwB, wireGo() ของหน้าไม่ครอบถึง */
+function popWire(){
+  $$('#drwB [data-pgo]').forEach(b=> b.onclick=()=>{ closeDrawer(); go(b.dataset.pgo); });
+  $$('#drwB [data-ugo]').forEach(r=> r.onclick=()=>unitDrawer(r.dataset.ugo));
+  $$('#drwB [data-sgo]').forEach(r=> r.onclick=()=>saleDrawer(r.dataset.sgo));
+  $$('#drwB [data-dgo]').forEach(r=> r.onclick=()=>{ closeDrawer(); dealGo(r.dataset.dgo); });
+}
+function regDrawer(){
+  const {all, wait, rc}=regQueue();
+  const lateN=wait.filter(w=>w.d<0).length, seeDeal=canSee('deal');
+  openDrawer('คิวงานทะเบียน',
+    '<div class="tsub" style="margin-bottom:var(--s2)">ลูกค้ารอป้าย '+wait.length+' คัน · เลยกำหนด '+lateN+' คัน'
+      +' · ส่งมอบแล้ว '+rc['ส่งมอบแล้ว']+' จาก '+all.length+' คัน</div>'
+    +REG_STAGES.map(s=>'<div class="kv2"><span>'+esc(s)+'</span><b>'+rc[s]+'</b></div>').join('')
+    +'<div style="border-top:1px solid var(--hairline);margin-top:var(--s2);padding-top:var(--s1)">'
+    +(wait.length? wait.map(w=> popRow(w.d<0?'late':(w.d<=7?'soon':''),
+        esc(w.nm), esc(w.stage),
+        w.d<0? 'เลย '+(-w.d)+' วัน' : (w.d===0?'ครบวันนี้':'อีก '+w.d+' วัน'),
+        (seeDeal&&w.cu? ' data-dgo="'+w.cu.id+'"' : ''))).join('')
+      : '<div class="empty"><b>ไม่มีคิวงานทะเบียน</b>ส่งมอบครบทุกคันแล้ว</div>')
+    +'</div>'+popGo('ไปหน้าลูกค้าและดีล','deal'));
+  popWire();
+}
+function arDrawer(){
+  if(!canSee('ar')) return;                        /* ด่านจริง — เรียกฟังก์ชันตรงก็ไม่เปิด */
+  const out=arRows().filter(x=>x.left>0);
+  const sum=out.reduce((s,x)=>s+x.left,0), late=out.filter(x=>x.od>0);
+  openDrawer('เงินค้างรับ',
+    '<div class="tsub" style="margin-bottom:var(--s2)">'
+      +(noMoney()? 'ค้างอยู่ '+out.length+' รายการ' : 'ค้างรวม '+baht(sum)+' · '+out.length+' รายการ')
+      +' · เลยกำหนด '+late.length+' รายการ</div>'
+    +(out.length? out.map(x=> popRow(x.od>0?'late':'',
+        esc(x.c?x.c.name:'—'),
+        esc(x.u.model)+' · '+(x.a.kind==='finance'? 'ไฟแนนซ์ '+esc(x.f?x.f.name:'—') : 'ลูกค้าจ่ายเอง'),
+        (noMoney()? '' : fmt(x.left)+' ฿ · ')+(x.od>0? 'เลย '+x.od+' วัน' : thDate(x.a.dueAt)))).join('')
+      : '<div class="empty"><b>ไม่มีเงินค้างรับ</b>เก็บครบทุกรายการแล้ว</div>')
+    +popGo('ไปหน้าเงินค้างรับ (ลงรับเงิน)','ar'));
+  popWire();
+}
+/* ป๊อปอัพของแถว "สิ่งที่ต้องจัดการวันนี้" — แต่ละชนิดใช้สูตรเดียวกับเลขหน้าแถวเป๊ะ
+   เลขบนแถวกับจำนวนรายการในป๊อปอัพจึงตรงกันเสมอ */
+function todoDrawer(kind){
+  if(kind==='ar')  return arDrawer();
+  if(kind==='reg') return regDrawer();
+  if(kind==='price'){
+    const np=UNITS.filter(u=>inScope(u.branch)&&u.status==='available'&&u.retail==null);
+    openDrawer('รอกำหนดราคา '+np.length+' คัน',
+      '<div class="tsub" style="margin-bottom:var(--s2)">'
+        +(noMoney()?'':'ทุนจมรวม '+baht(np.reduce((s,u)=>s+u.cost,0))+' · ')+'กดที่คันเพื่อดูรายละเอียด</div>'
+      +(np.length? np.map(u=> popRow('soon', esc(u.model),
+          '<span class="mono">'+esc(u.engine)+'</span> · '+esc(bName(u.branch)),
+          money(u.cost), ' data-ugo="'+u.id+'"')).join('')
+        : '<div class="empty"><b>ไม่มีรถรอกำหนดราคา</b></div>')
+      +popGo('ไปหน้าสต๊อกรถ (ตั้งราคา)','stock'));
+  }
+  if(kind==='task'){
+    const list=TASKS.filter(t=>!t.done && inScope(t.branch) && t.due<=TODAY), seeDeal=canSee('deal');
+    openDrawer('งานติดตามที่ถึงกำหนด '+list.length+' งาน',
+      (list.length? list.map(t=>{ const c=CUSTOMERS.find(x=>x.id===t.custId);
+          return popRow(t.due<TODAY?'late':'soon', esc(c?c.name:'—'), esc(t.note||t.kind||'ติดตามลูกค้า'),
+            'ครบ '+thDate(t.due), (seeDeal&&c? ' data-dgo="'+c.id+'"' : '')); }).join('')
+        : '<div class="empty"><b>ไม่มีงานติดตามค้าง</b></div>')
+      +popGo('ไปหน้าลูกค้าและดีล','deal'));
+  }
+  if(kind==='stuck'){
+    const su=dUnits(), list=su.filter(u=>age(u)>CFG.aging);
+    openDrawer('รถค้างเกิน '+CFG.aging+' วัน — '+list.length+' คัน',
+      '<div class="tsub" style="margin-bottom:var(--s2)">'
+        +(noMoney()?'':'ทุนจมรวม '+baht(list.reduce((s,u)=>s+u.cost,0))+' · ')+'เรียงตามอายุมาก→น้อย</div>'
+      +(list.length? list.slice().sort((a,b)=>age(b)-age(a)).map(u=> popRow('late', esc(u.model),
+          '<span class="mono">'+esc(u.engine)+'</span> · '+esc(bName(u.branch)),
+          age(u)+' วัน', ' data-ugo="'+u.id+'"')).join('')
+        : '<div class="empty"><b>ไม่มีรถค้างเกินเกณฑ์</b></div>')
+      +popGo('ไปหน้าสต๊อกรถ','stock'));
+  }
+  if(kind==='parts'){
+    const list=PARTS.filter(p=>inScope(p.branch)&&p.qty<p.min);
+    openDrawer('อะไหล่ต่ำกว่าจุดสั่งซื้อ '+list.length+' รายการ',
+      (list.length? list.map(p=> popRow('late', esc(p.name), esc(bName(p.branch)),
+          'เหลือ '+p.qty+' / จุดสั่งซื้อ '+p.min)).join('')
+        : '<div class="empty"><b>อะไหล่เพียงพอทุกรายการ</b></div>')
+      +popGo('ไปหน้าอะไหล่ (สั่งซื้อ)','parts'));
+  }
+  popWire();
+}
+/* ป๊อปอัพของการ์ดตัวเลข — ทุกใบคิดจาก dUnits()/dSales() เท่านั้น จึงเคารพช่วงเวลา+สาขา
+   เหมือนตัวเลขบนการ์ด (สัญญา dash-r25 ข้อ 3) */
+function kpiDrawer(kind){
+  if(kind==='stuck') return todoDrawer('stuck');
+  const su=dUnits(), ss=dSales();
+  const scope='<div class="tsub" style="margin-bottom:var(--s2)">'+esc(dPeriodText())+' · '
+    +esc(dBranch? bName(dBranch) : 'ทุกสาขาที่เห็นได้')+'</div>';
+  if(kind==='stock'){
+    const mm={}; su.forEach(u=>{ mm[u.model]=mm[u.model]||{n:0,cost:0}; mm[u.model].n++; mm[u.model].cost+=u.cost; });
+    const ks=Object.keys(mm).sort((a,b)=>mm[b].n-mm[a].n);
+    openDrawer('รถพร้อมขาย '+su.length+' คัน',
+      scope+ks.map(k=>'<div class="kv2"><span>'+esc(k)+'</span><b>'+mm[k].n+' คัน'
+        +(noMoney()?'':' · '+fmt(mm[k].cost)+' ฿')+'</b></div>').join('')
+      +(noMoney()?'':'<div class="kv2" style="border-top:1px solid var(--hairline)"><span>ทุนจมรวม</span><b>'
+        +fmt(su.reduce((s,u)=>s+u.cost,0))+' ฿</b></div>')
+      +popGo('ไปหน้าสต๊อกรถ','stock'));
+  }
+  if(kind==='sold'){
+    const list=ss.slice().sort((a,b)=>b.soldAt.localeCompare(a.soldAt));
+    openDrawer('ขายได้ '+list.length+' คัน',
+      scope+(list.length? list.map(s=>{ const u=UNITS.find(x=>x.id===s.unitId), c=CUSTOMERS.find(x=>x.id===s.custId);
+          return popRow('', esc(u?u.model:'—'), esc(c?c.name:'—')+' · '+thDate(s.soldAt)+' · '+esc(s.sales),
+            fmt(s.net)+' ฿', ' data-sgo="'+s.id+'"'); }).join('')
+        : '<div class="empty"><b>ยังไม่มีรายการขาย</b>ในช่วงที่เลือก</div>'));
+  }
+  if(kind==='rev'){
+    const rev=ss.reduce((s,x)=>s+x.net,0);
+    const byBr={}; ss.forEach(s=>{ byBr[s.branch]=(byBr[s.branch]||0)+s.net; });
+    const cash=ss.filter(s=>s.pay==='cash'), fin=ss.filter(s=>s.pay!=='cash');
+    openDrawer('ยอดขายรวม '+fmt(rev)+' ฿',
+      scope+Object.keys(byBr).map(b=>'<div class="kv2"><span>'+esc(bName(b))+'</span><b>'+fmt(byBr[b])+' ฿</b></div>').join('')
+      +'<div class="kv2" style="border-top:1px solid var(--hairline)"><span>เงินสด '+cash.length+' คัน</span><b>'
+        +fmt(cash.reduce((s,x)=>s+x.net,0))+' ฿</b></div>'
+      +'<div class="kv2"><span>ผ่อน/ไฟแนนซ์ '+fin.length+' คัน</span><b>'+fmt(fin.reduce((s,x)=>s+x.net,0))+' ฿</b></div>'
+      +(ss.length? '<div class="kv2"><span>เฉลี่ยต่อคัน</span><b>'+fmt(Math.round(rev/ss.length))+' ฿</b></div>':''));
+  }
+  if(kind==='gp'){
+    /* คนไม่มีสิทธิ์ money เห็น "—" ไม่ใช่เลขจาง — ด่านอยู่ที่นี่ ไม่ใช่ที่การ์ด */
+    if(noMoney()){ openDrawer('กำไรขั้นต้น','<div class="empty"><b>—</b>ซ่อนตามสิทธิ์ของบทบาทนี้</div>'); return; }
+    const gp=ss.reduce((s,x)=>s+x.gp,0), rev=ss.reduce((s,x)=>s+x.net,0);
+    const bm={}; ss.forEach(s=>{ const u=UNITS.find(x=>x.id===s.unitId);
+      const k=u?u.model:'—'; bm[k]=(bm[k]||0)+s.gp; });
+    openDrawer('กำไรขั้นต้น '+fmt(gp)+' ฿',
+      scope+'<div class="kv2"><span>สัดส่วนต่อยอดขาย</span><b>'+(rev? Math.round(gp/rev*100)+'%':'—')+'</b></div>'
+      +Object.keys(bm).sort((a,b)=>bm[b]-bm[a]).map(k=>'<div class="kv2"><span>'+esc(k)+'</span><b>'+fmt(bm[k])+' ฿</b></div>').join(''));
+  }
+  popWire();
 }
 /* พิมพ์สรุปหน้าแรกเป็นเอกสาร A4 ตามช่วงเวลาและสาขาที่เลือกอยู่ (ข้อ 2: "export รายงานเอกสารได้")
    ตัวเลขทุกตัวมาจาก dSales()/dUnits() ชุดเดียวกับที่หน้าจอใช้ กระดาษกับจอจึงตรงกันเสมอ
