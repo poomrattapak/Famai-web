@@ -823,7 +823,8 @@ selector ครอบทั้งเอกสาร) · เนื้อหาค
 **ช่วงเวลา+สาขาบน navbar** — element ของตัวเองทั้งชุด (`#navCtl`/`#navPerBox`/`#navBrSel`/`#npBtn`)
 **ห้ามยืม element ของหน้า** (closeFilters คืนของด้วย comment marker จะดึงกลับกลางคัน — ห้ามส่ง `tail` ให้ perBar) ·
 ช่วงเวลาใช้ `perBar`+`perSt(key)` state เดียวกับหน้า + hook ท้าย `perBar` ให้ป้ายตามเมื่อหน้าปรับเอง ·
-สาขาเป็น **proxy** ของ select จริงในหน้า (`NAV_BR` map) ไม่มี state กลางใหม่ · มือถือ: แผ่นล่าง fixed
+สาขาเป็น **proxy** ของ select จริงในหน้า (`NAV_BR` map) ไม่มี state กลางใหม่ · มือถือ: **แผ่นบน** fixed
+(v1.26.1 — เดิมเป็นแผ่นล่าง เจ้าของติว่าปุ่มอยู่บนแต่แผ่นโผล่ล่าง สายตาต้องกระโดดข้ามจอ)
 เปิดจาก `#npBtn` (override กฎ `.tbtn{width:44px}` เฉพาะปุ่มนี้) กดนอกแผ่น/Escape ปิด ·
 แถบในหน้า 6 หน้า (dash/report/transfer/quote/aftercare/expense) ซ่อนด้วย CSS — state ยังอยู่ ด่านยิงตรงใช้ได้ ·
 `#wsPer`/`#movePer` คงไว้เพราะเป็นของแท็บย่อย

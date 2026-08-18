@@ -89,6 +89,12 @@ const { chromium, EXE, BASE } = require('./env');
   if (!await m.isVisible('#npBtn')) fails.push('[6] 390: ไม่เห็นปุ่มย่อช่วงเวลา+สาขา');
   else {
     await m.click('#npBtn'); await m.waitForTimeout(250);
+    /* v1.26.1: แผ่นต้องโผล่ด้านบน (ตรงปุ่มที่กด) ไม่ใช่เด้งจากขอบล่างให้สายตากระโดดข้ามจอ */
+    const pos = await m.evaluate(() => { const r = $('#navCtl').getBoundingClientRect();
+      return { top: r.top, bottom: r.bottom, w: r.width }; });
+    if (pos.top > 844 / 2)        fails.push('[6] 390: แผ่นเปิดที่ครึ่งล่างจอ (top=' + pos.top.toFixed(0) + ') — ต้องโผล่ด้านบนตรงปุ่ม');
+    if (pos.bottom > 844 - 40)    fails.push('[6] 390: แผ่นแนบขอบล่างจอ (bottom=' + pos.bottom.toFixed(0) + ') — ยังเป็นแผ่นล่างอยู่');
+    if (pos.w > 390)              fails.push('[6] 390: แผ่นกว้างเกินจอ (' + pos.w.toFixed(0) + 'px)');
     if (!await m.isVisible('#navPerBox [data-pr="7"]')) fails.push('[6] 390: เปิดแผ่นแล้วไม่เห็นชิปช่วงเวลา');
     else {
       const chg = await m.evaluate(() => { const before = dPeriod().from;
@@ -97,7 +103,8 @@ const { chromium, EXE, BASE } = require('./env');
       if (!chg) fails.push('[6] 390: กดชิปในแผ่นแล้วช่วงไม่เปลี่ยน');
     }
     /* กดนอกแผ่นต้องปิด — pointerdown ที่หัวหน้า */
-    await m.click('#pgT'); await m.waitForTimeout(200);
+    /* จุด "นอกแผ่น" ต้องอยู่ใต้แผ่น — แผ่นบนคลุมแถบบนแล้ว คลิก #pgT จะโดนแผ่นดักแทน (v1.26.1) */
+    await m.mouse.click(10, 830); await m.waitForTimeout(200);
     if (await m.isVisible('#navPerBox [data-pr="7"]')) fails.push('[6] 390: กดนอกแผ่นแล้วแผ่นไม่ปิด');
   }
   /* 7 · เดินครบทุกหน้าที่ navbar คุม — ไม่มี pageerror และไม่ล้นจอ (พิสูจน์ไม่ชน closeFilters) */

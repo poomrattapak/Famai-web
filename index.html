@@ -227,7 +227,7 @@ h6[data-grp].mg6{ color:var(--grp6); border-bottom-color:var(--grp6); }
   display:flex; align-items:center; gap:var(--s2); flex-wrap:wrap;
   background:linear-gradient(180deg, var(--paper) 62%, rgba(250,250,248,0)); }
 /* ช่วงเวลา+สาขาบนแถบบน (v1.26 ข้อ 3) — จอกว้าง: แถวสองของ .top เห็นตลอดไม่ต้องเลื่อนขึ้นสุด
-   ≤600px: กลายเป็นแผ่นล่าง (fixed — ไม่นับชั้นกล่อง ไม่กิน layout) เปิดจากปุ่ม #npBtn
+   ≤600px: กลายเป็นแผ่นบนคลุมแถบ (fixed — ไม่นับชั้นกล่อง ไม่กิน layout) เปิดจากปุ่ม #npBtn
    ห้ามยืม element ของหน้ามาวางในนี้ — closeFilters() คืนของหน้าด้วย comment marker จะดึงกลับกลางคัน */
 /* พื้นทึบของตัวเอง — gradient ของ .top ออกแบบไว้สำหรับแถวเดียว เลื่อนจอแล้วเนื้อหาจะลอดหลังชิป */
 #navCtl{ flex:0 0 100%; display:none; align-items:flex-start; gap:var(--s2); background:var(--paper); }
@@ -240,10 +240,12 @@ h6[data-grp].mg6{ color:var(--grp6); border-bottom-color:var(--grp6); }
 #npBtn #npLbl{ margin-left:6px; max-width:26vw; overflow:hidden; text-overflow:ellipsis;
   white-space:nowrap; font-size:var(--t-label); }
 @media (max-width:600px){
-  #navCtl.has{ display:none; position:fixed; left:0; right:0; bottom:0; z-index:60;
-    background:var(--card); border-radius:var(--r-lg) var(--r-lg) 0 0; box-shadow:var(--sh-lg);
-    padding:var(--s3) var(--s2); max-height:70dvh; overflow-y:auto;
-    flex-direction:column; align-items:stretch; }
+  /* แผ่นบน ไม่ใช่แผ่นล่าง — ปุ่มที่เปิดมันอยู่บน navbar แผ่นต้องโผล่ตรงที่สายตาอยู่ (v1.26.1)
+     fixed ไม่ดันเนื้อหา layout จึงไม่ขยับตอนเปิด-ปิด · เผื่อ notch ด้วย safe-area-inset-top */
+  #navCtl.has{ display:none; position:fixed; left:0; right:0; top:0; z-index:60;
+    background:var(--card); border-radius:0 0 var(--r-lg) var(--r-lg); box-shadow:var(--sh-lg);
+    padding:calc(var(--s3) + env(safe-area-inset-top)) var(--s2) var(--s3); max-height:70dvh;
+    overflow-y:auto; flex-direction:column; align-items:stretch; }
   #navCtl.has.on{ display:flex; }
   #navCtl #navBrSel{ max-width:none; height:44px; }
   /* กฎ .tbtn{width:44px} ของมือถือบีบปุ่มเป็นสี่เหลี่ยมไอคอน — ปุ่มนี้ต้องมีป้ายข้อความ */
@@ -1192,7 +1194,7 @@ body.lock{ overflow:hidden; }
       <div class="sp"></div>
       <div class="srch noprint"><span class="mag"><svg class="i i-sm"><use href="#i-search"/></svg></span><input id="gsInput" placeholder="ค้นหา" readonly></div>
       <button class="tbtn noprint" id="gsBtn" aria-label="ค้นหา"><svg class="i i-sm"><use href="#i-search"/></svg></button>
-      <!-- ปุ่มย่อช่วงเวลา+สาขาบนมือถือ (v1.26 ข้อ 3) — เปิดแผ่นล่าง #navCtl -->
+      <!-- ปุ่มย่อช่วงเวลา+สาขาบนมือถือ (v1.26 ข้อ 3) — เปิดแผ่นบน #navCtl (โผล่ตรงปุ่มที่กด) -->
       <button class="tbtn noprint" id="npBtn" aria-label="ช่วงเวลาและสาขา">
         <svg class="i i-sm"><use href="#i-calendar"/></svg><span id="npLbl"></span></button>
       <!-- ศูนย์แจ้งเตือน (บรีฟรอบ 1 · J1-J2) — ตัวเลขคืองานค้างที่คิดสดจากระเบียนจริง -->
@@ -1203,7 +1205,7 @@ body.lock{ overflow:hidden; }
           line-height:16px;padding:0 4px">0</span>
       </button>
       <!-- ช่วงเวลา+สาขาของหน้าปัจจุบัน (v1.26 ข้อ 3) — element ของตัวเองทั้งชุด ไม่ยืมของหน้าใด
-           จอกว้างเป็นแถวสองเห็นตลอด · มือถือเป็นแผ่นล่างเปิดจาก #npBtn -->
+           จอกว้างเป็นแถวสองเห็นตลอด · มือถือเป็นแผ่นบนเปิดจาก #npBtn -->
       <div id="navCtl" class="noprint"><div id="navPerBox"></div>
         <select class="inp ct" id="navBrSel" aria-label="เลือกสาขา" style="display:none"></select></div>
     </header>
