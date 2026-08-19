@@ -1093,6 +1093,15 @@ body.lock{ overflow:hidden; }
   .tbtn{ padding:0; width:44px; justify-content:center; }
   .srch{ display:none; }
   #gsBtn{ display:inline-flex; }
+  /* แถวบนที่ 390 ใส่ทุกอย่างบรรทัดเดียวไม่พอ (ต้องการ 412px มีจริง 342px) — .sp{flex:1}
+     กินบรรทัดแรกจนหมด กระดิ่งเลยเคยหล่นไปแถวสอง ลอยกลางจอห่างจากปุ่มค้นหา (v1.27.2)
+     จัดใหม่: บรรทัดแรก = หัวข้อ + ค้นหา + กระดิ่ง (ไอคอนอยู่ด้วยกันมุมขวา)
+             บรรทัดสอง = ปุ่มช่วงเวลา+สาขา เต็มความกว้าง — แถวที่ตั้งใจ ไม่ใช่ของหล่น */
+  #gsBtn{ order:2; }
+  #bellBtn{ order:3; }
+  #npBtn.has{ order:4; flex:0 0 100%; width:100%; }
+  #navCtl{ order:5; }
+  #npBtn #npLbl{ max-width:none; }
   .doc{ padding:var(--s2); }
   .doc table th,.doc table td{ padding-left:var(--s1); padding-right:var(--s1); }
   .cal .cd{ min-height:56px; padding:var(--s-half) 0; }
