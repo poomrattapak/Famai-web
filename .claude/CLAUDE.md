@@ -16,20 +16,25 @@
 
 ```bash
 node tools/qa/suites/syntax.js    # 0 วินาที — รันก่อนเสมอ ถ้าตัวนี้แดง ที่เหลือไม่มีความหมาย
-node tools/qa/run.js              # ทั้ง 33+ ชุด ~10-15 นาที (3 งานพร้อมกัน)
+node tools/qa/run.js              # ทั้ง 57 ชุด ~15-20 นาที (3 งานพร้อมกัน)
 node tools/qa/run.js geo clock    # เฉพาะชุดที่ชื่อมีคำนี้
 ```
 
 - เส้นฐาน: เขียวครบทุกชุด — ชุดไหนแดงโดยไม่ได้แก้อะไร ให้สงสัยสภาพแวดล้อมก่อนโค้ด
 - ด่านตรวจใหม่ทุกตัวต้องพิสูจน์แบบ mutation: **ถอด guard ออกแล้วเทสต์ต้องแดง** ถ้ายังเขียว = เทสต์อ่อนหรือโค้ดนั้นไม่มีเหตุผลจะอยู่
+  — ตัวรันกับสาเหตุที่ mutation ยังเขียวอยู่ใน skill `famai-mutation` · ลำดับส่งงานทั้งรอบอยู่ใน `famai-ship`
 - ทดสอบสิทธิ์ = เรียกฟังก์ชันบันทึกตรง ๆ ไม่ใช่ดูว่าปุ่มถูกซ่อน
 - Playwright อยู่ที่ `/opt/node22/lib/node_modules/playwright` + Chromium `/opt/pw-browsers/chromium` — path อยู่ใน `tools/qa/suites/env.js` ที่เดียว
 
 ## กับดักสภาพแวดล้อม (เสียเวลามาแล้วจริง — อย่าเหยียบซ้ำ)
 
 - `pgrep -f`/`pkill -f` ที่แพตเทิร์นตรงกับ command line ของตัวเอง จะเจอ/ฆ่าตัวเอง — รอด้วย `kill -0 <pid>` · ปิดพอร์ตด้วย `fuser -k 8123/tcp`
+- `sleep` ใน foreground ถูกบล็อก — รอด้วย `python3 -c "import time; time.sleep(n)"` หรือ poll ใน background
+- `node -c ""` ค้างรอ stdin จนหมดเวลา — เช็คไวยากรณ์ด้วย `node --check <file>`
+- ห้าม `git checkout` ทับ `index.html` ที่แก้ค้างอยู่ — สำรองเป็น `.bak` ใน scratchpad ก่อนแตะทุกครั้ง
 - พอร์ต 8123 ใช้ร่วมกันระหว่าง `tools/qa/run.js` กับ `tools/manual/build.js` — ชนกัน ต้องปิดตัวหนึ่งก่อน
 - เบราว์เซอร์ในกล่องทดสอบ**ออกอินเทอร์เน็ตไม่ได้** — ยิง API จริงใช้ `curl` · ในหน้าเว็บใช้ `page.route` + fixture ใน `tools/qa/suites/fixtures/`
+  · ตรวจ production ให้ `curl` ไฟล์ที่ deploy แล้วมาเปิดแบบ `file://` แล้วขับด้วย Playwright ตามปกติ
 - Node พาร์ส ISO string เป็น UTC แต่แอปตั้ง `Asia/Bangkok` — เทียบเวลาให้คำนวณ**ในหน้าเว็บ** ไม่ใช่ใน Node
 - proxy หมุน ~10 IP ขาออก — เทสต์ rate-limit ทาง HTTP ไม่มีวันติด ต้องพิสูจน์ใน SQL
 - `app_setting.value` เป็น `jsonb` — string ต้อง `to_jsonb('x'::text)` ไม่งั้น `22P02`

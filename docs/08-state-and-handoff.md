@@ -52,6 +52,7 @@ Production: **https://famai-web.vercel.app** — Vercel ผูกกับ branc
 | คู่มือผู้ใช้ | `docs/manual/` PDF สร้างด้วย `tools/manual/build.js` (พอร์ต 8123 ชนกับตัวรัน QA — ปิดตัวหนึ่งก่อน) |
 | สำรองข้อมูล | `tools/backup/backup.js` (A2) — service key ผ่าน env เท่านั้น · `backups/` อยู่ใน .gitignore |
 | งานค้าง/ticket | `.claude/issues/` — ตัวหลักคือ `001-live-sync-rest.md` (ช่องว่างโหมดข้อมูลจริง) |
+| วิธีทำงานของโปรเจกต์ | skill `famai-ship` (ลำดับส่งงานหนึ่งรอบ) · `famai-mutation` (พิสูจน์ด่านให้แดงได้จริง) |
 | งานอยู่บนกิ่ง | `claude/start-b18xi3` — push ทุก commit ห้ามเปิด PR เว้นแต่เจ้าของสั่ง |
 
 ---
