@@ -2423,7 +2423,7 @@ const DEMO_BUYERS = [
 const LEADS = [
   ['คุณวิว สายชล','082-119-3344','Facebook','สนใจ','BJKC00'],
   ['คุณต้น ภูผา','095-772-1109','เดินเข้าร้าน','เข้ามาดูรถ','D18100'],
-  ['คุณแนน สุดา','088-224-6611','LINE','ทำสัญญา','BTF200'],
+  ['คุณแนน สุดา','088-224-6611','LINE','จอง','BTF200'],
   ['คุณโอ๊ต ธีระ','081-338-9922','TikTok','ไม่ผ่าน','DR9200']
 ];
 
@@ -2432,7 +2432,13 @@ let CUSTOMERS=[], SALES=[], TASKS=[], REGS=[], FINCASES=[], AR=[], SERVICE=[], R
    check = checklist ส่งมอบ (จาก CFG.careList ณ วันสร้าง — แช่ไว้ ไม่เปลี่ยนตามตั้งค่าย้อนหลัง)
    tasks = รอบติดตาม 7/30/60/90/120 วันนับจากวันส่งมอบ (CFG.careDays) — ฝ่ายบริการแก้กำหนด/เพิ่มเองได้ */
 let CARE=[];
-const REG_STAGES = ['ขายแล้ว','ส่งไฟแนนซ์','อนุมัติ','รอทะเบียน','ป้ายขาว','ส่งมอบแล้ว'];
+/* v1.28 (คำสั่งเจ้าของ): งานจริงคือส่งมอบรถก่อน ลูกค้าใช้ป้ายชั่วคราวไประหว่างรอทะเบียนจริง
+   "ป้ายขาว" เดิมจึงกลายเป็น "ได้ทะเบียนแล้ว" ที่ท้ายสุด และส่งมอบขยับขึ้นมากลางเส้นทาง */
+const REG_STAGES = ['ขายแล้ว','ส่งไฟแนนซ์','อนุมัติ','ส่งมอบแล้ว','รอทะเบียน','ได้ทะเบียนแล้ว'];
+/* ส่งมอบไม่ใช่ขั้นสุดท้ายอีกแล้ว — ถามว่า "ลูกค้าได้รถหรือยัง" ต้องดู deliveredAt ไม่ใช่ชื่อขั้น
+   ส่วน "งานทะเบียนจบจริง" คือได้ป้ายจากขนส่ง คนละคำถามกัน อย่าใช้ตัวเดียวตอบทั้งสอง */
+const regDone   = r => !!(r && r.deliveredAt);
+const regPlated = r => !!(r && r.stage==='ได้ทะเบียนแล้ว');
 const FIN_STAGES = ['ส่งเรื่อง','ยื่นเอกสาร','รอผล','ติดตามต่อ','อนุมัติแล้ว'];
 
 function seedDemo(){
@@ -2445,7 +2451,7 @@ function seedDemo(){
     const [name,phone,src,spIdx,pay,finId,ago] = b;
     const u = sellable[i*3 % sellable.length];
     if(!u || u.status==='sold') return;
-    const cust = {id:nid('CU'), name, phone, src, stage:'ทำสัญญา', branch:u.branch,
+    const cust = {id:nid('CU'), name, phone, src, stage:'จอง', branch:u.branch,
       variant:u.variant, owner:pick(SALESPEOPLE,spIdx), demo:true};   /* stage จริงคิดท้ายรอบจากทะเบียน/ไฟแนนซ์ */
     CUSTOMERS.push(cust);
     const soldAt = addDays(TODAY, -ago);
@@ -2462,13 +2468,17 @@ function seedDemo(){
     SALES.push(s);
     /* ทะเบียน */
     const stage = REG_STAGES[Math.min(5, Math.floor(ago/9))];
+    /* ส่งมอบแล้ว = ขั้นที่ 4 ขึ้นไป — ขั้น 4-5 คือ "ได้รถแล้วแต่ป้ายจริงยังไม่มา" ซึ่งเป็นสถานะปกติของร้าน */
+    const dlv = REG_STAGES.indexOf(stage) >= REG_STAGES.indexOf('ส่งมอบแล้ว');
     const rgSeed = {id:nid('RG'), saleId:s.id, branch:s.branch, stage,
-      due: addDays(soldAt, CFG.regDays), plate: stage==='ป้ายขาว'||stage==='ส่งมอบแล้ว' ? '1กก '+(1000+i*37) : '',
-      log:[{to:'ขายแล้ว',at:soldAt}], demo:true};
-    if(stage==='ส่งมอบแล้ว'){ rgSeed.deliveredAt=addDays(soldAt, CFG.regDays); s.deliveredAt=rgSeed.deliveredAt; }
+      due: addDays(soldAt, CFG.regDays), plate: stage==='ได้ทะเบียนแล้ว' ? '1กก '+(1000+i*37) : '',
+      /* log ต้องมีทุกขั้นที่เดินผ่านจริง — วันที่ใต้แถบขั้นอ่านจาก log ไม่คำนวณใหม่ (กฎ §9i) */
+      log: REG_STAGES.slice(0, REG_STAGES.indexOf(stage)+1).map((x,xi)=>({to:x, at:addDays(soldAt, xi*3)})),
+      demo:true};
+    if(dlv){ rgSeed.deliveredAt=addDays(soldAt, CFG.regDays); s.deliveredAt=rgSeed.deliveredAt; }
     REGS.push(rgSeed);
     /* ดีลที่ส่งมอบแล้วมีงานฝ่ายบริการ — รายเก่าติ๊กไปบ้างแล้ว ให้เห็นทั้งงานค้างและงานที่เดินอยู่ */
-    if(stage==='ส่งมอบแล้ว'){
+    if(dlv){
       const cr=careCreate(s);
       if(cr && ago>40){ cr.check.forEach(x=>{ x.done=true; x.at=cr.createdAt; x.by='คุณฝน'; });
         const t0=cr.tasks[0]; if(t0){ t0.done=true; t0.doneAt=addDays(cr.createdAt,7); t0.note='ลูกค้าใช้งานปกติ'; } }
@@ -2489,7 +2499,7 @@ function seedDemo(){
       /* เคสที่ถูกปฏิเสธ: ทะเบียนต้องพักรอ ไม่ใช่วิ่งถึงส่งมอบ */
       if(fst==='ปฏิเสธ'){ rgSeed.stage='ส่งไฟแนนซ์'; rgSeed.hold='ไฟแนนซ์ปฏิเสธ'; rgSeed.plate='';
         delete rgSeed.deliveredAt; delete s.deliveredAt; }
-      cust.stage = fst==='ปฏิเสธ' ? 'ไม่ผ่าน' : (fst==='อนุมัติแล้ว' ? (rgSeed.stage==='ส่งมอบแล้ว'?'รับรถสำเร็จ':'ผ่าน') : 'ทำสัญญา');
+      cust.stage = fst==='ปฏิเสธ' ? 'ไม่ผ่าน' : (fst==='อนุมัติแล้ว' ? (regDone(rgSeed)?'รับรถสำเร็จ':'ผ่าน') : 'จอง');
       const paid = ago>25 ? net-s.down : 0;
       AR.push({id:nid('AR'), saleId:s.id, branch:s.branch, kind:'finance', finId,
         due:net-s.down, paid, dueAt:addDays(soldAt,15), demo:true,
@@ -2499,7 +2509,7 @@ function seedDemo(){
         due:net, paid:net-3000, dueAt:addDays(soldAt,7), demo:true,
         pays:[{at:addDays(soldAt,3), amt:net-3000, way:'เงินสด'}]});
     }
-    if(rgSeed.stage==='ส่งมอบแล้ว') cust.stage='รับรถสำเร็จ';   /* ส่งมอบจริงแล้วเท่านั้นถึงนับจบ */
+    if(regDone(rgSeed)) cust.stage='รับรถสำเร็จ';   /* ส่งมอบจริงแล้วเท่านั้นถึงนับจบ */
     /* งานติดตาม */
     String(CFG.cadence).split(',').map(x=>parseInt(x)).forEach(d=>{
       TASKS.push({id:nid('TK'), custId:cust.id, saleId:s.id, branch:s.branch, kind:d+' วัน',
@@ -3337,7 +3347,7 @@ function badges(){
      ของเดิมเป็นสามตัวนับบนสามเมนู ตอนนี้เมนูเดียวจึงรวมเป็นตัวเดียว */
   set('deal', TASKS.filter(t=>!t.done && inScope(t.branch) && t.due<=TODAY).length
             + FINCASES.filter(c=>inScope(c.branch) && ['ส่งเรื่อง','ยื่นเอกสาร','รอผล','ติดตามต่อ'].indexOf(c.status)>=0).length
-            + REGS.filter(r=>inScope(r.branch) && r.stage!=='ส่งมอบแล้ว').length);
+            + REGS.filter(r=>inScope(r.branch) && !regDone(r)).length);
   set('stock',UNITS.filter(u=>u.status==='available' && inScope(u.branch) && age(u)>CFG.aging).length);
   /* ของแถมย้ายมาอยู่หน้าเดียวกับอะไหล่แล้ว ตัวนับจึงรวมกัน */
   set('parts',PARTS.filter(p=>inScope(p.branch) && p.qty<p.min).length
@@ -3556,7 +3566,7 @@ function regQueue(){
   const rc={}; REG_STAGES.forEach(s=>rc[s]=0);
   const all=REGS.filter(r=>inScope(r.branch));
   all.forEach(r=>rc[r.stage]++);
-  const wait=all.filter(r=>r.stage!=='ส่งมอบแล้ว')
+  const wait=all.filter(r=>!regDone(r))
     .map(r=>{ const sa=SALES.find(x=>x.id===r.saleId), cu=sa&&CUSTOMERS.find(x=>x.id===sa.custId);
       return {r, cu, nm:cu?cu.name:'—', stage:r.stage, d:-days(r.due,TODAY)}; })
     .sort((a,b)=>String(a.r.due).localeCompare(String(b.r.due)));
@@ -3720,7 +3730,7 @@ function rDash(){
 
   /* งานวันนี้ */
   const od=TASKS.filter(t=>!t.done&&inScope(t.branch)&&t.due<=TODAY).length;
-  const rw=REGS.filter(r=>inScope(r.branch)&&r.stage!=='ส่งมอบแล้ว'&&days(r.due,TODAY)>0).length;
+  const rw=REGS.filter(r=>inScope(r.branch)&&!regDone(r)&&days(r.due,TODAY)>0).length;
   const lp=PARTS.filter(p=>inScope(p.branch)&&p.qty<p.min).length;
   const arn=AR.filter(a=>inScope(a.branch)&&a.due-a.paid>0).length;
   const np=UNITS.filter(u=>inScope(u.branch)&&u.status==='available'&&u.retail==null);
@@ -4108,7 +4118,7 @@ function calEvents(){
     ev.push({d:s.soldAt,k:'sale',t:'ขาย '+(u?u.model:'')+' ('+bOf(s.branch).prefix+')'}); });
   TASKS.filter(t=>!t.done&&inScope(t.branch)).forEach(t=>{ const c=CUSTOMERS.find(x=>x.id===t.custId);
     ev.push({d:t.due,k:'task',t:'ติดตาม '+(c?c.name:'')}); });
-  REGS.filter(r=>inScope(r.branch)&&r.stage!=='ส่งมอบแล้ว').forEach(r=>{ const s=SALES.find(x=>x.id===r.saleId);
+  REGS.filter(r=>inScope(r.branch)&&!regDone(r)).forEach(r=>{ const s=SALES.find(x=>x.id===r.saleId);
     const c=s&&CUSTOMERS.find(x=>x.id===s.custId); ev.push({d:r.due,k:'reg',t:'ทะเบียน '+(c?c.name:'')}); });
   /* v1.11: วันลาของทีมเปิดให้ทุกคนในสาขาเห็น เพื่อประเมินความเสี่ยงงานล่วงหน้าได้
      ป้ายบนปฏิทินบอกแค่ "ลา · ชื่อเล่น" ไม่เคยบอกประเภทการลาอยู่แล้ว จึงไม่หลุดข้อมูลส่วนตัว */
@@ -4706,12 +4716,12 @@ function saveSale(force, confirmed){
   let c = sCustSel? CUSTOMERS.find(x=>x.id===sCustSel) : null;
   if(!c && pd) c=CUSTOMERS.find(x=>(x.phone||'').replace(/\D/g,'')===pd);
   if(!c) c=CUSTOMERS.find(x=>x.name===name);
-  if(!c){ c={id: LIVE? dbId() : nid('CU'),name,phone,src:'เดินเข้าร้าน',stage:'ทำสัญญา',
+  if(!c){ c={id: LIVE? dbId() : nid('CU'),name,phone,src:'เดินเข้าร้าน',stage:'จอง',
     branch:u.branch,variant:u.variant,owner:$('#sSales').value,createdAt:TODAY}; CUSTOMERS.push(c); }
   else{
     if(phone && !c.phone) c.phone=phone;
     if(!c.owner) c.owner=$('#sSales').value;
-    if(c.stage!=='รับรถสำเร็จ') c.stage='ทำสัญญา';   /* ลูกค้าเก่าที่รับรถแล้วไม่ถูกดึงถอยหลัง */
+    if(c.stage!=='รับรถสำเร็จ') c.stage='จอง';   /* ลูกค้าเก่าที่รับรถแล้วไม่ถูกดึงถอยหลัง */
   }
   /* ข้อมูลออกใบกำกับ (B9) — เติมให้ลูกค้าคนเดิมด้วยถ้ากรอกมา ไม่ทับของเดิมด้วยค่าว่าง */
   if(birth) c.birth=birth; if(idNo) c.idNo=idNo; if(addr) c.addr=addr;
@@ -5444,7 +5454,7 @@ function custModal(id){
       birth_date:saved.birth||null, source:saved.src||null, stage:saved.stage });
     closeModal(); refreshAll(); };
 }
-/* ค่าที่เก็บใน c.stage: เข้ามาดูรถ · สนใจ · ทำสัญญา · ผ่าน · ไม่ผ่าน · รับรถสำเร็จ
+/* ค่าที่เก็บใน c.stage: เข้ามาดูรถ · สนใจ · จอง · ผ่าน · ไม่ผ่าน · รับรถสำเร็จ
    ตั้งแต่ v1.11 ฟิลด์นี้ไม่ได้เป็นตัวขับแถบความคืบหน้าอีกแล้ว — หน้าดีลคำนวณขั้นจากระเบียนจริง
    เหลือไว้เป็นป้ายกำกับลูกค้าที่ยังไม่ซื้อ และให้ finAdvance/regAdvance อัปเดตตามผลจริง
    "รับรถสำเร็จ" ตั้งเองไม่ได้ มาจาก regAdvance ตอนกดส่งมอบเท่านั้น */
@@ -5458,17 +5468,21 @@ function custModal(id){
    *** ไม่เก็บสถานะใหม่เลย *** ขั้นทั้งหมดคำนวณจาก SALES / FINCASES / REGS ที่เป็นเจ้าของข้อมูลอยู่แล้ว
    ปุ่มทุกปุ่มเขียนลงระเบียนเดิมผ่าน finAdvance / regAdvance ฯลฯ
    จึงไม่มี "ความจริงชุดที่สาม" ที่หลุดจากกันได้ */
-/* d = คำอธิบายสั้นของแต่ละขั้น (บรีฟ: "เพิ่มคำอธิบายสั้นๆ ของแต่ละสถานะ")
-   ลำดับตามคำตอบเจ้าของ: เงินผ่อน ไฟแนนซ์ต้องผ่านก่อน → เปิดการขาย → ส่งมอบ → ทะเบียนท้ายสุด
-   ในระบบ "เปิดการขาย" คือการบันทึกใบขายซึ่งเกิดก่อนยื่นไฟแนนซ์เสมอ (เคสสินเชื่อเกิดจากใบขาย)
-   เส้นทางบนจอจึงเรียง เปิดการขาย → ไฟแนนซ์ → ทะเบียน → ส่งมอบ โดยขั้นไฟแนนซ์กันไว้:
-   ไฟแนนซ์ยังไม่ผ่าน งานทะเบียน/ส่งมอบเดินต่อไม่ได้ (dealOf ตัดสินจากระเบียนจริง) */
+/* v1.28 — ลำดับตามงานจริงของร้าน (คำสั่งเจ้าของคำต่อคำ):
+   คุยกับลูกค้า → ไฟแนนซ์ → เปิดการขาย → ส่งมอบ → ทะเบียนรถ
+
+   ลูกค้าต้องยื่นไฟแนนซ์ผ่านก่อน ร้านถึงเปิดการขายได้ · ส่งมอบแล้วลูกค้าใช้ป้ายชั่วคราว
+   ระหว่างรอทะเบียนจริงจากขนส่ง · ดูแลหลังส่งมอบเป็นหน้าที่ฝ่ายบริการ
+
+   ใบขายในระบบเกิดก่อนเคสสินเชื่อเสมอ (fc.saleId) — รอบนี้จึงอ่านใบขายที่ยังไม่ผ่านไฟแนนซ์
+   ว่าเป็น "ใบจอง" ขั้น "เปิดการขาย" ติ๊กเมื่อไฟแนนซ์อนุมัติ (เงินสดติ๊กทันที) ไม่ต้องแตะฐานข้อมูล
+   "เปิดการขาย" จึงเป็นหมุดหมาย ไม่ใช่ที่พัก — ที่พักจริงมี lead / fin / deliver / plate */
 const DEAL_TRACK=[
-  {k:'lead', t:'คุยกับลูกค้า', ic:'user',      d:'ลูกค้าสนใจ ยังไม่ได้ตกลงซื้อ'},
-  {k:'sale', t:'เปิดการขาย',  ic:'tag',       d:'ตกลงซื้อจริง บันทึกใบขายแล้ว'},
-  {k:'fin',  t:'ไฟแนนซ์',     ic:'bank',      d:'รอไฟแนนซ์พิจารณา — ผ่านแล้วถึงเดินต่อ'},
-  {k:'reg',  t:'ทะเบียน',     ic:'clipboard', d:'ยื่นทะเบียนกับขนส่ง รอป้าย'},
-  {k:'done', t:'ส่งมอบ',      ic:'bike',      d:'ลูกค้ารับรถแล้ว ส่งต่อฝ่ายบริการ'}
+  {k:'lead',    t:'คุยกับลูกค้า', ic:'user',      d:'ลูกค้าสนใจ ยังไม่ได้จอง'},
+  {k:'fin',     t:'ไฟแนนซ์',     ic:'bank',      d:'ยื่นไฟแนนซ์ — ผ่านแล้วร้านถึงเปิดการขายได้'},
+  {k:'sale',    t:'เปิดการขาย',  ic:'tag',       d:'ไฟแนนซ์ผ่าน เปิดการขายจากใบจอง'},
+  {k:'deliver', t:'ส่งมอบ',      ic:'bike',      d:'ลูกค้ารับรถ ใช้ป้ายชั่วคราว ส่งต่อฝ่ายบริการ'},
+  {k:'plate',   t:'ทะเบียนรถ',   ic:'clipboard', d:'รอทะเบียนจริงจากขนส่ง'}
 ];
 const DEAL_TRACK_N = DEAL_TRACK.map(x=>x.t);
 let DEAL_SEL='', DEAL_KEEP=false;
@@ -5489,7 +5503,6 @@ function dealOf(id){
   const track = cash? DEAL_TRACK.filter(x=>x.k!=='fin') : DEAL_TRACK;
   let k, off=false, offWhy='';
   if(!s) k='lead';
-  else if(rg && rg.stage==='ส่งมอบแล้ว') k='done';
   else if(!cash && (!fc || fc.status!=='อนุมัติแล้ว')){
     k='fin';
     if(fc && fc.status==='ปฏิเสธ'){ off=true;
@@ -5498,7 +5511,9 @@ function dealOf(id){
         ? 'ไม่ผ่าน · '+fc.rejectReason+(fc.rejectWith? ' ('+fc.rejectWith+')' : '')
         : 'ไฟแนนซ์ไม่ผ่าน'+(fin?' · '+fin.name:''); }
   }
-  else k='reg';
+  else if(!regDone(rg)) k='deliver';      /* ไฟแนนซ์ผ่าน/เงินสด → เปิดการขายแล้ว เหลือนัดรับรถ */
+  else if(!regPlated(rg)) k='plate';      /* ได้รถแล้ว ใช้ป้ายชั่วคราว รอทะเบียนจริง */
+  else k='done';
   /* signal ล่าช้า (E5): ค้างในขั้นปัจจุบันเกินเกณฑ์ = ต้องแจ้งแล้ว
      เกณฑ์ตั้งได้ (CFG.slaFin — ค่าเริ่มต้น 1 วันตามคำตอบเจ้าของ "เกิน 1 วัน = ช้า")
      ขั้นทะเบียนใช้ due เดิม (late) อยู่แล้ว ไม่นับซ้ำ */
@@ -5507,36 +5522,48 @@ function dealOf(id){
     const lastAt=(fc.log&&fc.log.length? fc.log[fc.log.length-1].at : fc.at)||fc.at;
     slow = days(lastAt, TODAY) > (+CFG.slaFin||1);
   }
+  /* "จบงาน" กับ "แถบเต็ม" เป็นคนละคำถาม (คำตอบเจ้าของ v1.28):
+     delivered = ลูกค้าได้รถแล้ว → นับเป็นสำเร็จทันที (หน้าแรก · หน้าสาธารณะ · ส่งต่อฝ่ายบริการ)
+     i = ตำแหน่งบนแถบ → ขั้นทะเบียนยังเดินอยู่จนกว่าป้ายจริงจะมา แถบจึงยังไม่เต็ม
+     ติ๊กขั้นที่ยังไม่เกิดขึ้นจริงคือโกหกบนจอ (กฎข้อ 9) */
   return {c,s,u,fc,rg,fin,ars,owe,tasks,cash,track,k,off,offWhy,slow,
-          i:track.findIndex(x=>x.k===k), late: (rg && k!=='done')? days(rg.due,TODAY) : 0};
+          delivered: regDone(rg),
+          i: k==='done'? track.length : track.findIndex(x=>x.k===k),
+          late: (rg && !regDone(rg))? days(rg.due,TODAY) : 0};
 }
 /* วันที่ของแต่ละขั้น — อ่านจาก log ที่บันทึกไว้แล้วเท่านั้น ไม่คำนวณใหม่ (กฎ §9i)
    ขั้นที่ยังมาไม่ถึงได้ null · ตำแหน่งใน array ตรงกับ d.track */
 function dealStepDates(d){
   return d.track.map(st=>{
+    const finOkAt=()=>{ if(!d.fc) return null;
+      const l=(d.fc.log||[]).find(x=>String(x.to).indexOf('อนุมัติแล้ว')>=0); return (l&&l.at)||d.fc.at; };
     if(st.k==='lead') return d.c.createdAt||null;
-    if(st.k==='sale') return d.s? d.s.soldAt : null;
     if(st.k==='fin'){
       if(!d.fc) return null;
-      if(d.fc.status==='อนุมัติแล้ว'){ const l=(d.fc.log||[]).find(x=>String(x.to).indexOf('อนุมัติแล้ว')>=0);
-        return (l&&l.at)||d.fc.at; }
-      return d.fc.at;                              /* ยังไม่จบขั้น — โชว์วันที่ยื่น */
+      return d.fc.status==='อนุมัติแล้ว'? finOkAt() : d.fc.at;   /* ยังไม่จบขั้น — โชว์วันที่ยื่น */
     }
-    if(st.k==='reg'){
-      if(!d.rg) return null;
-      const l=d.rg.log&&d.rg.log.length? d.rg.log[d.rg.log.length-1] : null;
+    /* เปิดการขายเกิดตอนไฟแนนซ์อนุมัติ — เงินสดคือวันบันทึกใบขาย */
+    if(st.k==='sale'){
+      if(!d.s) return null;
+      if(d.cash) return d.s.soldAt;
+      return (d.fc && d.fc.status==='อนุมัติแล้ว')? finOkAt() : null;
+    }
+    if(st.k==='deliver') return (d.rg&&d.rg.deliveredAt)||null;
+    if(st.k==='plate'){                            /* ลงวันที่เมื่อได้ป้ายจริงเท่านั้น */
+      if(!regPlated(d.rg)) return null;
+      const l=(d.rg.log||[]).filter(x=>String(x.to).indexOf('ได้ทะเบียนแล้ว')>=0).pop();
       return (l&&l.at)||null;
     }
-    return (d.rg&&d.rg.deliveredAt)||null;         /* done */
+    return null;
   });
 }
 /* สองบรรทัดเหนือแถบ — หัวเรื่องคือสิ่งที่ต้องทำต่อ ไม่ใช่ชื่อสถานะดิบ ๆ */
 const FIN_HEAD={'ส่งเรื่อง':'ส่งเรื่องให้ไฟแนนซ์แล้ว','ยื่นเอกสาร':'รอไฟแนนซ์ตรวจเอกสาร',
   'รอผล':'รอผลจากไฟแนนซ์','ติดตามต่อ':'ต้องตามเรื่องกับไฟแนนซ์'};
-const REG_HEAD={'ขายแล้ว':'เริ่มงานทะเบียน','ส่งไฟแนนซ์':'รอเอกสารจากไฟแนนซ์','อนุมัติ':'ยื่นเรื่องทะเบียนที่ขนส่ง',
-  'รอทะเบียน':'รอเลขทะเบียนจากขนส่ง','ป้ายขาว':'ได้ป้ายแล้ว นัดลูกค้ามารับรถ'};
+const REG_HEAD={'ขายแล้ว':'นัดลูกค้ามารับรถ','ส่งไฟแนนซ์':'รอเอกสารจากไฟแนนซ์','อนุมัติ':'นัดลูกค้ามารับรถ',
+  'ส่งมอบแล้ว':'ยื่นเรื่องทะเบียนที่ขนส่ง','รอทะเบียน':'รอเลขทะเบียนจากขนส่ง'};
 function dealHead(d){
-  const no='ขั้น '+(d.i+1)+' จาก '+d.track.length;
+  const no='ขั้น '+Math.min(d.i+1, d.track.length)+' จาก '+d.track.length;
   const lateTxt = d.late>0? ' · เลยกำหนด '+d.late+' วัน' : '';
   if(d.off) return {head:d.offWhy,
     /* ติดไฟแนนซ์เจ้าอื่นคือคนละทางกับเหตุผลอื่น — ยื่นเจ้าใหม่ก็ไม่ผ่าน ต้องให้ลูกค้าไปเคลียร์ก่อน */
@@ -5548,14 +5575,18 @@ function dealHead(d){
     sub:no+' · '+(d.tasks.length? 'มีงานติดตามค้าง '+d.tasks.length+' รายการ' : 'ยังไม่มีงานติดตาม')};
   if(d.k==='fin') return {head: d.fc? (FIN_HEAD[d.fc.status]||d.fc.status) : 'ยังไม่ได้เปิดเคสสินเชื่อ',
     sub:no+(d.fin? ' · ยื่นกับ '+d.fin.name : '')+(d.fc? ' · '+days(d.fc.at,TODAY)+' วันแล้ว' : '')};
-  if(d.k==='reg') return {head: (d.rg && REG_HEAD[d.rg.stage]) || 'งานทะเบียน',
+  if(d.k==='deliver') return {head: (d.rg && REG_HEAD[d.rg.stage]) || 'เตรียมส่งมอบ',
     sub:no+' · ครบกำหนด '+(d.rg? thDate(d.rg.due):'—')+lateTxt};
-  return {head:'ส่งมอบแล้ว จบงาน',
+  /* ส่งมอบแล้วคือ "จบงานขาย" ตามคำตอบเจ้าของ — ที่เหลือเป็นงานธุรการรอขนส่ง ต้องอ่านออกทันที */
+  if(d.k==='plate') return {head:'ส่งมอบแล้ว จบงานขาย · รอทะเบียนจริงจากขนส่ง',
     sub:no+(d.rg&&d.rg.deliveredAt? ' · ส่งมอบ '+thDate(d.rg.deliveredAt):'')
+      +(d.owe>0? ' · ยังค้างรับ '+money(d.owe) : '')};
+  return {head:'จบครบแล้ว — ได้ทะเบียนจริงเรียบร้อย',
+    sub:no+(d.rg&&d.rg.plate? ' · ทะเบียน '+d.rg.plate:'')
       +(d.owe>0? ' · ยังค้างรับ '+money(d.owe) : '')};
 }
 /* ชื่อขั้นที่ใช้ในตัวกรองและป้ายในรายการ — ตกรางถือเป็นสถานะหนึ่งที่กรองได้ */
-const dealStageName = d => d.off? 'ไม่ผ่าน' : d.track[d.i].t;
+const dealStageName = d => d.off? 'ไม่ผ่าน' : (d.track[d.i]? d.track[d.i].t : 'จบครบแล้ว');
 
 /* ปุ่มของขั้นปัจจุบันเท่านั้น ไม่โชว์ทุกปุ่มพร้อมกัน — ผู้ใช้จะได้ไม่ต้องเลือกว่าอันไหนใช่ */
 function dealActions(d){
@@ -5577,7 +5608,7 @@ function dealActions(d){
       b.push('<button class="btn dgr" data-dlfrej="'+d.fc.id+'">ไฟแนนซ์ปฏิเสธ</button>');
     }
   }
-  else if(d.k==='reg' && d.rg){
+  else if((d.k==='deliver' || d.k==='plate') && d.rg){
     const i=REG_STAGES.indexOf(d.rg.stage);
     /* ช่องเลขทะเบียนโผล่ตั้งแต่ขั้น "รอทะเบียน" — กรอกจากป้ายจริงเท่านั้น ไม่มีการสุ่ม */
     if(i>=REG_STAGES.indexOf('รอทะเบียน'))
@@ -5588,11 +5619,11 @@ function dealActions(d){
     if(i>0) b.push('<button class="btn sec" data-dlrback="'+d.rg.id+'">ถอยกลับ</button>');
   }
   let h=b.join('');
-  if(d.s && !d.s.void && d.k!=='done' && canVoidSale())
+  if(d.s && !d.s.void && !d.delivered && canVoidSale())
     h+='</div><div class="dlact dlrisk">'
       +'<button class="btn ghost" data-dlvoid="'+d.s.id+'">ยกเลิกการขายนี้</button>'
       /* ลูกค้าเทตอนไปส่งมอบ (E1) — โผล่เฉพาะช่วงทะเบียน/รอส่งมอบ ต้องบันทึกเหตุผลเสมอ */
-      +(d.k==='reg'? '<button class="btn ghost" data-dldrop="'+d.s.id+'">ลูกค้าเท (ไม่รับรถ)</button>':'');
+      +(d.k==='deliver'? '<button class="btn ghost" data-dldrop="'+d.s.id+'">ลูกค้าเท (ไม่รับรถ)</button>':'');
   return h;
 }
 /* รายละเอียดที่อ่านอย่างเดียว — คั่นด้วยหัวข้อกับเส้น ไม่มีกล่องซ้อนตามกฎ 9c */
@@ -5642,7 +5673,7 @@ function dealDetail(d){
   if(d.rg) h+='<h4 class="sec">งานทะเบียน</h4>'
     +(d.rg.hold?'<div class="note b">'+ic('alert','i i-sm')+'<span>'+esc(d.rg.hold)+' — ยื่นใหม่หรือยกเลิกการขายก่อนถึงจะเดินต่อได้</span></div>':'')
     +kv([
-      ['ขั้นตอน', pill(d.rg.stage, d.rg.stage==='ส่งมอบแล้ว'?'good':'info')],
+      ['ขั้นตอน', pill(d.rg.stage, regPlated(d.rg)?'good':'info')],
       ['ครบกำหนด', thDate(d.rg.due)+(d.late>0? ' '+pill('เลย '+d.late+' วัน','bad'):'')],
       ['เลขทะเบียน','<span class="mono">'+esc(d.rg.plate||'ยังไม่ได้')+'</span>'],
       d.rg.deliveredAt? ['ส่งมอบเมื่อ', thDate(d.rg.deliveredAt)] : null
@@ -5785,7 +5816,7 @@ function dealRows(){
     /* ตกราง เลยกำหนด และไฟแนนซ์เงียบขึ้นก่อน ที่จบแล้วลงท้าย
        ในกลุ่มเดียวกันเรียง "รายการล่าสุดขึ้นบน" ตามบรีฟรอบ 1 (วันขาย หรือวันเพิ่มลูกค้า) */
     .sort((a,b)=> (b.off?1:0)-(a.off?1:0) || (b.late>0?1:0)-(a.late>0?1:0) || (b.slow?1:0)-(a.slow?1:0)
-               || (a.k==='done'?1:0)-(b.k==='done'?1:0)
+               || (a.delivered?1:0)-(b.delivered?1:0)
                || String((b.s&&b.s.soldAt)||b.c.createdAt||'').localeCompare(String((a.s&&a.s.soldAt)||a.c.createdAt||''))
                || a.c.name.localeCompare(b.c.name,'th'));
 }
@@ -5814,17 +5845,20 @@ function rDealList(){
         d.rg?d.rg.due:'', d.rg?d.rg.plate:'']));
   }
   const rows=dealRows();
-  const open=rows.filter(d=>d.k!=='done');
+  /* "ยังไม่จบ" = ลูกค้ายังไม่ได้รถ ตามคำตอบเจ้าของ (ทะเบียนเป็นงานต่อท้าย ไม่ถือว่าค้างการขาย) */
+  const open=rows.filter(d=>!d.delivered);
+  const waitPlate=rows.filter(d=>d.k==='plate').length;
   $('#dlKpi').innerHTML=[
     ['ดีลที่ยังไม่จบ', open.length+' <small>ราย</small>', 'จากทั้งหมด '+rows.length],
     ['รอผลไฟแนนซ์', rows.filter(d=>d.k==='fin'&&!d.off).length+' <small>ราย</small>', 'ตามให้ทันก่อนลูกค้าเปลี่ยนใจ'],
-    ['รอทะเบียน', rows.filter(d=>d.k==='reg').length+' <small>ราย</small>', 'ยังไม่ได้ส่งมอบ'],
+    ['รอส่งมอบ', rows.filter(d=>d.k==='deliver').length+' <small>ราย</small>',
+      waitPlate? 'อีก '+waitPlate+' รายส่งมอบแล้ว รอป้ายจากขนส่ง' : 'ไฟแนนซ์ผ่านแล้ว รอนัดรับรถ'],
     ['ต้องรีบ', (rows.filter(d=>d.off).length+rows.filter(d=>d.late>0).length+rows.filter(d=>d.slow).length)+' <small>ราย</small>', 'ไม่ผ่าน · เลยกำหนด · ไฟแนนซ์เงียบเกินเกณฑ์']
   ].map(k=>'<div class="kpi"><div class="l">'+k[0]+'</div><div class="v">'+k[1]+'</div><div class="s">'+k[2]+'</div></div>').join('');
 
   const bar = d => steps(d.track, d.i, {off:d.off});
   const badge = d => d.off? '<span class="pslab off">ไม่ผ่าน</span>'
-                          : '<span class="pslab">'+(d.i+1)+'/'+d.track.length+'</span>';
+                          : '<span class="pslab">'+Math.min(d.i+1, d.track.length)+'/'+d.track.length+'</span>';
   const veh = d => d.u? esc(d.u.model)+' · '+esc(d.u.color)+' <span class="tsub mono">'+esc(d.u.engine)+'</span>'
                       : '<span class="tsub">สนใจ '+esc(PRICE[d.c.variant]?PRICE[d.c.variant].m:d.c.variant||'—')+'</span>';
   tbl($('#dlTable'), ['ลูกค้า','รถ','เซลล์','ความคืบหน้า','ต้องทำต่อ'],
@@ -5900,7 +5934,7 @@ function saleDrawer(id){
   h+='<h4 class="sec">งานที่เกี่ยวข้อง</h4>';
   if(fc) h+='<div class="frow">'+pill(fc.status, fc.status==='อนุมัติแล้ว'?'good':(fc.status==='ปฏิเสธ'?'bad':'info'))
     +'<span>เคสสินเชื่อ'+(f?' · '+esc(f.name):'')+'</span></div>';
-  if(rg) h+='<div class="frow">'+pill(rg.stage, rg.stage==='ส่งมอบแล้ว'?'good':'info')
+  if(rg) h+='<div class="frow">'+pill(rg.stage, regPlated(rg)?'good':'info')
     +'<span>งานทะเบียน'+(rg.plate?' · ป้าย '+esc(rg.plate):'')+'</span></div>';
   if(!fc && !rg) h+='<p class="foot">ไม่มีงานค้างที่เกี่ยวข้อง</p>';
   /* ทางเดียวที่ไปจัดการต่อ — หน้าดีลรวมทั้งไฟแนนซ์และทะเบียนไว้แล้ว */
@@ -6122,7 +6156,7 @@ function finResubmit(id, after){
     delete c.rejectReason; delete c.rejectWith; delete c.rejectNote; delete c.rejectAt;
     finLog(c,'ส่งเรื่อง (ยื่นใหม่)');
     if(s){ s.finId=nf; const a=AR.find(x=>x.saleId===s.id&&x.kind==='finance'); if(a) a.finId=nf; }
-    if(cu && cu.stage!=='รับรถสำเร็จ') cu.stage='ทำสัญญา';
+    if(cu && cu.stage!=='รับรถสำเร็จ') cu.stage='จอง';
     syncFinToReg(c);                         /* ล้าง hold + ดันทะเบียนกลับเข้าราง */
     const nfo=finById(nf);
     toast('ยื่นเรื่องใหม่แล้ว', nfo?nfo.name:'');
@@ -6141,10 +6175,10 @@ function regAdvance(id, plate){
   const i=REG_STAGES.indexOf(r.stage);
   if(i<0 || i>=REG_STAGES.length-1) return false;
   const nxt=REG_STAGES[i+1];
-  /* ออกป้ายขาวไม่ได้ถ้ายังไม่มีเลขทะเบียนจริงจากขนส่ง */
-  if(nxt==='ป้ายขาว'){
+  /* ปิดงานทะเบียนไม่ได้ถ้ายังไม่มีเลขทะเบียนจริงจากขนส่ง (ด่านเดิม ย้ายมาอยู่ขั้นสุดท้ายตามลำดับใหม่) */
+  if(nxt==='ได้ทะเบียนแล้ว'){
     const pv=String(plate!=null? plate : (r.plate||'')).trim();
-    if(!pv){ toast('กรอกเลขทะเบียนก่อนออกป้ายขาว','',1); return false; }
+    if(!pv){ toast('กรอกเลขทะเบียนก่อนปิดงานทะเบียน','',1); return false; }
     r.plate=pv;
   }
   r.stage=nxt; r.log.push({to:nxt, at:TODAY});
@@ -8937,12 +8971,13 @@ function modelModal(code){
 }
 
 /* ============================= 22. ผังกระบวนการ ============================= */
+/* v1.28: ทุก lane ต้องเล่าเรื่องเดียวกับ DEAL_TRACK — ไฟแนนซ์ก่อนเปิดการขาย · ส่งมอบก่อนได้ป้าย */
 const LANES=[
-  {n:'เซลล์',  s:['รับลูกค้า / บันทึก lead','เสนอราคา + เทียบไฟแนนซ์','เปิดการขาย','ส่งเรื่องไฟแนนซ์','ติดตามลูกค้า 7/30/90 วัน']},
+  {n:'เซลล์',  s:['รับลูกค้า / บันทึก lead','เสนอราคา + เทียบไฟแนนซ์','ส่งเรื่องไฟแนนซ์','เปิดการขายเมื่อไฟแนนซ์ผ่าน','ติดตามลูกค้า 7/30/90 วัน']},
   {n:'สต๊อก',  s:['รับรถจากยามาฮ่า +','ตรวจเลขเครื่อง/เลขถัง +','ตัดสต๊อกตอนขาย +','โอนย้ายระหว่างสาขา','เช็ก aging stock +']},
   {n:'บัญชี',  s:['ออกใบเสร็จ/ใบกำกับ +','ติดตามเงินไฟแนนซ์ !','ลงรับเงินสด','บันทึกค่าใช้จ่าย','ปิดงบรายเดือน']},
-  {n:'ทะเบียน',s:['ยื่นเรื่องทะเบียน','ติดตามสถานะ !','รับป้าย','ส่งมอบลูกค้า','เก็บเอกสาร']},
-  {n:'ช่าง',   s:['รับรถเข้าศูนย์','ค้นประวัติจากเลขเครื่อง +','เบิกอะไหล่ +','ปิดงาน','ตั้งเตือนรอบถัดไป +']}
+  {n:'ทะเบียน',s:['ส่งมอบลูกค้า (ป้ายชั่วคราว)','ยื่นเรื่องทะเบียน','ติดตามสถานะ !','รับป้ายจริง','เก็บเอกสาร']},
+  {n:'ช่าง',   s:['รับรถเข้าศูนย์ (ดูแลหลังส่งมอบ)','ค้นประวัติจากเลขเครื่อง +','เบิกอะไหล่ +','ปิดงาน','ตั้งเตือนรอบถัดไป +']}
 ];
 function rFlow(){
   $('#flowWrap').innerHTML=LANES.map(l=>'<div class="card"><div class="hd"><h3>'+esc(l.n)+'</h3></div><div class="bd">'
@@ -9344,14 +9379,15 @@ const pubPhone = v => { const d=String(v||'').replace(/\D/g,''); return d? 'xxx-
    เคสไฟแนนซ์ที่ไม่ผ่านต้องขึ้นว่า "กรุณาติดต่อร้าน" พร้อมเบอร์สาขาเท่านั้น
    ห้ามคำว่า "ไม่ผ่าน" ห้ามบอกเหตุผล ห้ามบอกชื่อเจ้าไฟแนนซ์ ห้าม rejectWith เด็ดขาด
    ลูกค้าอาจเปิดลิงก์นี้ต่อหน้าครอบครัว                                          */
-const PUB_STEP={ lead:'รับเรื่องแล้ว', sale:'รับเรื่องแล้ว',
-  fin:'กำลังดำเนินการเรื่องสินเชื่อ', reg:'กำลังดำเนินการเรื่องทะเบียน', done:'ส่งมอบรถแล้ว' };
+const PUB_STEP={ lead:'รับเรื่องแล้ว', fin:'กำลังดำเนินการเรื่องสินเชื่อ', sale:'รับเรื่องแล้ว',
+  deliver:'เตรียมส่งมอบรถ', plate:'ส่งมอบรถแล้ว · รอทะเบียนจากขนส่ง',
+  done:'ส่งมอบรถแล้ว · ได้ทะเบียนเรียบร้อย' };
 function pubOrder(custId){
   const d=dealOf(custId); if(!d || !d.s || d.s.void) return null;
   const b=bOf(d.s.branch);
   return {
     token: d.s.pubToken||null,
-    step: d.i+1, steps: d.track.length,
+    step: Math.min(d.i+1, d.track.length), steps: d.track.length,
     status: d.off? 'กรุณาติดต่อร้าน' : (PUB_STEP[d.k]||''),
     model: d.u? d.u.model : '', modelTh: d.u? d.u.modelTh : '', color: d.u? d.u.color : '',
     plate: (d.rg && d.rg.plate) || null,

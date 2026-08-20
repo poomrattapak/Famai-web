@@ -69,7 +69,7 @@ const INSTRUMENT = () => {
        (แถวแรกคือดีลที่ตกราง ซึ่งไม่มีปุ่มเดินหน้า ถ้าใช้แถวแรกจะไม่ได้วัดอะไรเลย) */
     const pairs = [
       ['[data-dlfnext]', '[data-dlfback]', d => d.k === 'fin' && !d.off && d.fc],
-      ['[data-dlrnext]', '[data-dlrback]', d => d.k === 'reg' && d.rg],
+      ['[data-dlrnext]', '[data-dlrback]', d => (d.k === 'deliver' || d.k === 'plate') && d.rg],
     ];
     for (const [fwd, back, pick] of pairs) {
       const cid = await p.evaluate(fn => { const d = dealAll().find(eval(fn)); return d ? d.c.id : null; }, pick.toString());

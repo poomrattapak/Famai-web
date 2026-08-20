@@ -24,29 +24,34 @@ const ROLES = ['ST1', 'ST2', 'ST4', 'ST3'];   /* admin · manager · (บัญ�
       const fc = FINCASES.find(x => x.saleId === s.id);
       const rg = REGS.find(x => x.saleId === s.id);
       const snap = () => { const d = dealOf(c.id); return { k: d.k, off: d.off, n: d.track.length, i: d.i }; };
-      /* ผ่อน + เคสยังไม่จบ → ขั้นไฟแนนซ์ */
+      /* ผ่อน + เคสยังไม่จบ → ขั้นไฟแนนซ์ (ขั้นที่ 2 ตามลำดับใหม่ v1.28) */
       s.pay = 'finance'; fc.status = 'รอผล'; rg.stage = 'ส่งไฟแนนซ์';
+      delete rg.deliveredAt; delete s.deliveredAt; rg.plate = '';
       out.push(['ผ่อน · รอผล', snap()]);
       /* ผ่อน + ปฏิเสธ → ตกรางที่ไฟแนนซ์ */
       fc.status = 'ปฏิเสธ'; out.push(['ผ่อน · ปฏิเสธ', snap()]);
-      /* ผ่อน + อนุมัติ → ขั้นทะเบียน */
+      /* ผ่อน + อนุมัติ → เปิดการขายติ๊กแล้ว ตัวชี้ไปรอส่งมอบ */
       fc.status = 'อนุมัติแล้ว'; rg.stage = 'อนุมัติ'; out.push(['ผ่อน · อนุมัติ', snap()]);
-      /* ส่งมอบแล้ว → ขั้นสุดท้าย */
-      rg.stage = 'ส่งมอบแล้ว'; out.push(['ส่งมอบแล้ว', snap()]);
+      /* ส่งมอบแล้ว → นับว่าจบงาน แต่ยังเหลือขั้นทะเบียนจริง */
+      rg.stage = 'ส่งมอบแล้ว'; rg.deliveredAt = curDate(); out.push(['ส่งมอบแล้ว', snap()]);
+      /* ได้ทะเบียนจริง → จบครบ แถบเต็ม */
+      rg.stage = 'ได้ทะเบียนแล้ว'; rg.plate = '1กก 1234'; out.push(['ได้ทะเบียนแล้ว', snap()]);
       /* เงินสด → เส้นทาง 4 ขั้น ไม่มีไฟแนนซ์ */
-      rg.stage = 'ขายแล้ว'; s.pay = 'cash'; out.push(['เงินสด', snap()]);
+      rg.stage = 'ขายแล้ว'; rg.plate = ''; delete rg.deliveredAt; delete s.deliveredAt;
+      s.pay = 'cash'; out.push(['เงินสด', snap()]);
       /* ไม่มีการขาย → ขั้นแรก */
       const lead = CUSTOMERS.filter(x => inScope(x.branch)).find(x => !SALES.some(y => y.custId === x.id && !y.void));
       out.push(['ยังไม่ซื้อ', lead ? (() => { const d = dealOf(lead.id); return { k: d.k, off: d.off, n: d.track.length, i: d.i }; })() : null]);
       return out;
     });
     const want = {
-      'ผ่อน · รอผล':   { k: 'fin',  off: false, n: 5, i: 2 },
-      'ผ่อน · ปฏิเสธ': { k: 'fin',  off: true,  n: 5, i: 2 },
-      'ผ่อน · อนุมัติ': { k: 'reg',  off: false, n: 5, i: 3 },
-      'ส่งมอบแล้ว':     { k: 'done', off: false, n: 5, i: 4 },
-      'เงินสด':         { k: 'reg',  off: false, n: 4, i: 2 },
-      'ยังไม่ซื้อ':      { k: 'lead', off: false, n: 5, i: 0 },
+      'ผ่อน · รอผล':    { k: 'fin',     off: false, n: 5, i: 1 },
+      'ผ่อน · ปฏิเสธ':  { k: 'fin',     off: true,  n: 5, i: 1 },
+      'ผ่อน · อนุมัติ':  { k: 'deliver', off: false, n: 5, i: 3 },
+      'ส่งมอบแล้ว':      { k: 'plate',   off: false, n: 5, i: 4 },
+      'ได้ทะเบียนแล้ว': { k: 'done',    off: false, n: 5, i: 5 },
+      'เงินสด':          { k: 'deliver', off: false, n: 4, i: 2 },
+      'ยังไม่ซื้อ':       { k: 'lead',    off: false, n: 5, i: 0 },
     };
     for (const [name, got] of cases) {
       const w = want[name];
@@ -143,30 +148,31 @@ const ROLES = ['ST1', 'ST2', 'ST4', 'ST3'];   /* admin · manager · (บัญ�
       }
       if (guard >= 8) bad('เดินขั้นไฟแนนซ์ไม่จบใน 8 ครั้ง — อาจวนลูป');
       const k1 = await p.evaluate(id => dealOf(id).k, cid);
-      if (k1 !== 'reg') bad('ไฟแนนซ์อนุมัติครบแล้วแต่ยังไม่ไปขั้นทะเบียน (k=' + k1 + ')');
+      /* v1.28: อนุมัติแล้วขั้น "เปิดการขาย" ติ๊ก ตัวชี้ไปรอส่งมอบ */
+      if (k1 !== 'deliver') bad('ไฟแนนซ์อนุมัติครบแล้วแต่ยังไม่ไปขั้นรอส่งมอบ (k=' + k1 + ')');
 
-      /* ด่าน: ออกป้ายขาวไม่ได้ถ้ายังไม่กรอกเลขทะเบียน */
+      /* ด่าน: ปิดงานทะเบียนไม่ได้ถ้ายังไม่กรอกเลขทะเบียน (ด่านเดิม ย้ายมาขั้นสุดท้าย) */
       guard = 0;
-      while (guard++ < 8) {
+      while (guard++ < 10) {
         const btn = await p.$('#dlOne [data-dlrnext]');
         if (!btn) break;
         const label = (await btn.textContent()).trim();
-        if (/ป้ายขาว/.test(label)) {
+        if (/ได้ทะเบียนแล้ว/.test(label)) {
           const before = await p.evaluate(id => dealOf(id).rg.stage, cid);
           if (await p.$('#dlPlate')) await p.fill('#dlPlate', '');
           await btn.click(); await p.waitForTimeout(200);
           const after = await p.evaluate(id => dealOf(id).rg.stage, cid);
-          if (after !== before) bad('ออกป้ายขาวได้ทั้งที่ยังไม่กรอกเลขทะเบียน');
+          if (after !== before) bad('ปิดงานทะเบียนได้ทั้งที่ยังไม่กรอกเลขทะเบียน');
           await p.fill('#dlPlate', '1กก 9999');
           await p.click('#dlOne [data-dlrnext]'); await p.waitForTimeout(200);
           continue;
         }
         await btn.click(); await p.waitForTimeout(200);
       }
-      if (guard >= 8) bad('เดินขั้นทะเบียนไม่จบใน 8 ครั้ง — อาจวนลูป');
+      if (guard >= 10) bad('เดินขั้นทะเบียนไม่จบใน 10 ครั้ง — อาจวนลูป');
       const fin = await p.evaluate(id => ({ k: dealOf(id).k, stage: CUSTOMERS.find(c => c.id === id).stage,
         plate: dealOf(id).rg.plate, cur: CUR }), cid);
-      if (fin.k !== 'done')  bad('เดินจนจบแล้วยังไม่ถึงขั้นส่งมอบ (k=' + fin.k + ')');
+      if (fin.k !== 'done')  bad('เดินจนจบแล้วยังไม่ถึงขั้นสุดท้าย (k=' + fin.k + ')');
       if (fin.stage !== 'รับรถสำเร็จ') bad('ส่งมอบแล้วแต่ลูกค้าไม่ได้เป็น "รับรถสำเร็จ" (' + fin.stage + ')');
       if (fin.plate !== '1กก 9999') bad('เลขทะเบียนที่กรอกไม่ได้ถูกเก็บ (' + fin.plate + ')');
       if (fin.cur !== 'deal') bad('เดินจนจบแล้วหลุดออกจากหน้าดีล');

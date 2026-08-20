@@ -24,10 +24,10 @@ const { chromium, EXE, BASE } = require('./env');
   /* ---- 1) ส่งมอบ → CARE เกิด + รอบติดตามตรงวัน ---- */
   await login('ST1');
   const t1 = await page.evaluate(() => {
-    /* หาดีลที่อยู่ขั้นป้ายขาว (พร้อมส่งมอบ) หรือดันให้ถึง */
-    let rg = REGS.find(r => r.stage === 'ป้ายขาว');
-    if (!rg) { rg = REGS.find(r => r.stage === 'รอทะเบียน');
-      if (rg) { rg.plate = '1กก 9999'; rg.stage = 'ป้ายขาว'; } }
+    /* v1.28: ส่งมอบมาก่อนทะเบียนจริงแล้ว — ขั้นก่อนส่งมอบคือ "อนุมัติ" ไม่ใช่ "ป้ายขาว" */
+    let rg = REGS.find(r => r.stage === 'อนุมัติ');
+    if (!rg) { rg = REGS.find(r => !r.deliveredAt);
+      if (rg) { rg.stage = 'อนุมัติ'; } }
     if (!rg) return { skip: true };
     const before = CARE.length;
     regAdvance(rg.id);
@@ -85,8 +85,9 @@ const { chromium, EXE, BASE } = require('./env');
       return !a || (!(a.paid > 0) && !(a.pays && a.pays.length)); };
     /* ต้องเป็นดีลผ่อน (down>0) เพราะข้อ assert เงินดาวน์ downBack — เงินสดไม่มีช่องนั้น */
     const hasDown = r => { const s0 = SALES.find(x => x.id === r.saleId); return s0 && s0.down > 0; };
-    const rg = REGS.find(r => r.stage !== 'ส่งมอบแล้ว' && hasDown(r) && noMoneyIn(r))
-      || REGS.find(r => r.stage !== 'ส่งมอบแล้ว' && hasDown(r));
+    /* v1.28: "ยังไม่ส่งมอบ" ดูที่ deliveredAt — ชื่อขั้นไม่ใช่คำตอบอีกแล้ว (รอทะเบียน = ส่งมอบไปแล้ว) */
+    const rg = REGS.find(r => !r.deliveredAt && hasDown(r) && noMoneyIn(r))
+      || REGS.find(r => !r.deliveredAt && hasDown(r));
     if (!rg) return { skip: true };
     /* ถ้าทุกดีลมีเงินเข้า — เคลียร์เงินของดีลทดสอบก่อน (จำลองการทำเรื่องคืนเงินเสร็จ) */
     const ar0 = AR.find(x => x.saleId === rg.saleId);
@@ -134,7 +135,8 @@ const { chromium, EXE, BASE } = require('./env');
     const r = {};
     if (done) { const dt = dealStepDates(done);
       r.doneDates = dt.slice(1).every(Boolean);          /* lead อาจไม่มี createdAt ในข้อมูลสาธิตเก่า */
-      r.doneLast = dt[dt.length - 1] === done.rg.deliveredAt; }
+      /* v1.28: ขั้นสุดท้ายคือทะเบียนจริง — วันส่งมอบไปอยู่ขั้นรองสุดท้าย */
+      r.doneLast = dt[dt.length - 2] === done.rg.deliveredAt; }
     if (finD) {
       const oldSla = CFG.slaFin;
       /* v1.22: อย่าพึ่งลำดับ seed — backdate ความเคลื่อนไหวล่าสุดของเคสนี้เอง 3 วันให้ชัวร์ว่า "เงียบ"

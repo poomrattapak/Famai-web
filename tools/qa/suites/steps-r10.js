@@ -3,8 +3,9 @@
    เส้นไล่สีที่วิ่งเข้าขั้นปัจจุบัน · สถานะตกราง · และเส้นทาง 4 ขั้นของดีลเงินสด
    (พฤติกรรมของหน้าดีลอยู่ที่ deal-r10 — ไฟล์นี้ดูแค่ว่าแถบวาดถูกไหม) */
 const { chromium, EXE, BASE } = require('./env');
-const TRACK = ['คุยกับลูกค้า', 'เปิดการขาย', 'ไฟแนนซ์', 'ทะเบียน', 'ส่งมอบ'];
-const ICONS = ['user', 'tag', 'bank', 'clipboard', 'bike'];
+/* v1.28 — ลำดับตามงานจริง: ไฟแนนซ์ผ่านก่อนถึงเปิดการขาย · ส่งมอบก่อนได้ทะเบียนจริง */
+const TRACK = ['คุยกับลูกค้า', 'ไฟแนนซ์', 'เปิดการขาย', 'ส่งมอบ', 'ทะเบียนรถ'];
+const ICONS = ['user', 'bank', 'tag', 'bike', 'clipboard'];
 
 const SHAPE = `el => {
   const pns = Array.from(el.querySelectorAll('.pn'));
@@ -52,18 +53,22 @@ const SHAPE = `el => {
       /* ดีลผ่อน 5 ขั้น · ดีลเงินสด 4 ขั้น (ตัดขั้นไฟแนนซ์ออกไปเลย) */
       if (s.n !== 5 && s.n !== 4) bad(at + ': มี ' + s.n + ' ขั้น ควรเป็น 5 (ผ่อน) หรือ 4 (เงินสด)');
       if (s.lines !== s.n - 1)    bad(at + ': เส้นเชื่อม ' + s.lines + ' เส้น ควรเป็น ' + (s.n - 1));
-      if (s.nowN !== 1)           bad(at + ': ขั้นปัจจุบันมี ' + s.nowN + ' จุด ควรมีจุดเดียว');
+      /* v1.28: ดีลที่จบครบ (ได้ทะเบียนจริงแล้ว) ไม่มีขั้นปัจจุบัน — ทุกขั้นติ๊กหมด ไม่มีวงแหวน */
+      const doneAll = s.nowN === 0 && s.done.length === s.n;
+      const cur = doneAll ? s.n : s.now;
+      if (s.nowN !== 1 && !doneAll) bad(at + ': ขั้นปัจจุบันมี ' + s.nowN + ' จุด ควรมีจุดเดียว (หรือจบครบแล้วไม่มีเลย)');
       if (s.size !== 28)          bad(at + ': วงไอคอนสูง ' + s.size + 'px ควรเป็น 28');
-      if (s.done.join(',') !== [...Array(s.now).keys()].join(','))
-        bad(at + ': ขั้นที่ผ่านแล้วเป็น [' + s.done + '] แต่ขั้นปัจจุบันคือ ' + s.now);
-      if (s.linesOn !== s.now)    bad(at + ': เส้นทึบ ' + s.linesOn + ' เส้น แต่เดินมาถึงขั้นที่ ' + s.now);
+      if (s.done.join(',') !== [...Array(cur).keys()].join(','))
+        bad(at + ': ขั้นที่ผ่านแล้วเป็น [' + s.done + '] แต่ขั้นปัจจุบันคือ ' + cur);
+      if (s.linesOn !== Math.min(cur, s.n - 1))
+        bad(at + ': เส้นทึบ ' + s.linesOn + ' เส้น แต่เดินมาถึงขั้นที่ ' + cur);
       /* ไอคอน: ขั้นที่ผ่านแล้ว = เครื่องหมายถูก · ที่เหลือ = ไอคอนประจำขั้น */
-      const want = (s.n === 5 ? ICONS : ICONS.filter(x => x !== 'bank')).map((n, ix) => ix < s.now ? 'check' : n);
+      const want = (s.n === 5 ? ICONS : ICONS.filter(x => x !== 'bank')).map((n, ix) => ix < cur ? 'check' : n);
       if (s.icons.join(',') !== want.join(','))
         bad(at + ': ไอคอนเป็น [' + s.icons + '] ควรเป็น [' + want + ']');
       /* ขั้นปัจจุบันต้องมีวงแหวน และเส้นที่วิ่งเข้าต้องไล่สี — สองอย่างที่ทำให้ดีกว่าภาพอ้างอิง */
-      if (!s.ring || s.ring === 'none') bad(at + ': ขั้นปัจจุบันไม่มีวงแหวน (box-shadow)');
-      if (s.now > 0) {
+      if (!doneAll && (!s.ring || s.ring === 'none')) bad(at + ': ขั้นปัจจุบันไม่มีวงแหวน (box-shadow)');
+      if (!doneAll && s.now > 0) {
         if (s.curLine !== s.now - 1) bad(at + ': เส้นไล่สีอยู่ที่ ' + s.curLine + ' ควรอยู่ก่อนขั้นปัจจุบัน');
         if (!/gradient/.test(s.curBg)) bad(at + ': เส้นเข้าขั้นปัจจุบันไม่ได้ไล่สี (' + s.curBg + ')');
       }
@@ -87,8 +92,9 @@ const SHAPE = `el => {
       await p.waitForTimeout(250);
       const o = await p.$eval('#dlOne .pstep', eval(SHAPE));
       if (!o.off)          bad(tag + ': ดีลที่ตกรางไม่ได้ติดคลาส off');
-      if (o.now !== 2)     bad(tag + ': ตกรางชี้ขั้นที่ ' + (o.now + 1) + ' ควรหยุดที่ขั้น 3 (ไฟแนนซ์)');
-      if (o.linesOn !== 2) bad(tag + ': ตกรางทำเส้นทึบ ' + o.linesOn + ' เส้น ควรเป็น 2');
+      /* v1.28: ไฟแนนซ์เป็นขั้นที่ 2 แล้ว — ตกรางต้องหยุดตรงนั้น ไม่เดินต่อไปเปิดการขาย */
+      if (o.now !== 1)     bad(tag + ': ตกรางชี้ขั้นที่ ' + (o.now + 1) + ' ควรหยุดที่ขั้น 2 (ไฟแนนซ์)');
+      if (o.linesOn !== 1) bad(tag + ': ตกรางทำเส้นทึบ ' + o.linesOn + ' เส้น ควรเป็น 1');
       const hollow = await p.$eval('#dlOne .pstep.off .pn.now', e => getComputedStyle(e).backgroundColor);
       if (!/255,\s*255,\s*255|rgb\(255/.test(hollow)) bad(tag + ': วงตกรางควรเป็นวงกลวง (พื้นขาว) ได้ ' + hollow);
     }

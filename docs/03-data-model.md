@@ -208,7 +208,7 @@ create table customer (
   tax_id      text,                          -- สำหรับใบกำกับภาษี (ข้อมูลอ่อนไหว — จำกัดสิทธิ์)
   source      text,                          -- Facebook / เดินเข้าร้าน / แนะนำ / LINE
   stage       text not null default 'เข้ามาดูรถ',
-       -- เข้ามาดูรถ | สนใจ | ทำสัญญา | ผ่าน | ไม่ผ่าน | รับรถสำเร็จ
+       -- เข้ามาดูรถ | สนใจ | จอง | ผ่าน | ไม่ผ่าน | รับรถสำเร็จ   (v1.28: ทำสัญญา → จอง)
   interested_variant_id uuid references model_variant(id),
   owner_id    uuid references app_user(id),  -- เซลล์ที่ดูแล
   consent_at  timestamptz,                   -- PDPA: วันที่ให้ความยินยอม
@@ -277,7 +277,8 @@ create table registration (
   sale_id      uuid not null unique references sale(id),
   branch_id    uuid not null references branch(id),
   stage        text not null default 'ขายแล้ว',
-       -- ขายแล้ว → ส่งไฟแนนซ์ → อนุมัติ → รอทะเบียน → ป้ายขาว → ส่งมอบแล้ว
+       -- ขายแล้ว → ส่งไฟแนนซ์ → อนุมัติ → ส่งมอบแล้ว → รอทะเบียน → ได้ทะเบียนแล้ว
+       -- v1.28: ส่งมอบมาก่อนได้ป้าย ลูกค้าใช้ป้ายชั่วคราวระหว่างรอขนส่ง
   plate_no     text,
   book_no      text,                         -- เล่มทะเบียน
   submitted_at date, approved_at date, plate_received_at date, delivered_at date,
