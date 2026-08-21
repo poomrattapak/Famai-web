@@ -46,13 +46,15 @@ const { chromium, EXE, BASE } = require('./env');
     $('#navOk').click();
     return { all, one: dUnits().length, page: $('#dBranch').value,
       sum: $('#navSum').textContent.trim(), okOff: $('#navOk').disabled,
-      lbl: $('#npLbl').textContent };
+      lbl: $('#npLbl').textContent, want: scopeName($('#dBranch').value) };
   });
   if (t2.page === '')  fails.push('[2] กดยืนยันแล้ว #dBranch ยังว่าง — สาขาไม่ได้ลง');
   if (t2.one >= t2.all) fails.push('[2] กดยืนยันแล้วสต๊อกไม่ลด (' + t2.all + ' → ' + t2.one + ') — ไม่ได้กรองจริง');
   if (t2.sum)          fails.push('[2] ยืนยันแล้วยังมีข้อความ "ยังไม่ได้ใช้" ค้าง: "' + t2.sum + '"');
   if (!t2.okOff)       fails.push('[2] ยืนยันแล้วปุ่มยังกดได้ทั้งที่ไม่มีอะไรให้ใช้');
-  if (t2.lbl.indexOf('ทุกสาขา') >= 0) fails.push('[2] ยืนยันแล้วป้ายปุ่มย่อยังบอก "ทุกสาขา": "' + t2.lbl + '"');
+  /* v1.29: ระดับบริษัทป้ายเป็น "...ทุกสาขา" ได้ตามปกติ — ต้องเทียบว่าตรงกับที่เลือกจริง ไม่ใช่ค้นคำ */
+  if (t2.want && t2.lbl.indexOf(t2.want) < 0)
+    fails.push('[2] ป้ายปุ่มย่อไม่ตรงกับขอบเขตที่เลือก: "' + t2.lbl + '" ควรมี "' + t2.want + '"');
 
   /* 3 · เลือกทั้งช่วงเวลาและสาขา แล้วกดยืนยันครั้งเดียว → ต้องได้ทั้งคู่ในรอบเดียว */
   const t3 = await p.evaluate(() => {

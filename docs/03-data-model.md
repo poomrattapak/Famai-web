@@ -209,6 +209,8 @@ create table customer (
   source      text,                          -- Facebook / เดินเข้าร้าน / แนะนำ / LINE
   stage       text not null default 'เข้ามาดูรถ',
        -- เข้ามาดูรถ | สนใจ | จอง | ผ่าน | ไม่ผ่าน | รับรถสำเร็จ   (v1.28: ทำสัญญา → จอง)
+       -- v1.29: ตัวกรอง "ขอบเขตที่ดู" บนจอเก็บค่าเดียวที่บอกได้ทั้งบริษัท (CO2) และสาขา (FMM01)
+       --        ไม่ใช่คอลัมน์ในฐานข้อมูล เป็นสถานะของหน้าจอเท่านั้น — เทียบด้วย brMatch()
   interested_variant_id uuid references model_variant(id),
   owner_id    uuid references app_user(id),  -- เซลล์ที่ดูแล
   consent_at  timestamptz,                   -- PDPA: วันที่ให้ความยินยอม

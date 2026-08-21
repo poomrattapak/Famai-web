@@ -8,9 +8,11 @@ const { chromium, EXE, BASE } = require('./env');
   await p.click('#lgGo'); await p.waitForTimeout(400);
 
   // --- รายงาน ---
-  await p.evaluate(() => go('report')); await p.waitForTimeout(300);
+  /* v1.29: สาขาออกจากแผ่นไปอยู่แผงขอบเขตบน navbar แล้ว — ใช้ 'แยกตาม' (rpDim) วัดกลไกแทน
+     ซึ่งมีเฉพาะแท็บขายรายเดือน จึงต้องเข้าแท็บนั้นก่อน */
+  await p.evaluate(() => go('report','monthly')); await p.waitForTimeout(400);
   if (!await p.isVisible('#rpFilt')) fails.push('report: ตัวกรอง button hidden at 390');
-  if (await p.isVisible('#rpBranch')) fails.push('report: rpBranch still in header at 390');
+  if (await p.isVisible('#rpDim')) fails.push('report: rpDim still in header at 390');
   // v1.26 ข้อ 3: ช่วงเวลาย้ายขึ้น navbar — ที่ 390 เปิดแผ่นจาก #npBtn แล้วต้องเห็นปุ่มกำหนดเอง
   await p.click('#npBtn'); await p.waitForTimeout(250);
   if (!await p.isVisible('#navPerBox [data-pcus]')) fails.push('report: แถบช่วงเวลาไม่โผล่ที่ 390 (ในแผ่น navbar)');
@@ -20,19 +22,19 @@ const { chromium, EXE, BASE } = require('./env');
   await p.click('#rpFilt'); await p.waitForTimeout(300);
   if (!await p.$eval('#fsheet', e => e.classList.contains('on'))) fails.push('report: sheet did not open');
   if (!await p.$eval('body', e => e.classList.contains('lock'))) fails.push('report: body.lock missing');
-  const inSheet = await p.evaluate(() => !!document.querySelector('#fsBody #rpBranch'));
-  if (!inSheet) fails.push('report: rpBranch not moved into sheet');
+  const inSheet = await p.evaluate(() => !!document.querySelector('#fsBody #rpDim'));
+  if (!inSheet) fails.push('report: rpDim not moved into sheet');
   // เปลี่ยนสาขาแล้วรายงานต้องวาดใหม่
   const before = await p.$eval('#rpTable', e => e.innerHTML.length);
-  await p.evaluate(() => { const s = $('#rpBranch'); if (s.options.length > 1) { s.value = s.options[1].value; s.onchange(); } });
+  await p.evaluate(() => { const s = $('#rpDim'); if (s.options.length > 1) { s.value = s.options[1].value; s.onchange(); } });
   await p.waitForTimeout(250);
   const sumAfter = await p.$eval('#rpFsum', e => e.textContent);
   await p.click('#fsDone'); await p.waitForTimeout(300);
   if (await p.$eval('#fsheet', e => e.classList.contains('on'))) fails.push('report: sheet did not close');
   if (await p.$eval('body', e => e.classList.contains('lock'))) fails.push('report: body.lock stuck after close');
-  const backHome = await p.evaluate(() => { const el = document.querySelector('#rpBranch');
+  const backHome = await p.evaluate(() => { const el = document.querySelector('#rpDim');
     return !!(el && el.closest('.card') && el.closest('.hd')); });
-  if (!backHome) fails.push('report: rpBranch not returned to header');
+  if (!backHome) fails.push('report: rpDim not returned to header');
   const sum1 = await p.$eval('#rpFsum', e => e.textContent.trim());
   if (!sum1 || sum1 === sum0) fails.push(`report: summary did not update (${sum0} -> ${sum1})`);
 
@@ -41,9 +43,9 @@ const { chromium, EXE, BASE } = require('./env');
   await p.click('#rpFilt'); await p.waitForTimeout(300);
   const rows = await p.evaluate(() => ({
     dim: getComputedStyle(document.querySelector('#rpDim').closest('.fsrow')).display,
-    br: getComputedStyle(document.querySelector('#rpBranch').closest('.fsrow')).display }));
+    br: getComputedStyle(document.querySelector('#rpDim').closest('.fsrow')).display }));
   if (rows.dim === 'none') fails.push('monthly: rpDim row hidden in sheet');
-  if (rows.br === 'none') fails.push('monthly: rpBranch row hidden in sheet');
+  if (rows.br === 'none') fails.push('monthly: rpDim row hidden in sheet');
   await p.keyboard.press('Escape'); await p.waitForTimeout(250);
 
   // ออกจากหน้าไปหน้าอื่นขณะแผ่นเปิด ต้องไม่ทิ้ง control ค้าง
@@ -68,9 +70,11 @@ const { chromium, EXE, BASE } = require('./env');
 
   // เดสก์ท็อป: ต้องไม่มีปุ่มตัวกรอง ตัวกรองอยู่ในหัวการ์ดตามเดิม
   await p.setViewportSize({ width: 1440, height: 900 }); await p.waitForTimeout(400);
-  await p.evaluate(() => go('report')); await p.waitForTimeout(300);
+  /* v1.29: สาขาออกจากแผ่นไปอยู่แผงขอบเขตบน navbar แล้ว — ใช้ 'แยกตาม' (rpDim) วัดกลไกแทน
+     ซึ่งมีเฉพาะแท็บขายรายเดือน จึงต้องเข้าแท็บนั้นก่อน */
+  await p.evaluate(() => go('report','monthly')); await p.waitForTimeout(400);
   if (await p.isVisible('#rpFilt')) fails.push('desktop: ตัวกรอง button should be hidden');
-  if (!await p.isVisible('#rpBranch')) fails.push('desktop: rpBranch should be in header');
+  if (!await p.isVisible('#rpDim')) fails.push('desktop: rpDim should be in header');
   // v1.26 ข้อ 3: แถบช่วงเวลาอยู่บน navbar เห็นตลอดบนเดสก์ท็อป
   if (!await p.isVisible('#navPerBox [data-pr="7"]')) fails.push('desktop: แถบช่วงเวลาบน navbar ไม่โผล่');
 

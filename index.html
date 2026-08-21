@@ -274,6 +274,23 @@ h6[data-grp].mg6{ color:var(--grp6); border-bottom-color:var(--grp6); }
 #navCtl #navPerBox{ flex:1; min-width:0; }
 #navCtl #navBrSel{ max-width:220px; height:36px; flex:0 0 auto; }
 /* เรียงหัวแถวเดียวกับช่องสาขา — .top ให้ชิปตกบรรทัดได้ ถ้า center ปุ่มจะลอยไม่ตรงกับอะไรเลย */
+#navCtl #navBrBtn{ max-width:220px; height:36px; flex:0 0 auto; text-align:left;
+  display:none; align-items:center; gap:var(--s1); }
+#navCtl #navBrBtn.on{ display:inline-flex; }
+#navCtl #navBrBtn #navBrLbl{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+/* แผงเลือกขอบเขต — fixed เหมือน #perCal จึงไม่นับชั้นกล่องและไม่ดัน scrollWidth ที่ 390 */
+#brPick{ position:fixed; z-index:64; display:none; background:var(--card);
+  border:1px solid var(--hairline); border-radius:var(--r-lg); box-shadow:var(--sh-lg);
+  padding:var(--s2); width:min(320px, calc(100vw - 12px)); max-height:70dvh; overflow-y:auto; }
+#brPick .bpco,#brPick .bpbr,#brPick .bpall{ display:flex; align-items:center; gap:var(--s1);
+  width:100%; text-align:left; padding:var(--s1); border-radius:var(--r-input);
+  font-size:var(--t-table); }
+#brPick .bpbr{ padding-left:var(--s4); font-size:var(--t-label); }
+#brPick .bpco{ font-weight:600; }
+@media (hover:hover){ #brPick .bpco:hover,#brPick .bpbr:hover,#brPick .bpall:hover{ background:var(--paper-2); } }
+#brPick .on{ background:var(--paper-2); }
+/* ที่เลือกอยู่บอกด้วยเครื่องหมายถูก ไม่ใช่สีพื้นอย่างเดียว (กฎข้อ 3) */
+#brPick .bptick{ margin-left:auto; color:var(--pos); }
 #navCtl #navSum,#navCtl #navOk{ flex:0 0 auto; align-self:flex-start; }
 #navCtl #navOk{ height:36px; }
 /* สาขาที่เลือกไว้แต่ยังไม่ได้ใช้ = ข้อความ + จุดสี ไม่ใช่สีอย่างเดียว (กฎข้อ 3) */
@@ -293,6 +310,8 @@ h6[data-grp].mg6{ color:var(--grp6); border-bottom-color:var(--grp6); }
     overflow-y:auto; flex-direction:column; align-items:stretch; }
   #navCtl.has.on{ display:flex; }
   #navCtl #navBrSel{ max-width:none; height:44px; }
+  #navCtl #navBrBtn{ max-width:none; height:44px; }
+  #navCtl #navBrBtn.on{ display:flex; }
   /* ในแผ่นเป็นคอลัมน์: ปุ่มยืนยันคือปุ่มหลักของแผ่น ต้องเต็มความกว้างและนิ้วโดนง่าย */
   #navCtl #navSum,#navCtl #navOk{ align-self:stretch; text-align:left; }
   #navCtl #navOk{ height:44px; text-align:center; }
@@ -302,6 +321,9 @@ h6[data-grp].mg6{ color:var(--grp6); border-bottom-color:var(--grp6); }
 /* หน้าที่ navbar รับช่วงเวลาไปแล้ว ซ่อนแถบในหน้า — state/handler ยังอยู่ครบ (ด่านที่ยิงตรงใช้ต่อได้)
    #wsPer/#movePer ไม่ซ่อน: เป็นช่วงเวลาของแท็บย่อยในหน้า sell/parts ไม่ใช่ของทั้งหน้า */
 #dPer,#rpPer,#trPer,#quotePer,#carePer,#expPer{ display:none; }
+/* v1.29: ขอบเขตบริษัท-สาขาอยู่บน navbar ที่เดียว — ตัวกรองในหน้าซ่อน แต่ยังเป็นตัวเก็บค่าอยู่
+   (คำสั่งเจ้าของ: ไม่ให้มีที่เลือกสาขาสองที่จนขัดกันเอง) */
+#dBranch,#stBranch,#dlBranch,#abBranch,#rpBranch{ display:none; }
 .burger{ display:none; width:40px; height:40px; border-radius:var(--r-input);
   align-items:center; justify-content:center; color:var(--ink); }
 .top .sub{ font-size:var(--t-label); color:var(--muted); margin-top:2px; }
@@ -1308,6 +1330,9 @@ body.lock{ overflow:hidden; }
            จอกว้างเป็นแถวสองเห็นตลอด · มือถือเป็นแผ่นบนเปิดจาก #npBtn -->
       <div id="navCtl" class="noprint"><div id="navPerBox"></div>
         <select class="inp ct" id="navBrSel" aria-label="เลือกสาขา" style="display:none"></select>
+        <!-- v1.29: ปุ่มเปิดแผงสองชั้น บริษัท → สาขา · #navBrSel ยังเป็นตัวเก็บค่าเหมือนเดิม
+             (กลไกเดียวกับช่องวันที่ซ่อนหลัง #perCal — ทางเดินและด่านเดิมจึงไม่ต้องแก้) -->
+        <button class="inp ct" id="navBrBtn"><span id="navBrLbl"></span></button>
         <!-- ปุ่มยืนยันของ "ทั้งแถบ" ไม่ใช่ของช่วงเวลาอย่างเดียว (v1.27.1 คำสั่งเจ้าของ)
              อยู่ขวาสุด — ทุกอย่างที่มันคุมอยู่ทางซ้ายหมด จึงอ่านออกว่ายืนยันอะไร -->
         <span class="psum" id="navSum"></span>
@@ -1783,7 +1808,6 @@ body.lock{ overflow:hidden; }
         <div class="bd" id="abNote"></div>
         <div class="hd" style="border-top:1px solid var(--hairline)"><div class="d" id="abListS"></div><div class="sp"></div>
           <select class="inp ct" id="abBranch"></select>
-          <button class="btn sec sm fbtn noprint" id="abFilt"><svg class="i i-sm"><use href="#i-sliders"/></svg> สาขา</button>
           <button class="lnk noprint" id="abCsv"><svg class="i i-sm"><use href="#i-download"/></svg> ส่งออก</button>
           <div class="fsum" id="abFsum"></div>
         </div></div>
@@ -2105,6 +2129,7 @@ body.lock{ overflow:hidden; }
 <div id="toasts"></div>
 <div id="tip" role="status"></div>
 <div id="perCal" role="dialog" aria-label="เลือกช่วงวันที่"></div>
+<div id="brPick" role="dialog" aria-label="เลือกบริษัทและสาขา"></div>
 <nav class="bnav noprint" id="bnav"></nav>
 <div class="sheet noprint" id="more"><div id="moreB"></div></div>
 <div class="sheet noprint" id="fsheet">
@@ -2267,9 +2292,14 @@ let COMPANIES = [
   {id:'CO2', name:'บริษัท ฟ้าใหม่ มอเตอร์ จำกัด',        taxId:'0 1055 07000 64 5', addr:'88/8 หมู่ 3 ต.ตัวอย่าง อ.เมือง จ.ตัวอย่าง 10000', phone:'02-000-0001', active:true},
   {id:'CO3', name:'บริษัท ฟ้าใหม่ เซ็นเตอร์ กรุ๊ป จำกัด', taxId:'0 1055 07000 64 5', addr:'77/7 หมู่ 1 ต.ตัวอย่าง อ.เมือง จ.ตัวอย่าง 10000', phone:'02-000-0002', active:true}
 ];
+/* v1.29: บริษัทละหลายสาขาแล้ว — สาขาย่อยเป็นข้อมูลตัวอย่างให้เห็นตัวกรองสองชั้นทำงานจริง
+   branchNo ห้ามซ้ำในบริษัทเดียวกัน เลขนี้ขึ้นใบกำกับภาษี (สำนักงานใหญ่ = 00000) */
 let BRANCHES = [
   {code:'FMG01', co:'CO1', name:'Famai Motor Group',  prefix:'FMG', branchNo:'00000', addr:'สำนักงานใหญ่', active:true},
+  {code:'FMG02', co:'CO1', name:'สาขาบางบัวทอง',      prefix:'FMG', branchNo:'00001', addr:'อ.บางบัวทอง จ.นนทบุรี', active:true},
+  {code:'FMG03', co:'CO1', name:'สาขารังสิต',         prefix:'FMG', branchNo:'00002', addr:'อ.ธัญบุรี จ.ปทุมธานี', active:true},
   {code:'FMM01', co:'CO2', name:'Famai Motor',        prefix:'FMM', branchNo:'00000', addr:'สำนักงานใหญ่', active:true},
+  {code:'FMM02', co:'CO2', name:'สาขาสุพรรณบุรี',      prefix:'FMM', branchNo:'00001', addr:'อ.เมือง จ.สุพรรณบุรี', active:true},
   {code:'FCG01', co:'CO3', name:'Famai Center Group', prefix:'FCG', branchNo:'00000', addr:'สำนักงานใหญ่', active:true}
 ];
 const bName = c => (BRANCHES.find(b=>b.code===c)||{}).name || c;
@@ -2279,6 +2309,28 @@ const coOf = branchCode => coById((BRANCHES.find(b=>b.code===branchCode)||{}).co
   || {name:CFG.company, taxId:CFG.taxId, addr:CFG.address, phone:CFG.phone};
 const branchesOf = coId => BRANCHES.filter(b=>b.co===coId && b.active!==false);
 const sameCo = (b1,b2) => (BRANCHES.find(b=>b.code===b1)||{}).co === (BRANCHES.find(b=>b.code===b2)||{}).co;
+/* ---------- ขอบเขตที่เลือกดูอยู่ (v1.29) ----------
+   ค่าเดียวบอกได้สามระดับ: '' = ทุกสาขาที่เห็นได้ · 'CO2' = ทุกสาขาของบริษัทนั้น · 'FMM01' = สาขาเดียว
+   รหัสบริษัทขึ้นต้น CO เสมอ รหัสสาขาไม่เคยขึ้นต้นแบบนั้น จึงแยกกันได้โดยไม่ต้องเก็บฟิลด์ที่สอง (กฎ §9g)
+   ทุกหน้าเทียบผ่าน brMatch ที่เดียว — เดิมเขียน (!br || x.branch===br) กระจายอยู่ห้าที่ */
+const isCoSel = sel => String(sel||'').slice(0,2)==='CO';
+const brMatch = (sel, code) => !sel || (isCoSel(sel)
+  ? (BRANCHES.find(b=>b.code===code)||{}).co === sel : code === sel);
+/* ชื่อที่เอาไปขึ้นป้าย/หัวกระดาษ — ต้องบอกให้ออกว่ากำลังดูระดับไหนอยู่ */
+/* ตัวเลือกขอบเขตสองชั้นสำหรับ "ตัวกรอง" — บริษัทเป็น optgroup พร้อมตัวเลือกระดับบริษัท
+   ค่ายังเป็นสตริงเดียวเหมือนเดิม ทางเดินและด่านที่ยิง .value จึงไม่ต้องแก้
+   (ช่องที่เป็นการ "กรอกข้อมูล" ว่าระเบียนอยู่สาขาไหน ห้ามใช้ตัวนี้ — ต้องเลือกสาขาจริงเท่านั้น) */
+function brFilterHTML(allLabel){
+  return '<option value="">'+esc(allLabel)+'</option>'
+    + COMPANIES.filter(co=>branchesOf(co.id).some(b=>inScope(b.code))).map(co=>
+        '<optgroup label="'+esc(co.name)+'">'
+        +'<option value="'+co.id+'">ทุกสาขาของ '+esc(co.name)+'</option>'
+        +branchesOf(co.id).filter(b=>inScope(b.code))
+          .map(b=>'<option value="'+b.code+'">'+esc(b.name)+'</option>').join('')
+        +'</optgroup>').join('');
+}
+const scopeName = sel => !sel ? 'ทุกสาขาที่เห็นได้'
+  : (isCoSel(sel) ? ((coById(sel)||{}).name||sel)+' · ทุกสาขา' : bName(sel));
 
 /* ---------- ขายส่ง B2B (บรีฟรอบ 1 · F1-F5) ----------
    ผู้ซื้อเป็นได้ทั้งคู่ค้าภายนอกและบริษัทในเครือ (own = id บริษัทเรา)
@@ -2446,6 +2498,14 @@ function seedDemo(){
   PERMS=permDefaults();   /* สิทธิ์กลับค่าเริ่มต้นพร้อมข้อมูลสาธิตชุดใหม่ */
   /* คืนสถานะรถทุกคันก่อนสร้างข้อมูลสาธิตใหม่ ไม่งั้นเข้าระบบรอบสองจะไม่มีข้อมูลเลย */
   UNITS.forEach(u=>{ u.status='available'; });   /* คืนเฉพาะสถานะ — ราคาเคลียร์ที่ตั้งไว้ต้องอยู่ต่อ */
+  /* v1.29 ข้อมูลสาธิต: U_RAW จากไฟล์ยามาฮ่ามีสาขาเดียวต่อบริษัท กระจายลงสาขาย่อยตรงนี้
+     จะได้เห็นว่าตัวกรอง "ทั้งบริษัท" กับ "สาขาเดียว" ให้ตัวเลขต่างกันจริง — แตะเฉพาะโหมดสาธิต */
+  const SPREAD={ FMG01:['FMG01','FMG02','FMG03'], FMM01:['FMM01','FMM02'] };
+  UNITS.forEach((u,i)=>{ const g=SPREAD[u.homeBranch||u.branch];
+    if(!u.homeBranch) u.homeBranch=u.branch;      /* จำสาขาต้นทางไว้ ไม่งั้น seed รอบสองจะเลื่อนซ้ำ */
+    /* ย้ายสาขาทีละ 3 คัน ไม่ใช่ i%3 — ผู้ซื้อสาธิตข้างล่างหยิบรถทุก ๆ 3 คัน
+       ถ้ากระจายด้วย i%3 ตรง ๆ รถที่ถูกขายจะตกสาขาเดียวทั้งหมด สาขาใหม่จะไม่มีลูกค้าเลย */
+    if(g) u.branch=g[Math.floor(i/3)%g.length]; });
   const sellable = UNITS.filter(u=>u.retail!=null && !u.clearance);   /* รถเคลียร์สต๊อกไม่เอาไปสร้างยอดขายสาธิต */
   DEMO_BUYERS.forEach((b,i)=>{
     const [name,phone,src,spIdx,pay,finId,ago] = b;
@@ -2617,7 +2677,7 @@ const ROLES = {
 let STAFF = [
   {id:'ST1',name:'สมชาย ปัญญา',  nick:'คุณสมชาย', role:'admin',   phone:'081-000-1001', branch:'FMG01', salary:38000, bank:'014-3-88210-1', ssn:'1234567890123'},
   {id:'ST2',name:'ธนพร วัฒนกุล', nick:'คุณจอย',   role:'manager', phone:'081-000-1002', branch:'FMG01', salary:45000, bank:'014-3-77120-9', ssn:'1234567890124'},
-  {id:'ST3',name:'บิว สุขใจ',    nick:'เซลล์บิว',  role:'sales',   phone:'081-000-1003', branch:'FMG01', salary:12000, bank:'014-3-66031-2', ssn:'1234567890125'},
+  {id:'ST3',name:'บิว สุขใจ',    nick:'เซลล์บิว',  role:'sales',   phone:'081-000-1003', branch:'FMG02', salary:12000, bank:'014-3-66031-2', ssn:'1234567890125'},
   {id:'ST4',name:'สนุ๊กเกอร์ ทองมา',nick:'เซลล์สนุ๊กเกอร์',role:'sales',phone:'081-000-1004', branch:'FMM01', salary:12000, bank:'014-3-55042-7', ssn:'1234567890126'},
   {id:'ST5',name:'หมูแดง ศรีทอง', nick:'เซลล์หมูแดง',role:'sales', phone:'081-000-1005', branch:'FCG01', salary:12000, bank:'014-3-44053-3', ssn:'1234567890127'},
   {id:'ST6',name:'ใหญ่ คงทน',    nick:'สต๊อกใหญ่', role:'stock',   phone:'081-000-1006', branch:'FMM01', salary:15000, bank:'014-3-33064-8', ssn:'1234567890128'},
@@ -2851,7 +2911,7 @@ function printHTML(html){
 }
 /* ชื่อไฟล์: ชื่อ_สาขา_วันที่ — กันไฟล์ชนกันเวลาส่งออกซ้ำ */
 function csvName(name){
-  const scope = !rolePerm().allBranch ? bName(ME.branch) : (dBranch? bName(dBranch) : 'ทุกสาขา');
+  const scope = !rolePerm().allBranch ? bName(ME.branch) : (dBranch? scopeName(dBranch) : 'ทุกสาขา');
   return name+'_'+scope.replace(/\s+/g,'')+'_'+TODAY;
 }
 function csv(name, head, rows){
@@ -3133,15 +3193,14 @@ function buildTabs(){
    โดยไม่ต้องแก้โค้ดหน้าไหน ปิดแล้วย้ายกลับที่เดิมด้วย comment marker */
 const FILTERS = {
   report:{ t:'ตัวกรองรายงาน', sum:'rpFsum',
-    f:[['rpDim','แยกตาม'],['rpBranch','สาขา']] },   /* ช่วงเวลาอยู่บนหน้าเป็นชิป ไม่ต้องเข้าแผ่น (v1.24) */
+    f:[['rpDim','แยกตาม']] },   /* ช่วงเวลาเป็นชิปบนแถบบน (v1.24) · สาขาไปอยู่แผงขอบเขตบน navbar (v1.29) */
   hrday :{ t:'เลือกวันลงเวลา', sum:'attFsum', f:[['attDay','วันที่']] },
   payrol:{ t:'เลือกงวดเงินเดือน', sum:'prFsum', f:[['prMonth','งวดเดือน']] },
-  attend:{ t:'ตัวกรองการเข้างาน', sum:'abFsum', f:[['abBranch','สาขา']] },
   stock :{ t:'ตัวกรองสต๊อกรถ', sum:'stFsum',
-    f:[['stBranch','สาขา'],['stModel','รุ่น'],['stColor','สี'],['stStatus','สถานะ'],
+    f:[['stModel','รุ่น'],['stColor','สี'],['stStatus','สถานะ'],
        ['stQ','ค้นหา เลขเครื่อง / เลขถัง / รุ่น / สี']] },
   deal  :{ t:'ตัวกรองลูกค้าและดีล', sum:'dlFsum',
-    f:[['dlStage','ขั้นตอน'],['dlSales','เซลล์'],['dlBranch','สาขา'],['dlQ','ค้นหา ชื่อ / เบอร์ / เลขเครื่อง']] }
+    f:[['dlStage','ขั้นตอน'],['dlSales','เซลล์'],['dlQ','ค้นหา ชื่อ / เบอร์ / เลขเครื่อง']] }
 };
 let FS_OPEN=null, FS_HOME=[];
 function fsSummary(key){
@@ -3152,7 +3211,7 @@ function fsSummary(key){
     return el.value.trim()? '“'+el.value.trim()+'”' : null;
   }).filter(Boolean).join(' · ');
 }
-function fsSync(key){ const el=$('#'+FILTERS[key].sum); if(el) el.textContent=fsSummary(key); }
+function fsSync(key){ if(!FILTERS[key]) return;   /* v1.29: หน้าที่ตัวกรองเดียวคือสาขา ไม่มีแผ่นแล้ว */ const el=$('#'+FILTERS[key].sum); if(el) el.textContent=fsSummary(key); }
 function openFilters(key){
   if(FS_OPEN) closeFilters();
   const g=FILTERS[key]; FS_OPEN=key; FS_HOME=[];
@@ -3246,19 +3305,16 @@ let NAV_BRP=null;
 function navBrSync(brId){
   const sel=$('#navBrSel'), src=brId&&$('#'+brId);
   NAV_BRP=null;                       /* เปลี่ยนหน้า/วาดใหม่ = ทิ้งของที่เลือกค้างไว้ */
-  if(!src || !src.options.length){ sel.style.display='none'; return; }
-  sel.style.display='';
+  if(!src || !src.options.length){ sel.style.display='none'; $('#navBrBtn').classList.remove('on'); return; }
+  sel.style.display='none';                      /* v1.29: select เป็นตัวเก็บค่า ปุ่ม+แผงเป็นหน้าตา */
   sel.innerHTML=[...src.options].map(o=>'<option value="'+esc(o.value)+'">'+esc(o.textContent)+'</option>').join('');
   sel.value=src.value;
   sel.onchange=()=>{ NAV_BRP=sel.value; navSync(); };   /* พักไว้เฉย ๆ ยังไม่แตะ select ของหน้า */
+  $('#navBrBtn').classList.add('on');
   /* เปลี่ยนที่ตัวจริงในหน้า (หน้าที่ไม่มี perBar จะไม่ผ่าน hook) → ป้ายบนแถบบนต้องตาม */
   if(!src.dataset.navSync){ src.dataset.navSync=1; src.addEventListener('change', ()=>navPer()); }
 }
 /* ป้ายของค่าสาขาหนึ่งค่า อ่านจากตัวเลือกบนแถบบนเอง (ชื่อสาขาเดียวกับที่ผู้ใช้เพิ่งกด) */
-function navBrText(v){
-  const o=[...$('#navBrSel').options].find(x=>x.value===v);
-  return o? o.textContent : (v||'ทุกสาขา');
-}
 /* สาขาที่พักไว้ลงไปที่ select ตัวจริงของหน้า แล้วยิง handler เดิมของหน้าเอง
    ไม่เขียน state เอง เพราะแต่ละหน้าเก็บสาขาคนละที่ (dash เก็บใน dBranch · สต๊อกอ่านจาก .value ตรง ๆ)
    รู้เองทั้ง 5 แบบ = เก็บซ้ำ = ที่อยู่ของบั๊ก (กฎข้อ 8) · คืน true = handler ของหน้าวาดจอให้แล้ว */
@@ -3287,9 +3343,52 @@ function navPer(){
 /* ป้ายบนปุ่มย่อ — แยกออกมาเพราะ perSync ต้องอัปเดตได้โดยไม่เรียก navPer() (จะวนซ้ำ) */
 function navLbl(){
   const key=NAV_PER[CUR], brId=NAV_BR[CUR], src=brId&&$('#'+brId);
-  const br=src&&src.value? (src.options[src.selectedIndex]||{}).textContent : 'ทุกสาขา';
+  /* v1.29: ใช้ scopeName ตัวเดียวกับปุ่มและหัวกระดาษ — ของเดิมอ่านข้อความใน option
+     ทำให้ที่เดียวกันเรียกคนละชื่อ ("ทุกสาขาของ X" กับ "X · ทุกสาขา") */
+  const br=src? scopeName(src.value) : 'ทุกสาขา';
   const el=$('#npLbl'); if(el) el.textContent=(key? perLbl(key)+' · ' : '')+(br||'ทุกสาขา');
 }
+/* ---------- แผงเลือกขอบเขต บริษัท → สาขา (v1.29 · คำสั่งเจ้าของ) ----------
+   "กดแล้วจะให้เลือกบริษัทก่อน แล้วจะมีสาขาให้เลือกและสามารถบันทึกได้ หรือกดแค่บริษัทก็บันทึกได้"
+   กดบริษัท = เลือกระดับบริษัททันที + กางสาขาของบริษัทนั้นต่อ ⇒ สองทางเป็นทางเดียวกัน ไม่ต้องมีปุ่มแยก
+   แผงไม่เก็บสถานะถาวร — เขียนลง #navBrSel แล้วเรียก .onchange() เดิม (พักไว้รอปุ่มยืนยันตามกติกา v1.27.1) */
+let BP_CO='';                                    /* บริษัทที่กางอยู่ */
+const brPickCos = () => COMPANIES.filter(co=>branchesOf(co.id).some(b=>inScope(b.code)));
+function brPickRender(){
+  const el=$('#brPick'); if(!el) return;
+  const cur = NAV_BRP!==null? NAV_BRP : $('#navBrSel').value;
+  const tick = on => on? '<svg class="i i-sm bptick"><use href="#i-check"/></svg>' : '';
+  el.innerHTML='<button class="bpall'+(cur?'':' on')+'" data-bpall>ทุกสาขาที่เห็นได้'+tick(!cur)+'</button>'
+    + brPickCos().map(co=>{
+        const brs=branchesOf(co.id).filter(b=>inScope(b.code));
+        const open = BP_CO===co.id;
+        return '<button class="bpco'+(cur===co.id?' on':'')+'" data-bpco="'+co.id+'">'
+          +esc(co.name)+' <span class="tsub">('+brs.length+' สาขา)</span>'+tick(cur===co.id)+'</button>'
+          + (open? brs.map(b=>'<button class="bpbr'+(cur===b.code?' on':'')+'" data-bpbr="'+b.code+'">'
+              +esc(b.name)+tick(cur===b.code)+'</button>').join('') : '');
+      }).join('');
+  $$('#brPick [data-bpall]').forEach(b=> b.onclick=()=>{ BP_CO=''; brPickSet(''); brPickClose(); });
+  /* กดบริษัท = เลือกระดับบริษัทเลย แล้วกางสาขาให้เลือกต่อได้ (แผงยังเปิดอยู่) */
+  $$('#brPick [data-bpco]').forEach(b=> b.onclick=()=>{ BP_CO=b.dataset.bpco; brPickSet(BP_CO); brPickRender(); });
+  $$('#brPick [data-bpbr]').forEach(b=> b.onclick=()=>{ brPickSet(b.dataset.bpbr); brPickClose(); });
+}
+/* เขียนผ่าน select ตัวเดิมเสมอ ไม่ลัดไปแตะ NAV_BRP ตรง ๆ — ทางเดินจะได้มีเส้นเดียว */
+function brPickSet(v){ const sel=$('#navBrSel'); sel.value=v; sel.onchange(); }
+function brPickOpen(){
+  const el=$('#brPick'), btn=$('#navBrBtn');
+  if(!el || !btn || !btn.offsetParent) return;
+  const cur = NAV_BRP!==null? NAV_BRP : $('#navBrSel').value;
+  BP_CO = cur? (isCoSel(cur)? cur : (BRANCHES.find(b=>b.code===cur)||{}).co||'') : '';
+  el.style.display='block'; brPickRender();
+  const r=btn.getBoundingClientRect(), w=el.getBoundingClientRect();
+  el.style.left=Math.max(6, Math.min(r.left, innerWidth-w.width-6))+'px';
+  el.style.top =Math.max(6, Math.min(r.bottom+8, innerHeight-w.height-6))+'px';
+}
+function brPickClose(){ const el=$('#brPick'); if(el) el.style.display='none'; }
+$('#navBrBtn').onclick=()=>{
+  const el=$('#brPick');
+  if(el && el.style.display==='block') brPickClose(); else brPickOpen();
+};
 /* หน้าตาของแถบบนทั้งแถบ: ป้ายปุ่มย่อ + สถานะสาขาที่ยังไม่ได้ใช้ + ปุ่มยืนยัน
    #npLbl ยังบอก "ค่าที่ใช้อยู่จริง" เสมอ — สาขายังไม่ลง state จึงยังโชว์ของเดิม (ถูกแล้ว)
    ส่วนช่วงเวลาเขียน perSt ทันทีตั้งแต่ v1.27 ป้ายจึงตามทันที */
@@ -3297,12 +3396,18 @@ function navSync(){
   navLbl();
   const h=$('#navPerBox'), sum=$('#navSum'), ok=$('#navOk');
   const perD = h.style.display!=='none' && !!h.dataset.dirty, brD = NAV_BRP!==null;
-  if(sum){ sum.innerHTML = brD? '<i></i>ยังไม่ได้ใช้ · สาขา '+esc(navBrText(NAV_BRP)) : '';
+  /* ใช้ scopeName ตัวเดียวกับป้ายปุ่ม — สองที่นี้พูดถึงของอันเดียวกัน ห้ามมีสองสำนวน */
+  if(sum){ sum.innerHTML = brD? '<i></i>ยังไม่ได้ใช้ · ขอบเขต '+esc(scopeName(NAV_BRP)) : '';
     sum.classList.toggle('on', brD); }
   if(ok) ok.disabled = !(perD || brD);   /* ไม่มีอะไรให้ใช้ = กดไม่ได้ ไม่ใช่ปุ่มตาย (กฎข้อ 3) */
+  const lbl=$('#navBrLbl');
+  if(lbl) lbl.textContent = scopeName(brD? NAV_BRP : $('#navBrSel').value);
 }
 $('#navOk').onclick=()=>{
   const h=$('#navPerBox'); delete h.dataset.dirty;
+  /* ปิดแผงเลือกขอบเขตเสมอ — จอคอมไม่มีแผ่นมือถือ navCtlClose() จึงคืนค่าตั้งแต่บรรทัดแรก
+     ถ้าไม่ปิดตรงนี้ แผงจะค้างเปิดอยู่หลังกดยืนยัน */
+  brPickClose();
   /* ลงสาขาก่อน: handler ของหน้าจะวาดจอด้วย "ช่วงเวลาล่าสุด + สาขาใหม่" พร้อมกันในรอบเดียว
      (ช่วงเวลาเขียน perSt ไปตั้งแต่ตอนเลือกแล้ว §9o) จอจึงไม่วาดสองรอบ */
   if(!navBrApply()) render();   /* ไม่มีสาขาค้าง = ช่วงเวลาอย่างเดียว เดินทางเดิม */
@@ -3322,7 +3427,7 @@ $('#npBtn').onclick=()=>{
 };
 function navCtlClose(revert){
   const c=$('#navCtl'); if(!c.classList.contains('on')) return;
-  c.classList.remove('on');
+  c.classList.remove('on'); brPickClose();
   const h=$('#navPerBox');
   if(revert!==false){
     if(NAV_SNAP && h && h.dataset.dirty && NAV_PER[CUR]===NAV_SNAP.k){
@@ -3337,7 +3442,7 @@ function navCtlClose(revert){
   NAV_SNAP=null;
 }
 addEventListener('pointerdown', e=>{ const c=$('#navCtl');
-  if(c.classList.contains('on') && !e.target.closest('#navCtl,#npBtn,#perCal')) navCtlClose(); }, true);
+  if(c.classList.contains('on') && !e.target.closest('#navCtl,#npBtn,#perCal,#brPick')) navCtlClose(); }, true);
 function badges(){
   const CNT={};
   const set=(k,n)=>{ CNT[k]=n;
@@ -3558,8 +3663,8 @@ let dBranch='';
 const dPeriod     = () => perOf('dash');
 const dPeriodText = () => perText('dash');
 const inPeriod    = d  => inPer('dash', d);
-function dSales(){ return sScoped().filter(s=>(!dBranch||s.branch===dBranch) && inPeriod(s.soldAt)); }
-function dUnits(){ return uAvail().filter(u=>!dBranch||u.branch===dBranch); }
+function dSales(){ return sScoped().filter(s=>brMatch(dBranch,s.branch) && inPeriod(s.soldAt)); }
+function dUnits(){ return uAvail().filter(u=>brMatch(dBranch,u.branch)); }
 /* คิวทะเบียนที่ยังไม่ส่งมอบ + จำนวนตามขั้น — การ์ดหน้าแรกกับป๊อปอัพใช้สูตรเดียวกัน
    เลขบนการ์ดกับในป๊อปอัพจึงตรงกันเสมอ ไม่มีสอง copy ให้เพี้ยน (§9g) */
 function regQueue(){
@@ -3577,8 +3682,7 @@ function rDash(){
   const sel=$('#dBranch');
   perBar('dPer','dash', rDash, sel);
   if(!sel.dataset.init){ sel.dataset.init=1;
-    sel.innerHTML='<option value="">ทุกสาขาที่เห็นได้</option>'+BRANCHES.filter(b=>inScope(b.code))
-      .map(b=>'<option value="'+b.code+'">'+esc(b.name)+'</option>').join('');
+    sel.innerHTML=brFilterHTML('ทุกสาขาที่เห็นได้');
     sel.onchange=()=>{ dBranch=sel.value; rDash(); };
     /* ส่งออกและพิมพ์ต้องเคารพช่วงเวลาและสาขาที่เลือกอยู่ — ของเดิมส่งออกทั้งหมดเสมอ
        ซึ่งขัดกับสิ่งที่หน้าจอกำลังแสดง และเป็นกับดักตอนเอาไปทำบัญชี */
@@ -3591,14 +3695,14 @@ function rDash(){
     $('#dPrint').onclick=dashPrint;
   }
   $('#dPeriod').innerHTML='ช่วงที่ดูอยู่ <b>'+esc(dPeriodText())+'</b>'
-    +' · '+esc(dBranch? bName(dBranch) : 'ทุกสาขาที่เห็นได้');
+    +' · '+esc(scopeName(dBranch));
   const su=dUnits(), ss=dSales();
   const stuck=su.filter(u=>age(u)>CFG.aging);
   /* ช่วงก่อนหน้าที่ยาวเท่ากัน ใช้เทียบว่าดีขึ้นหรือแย่ลง — คิดจากช่วงที่เลือกจริง ไม่ใช่จากปุ่มลัด
      ไม่งั้นพอเลือกวันเองแล้วเปอร์เซ็นต์เทียบจะเทียบกับช่วงที่ไม่เกี่ยวกันเลย */
   const per=dPeriod(), perLen=days(per.from, per.to)+1;
   const prevTo=addDays(per.from,-1), prevFrom=addDays(prevTo,-(perLen-1));
-  const prev=sScoped().filter(s=>(!dBranch||s.branch===dBranch) && s.soldAt>=prevFrom && s.soldAt<=prevTo);
+  const prev=sScoped().filter(s=>brMatch(dBranch,s.branch) && s.soldAt>=prevFrom && s.soldAt<=prevTo);
   const dt=(a,b)=> b===0? '' : '<div class="dt '+(a>=b?'up':'dn')+'">'+ic(a>=b?'up':'down','i i-sm')+' '+Math.abs(Math.round((a-b)/b*100))+'%</div>';
   const rev=ss.reduce((s,x)=>s+x.net,0), gp=ss.reduce((s,x)=>s+x.gp,0);
   const prevRev=prev.reduce((s,x)=>s+x.net,0);
@@ -3893,7 +3997,7 @@ function kpiDrawer(kind){
   if(kind==='stuck') return todoDrawer('stuck');
   const su=dUnits(), ss=dSales();
   const scope='<div class="tsub" style="margin-bottom:var(--s2)">'+esc(dPeriodText())+' · '
-    +esc(dBranch? bName(dBranch) : 'ทุกสาขาที่เห็นได้')+'</div>';
+    +esc(scopeName(dBranch))+'</div>';
   if(kind==='stock'){
     const mm={}; su.forEach(u=>{ mm[u.model]=mm[u.model]||{n:0,cost:0}; mm[u.model].n++; mm[u.model].cost+=u.cost; });
     const ks=Object.keys(mm).sort((a,b)=>mm[b].n-mm[a].n);
@@ -3947,7 +4051,7 @@ function dashPrint(){
     ['ค้างเกิน '+CFG.aging+' วัน', su.filter(u=>age(u)>CFG.aging).length+' คัน']];
   printHTML('<div class="doc"><h2>'+esc(CFG.company)+'</h2>'
     +'<div class="dsub">สรุปภาพรวม · '+esc(dPeriodText())+' · '
-      +esc(dBranch? bName(dBranch) : 'ทุกสาขาที่เห็นได้')+' · พิมพ์ '+thDate(TODAY)+'</div>'
+      +esc(scopeName(dBranch))+' · พิมพ์ '+thDate(TODAY)+'</div>'
     +'<table><tbody>'+kpi.map(k=>'<tr><td>'+esc(k[0])+'</td><td class="n">'+k[1]+'</td></tr>').join('')+'</tbody></table>'
     +'<h3 style="margin-top:16px">รายการขายในช่วงนี้ ('+ss.length+')</h3>'
     +'<table><thead><tr><th>วันที่</th><th>สาขา</th><th>รุ่น</th><th>ลูกค้า</th><th>เซลล์</th>'
@@ -4329,7 +4433,7 @@ let stView='gal', stOpen={};   /* stOpen = กลุ่มรุ่น+สีท
 function stList(){
   const q=$('#stQ').value.trim().toLowerCase();
   return UNITS.filter(u=> inScope(u.branch)
-    && (!$('#stBranch').value || u.branch===$('#stBranch').value)
+    && brMatch($('#stBranch').value, u.branch)
     && (!$('#stModel').value  || u.model===$('#stModel').value)
     && (!$('#stColor').value  || u.color===$('#stColor').value)
     && (!$('#stStatus').value || u.status===$('#stStatus').value)
@@ -4352,7 +4456,7 @@ function stTab(v){
 }
 function rStock(){
   if(!$('#stBranch').dataset.init){ $('#stBranch').dataset.init=1;
-    $('#stBranch').innerHTML='<option value="">ทุกสาขา</option>'+BRANCHES.filter(b=>inScope(b.code)).map(b=>'<option value="'+b.code+'">'+esc(b.name)+'</option>').join('');
+    $('#stBranch').innerHTML=brFilterHTML('ทุกสาขา');
     $('#stModel').innerHTML='<option value="">ทุกรุ่น</option>'+[...new Set(UNITS.map(u=>u.model))].map(m=>'<option>'+esc(m)+'</option>').join('');
     ['stBranch','stModel','stColor','stStatus'].forEach(k=> $('#'+k).onchange=rStock);
     $('#stQ').oninput=rStock;
@@ -5810,7 +5914,7 @@ function dealRows(){
   const q=g('dlQ').trim().toLowerCase(), st=g('dlStage'), sp=g('dlSales'), br=g('dlBranch');
   return dealAll().filter(d=>
       (!st || dealStageName(d)===st)
-   && (!br || d.c.branch===br)
+   && brMatch(br, d.c.branch)
    && (!sp || ((d.s?d.s.sales:d.c.owner)||'')===sp)
    && (!q  || (d.c.name+(d.c.phone||'')+(d.u?d.u.engine:'')).toLowerCase().indexOf(q)>=0))
     /* ตกราง เลยกำหนด และไฟแนนซ์เงียบขึ้นก่อน ที่จบแล้วลงท้าย
@@ -5828,8 +5932,7 @@ function rDealList(){
   fill($('#dlStage'), DEAL_TRACK_N.concat(['ไม่ผ่าน']), 'ทุกขั้นตอน');
   fill($('#dlSales'), [...new Set(all.map(d=>(d.s?d.s.sales:d.c.owner)||'').filter(Boolean))].sort(), 'ทุกเซลล์');
   (function(){ const el=$('#dlBranch'), want=el.value;
-    el.innerHTML='<option value="">ทุกสาขาที่ดูแล</option>'
-      +BRANCHES.filter(b=>inScope(b.code)).map(b=>'<option value="'+b.code+'">'+esc(b.name)+'</option>').join('');
+    el.innerHTML=brFilterHTML('ทุกสาขาที่ดูแล');
     if(want) el.value=want; })();
   if(!$('#dlStage').dataset.init){ $('#dlStage').dataset.init=1;
     ['dlStage','dlSales','dlBranch'].forEach(k=> $('#'+k).onchange=rDeal);
@@ -7585,7 +7688,7 @@ function abState(s, day){
   return {k: c.late? 'late':'in', a, c};
 }
 function abRows(day){
-  const inB = x => !AB_BRANCH || x.branch===AB_BRANCH;
+  const inB = x => brMatch(AB_BRANCH, x.branch);
   return attStaffScope().filter(inB).map(s=>{
     const st=abState(s,day);
     return {s, ...st, f:st.a? attFlags(st.a):[], m:attMonth(s.id, day.slice(0,7))};
@@ -7596,14 +7699,12 @@ function rAttend(){
     $('#abNote').innerHTML='<div class="note w">'+ic('lock','i i-sm')+'<span>หน้านี้เปิดให้เฉพาะผู้บริหาร ฝ่ายบุคคล และผู้ดูแลระบบ</span></div>'; return; }
   if(!AB_DAY) AB_DAY=curDate();
   if(!$('#abDate').dataset.ready){ $('#abDate').dataset.ready=1;
-    $('#abBranch').innerHTML='<option value="">ทุกสาขาที่เห็นได้</option>'+
-      BRANCHES.filter(b=>inScope(b.code)).map(b=>'<option value="'+b.code+'">'+esc(b.name)+'</option>').join('');
+    $('#abBranch').innerHTML=brFilterHTML('ทุกสาขาที่เห็นได้');
     $('#abBranch').onchange=()=>{ AB_BRANCH=$('#abBranch').value; rAttend(); fsSync('attend'); };
     $('#abDate').onchange=()=>{ AB_DAY=$('#abDate').value||curDate(); rAttend(); };
     $('#abDay').onclick=()=>{ const el=$('#abDate'); if(el.showPicker) el.showPicker(); else el.click(); };
     $('#abPrev').onclick=()=>{ AB_DAY=addDays(AB_DAY,-1); rAttend(); };
     $('#abNext').onclick=()=>{ AB_DAY=addDays(AB_DAY, 1); rAttend(); };
-    $('#abFilt').onclick=()=>openFilters('attend');
     $('#abCsv').onclick=()=>{ const r=abRows(AB_DAY);
       csv('การเข้างาน '+AB_DAY, ['พนักงาน','ตำแหน่ง','สาขา','สถานะ','เข้า','ออก','ชั่วโมง','OT','นาทีสาย','ธง'],
         r.map(x=>[x.s.name, ROLES[x.s.role].name, bName(x.s.branch),
@@ -7631,7 +7732,7 @@ function rAttend(){
   const shown=rows.filter(r=>!AB_FILTER || r.k===AB_FILTER)
     .sort((a,b)=> order[a.k]-order[b.k] || (a.a&&a.a.in||'99').localeCompare(b.a&&b.a.in||'99'));
   $('#abListS').textContent = shown.length+' คน'
-    +(AB_BRANCH? ' · '+bName(AB_BRANCH) : '')+(AB_FILTER? ' · แตะตัวเลขซ้ำเพื่อเลิกกรอง':'');
+    +(AB_BRANCH? ' · '+scopeName(AB_BRANCH) : '')+(AB_FILTER? ' · แตะตัวเลขซ้ำเพื่อเลิกกรอง':'');
   const lateNow = !isToday || toSec(hhmmss(new Date()))>toSec(CFG.workOut);
   const row=r=>{
     const bad = r.f.filter(x=>x.k==='notme'||x.k==='open'||x.k==='edit');
@@ -9014,7 +9115,7 @@ const rpMonthTh = m => m? TH_M[+m.slice(5,7)-1]+' '+(+m.slice(0,4)+543) : 'ท�
 function rpScope(){
   const b=$('#rpBranch').value, p=perOf('report');
   return { p, b, dim:($('#rpDim')&&$('#rpDim').value)||'model',
-    inB:c=>inScope(c)&&(!b||c===b), inR:x=>inPer('report',x) };
+    inB:c=>inScope(c)&&brMatch(b,c), inR:x=>inPer('report',x) };
 }
 /* แต่ละแท็บคืน {kpi:[[หัว,ค่า,รอง]], head:[{t,n,money}], rows:[[ค่าดิบ]], note} — ตัวเดียวใช้ทั้งจอ/CSV/พิมพ์ */
 function rpBuild(tab){
@@ -9214,7 +9315,7 @@ function rReport(){
   perBar('rpPer','report', rReport);
   fsShow('rpDim', RP_SEL==='monthly');
   (function(){ const el=$('#rpBranch'), want=el.value;
-    el.innerHTML='<option value="">ทุกสาขาที่ดูแล</option>'+BRANCHES.filter(b=>inScope(b.code)).map(b=>'<option value="'+b.code+'">'+esc(b.name)+'</option>').join('');
+    el.innerHTML=brFilterHTML('ทุกสาขาที่ดูแล');
     if(want) el.value=want; })();
   if(!$('#rpBranch').dataset.init){ $('#rpBranch').dataset.init=1;
     $('#rpBranch').onchange=rReport; $('#rpDim').onchange=rReport;
@@ -9227,7 +9328,7 @@ function rReport(){
       const period = perText('report')
         +(RP_SEL==='monthly'?' · แยกตาม'+({model:'รุ่น',sales:'เซลล์',branch:'สาขา'}[$('#rpDim').value||'model']):'');
       printHTML('<div class="doc"><h2>'+esc(CFG.company)+'</h2>'
-        +'<div class="dsub">รายงาน'+esc(t.n)+' · '+esc($('#rpBranch').value?bName($('#rpBranch').value):'ทุกสาขาที่ดูแล')
+        +'<div class="dsub">รายงาน'+esc(t.n)+' · '+esc($('#rpBranch').value?scopeName($('#rpBranch').value):'ทุกสาขาที่ดูแล')
         +' · '+esc(period)+' · พิมพ์ '+thDate(TODAY)+'</div>'
         +'<table><thead><tr>'+keep.map(i=>'<th'+(d.head[i].n?' class="n"':'')+'>'+esc(d.head[i].t)+'</th>').join('')+'</tr></thead><tbody>'
         +d.rows.map(r=>'<tr>'+keep.map(i=>'<td'+(d.head[i].n?' class="n"':'')+'>'
@@ -9718,7 +9819,7 @@ $('#gsQ').onkeydown=e=>{
 $('#gs').onclick=e=>{ if(e.target.id==='gs') closeGs(); };
 document.addEventListener('keydown', e=>{
   if(e.key==='Escape'){ closeDrawer(); closeModal(); closeGs(); closeMore(); closeFilters();
-    navCtlClose(); perCalClose(); }
+    navCtlClose(); perCalClose(); brPickClose(); }
   if(e.key==='/' && ME && ['INPUT','TEXTAREA','SELECT'].indexOf(document.activeElement.tagName)<0){ e.preventDefault(); gsOpen(); }
 });
 </script>
