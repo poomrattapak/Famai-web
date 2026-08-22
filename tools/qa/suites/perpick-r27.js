@@ -110,15 +110,26 @@ const { chromium, EXE, BASE } = require('./env');
       fails.push('[4] ช่วงที่ได้ไม่ตรง: ' + JSON.stringify(t4.per));
   }
 
-  /* ช่องวันที่ต้องยังอยู่ในโครง — ด่านเดิม (brief-r11) ยิง .value + .onchange() ตรงเข้าไป */
+  /* ช่องวันที่ต้องยังอยู่ในโครง — ด่านเดิม (brief-r11) ยิง .value + .onchange() ตรงเข้าไป
+     ⚠ ต้องตั้ง "ทั้งคู่" ไม่ใช่ตั้งแต่ [data-pf]
+     ข้อ 4 ข้างบนทิ้งช่วงเดือนก่อนไว้ (เช่น 4–9 ก.ค.) พอตั้ง from = วันนี้-12 ซึ่งอยู่หลัง to เดิม
+     แอปจะสลับหัวท้ายให้ (ถูกแล้ว — ข้อ 4 เองก็พิสูจน์ว่ามันต้องสลับ) แล้ว from ที่ได้ก็ไม่ตรงกับที่ตั้ง
+     เดิมข้อนี้จึงแดงเองเมื่อวันที่เดินไปจนวันนี้-12 เลย to ที่ข้อ 4 ทิ้งไว้ — ไม่เกี่ยวกับโค้ดแอปเลย */
   const keep = await p.evaluate(() => {
     const pf = document.querySelector('#navPerBox [data-pf]');
-    if (!pf) return { gone: true };
-    pf.value = addDays(curDate(), -12); pf.onchange();
-    return { ok: dPeriod().from === addDays(curDate(), -12) };
+    const pt = document.querySelector('#navPerBox [data-pt]');
+    if (!pf || !pt) return { gone: true };
+    /* to ต้องไม่ใช่ 'วันนี้' — ถ้าใช้วันนี้ แล้วสายของ [data-pt] ขาด ค่าเดิมมักบังเอิญเป็นวันนี้พอดี
+       ข้อนี้จะเขียวทั้งที่ของพัง (พิสูจน์ด้วย mutation มาแล้ว) */
+    const from = addDays(curDate(), -12), to = addDays(curDate(), -2);
+    pt.value = to; pt.onchange();
+    pf.value = from; pf.onchange();
+    const per = dPeriod();
+    return { ok: per.from === from && per.to === to, per, want: [from, to] };
   });
-  if (keep.gone) fails.push('[3] ช่อง [data-pf] หายจากโครง — ด่านเดิมยิง .onchange() ตรงเข้าไป');
-  else if (!keep.ok) fails.push('[3] ตั้งค่า [data-pf] แล้วเรียก .onchange() แล้วช่วงไม่เปลี่ยน');
+  if (keep.gone) fails.push('[3] ช่อง [data-pf]/[data-pt] หายจากโครง — ด่านเดิมยิง .onchange() ตรงเข้าไป');
+  else if (!keep.ok) fails.push('[3] ตั้งค่าช่องวันที่แล้วเรียก .onchange() แล้วช่วงไม่เปลี่ยน: '
+    + JSON.stringify(keep.per) + ' ควรเป็น ' + keep.want.join('–'));
   await p.context().close();
 
   /* 6 + 7 · มือถือ: ปฏิทินไม่ล้นจอ · ปิดแผ่นโดยไม่ยืนยันต้องคืนค่าเดิม */

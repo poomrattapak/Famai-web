@@ -1,0 +1,229 @@
+<!doctype html><html lang="th"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>แบบ 9 · กระดานหน้าร้าน — Famai Motor</title>
+<script>try{var d=localStorage.getItem('famai_login_dark');if(d==='1'||(d===null&&matchMedia('(prefers-color-scheme:dark)').matches))document.documentElement.dataset.theme='dark';}catch(e){}</script>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sriracha&family=Mali:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ============ แบบ 9 · กระดานหน้าร้าน ============
+   แนวคิด: ที่ร้านมีกระดานที่ทุกคนเขียนชื่อตัวเองก่อนเริ่มงานอยู่แล้ว — เอากระดานนั้นขึ้นจอ
+           ระบบควรรู้สึกเหมือนของที่ร้านทำเอง ไม่ใช่ซอฟต์แวร์ที่ซื้อมา
+   ต่างจากตัวอื่น: **ชื่อเขียนเปล่า ๆ บนกระดาน ไม่มีกล่อง ไม่มีเส้นขอบ**
+           คนที่เลือกมีวงกลมวาดมือรอบชื่อ · โหมดบัญชีจริงเป็นโน้ตกาวแปะมุมกระดาน
+   ฟอนต์: Sriracha (**น้ำหนักเดียว 400** ลายมือไทยแบบปากกาเมจิก — ใช้กับหัวเรื่องและชื่อคนเท่านั้น)
+          + Mali 400/500/600 (body กลม ๆ ที่ยังมีกลิ่นลายมือแต่อ่านเป็นย่อหน้าได้)
+   แดงใช้ตรงไหน: **ปากกาแดง** — วงกลมรอบชื่อที่เลือก และปุ่ม (ตรงกับที่คนไทยใช้ปากกาแดงจริง)
+   ธีมมืด: เปลี่ยนจากไวท์บอร์ดเป็น **กระดานดำ** ชอล์กขาว — มุกที่ลงตัวกับแนวคิด ไม่ใช่แค่กลับสี
+   จุดอ่อน: (1) Sriracha มีน้ำหนักเดียว ใช้ทั้งแอปไม่ได้เด็ดขาด ต้องยอมรับว่าเป็นฟอนต์หัวข้ออย่างเดียว
+            (2) **ความน่ารักหมดอายุใน 3 วัน** แต่พนักงานต้องเห็นวันละ 5 ครั้งไปอีก 3 ปี
+            (3) วงกลมวาดมือคือ SVG ที่ต้องวาดใหม่ทุกครั้งที่เลือก เป็นโค้ดที่ไม่ได้ทำงานอะไรเลย
+   ราคาพอร์ต: ถูก (ปุ่ม 10 ตัวหน้าตาแปลก แต่โครงเดิมทั้งหมด)
+   ================================================ */
+:root{
+  --paper:#DDD3BF; --paper-2:#EAE2D2; --card:#F2EDE3; --dark:#1E3A5F;
+  --ink:#1E3A5F; --ink-soft:#33507A; --muted:#5A6B85;
+  --hairline:rgba(30,58,95,.26); --hairline-2:rgba(30,58,95,.12);
+  --accent:#C21D24; --accent-hover:#E03A41; --accent-deep:#911015; --accent-wash:rgba(194,29,36,.08);
+  --pos:#1B6B44; --attn:#8A5410;
+  --grp1:#8E1319; --grp2:#26527A; --grp3:#1B6B44; --grp4:#7C5010; --grp5:#523E76; --grp6:#4B5666;
+  --on-grp:#F2EDE3; --on-accent:#FFFFFF;
+  --note:#F5E27A; --note-ink:#40381A;    /* โน้ตกาวเหลือง — สีคงที่ทั้งสองธีม กระดาษเหลืองก็คือเหลือง */
+  --wood:#9A7A4F;
+  --s-half:4px; --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s5:48px; --s6:64px;
+  --r-input:8px; --r-card:10px; --r-lg:14px; --r-btn:14px; --r-pill:999px;
+  --t-label:13px; --t-table:14px; --t-body:16px; --t-lead:19px;
+  --t-h2:23px; --t-h1:30px; --t-stat:32px; --t-display:36px;
+  --f-display:'Sriracha',cursive; --f-body:'Mali',system-ui,sans-serif;
+  --f-num:'Mali',system-ui,sans-serif;
+  --sh-sm:0 1px 2px rgba(30,58,95,.10); --sh-md:0 4px 12px rgba(30,58,95,.14);
+  --sh-lg:0 18px 44px rgba(0,0,0,.22); --glow:none;
+  --ease:cubic-bezier(.2,.8,.3,1); --dur-ui:.2s;
+}
+html[data-theme="dark"]{
+  /* กระดานดำ ชอล์กขาว */
+  --paper:#0D1512; --paper-2:#16211C; --card:#15201B; --dark:#EDEAE2;
+  --ink:#EDEAE2; --ink-soft:#D2CEC3; --muted:#A6A79A;
+  --hairline:rgba(237,234,226,.26); --hairline-2:rgba(237,234,226,.13);
+  --accent:#FF6E74; --accent-hover:#FF9096; --accent-deep:#C21D24; --accent-wash:rgba(255,110,116,.12);
+  --pos:#59C68E; --attn:#DFA043;
+  --grp1:#FF8E94; --grp2:#87B5DC; --grp3:#59C68E; --grp4:#DFA043; --grp5:#B99BE0; --grp6:#A8B0AA;
+  --on-grp:#0D1512; --on-accent:#14100A;
+  --wood:#5A4930;
+  --sh-lg:0 18px 44px rgba(0,0,0,.6);
+}
+*{ box-sizing:border-box; margin:0; padding:0; }
+body{ background:var(--paper); color:var(--ink); font-family:var(--f-body);
+  font-size:var(--t-body); line-height:1.55; -webkit-font-smoothing:antialiased; }
+.off{ display:none !important; }
+.i{ width:20px; height:20px; flex:0 0 20px; }
+.i-sm{ width:15px; height:15px; flex:0 0 15px; }
+button,input{ font:inherit; color:inherit; }
+
+/* ---------------- LOGIN ---------------- */
+#login{ min-height:100dvh; padding:var(--s3); display:flex; justify-content:center;
+  align-items:flex-start; }
+/* กระดานมีขอบไม้ */
+.board{ position:relative; width:min(880px,100%); background:var(--card);
+  border:10px solid var(--wood); border-radius:var(--r-lg);
+  padding:var(--s4) var(--s4) var(--s5); box-shadow:var(--sh-lg); }
+.hd{ font-family:var(--f-display); font-size:var(--t-h1); line-height:1.35; }
+.hd small{ display:block; font-family:var(--f-body); font-size:var(--t-table);
+  font-weight:400; color:var(--muted); margin-top:var(--s-half); }
+.rule{ height:2px; background:var(--hairline); margin:var(--s3) 0; border-radius:2px; }
+
+/* ชื่อเขียนบนกระดานสองคอลัมน์ — ไม่มีกล่อง ไม่มีขอบ */
+#lgUsers{ display:grid; grid-template-columns:1fr 1fr; gap:var(--s1) var(--s4); }
+.lg-u{ display:block; width:100%; text-align:left; cursor:pointer;
+  background:none; border:0; padding:var(--s2) var(--s3); min-height:64px; }
+/* วงกลมต้องรัดรอบ "ข้อความ" ไม่ใช่รอบช่องกริด — ไม่งั้นชื่อสั้นจะได้วงยาวเลยไปครึ่งจอ */
+.lg-u .w{ position:relative; display:inline-block; }
+.lg-u b{ display:block; font-family:var(--f-display); font-size:var(--t-lead);
+  font-weight:400; line-height:1.35; }
+.lg-u .r{ display:block; font-size:var(--t-label); color:var(--muted); font-weight:400; }
+/* วงกลมวาดมือ — เส้นสั่นด้วย dasharray ไม่กลมเป๊ะ */
+.ring{ position:absolute; inset:-6px -14px; width:calc(100% + 28px); height:calc(100% + 12px);
+  pointer-events:none; opacity:0; color:var(--accent);
+  transition:opacity var(--dur-ui) var(--ease); }
+.lg-u.on .ring{ opacity:1; }
+.lg-u .k{ display:inline-flex; align-items:center; gap:5px; margin-top:2px;
+  font-size:var(--t-label); font-weight:600; color:var(--accent); opacity:0; }
+.lg-u.on .k{ opacity:1; }
+@media (hover:hover){ .lg-u:hover b{ color:var(--accent-deep); } }
+
+.act{ margin-top:var(--s4); display:flex; gap:var(--s2); align-items:center; }
+.btn{ display:inline-flex; align-items:center; justify-content:center; gap:var(--s1);
+  min-height:52px; padding:0 var(--s4); background:var(--accent); color:var(--on-accent);
+  border:0; border-radius:var(--r-btn); font-weight:600; cursor:pointer;
+  transform:rotate(-.6deg); }
+@media (hover:hover){ .btn:hover{ background:var(--accent-deep); color:#fff; } }
+
+/* โน้ตกาวเหลืองแปะมุมขวาล่าง — คือปุ่มสลับโหมด */
+.note{ position:absolute; right:var(--s4); bottom:var(--s3); transform:rotate(2.5deg); }
+#lgSwap{ display:block; width:150px; min-height:88px; padding:var(--s2) var(--s1);
+  background:var(--note); color:var(--note-ink); border:0; border-radius:2px;
+  font-family:var(--f-display); font-size:var(--t-table); line-height:1.4; cursor:pointer;
+  box-shadow:var(--sh-md); }
+@media (hover:hover){ #lgSwap:hover{ transform:rotate(-1deg) scale(1.02); } }
+
+#lgLive{ max-width:520px; }
+#lgLive h2{ font-family:var(--f-display); font-size:var(--t-h2); font-weight:400; }
+.hint{ color:var(--muted); font-size:var(--t-table); margin-bottom:var(--s3); }
+.fld{ margin-bottom:var(--s2); }
+.fl{ display:block; font-size:var(--t-label); color:var(--muted); margin-bottom:var(--s-half); }
+.inp{ width:100%; min-height:50px; padding:0 var(--s2); background:var(--paper-2); color:var(--ink);
+  border:1px solid var(--hairline); border-radius:var(--r-input); }
+.inp:focus{ outline:2px solid var(--accent); outline-offset:1px; }
+
+@media (max-width:720px){
+  #login{ padding:var(--s2); }
+  .board{ border-width:7px; padding:var(--s3) var(--s2) var(--s3); }
+  .hd{ font-size:var(--t-h2); }
+  #lgUsers{ grid-template-columns:1fr; gap:var(--s-half); }
+  .lg-u{ padding:var(--s1) var(--s3); min-height:58px; }
+  /* โน้ตกาวเลิกลอย มาต่อท้ายกระดานแทน — ลอยแล้วทับรายชื่อบนจอแคบ */
+  .note{ position:static; margin-top:var(--s3); transform:none; }
+  #lgSwap{ width:100%; min-height:64px; transform:rotate(-1deg); }
+  .act{ flex-wrap:wrap; }
+  .btn{ flex:1 1 100%; }
+}
+
+/* ---------------- หน้าแรก ---------------- */
+/* หัวข้อลายมือ แต่ข้อมูลข้างล่างเรียบร้อยธรรมดา — กระดานเป็นเปลือก ข้างในเป็นตัวเลขจริง */
+#app{ min-height:100dvh; padding:var(--s3); display:flex; justify-content:center; }
+.dsh{ width:min(1000px,100%); background:var(--card); border:10px solid var(--wood);
+  border-radius:var(--r-lg); padding:var(--s3); display:grid; gap:var(--s2);
+  box-shadow:var(--sh-lg); align-content:start; }
+.dsh-hd{ display:flex; flex-wrap:wrap; gap:var(--s2); align-items:baseline;
+  justify-content:space-between; border-bottom:2px solid var(--hairline); padding-bottom:var(--s2); }
+.dsh-hd b{ font-family:var(--f-display); font-size:var(--t-h1); font-weight:400; margin-right:var(--s2); }
+.dsh-hd span{ color:var(--muted); font-size:var(--t-table); }
+.dsh-me{ display:flex; align-items:center; gap:var(--s2); font-size:var(--t-table); color:var(--muted); }
+.dsh-out{ min-height:44px; padding:0 var(--s3); background:none; color:var(--ink); cursor:pointer;
+  border:2px solid var(--hairline); border-radius:var(--r-btn); font-size:var(--t-table); }
+@media (hover:hover){ .dsh-out:hover{ border-color:var(--accent); color:var(--accent); } }
+.dsh-grid{ display:grid; grid-template-columns:repeat(6,1fr); gap:var(--s2); }
+.dsh-grid>.dsh-c{ grid-column:span 2; }
+.dsh-c{ background:var(--paper-2); border-radius:var(--r-card); padding:var(--s3); }
+.dsh-lab{ font-family:var(--f-display); font-size:var(--t-label); color:var(--muted); }
+.dsh-val{ font-size:var(--t-stat); font-weight:600; line-height:1.15;
+  font-variant-numeric:tabular-nums; }
+.dsh-val small{ font-size:var(--t-table); font-weight:400; color:var(--muted); margin-left:5px; }
+.dsh-sub{ font-size:var(--t-label); color:var(--muted); }
+.t-pos .dsh-val{ color:var(--pos); } .t-attn .dsh-val{ color:var(--attn); }
+.dsh-wide{ grid-column:1/-1; }
+.dsh-bars{ display:flex; align-items:flex-end; gap:var(--s1); height:112px; margin-top:var(--s2); }
+.dsh-bar{ flex:1; display:flex; flex-direction:column; justify-content:flex-end; gap:var(--s-half);
+  height:100%; text-align:center; }
+.dsh-bar i{ display:block; width:100%; max-width:34px; margin:0 auto; height:var(--h);
+  min-height:5px; border-radius:6px 6px 3px 3px; background:var(--grp2); }
+.dsh-bar span{ font-size:11px; color:var(--muted); }
+.dsh-rows{ display:grid; margin-top:var(--s2); }
+.dsh-row{ display:flex; align-items:center; gap:var(--s2); padding:var(--s1) 0;
+  border-top:1px solid var(--hairline-2); font-size:var(--t-table); }
+.dsh-row b{ font-weight:600; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.dsh-row span:not(.dsh-meter){ color:var(--muted); font-size:var(--t-label); }
+.dsh-row em{ margin-left:auto; font-style:normal; color:var(--muted); font-size:var(--t-label);
+  font-variant-numeric:tabular-nums; white-space:nowrap; }
+.dsh-dot{ width:8px; height:8px; flex:0 0 8px; border-radius:var(--r-pill); background:var(--attn); }
+.dsh-meter{ flex:1; height:8px; background:var(--card); border-radius:var(--r-pill); overflow:hidden; }
+.dsh-mfill{ display:block; height:100%; background:var(--grp3); }
+@media (max-width:900px){
+  #app{ padding:var(--s2); }
+  .dsh{ border-width:7px; padding:var(--s2); }
+  .dsh-grid{ grid-template-columns:repeat(2,1fr); }
+  .dsh-grid>.dsh-c{ grid-column:span 1; }
+  .dsh-c{ padding:var(--s2); }
+}
+</style></head><body>
+
+<div id="login"><div class="board">
+  <div id="lgDemo">
+    <div class="hd">วันนี้ใครอยู่บ้าง<small>เขียนชื่อไว้ก่อนเริ่มงาน เหมือนกระดานหน้าร้าน</small></div>
+    <div class="rule"></div>
+    <div id="lgUsers"></div>
+    <div class="act"><button class="btn" id="lgGo">เข้าสู่ระบบ</button></div>
+    <div class="note"><button id="lgSwap"></button></div>
+  </div>
+
+  <div id="lgLive" style="display:none">
+    <h2>เข้าด้วยบัญชีจริง</h2>
+    <p class="hint">ใช้อีเมลและรหัสผ่านที่ผู้ดูแลระบบออกให้</p>
+    <div class="fld"><label class="fl" for="lgEmail">อีเมล</label>
+      <input class="inp" type="email" id="lgEmail" placeholder="sales2@famai.local" autocomplete="username"></div>
+    <div class="fld"><label class="fl" for="lgPw2">รหัสผ่าน</label>
+      <input class="inp" type="password" id="lgPw2" autocomplete="current-password"></div>
+    <div class="act">
+      <button class="btn" id="lgGo2">เข้าสู่ระบบ</button>
+      <button class="dsh-out" id="lgSwap2" type="button">กลับไปที่กระดาน</button>
+    </div>
+  </div>
+</div></div>
+
+<div id="app" class="off"></div>
+
+<script src="data.js"></script><script src="common.js"></script>
+<script>
+$('#lgGo').innerHTML  = 'เข้าสู่ระบบ '+ic('arrow','i i-sm');
+$('#lgGo2').innerHTML = 'เข้าสู่ระบบ '+ic('arrow','i i-sm');
+$('#lgSwap2').onclick = () => $('#lgSwap').click();
+
+/* วงกลมวาดมือ — ellipse ที่ใส่ dasharray ให้เส้นสั่น ๆ ไม่กลมเป๊ะ
+   ⚠ นี่คือโค้ดที่ไม่ได้ทำงานอะไรเลยนอกจากความรู้สึก — เขียนไว้เตือนว่ามันคือต้นทุน */
+const RING = '<svg class="ring" viewBox="0 0 240 70" preserveAspectRatio="none" aria-hidden="true">'
+  + '<ellipse cx="120" cy="35" rx="115" ry="30" fill="none" stroke="currentColor"'
+  + ' stroke-width="2" stroke-linecap="round" stroke-dasharray="150 7 90 5 40 9"'
+  + ' transform="rotate(-1.2 120 35)"/></svg>';
+
+mountStaff(s => '<span class="w">' + RING
+  + '<b>'+esc(s.name)+'</b><span class="r">'+esc(staffLine(s))+'</span></span>'
+  + '<span class="k">'+ic('check','i i-sm')+'เลือกอยู่</span>');
+
+/* ข้อความบนโน้ตกาวเปลี่ยนตามโหมด — swapMode() ตั้ง textContent ให้แล้ว แค่เติมบรรทัดบน */
+function afterSwap(live){
+  $('#lgSwap').innerHTML = live ? 'กลับไปที่กระดาน'
+    : 'มีบัญชีระบบ?<br>กดตรงนี้';
+}
+boot(9);
+afterSwap(false);
+</script></body></html>

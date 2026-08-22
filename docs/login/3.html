@@ -1,0 +1,244 @@
+<!doctype html><html lang="th"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>แบบ 3 · โชว์รูมกลางคืน — Famai Motor</title>
+<script>try{var d=localStorage.getItem('famai_login_dark');if(d==='1'||(d===null&&matchMedia('(prefers-color-scheme:dark)').matches))document.documentElement.dataset.theme='dark';}catch(e){}</script>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600;700&family=KoHo:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ============ แบบ 3 · โชว์รูมกลางคืน ============
+   แนวคิด: สุดขั้วด้านมืด — จอคือโชว์รูมปิดไฟ มีแค่ไฟส่องกับคนที่กำลังจะเข้าเวร
+           เลือกคนเหมือนเลือกตัวละคร ไม่ใช่เหมือนกรอกแบบฟอร์ม
+   ต่างจากตัวอื่น: **เข้มทั้งจอทั้งสองธีม** (ธีม "สว่าง" ของแบบนี้คือเทาเข้ม ธีมมืดคือดำสนิท)
+           และรายชื่อ **เลื่อนแนวนอนทีละใบ** ไม่ใช่กริดหรือรายการ
+   ฟอนต์: Chakra Petch 600/700 (หัวเรื่อง+ชื่อคน เหลี่ยมแบบมอเตอร์สปอร์ต ไทยคมมาก)
+          + KoHo 400/500 (body humanist อ่านสบายกว่า กันไม่ให้ทั้งหน้าแข็งไปหมด)
+   แดงใช้ตรงไหน: **เยอะที่สุดในชุด** — แสงเรือง ขอบไฟการ์ดที่เลือก ปุ่ม และเส้นใต้โลโก้
+   จุดอ่อน: (1) **มือถือกลางแดดหน้าร้านอ่านไม่ออก** ซึ่งขัดกับ "มือถือคือจอหลัก" ตรง ๆ
+            (2) เห็นคนทีละ 1-2 คนจาก 10 — คนที่ชื่ออยู่ท้ายต้องปัด 8 ครั้งทุกเช้า
+                (บรรเทาด้วยปุ่ม ‹ › แต่ไม่หายขาด)
+   ราคาพอร์ต: แพง — ต้องไล่ตรวจด่าน 14 ชุดที่คลิก [data-id] ทีละตัวว่ายังคลิกได้
+              (Playwright เลื่อนเข้ามาให้เองได้ ถ้าปุ่มไม่ถูก display:none — ที่นี่จึงไม่ซ่อนใครเลย)
+   ================================================= */
+:root{
+  --paper:#14161B; --paper-2:#1B1E25; --card:#20242C; --dark:#0B0D11;
+  --ink:#E9ECF1; --ink-soft:#C2C7D0; --muted:#9AA1AC;
+  --hairline:rgba(233,236,241,.20); --hairline-2:rgba(233,236,241,.10);
+  --accent:#FF3B47; --accent-hover:#FF6A73; --accent-deep:#C8000F; --accent-wash:rgba(255,59,71,.14);
+  --pos:#3DBA7A; --attn:#DC9130;
+  --grp1:#FF6B74; --grp2:#6EA8D9; --grp3:#3DBA7A; --grp4:#DC9130; --grp5:#A97FD6; --grp6:#9BA3B2;
+  --on-grp:#0B0D11; --on-accent:#0B0D11;
+  --s-half:4px; --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s5:48px; --s6:64px;
+  --r-input:10px; --r-card:16px; --r-lg:20px; --r-btn:999px; --r-pill:999px;
+  --t-label:12px; --t-table:14px; --t-body:15px; --t-lead:18px;
+  --t-h2:21px; --t-h1:30px; --t-stat:34px; --t-display:40px;
+  --f-display:'Chakra Petch',system-ui,sans-serif; --f-body:'KoHo',system-ui,sans-serif;
+  --f-num:'Chakra Petch',system-ui,sans-serif;
+  --sh-sm:0 1px 2px rgba(0,0,0,.5); --sh-md:0 10px 30px rgba(0,0,0,.55);
+  --sh-lg:0 26px 64px rgba(0,0,0,.7); --glow:0 0 36px rgba(255,59,71,.34);
+  --ease:cubic-bezier(.16,1,.3,1); --dur-ui:.24s;
+}
+html[data-theme="dark"]{
+  --paper:#08090B; --paper-2:#0D0F13; --card:#12151A; --dark:#000000;
+  --ink:#F2F4F8; --ink-soft:#CFD4DC; --muted:#A2A9B4;
+  --hairline:rgba(242,244,248,.22); --hairline-2:rgba(242,244,248,.11);
+  --accent:#FF4954; --accent-hover:#FF7880; --accent-deep:#D50011;
+  --glow:0 0 44px rgba(255,73,84,.42);
+}
+*{ box-sizing:border-box; margin:0; padding:0; }
+body{ background:var(--paper); color:var(--ink); font-family:var(--f-body);
+  font-size:var(--t-body); line-height:1.5; -webkit-font-smoothing:antialiased; }
+.off{ display:none !important; }
+.i{ width:20px; height:20px; flex:0 0 20px; }
+.i-sm{ width:16px; height:16px; flex:0 0 16px; }
+button,input{ font:inherit; color:inherit; }
+
+/* ---------------- LOGIN ---------------- */
+/* เต็มจอ ไม่มีการ์ดครอบ — ไฟส่องมาจากบนซ้ายกับล่างขวา */
+#login{ min-height:100dvh; display:flex; flex-direction:column; padding:var(--s4) 0 110px;
+  background:var(--paper);
+  background-image:radial-gradient(ellipse at 12% 0%, rgba(255,59,71,.20), transparent 52%),
+                   radial-gradient(ellipse at 88% 100%, rgba(255,59,71,.12), transparent 48%); }
+.top{ padding:0 var(--s4); }
+.logo{ font-family:var(--f-display); font-size:var(--t-h2); font-weight:700; letter-spacing:.14em;
+  display:inline-block; padding-bottom:var(--s-half); border-bottom:2px solid var(--accent); }
+.logo b{ color:var(--accent); font-weight:700; }
+
+/* segmented control สองช่อง — ปุ่มจริงคือ #lgSwap ตัวเดียว แต่หน้าตาเป็นสองช่อง */
+.seg{ display:inline-flex; margin-top:var(--s3); padding:3px; gap:2px;
+  background:var(--card); border:1px solid var(--hairline-2); border-radius:var(--r-pill); }
+.seg span,.seg button{ min-height:44px; padding:0 var(--s3); border:0; border-radius:var(--r-pill);
+  background:none; color:var(--muted); font-size:var(--t-table); font-weight:500; cursor:pointer;
+  display:inline-flex; align-items:center; }
+.seg .cur{ background:var(--ink); color:var(--paper); font-weight:600; }
+@media (hover:hover){ .seg button:hover{ color:var(--ink); } }
+
+.mid{ flex:1; display:flex; flex-direction:column; justify-content:center; margin-top:var(--s4); }
+.lead{ padding:0 var(--s4); font-family:var(--f-display); font-size:var(--t-h1); font-weight:600;
+  line-height:1.25; margin-bottom:var(--s3); }
+.lead em{ font-style:normal; color:var(--accent); }
+
+/* แถวเลื่อนแนวนอน — ตัวห่อกว้างเท่าจอเสมอ ของล้นอยู่ "ข้างใน" ไม่ดันหน้า */
+.rail{ position:relative; }
+#lgUsers{ display:flex; gap:var(--s2); overflow-x:auto; scroll-snap-type:x mandatory;
+  padding:var(--s1) var(--s4) var(--s3); scrollbar-width:none; }
+#lgUsers::-webkit-scrollbar{ display:none; }
+.lg-u{ flex:0 0 230px; scroll-snap-align:center; text-align:left; cursor:pointer;
+  display:flex; flex-direction:column; gap:var(--s2); padding:var(--s3);
+  background:var(--card); border:1px solid var(--hairline-2); border-radius:var(--r-card);
+  transition:border-color var(--dur-ui) var(--ease), box-shadow var(--dur-ui) var(--ease),
+             transform var(--dur-ui) var(--ease); }
+@media (hover:hover){ .lg-u:hover{ border-color:var(--muted); } }
+.lg-u.on{ border-color:var(--accent); box-shadow:var(--glow); transform:translateY(-4px); }
+.lg-u .av{ width:52px; height:52px; border-radius:var(--r-pill); display:grid; place-items:center;
+  font-family:var(--f-display); font-size:var(--t-lead); font-weight:700; color:var(--on-grp); }
+.lg-u b{ font-family:var(--f-display); font-size:var(--t-lead); font-weight:600; line-height:1.2;
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap; display:block; }
+.lg-u .r{ display:block; font-size:var(--t-table); color:var(--muted); line-height:1.4; }
+.lg-u .k{ display:flex; align-items:center; gap:6px; margin-top:auto; font-size:var(--t-label);
+  font-weight:600; color:var(--accent-hover); opacity:0; }
+.lg-u.on .k{ opacity:1; }
+
+.nav{ display:flex; gap:var(--s1); justify-content:flex-end; padding:0 var(--s4); }
+.nav button{ width:44px; height:44px; display:grid; place-items:center; cursor:pointer;
+  background:var(--card); color:var(--ink); border:1px solid var(--hairline-2);
+  border-radius:var(--r-pill); }
+@media (hover:hover){ .nav button:hover{ border-color:var(--accent); color:var(--accent); } }
+
+.foot{ padding:var(--s3) var(--s4) 0; }
+.btn{ display:flex; align-items:center; justify-content:center; gap:var(--s2); width:100%;
+  min-height:56px; background:var(--accent); color:var(--on-accent); border:0;
+  border-radius:var(--r-btn); font-family:var(--f-display); font-size:var(--t-lead);
+  font-weight:700; cursor:pointer; box-shadow:var(--glow); }
+@media (hover:hover){ .btn:hover{ background:var(--accent-hover); } }
+
+#lgLive{ padding:0 var(--s4); max-width:520px; }
+#lgLive h2{ font-family:var(--f-display); font-size:var(--t-h1); font-weight:600; }
+.hint{ color:var(--muted); font-size:var(--t-table); margin-bottom:var(--s3); }
+.fld{ margin-bottom:var(--s2); }
+.fl{ display:block; font-size:var(--t-label); color:var(--muted); margin-bottom:var(--s-half); }
+.inp{ width:100%; min-height:52px; padding:0 var(--s2); background:var(--card); color:var(--ink);
+  border:1px solid var(--hairline); border-radius:var(--r-input); }
+.inp:focus{ outline:2px solid var(--accent); outline-offset:1px; }
+
+@media (max-width:640px){
+  #login{ padding:var(--s3) 0 110px; }
+  .top,.lead,.nav,.foot,#lgLive{ padding-left:var(--s2); padding-right:var(--s2); }
+  #lgUsers{ padding-left:var(--s2); padding-right:var(--s2); }
+  .lg-u{ flex:0 0 200px; }
+  .lead{ font-size:var(--t-h2); }
+}
+
+/* ---------------- หน้าแรก ---------------- */
+#app{ min-height:100dvh; padding:var(--s3) var(--s3) 110px; background:var(--paper);
+  background-image:radial-gradient(ellipse at 90% -10%, rgba(255,59,71,.12), transparent 46%); }
+.dsh{ max-width:1040px; margin:0 auto; display:grid; gap:var(--s2); }
+.dsh-hd{ display:flex; flex-wrap:wrap; gap:var(--s2); align-items:baseline;
+  justify-content:space-between; }
+.dsh-hd b{ font-family:var(--f-display); font-size:var(--t-h1); font-weight:600; margin-right:var(--s2); }
+.dsh-hd span{ color:var(--muted); font-size:var(--t-table); }
+.dsh-me{ display:flex; align-items:center; gap:var(--s2); font-size:var(--t-table); color:var(--muted); }
+.dsh-out{ min-height:42px; padding:0 var(--s3); background:none; color:var(--ink); cursor:pointer;
+  border:1px solid var(--hairline); border-radius:var(--r-pill); font-size:var(--t-table); }
+@media (hover:hover){ .dsh-out:hover{ border-color:var(--accent); color:var(--accent); } }
+.dsh-grid{ display:grid; grid-template-columns:repeat(6,1fr); gap:var(--s2); }
+.dsh-grid>.dsh-c{ grid-column:span 2; }
+.dsh-c{ background:var(--card); border:1px solid var(--hairline-2); border-radius:var(--r-card);
+  padding:var(--s3); }
+.dsh-lab{ font-size:var(--t-label); color:var(--muted); letter-spacing:.05em; }
+.dsh-val{ font-family:var(--f-num); font-size:var(--t-stat); font-weight:700; line-height:1.1;
+  font-variant-numeric:tabular-nums; margin-top:2px; }
+.dsh-val small{ font-family:var(--f-body); font-size:var(--t-table); font-weight:400;
+  color:var(--muted); margin-left:5px; }
+.dsh-sub{ font-size:var(--t-label); color:var(--muted); margin-top:var(--s-half); }
+.t-pos .dsh-val{ color:var(--pos); } .t-attn .dsh-val{ color:var(--attn); }
+.dsh-wide{ grid-column:1/-1; }
+.dsh-bars{ display:flex; align-items:flex-end; gap:var(--s1); height:120px; margin-top:var(--s2); }
+.dsh-bar{ flex:1; display:flex; flex-direction:column; justify-content:flex-end; gap:var(--s-half);
+  height:100%; text-align:center; }
+.dsh-bar i{ display:block; width:100%; max-width:36px; margin:0 auto; height:var(--h);
+  min-height:5px; border-radius:4px 4px 0 0; background:var(--accent);
+  box-shadow:0 0 14px rgba(255,59,71,.5); }
+.dsh-bar span{ font-size:11px; color:var(--muted); }
+.dsh-rows{ display:grid; margin-top:var(--s2); }
+.dsh-row{ display:flex; align-items:center; gap:var(--s2); padding:var(--s1) 0;
+  border-top:1px solid var(--hairline-2); font-size:var(--t-table); }
+.dsh-row b{ font-weight:500; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.dsh-row span:not(.dsh-meter){ color:var(--muted); font-size:var(--t-label); }
+.dsh-row em{ margin-left:auto; font-style:normal; color:var(--muted); font-size:var(--t-label);
+  font-variant-numeric:tabular-nums; white-space:nowrap; }
+.dsh-dot{ width:8px; height:8px; flex:0 0 8px; border-radius:var(--r-pill); background:var(--attn);
+  box-shadow:0 0 10px currentColor; }
+.dsh-meter{ flex:1; height:6px; background:var(--paper-2); border-radius:var(--r-pill); overflow:hidden; }
+.dsh-mfill{ display:block; height:100%; background:var(--accent); box-shadow:0 0 12px var(--accent); }
+@media (max-width:900px){
+  #app{ padding:var(--s2) var(--s2) 110px; }
+  .dsh-grid{ grid-template-columns:repeat(2,1fr); }
+  .dsh-grid>.dsh-c{ grid-column:span 1; }
+  .dsh-c{ padding:var(--s2); }
+}
+</style></head><body>
+
+<div id="login">
+  <div class="top">
+    <div class="logo">FAMAI <b>MOTOR</b></div>
+    <div class="seg">
+      <span class="cur" id="segA">พนักงาน</span>
+      <button type="button" id="lgSwap">บัญชีจริง</button>
+    </div>
+  </div>
+
+  <div class="mid">
+    <div id="lgDemo">
+      <p class="lead">ใครเข้าเวร<em>คืนนี้</em></p>
+      <div class="rail"><div id="lgUsers"></div></div>
+      <div class="nav">
+        <button type="button" id="navL" aria-label="เลื่อนซ้าย"></button>
+        <button type="button" id="navR" aria-label="เลื่อนขวา"></button>
+      </div>
+      <div class="foot"><button class="btn" id="lgGo">เข้าสู่ระบบ</button></div>
+    </div>
+
+    <div id="lgLive" style="display:none">
+      <h2>เข้าด้วยบัญชีจริง</h2>
+      <p class="hint">ใช้อีเมลและรหัสผ่านที่ผู้ดูแลระบบออกให้</p>
+      <div class="fld"><label class="fl" for="lgEmail">อีเมล</label>
+        <input class="inp" type="email" id="lgEmail" placeholder="sales2@famai.local" autocomplete="username"></div>
+      <div class="fld"><label class="fl" for="lgPw2">รหัสผ่าน</label>
+        <input class="inp" type="password" id="lgPw2" autocomplete="current-password"></div>
+      <button class="btn" id="lgGo2" style="margin-top:var(--s3)">เข้าสู่ระบบ</button>
+    </div>
+  </div>
+</div>
+
+<div id="app" class="off"></div>
+
+<script src="data.js"></script><script src="common.js"></script>
+<script>
+$('#navL').innerHTML = ic('left','i');
+$('#navR').innerHTML = ic('right','i');
+$('#lgGo').innerHTML  = 'เข้าสู่ระบบ '+ic('arrow','i i-sm');
+$('#lgGo2').innerHTML = 'เข้าสู่ระบบ '+ic('arrow','i i-sm');
+
+/* การ์ดใหญ่แนวตั้ง — วงกลมอักษรย่อ ชื่อ บทบาท·สาขา และคำว่า "เลือกอยู่" (ห้ามพึ่งขอบไฟอย่างเดียว) */
+mountStaff(s => '<span class="av" style="background:var(--grp'+RGRP[s.role]+')">'+esc(lgInit(s.name))+'</span>'
+  + '<span><b>'+esc(s.name)+'</b><span class="r">'+esc(staffLine(s))+'</span></span>'
+  + '<span class="k">'+ic('check','i i-sm')+'เลือกอยู่</span>');
+
+/* เลื่อนให้คนที่เลือกอยู่กลางจอเสมอ — ไม่งั้นกดปุ่ม ‹ › แล้วไม่รู้ว่าเลือกใครอยู่ */
+onPick = b => b.scrollIntoView({behavior:'smooth', block:'nearest', inline:'center'});
+const rail = () => $('#lgUsers');
+$('#navL').onclick = () => rail().scrollBy({left:-246, behavior:'smooth'});
+$('#navR').onclick = () => rail().scrollBy({left: 246, behavior:'smooth'});
+
+/* segmented control: ช่องที่ active สลับตามโหมด */
+function afterSwap(live){
+  $('#segA').className = live ? '' : 'cur';
+  $('#lgSwap').className = live ? 'cur' : '';
+  $('#lgSwap').textContent = live ? 'บัญชีจริง' : 'บัญชีจริง';
+}
+/* segA กดแล้วกลับโหมดสาธิต — แต่ตัวที่ถือ id #lgSwap คือช่องขวา ตามสัญญาของด่าน */
+$('#segA').onclick = () => { if($('#lgLive').style.display !== 'none') $('#lgSwap').click(); };
+boot(3);
+afterSwap(false);
+</script></body></html>

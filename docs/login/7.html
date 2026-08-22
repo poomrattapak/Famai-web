@@ -1,0 +1,221 @@
+<!doctype html><html lang="th"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>แบบ 7 · แดงเต็มจอ — Famai Motor</title>
+<script>try{var d=localStorage.getItem('famai_login_dark');if(d==='1'||(d===null&&matchMedia('(prefers-color-scheme:dark)').matches))document.documentElement.dataset.theme='dark';}catch(e){}</script>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Kanit:wght@600;700&family=Sarabun:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ============ แบบ 7 · แดงเต็มจอ ============
+   แนวคิด: ยามาฮ่าคือแดง ก็เอาแดงทั้งจอไปเลย ไม่ต้องกระมิดกระเมี้ยน
+           ลูกค้าเดินผ่านเห็นจอพนักงานแล้วรู้ทันทีว่าร้านนี้คือร้านอะไร
+   ⚠ แบบนี้ **ฉีกกฎ §1 ของโปรเจกต์เองอย่างจงใจ** — กฎเดิมเขียนว่า "แดงเป็นช่วงเวลา ไม่ใช่พื้นผิว"
+     ถ้าเจ้าของเลือกแบบนี้ ต้องยอมลบกฎข้อนั้นทิ้ง เป็นการตัดสินใจระดับเอกสาร ไม่ใช่ระดับหน้าจอ
+   ต่างจากตัวอื่น: รายชื่อเป็น **วงกลมเรียงกริด** ไม่ใช่แถวหรือการ์ด — อ่านชื่อได้ทั้ง 10 คนในตาเดียว
+   ฟอนต์: Kanit 600/700 (geometric หนาแบบโปสเตอร์ — หัวเรื่องและปุ่ม)
+          + Sarabun 400/500 (body เป็นกลางที่สุด ถ่วงไม่ให้ทั้งหน้าตะโกน)
+   แดงใช้ตรงไหน: **ทั้งหน้าจอ** เป็นพื้น
+   จุดอ่อน (ต้องพูดตรง ๆ ทั้งสามข้อ):
+     1. แดงเต็มจอทำให้ **สีสถานะตายหมด** — เขียว "ผ่าน" กับเหลือง "รอ" บนพื้นแดงอ่านไม่ออก
+        ทั้งแอปต้องเลิกใช้สีบอกสถานะ เหลือแต่ข้อความกับไอคอน
+     2. แดงเข้มเต็มจอ 8 ชั่วโมงล้าตา — งานหลังบ้านคือจอที่เปิดค้างทั้งวัน ไม่ใช่โปสเตอร์ที่มองแวบเดียว
+     3. ต้องแก้แถบหัวทุกหน้าในแอป ไม่ใช่แค่หน้าล็อกอิน
+   ราคาพอร์ต: หน้าล็อกอินถูก แต่ **ระดับทั้งแอปแพงที่สุดในชุด**
+   ============================================ */
+:root{
+  --paper:#D50011; --paper-2:#B3000E; --card:#FFFFFF; --dark:#141518;
+  --ink:#141518; --ink-soft:#3A3D44; --muted:#5F646C;
+  --hairline:rgba(20,21,24,.16); --hairline-2:rgba(20,21,24,.08);
+  --accent:#D50011; --accent-hover:#F0323F; --accent-deep:#8E000B; --accent-wash:rgba(213,0,17,.08);
+  --pos:#146239; --attn:#7E4A07;
+  --grp1:#8A0710; --grp2:#264C66; --grp3:#146239; --grp4:#6F4A10; --grp5:#4E3A6B; --grp6:#454C55;
+  --on-grp:#FFFFFF; --on-accent:#FFFFFF;
+  /* สีตัวอักษรบนพื้นแดง — ต้องเป็น token ของตัวเอง ห้ามใช้ --card เพราะธีมมืดพลิก */
+  --on-red:#FFFFFF; --on-red-soft:rgba(255,255,255,.94);
+  /* แดงที่ใช้เป็น 'ตัวหนังสือ' บนการ์ด — ต่างจาก --accent ที่ใช้เป็นพื้น
+     ธีมมืดต้องอ่อนลง ไม่งั้นแดงเข้มบนการ์ดเข้มเหลือคอนทราสต์ 3.2 */
+  --red-ink:#8E000B;
+  --s-half:4px; --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s5:48px; --s6:64px;
+  --r-input:10px; --r-card:14px; --r-lg:22px; --r-btn:999px; --r-pill:999px;
+  --t-label:12px; --t-table:14px; --t-body:15px; --t-lead:18px;
+  --t-h2:22px; --t-h1:32px; --t-stat:34px; --t-display:46px;
+  --f-display:'Kanit',system-ui,sans-serif; --f-body:'Sarabun',system-ui,sans-serif;
+  --f-num:'Kanit',system-ui,sans-serif;
+  --sh-sm:0 1px 2px rgba(0,0,0,.12); --sh-md:0 10px 26px rgba(0,0,0,.20);
+  --sh-lg:0 28px 70px rgba(0,0,0,.30); --glow:none;
+  --ease:cubic-bezier(.16,1,.3,1); --dur-ui:.22s;
+}
+html[data-theme="dark"]{
+  --paper:#8E000B; --paper-2:#6E0008; --card:#17181C; --dark:#000000;
+  --ink:#F0F1F4; --ink-soft:#CBCED4; --muted:#9DA3AC;
+  --hairline:rgba(240,241,244,.18); --hairline-2:rgba(240,241,244,.09);
+  --accent:#FF4B56; --accent-hover:#FF757D; --accent-deep:#D50011; --accent-wash:rgba(255,75,86,.12);
+  --pos:#42BE80; --attn:#DE9636;
+  --grp1:#FF7C84; --grp2:#7FB0DA; --grp3:#42BE80; --grp4:#DE9636; --grp5:#AE8DDA; --grp6:#A0A7B2;
+  --on-grp:#17181C; --on-accent:#141518;
+  --on-red:#FFFFFF; --on-red-soft:rgba(255,255,255,.94);
+  --red-ink:#FF9AA1;
+  --sh-lg:0 28px 70px rgba(0,0,0,.6);
+}
+*{ box-sizing:border-box; margin:0; padding:0; }
+body{ background:var(--paper); color:var(--ink); font-family:var(--f-body);
+  font-size:var(--t-body); line-height:1.5; -webkit-font-smoothing:antialiased; }
+.off{ display:none !important; }
+.i{ width:20px; height:20px; flex:0 0 20px; }
+.i-sm{ width:15px; height:15px; flex:0 0 15px; }
+button,input{ font:inherit; color:inherit; }
+
+/* ---------------- LOGIN ---------------- */
+#login{ min-height:100dvh; background:var(--paper); display:flex; flex-direction:column;
+  align-items:center; justify-content:center; padding:var(--s4) var(--s3) 96px; }
+.logo{ font-family:var(--f-display); font-size:var(--t-display); font-weight:700;
+  letter-spacing:.03em; color:var(--on-red); line-height:1; }
+.logo b{ font-weight:700; color:var(--on-red); -webkit-text-stroke:1.5px var(--on-red);
+  color:transparent; }
+.slog{ color:var(--on-red-soft); font-size:var(--t-table); margin:var(--s1) 0 var(--s4); }
+.card{ width:min(620px,100%); background:var(--card); border-radius:var(--r-lg);
+  padding:var(--s4); box-shadow:var(--sh-lg); }
+.card h2{ font-family:var(--f-display); font-size:var(--t-h2); font-weight:600; }
+.hint{ color:var(--muted); font-size:var(--t-table); margin-bottom:var(--s3); }
+
+/* วงกลมเรียง 5×2 */
+#lgUsers{ display:grid; grid-template-columns:repeat(5,1fr); gap:var(--s2) var(--s1); }
+.lg-u{ display:flex; flex-direction:column; align-items:center; gap:6px; min-width:0;
+  padding:var(--s1) 2px; background:none; border:0; border-radius:var(--r-card); cursor:pointer; }
+.lg-u .av{ position:relative; width:56px; height:56px; border-radius:var(--r-pill);
+  display:grid; place-items:center; background:var(--accent-wash); color:var(--red-ink);
+  font-family:var(--f-display); font-size:var(--t-lead); font-weight:600;
+  box-shadow:inset 0 0 0 1.5px var(--hairline-2);
+  transition:background var(--dur-ui) var(--ease), color var(--dur-ui) var(--ease),
+             box-shadow var(--dur-ui) var(--ease); }
+@media (hover:hover){ .lg-u:hover .av{ box-shadow:inset 0 0 0 1.5px var(--ink); } }
+.lg-u.on .av{ background:var(--ink); color:var(--card);
+  box-shadow:0 0 0 3px var(--card), 0 0 0 5px var(--ink); }
+.lg-u .av .tick{ position:absolute; right:-4px; bottom:-4px; width:20px; height:20px;
+  border-radius:var(--r-pill); background:var(--ink); color:var(--card);
+  display:grid; place-items:center; opacity:0; }
+.lg-u.on .av .tick{ opacity:1; }
+.lg-u b{ font-size:var(--t-label); font-weight:500; line-height:1.25; text-align:center;
+  width:100%; overflow-wrap:anywhere; }
+.lg-u .r{ font-size:11px; color:var(--muted); line-height:1.2; text-align:center;
+  width:100%; overflow-wrap:anywhere; }
+
+.btn{ display:flex; align-items:center; justify-content:center; gap:var(--s2); width:100%;
+  min-height:56px; margin-top:var(--s4); background:var(--ink); color:var(--card); border:0;
+  border-radius:var(--r-btn); font-family:var(--f-display); font-size:var(--t-lead);
+  font-weight:600; cursor:pointer; }
+@media (hover:hover){ .btn:hover{ background:var(--accent-deep); color:#fff; } }
+.swap{ text-align:center; margin-top:var(--s3); }
+.lnk{ min-height:44px; padding:0 var(--s2); background:none; border:0; color:var(--red-ink);
+  font-size:var(--t-table); cursor:pointer; text-decoration:underline; text-underline-offset:4px; }
+.fld{ margin-bottom:var(--s2); }
+.fl{ display:block; font-size:var(--t-label); color:var(--muted); margin-bottom:var(--s-half); }
+.inp{ width:100%; min-height:50px; padding:0 var(--s2); background:var(--card); color:var(--ink);
+  border:1px solid var(--hairline); border-radius:var(--r-input); }
+.inp:focus{ outline:2px solid var(--accent); outline-offset:1px; }
+
+@media (max-width:640px){
+  #login{ justify-content:flex-start; padding:var(--s4) 0 0; }
+  .logo,.slog{ padding:0 var(--s3); }
+  .logo{ font-size:var(--t-h1); }
+  .card{ width:100%; margin-top:var(--s4); border-radius:var(--r-lg) var(--r-lg) 0 0;
+    padding:var(--s3) var(--s2) 96px; min-height:62vh; }
+  #lgUsers{ grid-template-columns:repeat(4,1fr); }
+  .lg-u .av{ width:52px; height:52px; }
+  .swap{ margin-top:var(--s2); }
+}
+
+/* ---------------- หน้าแรก ---------------- */
+/* แอปขาวปกติ แต่มีแถบหัวแดงเต็มความกว้าง — ตัวเลขสำคัญอยู่บนแถบนั้น */
+#app{ min-height:100dvh; background:var(--card); }
+.dsh{ display:grid; }
+.dsh-hd{ background:var(--paper); color:var(--on-red); padding:var(--s3) var(--s4);
+  display:flex; flex-wrap:wrap; gap:var(--s2); align-items:center; justify-content:space-between; }
+.dsh-hd b{ font-family:var(--f-display); font-size:var(--t-h1); font-weight:600;
+  color:var(--on-red); margin-right:var(--s2); }
+.dsh-hd span{ color:var(--on-red-soft); font-size:var(--t-table); }
+.dsh-me{ display:flex; align-items:center; gap:var(--s2); font-size:var(--t-table);
+  color:var(--on-red-soft); }
+.dsh-out{ min-height:44px; padding:0 var(--s3); background:none; color:var(--on-red); cursor:pointer;
+  border:1.5px solid var(--on-red-soft); border-radius:var(--r-pill); font-size:var(--t-table); }
+@media (hover:hover){ .dsh-out:hover{ background:rgba(255,255,255,.16); } }
+.dsh-grid{ display:grid; grid-template-columns:repeat(6,1fr); gap:var(--s2);
+  padding:var(--s3) var(--s4); }
+.dsh-grid>.dsh-c{ grid-column:span 2; }
+.dsh-c{ background:var(--card); border:1px solid var(--hairline-2); border-radius:var(--r-card);
+  padding:var(--s3); }
+.dsh-wide{ margin:0 var(--s4) var(--s2); }
+.dsh-lab{ font-size:var(--t-label); color:var(--muted); }
+.dsh-val{ font-family:var(--f-num); font-size:var(--t-stat); font-weight:600; line-height:1.15;
+  font-variant-numeric:tabular-nums; }
+.dsh-val small{ font-family:var(--f-body); font-size:var(--t-table); font-weight:400;
+  color:var(--muted); margin-left:5px; }
+.dsh-sub{ font-size:var(--t-label); color:var(--muted); }
+.t-pos .dsh-val{ color:var(--pos); } .t-attn .dsh-val{ color:var(--attn); }
+.dsh-bars{ display:flex; align-items:flex-end; gap:var(--s1); height:112px; margin-top:var(--s2); }
+.dsh-bar{ flex:1; display:flex; flex-direction:column; justify-content:flex-end; gap:var(--s-half);
+  height:100%; text-align:center; }
+.dsh-bar i{ display:block; width:100%; max-width:40px; margin:0 auto; height:var(--h);
+  min-height:5px; border-radius:8px 8px 3px 3px; background:var(--accent); }
+.dsh-bar span{ font-size:11px; color:var(--muted); }
+.dsh-rows{ display:grid; margin-top:var(--s2); }
+.dsh-row{ display:flex; align-items:center; gap:var(--s2); padding:var(--s1) 0;
+  border-top:1px solid var(--hairline-2); font-size:var(--t-table); }
+.dsh-row b{ font-weight:500; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.dsh-row span:not(.dsh-meter){ color:var(--muted); font-size:var(--t-label); }
+.dsh-row em{ margin-left:auto; font-style:normal; color:var(--muted); font-size:var(--t-label);
+  font-variant-numeric:tabular-nums; white-space:nowrap; }
+.dsh-dot{ width:8px; height:8px; flex:0 0 8px; border-radius:var(--r-pill); background:var(--attn); }
+.dsh-meter{ flex:1; height:8px; background:var(--accent-wash); border-radius:var(--r-pill);
+  overflow:hidden; }
+.dsh-mfill{ display:block; height:100%; background:var(--accent); }
+@media (max-width:900px){
+  .dsh-hd{ padding:var(--s2); }
+  .dsh-hd b{ font-size:var(--t-h2); }
+  .dsh-grid{ grid-template-columns:repeat(2,1fr); padding:var(--s2); }
+  .dsh-grid>.dsh-c{ grid-column:span 1; }
+  .dsh-wide{ margin:0 var(--s2) var(--s2); }
+  .dsh-c{ padding:var(--s2); }
+}
+</style></head><body>
+
+<div id="login">
+  <!-- คำว่า MOTOR เป็นตัวอักษรโปร่งขอบขาวบนพื้นแดง เครื่องวัดอ่าน color:transparent เป็น 1:1 ไม่ได้
+       เส้นขอบขาว 1.5px บนแดง #D50011 ให้คอนทราสต์จริง 5.2 — ตรวจด้วยตาแทน -->
+  <div class="logo">FAMAI <b data-nocontrast>MOTOR</b></div>
+  <p class="slog">ระบบหลังบ้านของร้าน · ตั้งแต่รับรถเข้าสต๊อก จนส่งมอบและดูแลต่อ</p>
+
+  <div class="card">
+    <div id="lgDemo">
+      <h2>เลือกชื่อของคุณ</h2>
+      <p class="hint">แตะวงกลม แล้วกดปุ่มเข้าสู่ระบบ</p>
+      <div id="lgUsers"></div>
+      <button class="btn" id="lgGo">เข้าสู่ระบบ</button>
+    </div>
+    <div id="lgLive" style="display:none">
+      <h2>เข้าด้วยบัญชีจริง</h2>
+      <p class="hint">ใช้อีเมลและรหัสผ่านที่ผู้ดูแลระบบออกให้</p>
+      <div class="fld"><label class="fl" for="lgEmail">อีเมล</label>
+        <input class="inp" type="email" id="lgEmail" placeholder="sales2@famai.local" autocomplete="username"></div>
+      <div class="fld"><label class="fl" for="lgPw2">รหัสผ่าน</label>
+        <input class="inp" type="password" id="lgPw2" autocomplete="current-password"></div>
+      <button class="btn" id="lgGo2">เข้าสู่ระบบ</button>
+    </div>
+    <div class="swap"><button class="lnk" id="lgSwap"></button></div>
+  </div>
+</div>
+
+<div id="app" class="off"></div>
+
+<script src="data.js"></script><script src="common.js"></script>
+<script>
+$('#lgGo').innerHTML  = 'เข้าสู่ระบบ '+ic('arrow','i');
+$('#lgGo2').innerHTML = 'เข้าสู่ระบบ '+ic('arrow','i');
+
+/* วงกลม + ชื่อ + บทบาทใต้วงกลม
+   ชื่อยาวอย่าง "สนุ๊กเกอร์ ทองมา" ต้องตัดคำลงบรรทัดใหม่ได้ ไม่ใช่ล้นออกนอกช่อง */
+mountStaff(s => '<span class="av">'+esc(lgInit(s.name))
+  + '<span class="tick">'+ic('check','i i-sm')+'</span></span>'
+  + '<b>'+esc(s.name)+'</b><span class="r">'+esc(staffLine(s))+'</span>');
+boot(7);
+</script></body></html>

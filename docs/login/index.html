@@ -1,0 +1,223 @@
+<!doctype html><html lang="th"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>หน้าล็อกอิน 10 แบบ — Famai Motor</title>
+<script>try{var d=localStorage.getItem('famai_login_dark');if(d==='1'||(d===null&&matchMedia('(prefers-color-scheme:dark)').matches))document.documentElement.dataset.theme='dark';}catch(e){}</script>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<!-- ฟอนต์ของทั้ง 10 แบบขอ CSS ก้อนเดียว = 1 รอบเครือข่าย ไม่ใช่ 10
+     ขอน้ำหนักละตัวต่อตระกูล และใช้เฉพาะบรรทัด "ฟอนต์: …" กับชื่อแบบ
+     เบราว์เซอร์จะโหลด woff2 ก็ต่อเมื่อมีกลิฟถูกใช้จริง -->
+<link href="https://fonts.googleapis.com/css2?family=Anuphan:wght@400;500;600&family=Trirong:wght@600&family=IBM+Plex+Sans+Thai:wght@600&family=Chakra+Petch:wght@600&family=Noto+Sans+Thai+Looped:wght@700&family=Bai+Jamjuree:wght@600&family=Taviraj:wght@600&family=Kanit:wght@600&family=Prompt:wght@600&family=Sriracha&family=Athiti:wght@700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F4F3EF; --card:#FFFFFF; --ink:#15171C; --dim:#5F646E;
+  --line:rgba(21,23,28,.13); --line-2:rgba(21,23,28,.06); --key:#B3000E;
+  --warn-bg:#FBF0D8; --warn-ink:#6B4A08;
+  --r:16px; --s1:8px; --s2:16px; --s3:24px; --s4:32px;
+}
+html[data-theme="dark"]{
+  --bg:#0E1014; --card:#181B21; --ink:#ECEEF2; --dim:#98A0AC;
+  --line:rgba(236,238,242,.17); --line-2:rgba(236,238,242,.08); --key:#FF6B74;
+  --warn-bg:#2E2410; --warn-ink:#E5BE73;
+}
+*{ box-sizing:border-box; margin:0; padding:0; }
+body{ background:var(--bg); color:var(--ink); font-family:'Anuphan',system-ui,sans-serif;
+  font-size:16px; line-height:1.6; padding:var(--s4) var(--s3) 72px; -webkit-font-smoothing:antialiased; }
+.wrap{ max-width:1040px; margin:0 auto; }
+h1{ font-size:30px; font-weight:600; letter-spacing:-.01em; }
+.lede{ color:var(--dim); margin:var(--s1) 0 var(--s3); }
+.lede b{ color:var(--ink); font-weight:600; }
+.tool{ display:flex; gap:var(--s1); flex-wrap:wrap; margin-bottom:var(--s3); }
+.tool button{ min-height:44px; padding:0 var(--s2); font:inherit; font-size:14px; cursor:pointer;
+  background:var(--card); color:var(--ink); border:1px solid var(--line); border-radius:999px; }
+@media (hover:hover){ .tool button:hover{ border-color:var(--key); color:var(--key); } }
+
+.list{ display:grid; grid-template-columns:repeat(2,1fr); gap:var(--s2); }
+a.card{ display:flex; flex-direction:column; gap:var(--s1); background:var(--card);
+  border:1px solid var(--line-2); border-radius:var(--r); padding:var(--s3);
+  text-decoration:none; color:inherit; }
+@media (hover:hover){ a.card:hover{ border-color:var(--key); } }
+.n{ font-size:12px; font-weight:600; letter-spacing:.1em; color:var(--key); }
+a.card h2{ font-size:20px; font-weight:600; line-height:1.3; }
+a.card p{ color:var(--dim); font-size:14.5px; line-height:1.65; }
+.bad{ color:var(--ink); font-size:13.5px; line-height:1.6;
+  border-left:3px solid var(--key); padding-left:var(--s2); }
+.bad b{ font-weight:600; }
+.fnt{ font-size:15px; border-top:1px solid var(--line-2); padding-top:var(--s1); }
+.fnt em{ font-style:normal; color:var(--dim); font-size:12px; display:block; }
+.sw{ display:flex; gap:5px; }
+.sw i{ width:26px; height:26px; border-radius:7px; border:1px solid var(--line-2); }
+.tags{ display:flex; flex-wrap:wrap; gap:5px; margin-top:auto; padding-top:var(--s1); }
+.tag{ font-size:11.5px; color:var(--dim); border:1px solid var(--line); border-radius:999px;
+  padding:3px 9px; }
+.tag.w{ background:var(--warn-bg); color:var(--warn-ink); border-color:transparent; font-weight:600; }
+
+table{ width:100%; border-collapse:collapse; margin-top:var(--s2); font-size:14px; }
+th,td{ text-align:left; padding:9px 10px; border-bottom:1px solid var(--line-2); vertical-align:top; }
+th{ font-size:12px; font-weight:600; color:var(--dim); letter-spacing:.04em; white-space:nowrap; }
+td:first-child{ font-weight:600; white-space:nowrap; }
+.scroll{ overflow-x:auto; }
+h3{ font-size:20px; font-weight:600; margin-top:var(--s4); }
+.note{ margin-top:var(--s3); padding:var(--s3); background:var(--card);
+  border:1px solid var(--line-2); border-radius:var(--r); font-size:14.5px; color:var(--dim); }
+.note b{ color:var(--ink); }
+.note ul{ margin:var(--s1) 0 0 var(--s3); }
+.note li{ margin-bottom:5px; }
+@media (max-width:760px){
+  body{ padding:var(--s3) var(--s2) 72px; }
+  h1{ font-size:24px; }
+  .list{ grid-template-columns:1fr; }
+  a.card{ padding:var(--s2); }
+}
+</style></head><body><div class="wrap">
+
+<h1>หน้าล็อกอิน 10 แบบ</h1>
+<p class="lede">เจ้าของสั่งให้ <b>ยกเครื่องทั้งดีไซน์และการใช้ฟอนต์ ออกแบบอย่างอิสระ</b> — ทั้ง 10 แบบนี้จึงต่างกันที่
+<b>แนวคิดว่าหน้าล็อกอินมีไว้ทำอะไร</b> ไม่ใช่ต่างแค่สี<br>
+ทุกแบบ <b>กดเล่นได้จริง</b> เลือกคนแล้วกดเข้าสู่ระบบจะเห็นหน้าแรกที่ใช้ชุด token เดียวกัน —
+เพราะเจ้าของสั่งให้ออกแบบเผื่อทั้งแอป ไม่ใช่แค่หน้าเดียว<br>
+ทุกแบบใช้ <b>ข้อมูลชุดเดียวกัน</b>จากแอปเดโมจริง · มีโหมดมืด · เปิดบนมือถือได้ · 390px ไม่เลื่อนซ้ายขวา</p>
+
+<div class="tool">
+  <button type="button" id="dk">สลับโหมดมืด</button>
+  <button type="button" id="rnd">สุ่มเปิดสักแบบ</button>
+</div>
+
+<div class="list" id="list"></div>
+
+<h3>ตารางเทียบ</h3>
+<div class="scroll"><table>
+  <thead><tr><th>แบบ</th><th>จุดสุดขั้ว</th><th>รายชื่อคนเป็นแบบไหน</th><th>แดงใช้แค่ไหน</th>
+    <th>ตัวเลขในตาราง</th><th>ราคาถ้าเลือก</th></tr></thead>
+  <tbody id="tbl"></tbody>
+</table></div>
+
+<div class="note">
+  <b>เลือกได้มากกว่าหนึ่งแบบ</b> — บอกมาว่าชอบส่วนไหนของแบบไหน เช่น
+  “เอาฟอนต์ของแบบ 4 + วิธีเลือกคนของแบบ 8 + สีของแบบ 1” แล้วจะทำของจริงลงในระบบให้ตรงตามนั้น
+  <ul>
+    <li>รอบนี้ <b>ยังไม่แตะ index.html ของแอปจริง</b> — หน้าพวกนี้เป็นตัวอย่างล้วน ๆ รอเจ้าของเลือกก่อน</li>
+    <li>แต่ละแบบทำแค่ <b>ธีมสว่างกับธีมมืด</b> · ธีม “ครีมอุ่น” กับ “เทาหมึกเย็น” ไว้ทำตอนลงของจริง
+        (ไม่งั้นรอบนี้กลายเป็น 40 ธีม)</li>
+    <li><b>“ตัวเลขในตาราง”</b> ในตารางข้างบนคือผลวัดจริง: ฟอนต์บางตัวไม่มี tabular figures
+        เลข 1 แคบกว่าเลข 8 พอเอาไปทำคอลัมน์เงินตัวเลขจะขยับไปมา ถ้าเลือกแบบที่ “ขยับ”
+        ต้องใช้ฟอนต์ตัวเลขแยกสำหรับตารางเงิน</li>
+    <li>มีสามคำถามที่ต้องตอบก่อนลงของจริง — อยู่ท้ายหน้านี้</li>
+  </ul>
+</div>
+
+<div class="note">
+  <b>สามคำถามที่ตัดสินชะตาบางแบบ</b>
+  <ul>
+    <li>ยอมให้หน้าล็อกอิน <b>โชว์ตัวเลขร้านก่อนล็อกอิน</b> ไหม (ใครได้ URL ก็เห็น) → ตัดสินแบบ 8</li>
+    <li>ยอมทิ้งกฎเดิม <b>“แดงเป็นช่วงเวลา ไม่ใช่พื้นผิว”</b> ไหม → ตัดสินแบบ 7</li>
+    <li>ถ้า <b>เมนูทั้งแอปย้ายไปแถบล่าง</b> จะโอเคไหม → ตัดสินแบบ 10</li>
+  </ul>
+</div>
+
+</div>
+<script>
+const D = [
+ {n:1, name:'ป้ายหน้าร้าน', font:'Anuphan + Trirong', ff:"'Anuphan'", ff2:"'Trirong'",
+  sw:['#FAFAF8','#15171C','#D50011','#1C7247','#9A5C0D'],
+  p:'หน้าที่เดียวคือบอกว่ามาถูกที่แล้ว แล้วให้เข้าเร็วที่สุด ไม่พยายามขายอะไร ไม่พยายามฉลาด — สองฝั่งแบบเดิมแต่ขัดเงา เป็นตัวเทียบให้อีก 9 แบบ',
+  bad:'ดูแล้วอาจรู้สึกว่าไม่ได้อะไรใหม่ เพราะมันคือของเดิม +15%',
+  tags:['ปลอดภัย','กริดการ์ด','พอร์ตถูกที่สุด'], ax:'ปลอดภัย', pick:'กริดการ์ด 2 คอลัมน์',
+  red:'เส้นขอบ + ปุ่ม', tab:'นิ่ง', cost:'แก้ด่าน 0 ชุด'},
+
+ {n:2, name:'บัตรตอกเวลา', font:'IBM Plex Sans Thai + Plex Mono', ff:"'IBM Plex Sans Thai'",
+  sw:['#EEF0F3','#12151A','#C8000F','#166B41','#8A5309'],
+  p:'คุณไม่ได้กำลังพิสูจน์ตัวตน คุณกำลังเริ่มกะ — นาฬิกาเดินจริงกับวันที่ พ.ศ. ตัวใหญ่มาก่อน แล้วรายชื่อบอกว่าใครลงเวลาแล้วใครยังไม่ลง',
+  bad:'สถานะกะคือข้อมูลพนักงานที่โผล่ก่อนล็อกอิน ใครเปิด URL ก็เห็นว่าใครมาสาย — ของจริงต้องตัดออก',
+  tags:['เวลาเป็นพระเอก','รายการแถว','ตัวเลข mono'], ax:'เวลา/อุปกรณ์', pick:'รายการแถว + สถานะกะ',
+  red:'คำว่า "สาย" อย่างเดียว', tab:'นิ่ง', cost:'กลาง'},
+
+ {n:3, name:'โชว์รูมกลางคืน', font:'Chakra Petch + KoHo', ff:"'Chakra Petch'",
+  sw:['#14161B','#E9ECF1','#FF3B47','#3DBA7A','#DC9130'],
+  p:'สุดขั้วด้านมืด — จอคือโชว์รูมปิดไฟ มีแค่ไฟส่องกับคนที่กำลังจะเข้าเวร เลือกคนโดยปัดการ์ดทีละใบเหมือนหน้าเลือกตัวละคร',
+  bad:'มือถือกลางแดดหน้าร้านอ่านไม่ออก ซึ่งขัดกับ “มือถือคือจอหลัก” ตรง ๆ · และเห็นคนทีละ 1-2 คนจาก 10',
+  tags:['มืดทั้งจอ','เลื่อนแนวนอน','แดงเยอะสุด'], ax:'มืดทั้งจอ', pick:'เลื่อนแนวนอนทีละใบ',
+  red:'แสงเรือง ขอบไฟ ปุ่ม', tab:'ขยับ', cost:'แพง — ต้องไล่ตรวจด่านที่คลิกชื่อ 14 ชุด'},
+
+ {n:4, name:'ตัวโตอ่านง่าย', font:'Noto Sans Thai Looped + Sarabun', ff:"'Noto Sans Thai Looped'",
+  sw:['#FFFFFF','#0B0C0E','#C7000E','#14653C','#7E4B08'],
+  p:'สมมติคนใช้อายุ 55 มือเปื้อนน้ำมัน ยืนกลางแดด ทุกอย่างต้องโตและกดพลาดไม่ได้ — และเป็นแบบเดียวที่ใช้ไทยแบบมีหัว ซึ่งฟอนต์ 20 ตัวในแอปตอนนี้ไม่มีเลย',
+  bad:'บนจอคอม 27 นิ้วคอลัมน์เดียวกลางจอดูโล่งจนเหมือนหน้ายังโหลดไม่เสร็จ (จงใจ ไม่ใช่ลืม)',
+  tags:['ตัวใหญ่มาก','ไทยมีหัว','ไม่มีวงกลมย่อ'], ax:'ตัวใหญ่มาก', pick:'แถวสูง 72px ไม่มีวงกลม',
+  red:'ปุ่มเดียว', tab:'นิ่ง', cost:'ถูก'},
+
+ {n:5, name:'พิมพ์ชื่อแล้วเข้า', font:'Bai Jamjuree ตระกูลเดียว', ff:"'Bai Jamjuree'",
+  sw:['#FCFCFB','#111213','#D50011','#1C7247','#8F560C'],
+  p:'แบบเดียวที่ท้าทายสมมติฐานว่าต้องมีรายชื่อให้กด — คุณรู้อยู่แล้วว่าคุณเป็นใคร พิมพ์สองตัวอักษรก็พอ หน้าจอมีของชิ้นเดียวคือช่องพิมพ์',
+  bad:'คนเปิดครั้งแรกไม่รู้ต้องทำอะไร · แป้นพิมพ์ไทยบน Android ทำให้การกรองสดกระตุก · เร็วกว่าเดิมเฉพาะตอนที่จำชื่อตัวเองในระบบได้',
+  tags:['เกือบไม่มีสี','ไม่มีการ์ด','ฟอนต์เดียว'], ax:'เกือบไม่มีสี · ไม่มีการ์ด', pick:'ช่องพิมพ์ + กรองสด',
+  red:'เคอร์เซอร์กับแถบเลือก', tab:'ขยับ', cost:'แพง — ต้องรับกฎ “ห้ามซ่อนปุ่มคน”'},
+
+ {n:6, name:'สลิปกระดาษ', font:'Taviraj + Niramit', ff:"'Taviraj'",
+  sw:['#EDE6D8','#241E17','#B0121B','#16603C','#7A4A08'],
+  p:'ร้านนี้อยู่ได้ด้วยกระดาษ — ใบจอง ใบส่งมอบ ใบกำกับ หน้าล็อกอินจึงเป็นเอกสารอีกใบ มีหัวคอลัมน์ มีช่องติ๊ก มีตราปั๊ม และหน้าแรกเป็นรายงานไม่ใช่แดชบอร์ด',
+  bad:'serif ไทยตัวเล็กบนมือถือ Android ราคาถูกจะเละ ต้องดันตัวอักษรขึ้นทั้งแอป · เซลล์อายุ 25 อาจอ่านว่าเชย',
+  tags:['สิ่งพิมพ์','ตารางฟอร์ม','เข้ากับงานเอกสาร'], ax:'สิ่งพิมพ์', pick:'ตารางแบบใบฟอร์ม',
+  red:'ตราปั๊ม', tab:'ขยับ', cost:'ถูก'},
+
+ {n:7, name:'แดงเต็มจอ', font:'Kanit + Sarabun', ff:"'Kanit'",
+  sw:['#D50011','#141518','#FFFFFF','#146239','#7E4A07'],
+  p:'ยามาฮ่าคือแดง ก็เอาแดงทั้งจอไปเลย ไม่ต้องกระมิดกระเมี้ยน — ลูกค้าเดินผ่านเห็นจอพนักงานแล้วรู้ทันทีว่าร้านนี้คือร้านอะไร',
+  bad:'แดงเต็มจอทำให้สีสถานะตายหมด เขียว/เหลืองบนแดงอ่านไม่ออก ทั้งแอปต้องเลิกใช้สีบอกสถานะ · แดงเข้ม 8 ชั่วโมงล้าตา · ต้องยอมลบกฎข้อ 1 ในเอกสารดีไซน์ทิ้ง',
+  tags:['แบรนด์สุดขั้ว','วงกลม 5×2','ฉีกกฎเดิม'], ax:'แดงสุดขั้ว', pick:'วงกลมเรียง 5×2',
+  red:'ทั้งหน้าจอ', tab:'ขยับ', cost:'หน้าล็อกอินถูก แต่ทั้งแอปแพงที่สุด'},
+
+ {n:8, name:'เคาน์เตอร์วันนี้', font:'Prompt + Krub', ff:"'Prompt'",
+  sw:['#F6F4F1','#1A1815','#C4000F','#166341','#7F4C09'],
+  p:'บอกสภาพร้านตั้งแต่ก่อนเข้า — เปิดมาเห็นเลยว่ามีรถกี่คัน งานทะเบียนค้างกี่คัน แล้วค่อยเลือกว่าเป็นใคร รายชื่อจัดกลุ่มตามสาขา หาคนของสาขาตัวเองได้เร็ว',
+  bad:'มันเปิดตัวเลขธุรกิจให้คนที่ยังไม่ล็อกอินเห็น ใครได้ URL ก็รู้ — ตอนลงจริงต้องเอาออกหรือเปลี่ยนเป็นตัวเลขที่ไม่ใช่เงิน และต้องเขียนด่านความเป็นส่วนตัวใหม่',
+  tags:['มีประโยชน์ก่อนเข้า','จัดกลุ่มตามสาขา','ต่อเนื่องกับหน้าแรก'], ax:'มีประโยชน์ก่อนล็อกอิน',
+  pick:'จัดกลุ่มตามสาขา', red:'โลโก้ + ปุ่ม', tab:'ขยับ', cost:'กลาง + ต้องเพิ่มด่านอีก 1 ชุด'},
+
+ {n:9, name:'กระดานหน้าร้าน', font:'Sriracha + Mali', ff:"'Sriracha'",
+  sw:['#DDD3BF','#1E3A5F','#C21D24','#1B6B44','#8A5410'],
+  p:'ที่ร้านมีกระดานที่ทุกคนเขียนชื่อตัวเองก่อนเริ่มงานอยู่แล้ว เอากระดานนั้นขึ้นจอ — ชื่อเขียนเปล่า ๆ ไม่มีกล่อง คนที่เลือกมีวงกลมปากกาแดงวาดรอบ โหมดบัญชีจริงเป็นโน้ตกาวแปะมุม',
+  bad:'Sriracha มีน้ำหนักเดียว ใช้ทั้งแอปไม่ได้ · ความน่ารักหมดอายุใน 3 วัน แต่พนักงานต้องเห็นวันละ 5 ครั้งไปอีก 3 ปี',
+  tags:['ลายมือ','อบอุ่น','ธีมมืด = กระดานดำ'], ax:'ลายมือ/อบอุ่น', pick:'ชื่อเปล่าบนกระดาน',
+  red:'ปากกาแดง', tab:'ขยับ', cost:'ถูก'},
+
+ {n:10, name:'แผ่นนิ้วโป้ง', font:'Athiti + Kodchasan', ff:"'Athiti'",
+  sw:['#0B1526','#141821','#CE0512','#166341','#7F4C09'],
+  p:'มือถือคือจอหลัก งั้นออกแบบให้มือถือก่อน 100% — ทุกอย่างอยู่ในระยะนิ้วโป้งข้างเดียว รายชื่อเป็นล้อหมุน ปุ่มยืนยันติดขอบล่างเสมอ จอคอมคือแผ่นเดียวกันวางกลางจอ',
+  bad:'เห็นทีละ 3 ชื่อ = หาคนยากที่สุดใน 10 แบบ · จอคอมเสียพื้นที่ 80% · เมนูแถบล่างแปลว่าต้องรื้อการนำทางทั้งแอป',
+  tags:['มือถือสุดโต่ง','ล้อหมุน','ต้องรื้อเมนู'], ax:'มือถือสุดโต่ง', pick:'ล้อหมุนเห็นทีละ 3 ชื่อ',
+  red:'ปุ่มเดียว', tab:'ขยับ', cost:'ทั้งแอปแพง — โครงนำทางเปลี่ยน'}
+];
+const esc = s => String(s).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const WARN = {3:1, 5:1, 7:1, 8:1, 10:1};
+
+document.getElementById('list').innerHTML = D.map(d =>
+  '<a class="card" href="'+d.n+'.html">'
+  + '<div class="n">แบบ '+d.n+'</div>'
+  + '<h2 style="font-family:'+(d.ff2||d.ff)+',system-ui,sans-serif">'+esc(d.name)+'</h2>'
+  + '<p>'+esc(d.p)+'</p>'
+  + '<p class="bad"><b>จุดอ่อน:</b> '+esc(d.bad)+'</p>'
+  + '<div class="fnt" style="font-family:'+d.ff+',system-ui,sans-serif">'+esc(d.font)
+  + '<em>ตัวอย่างฟอนต์ · ระบบหลังบ้านร้านฟ้าใหม่ 1,354,302 ฿</em></div>'
+  + '<div class="sw">'+ d.sw.map(c=>'<i style="background:'+c+'"></i>').join('') +'</div>'
+  + '<div class="tags">'+ d.tags.map(t=>'<span class="tag">'+esc(t)+'</span>').join('')
+  + (WARN[d.n] ? '<span class="tag w">ถ้าเลือก มีของต้องรื้อเพิ่ม</span>' : '') + '</div>'
+  + '</a>').join('');
+
+document.getElementById('tbl').innerHTML = D.map(d =>
+  '<tr><td>'+d.n+' · '+esc(d.name)+'</td><td>'+esc(d.ax)+'</td><td>'+esc(d.pick)+'</td>'
+  + '<td>'+esc(d.red)+'</td><td>'+esc(d.tab)+'</td><td>'+esc(d.cost)+'</td></tr>').join('');
+
+document.getElementById('dk').onclick = () => {
+  const on = document.documentElement.dataset.theme === 'dark';
+  if (on) document.documentElement.removeAttribute('data-theme');
+  else document.documentElement.dataset.theme = 'dark';
+  try{ localStorage.setItem('famai_login_dark', on?'0':'1'); }catch(e){}
+};
+document.getElementById('rnd').onclick = () => {
+  /* ไม่ใช้ Math.random เพื่อให้กดแล้วไล่ไปทีละแบบ — เดาได้ว่ายังไม่ได้ดูแบบไหน */
+  let i = 0; try{ i = (parseInt(localStorage.getItem('famai_login_seen')||'0') % 10) + 1; }catch(e){ i = 1; }
+  try{ localStorage.setItem('famai_login_seen', String(i)); }catch(e){}
+  location.href = i + '.html';
+};
+</script></body></html>

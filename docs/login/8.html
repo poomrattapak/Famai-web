@@ -1,0 +1,252 @@
+<!doctype html><html lang="th"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>แบบ 8 · เคาน์เตอร์วันนี้ — Famai Motor</title>
+<script>try{var d=localStorage.getItem('famai_login_dark');if(d==='1'||(d===null&&matchMedia('(prefers-color-scheme:dark)').matches))document.documentElement.dataset.theme='dark';}catch(e){}</script>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Prompt:wght@600&family=Krub:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ============ แบบ 8 · เคาน์เตอร์วันนี้ ============
+   แนวคิด: หน้าล็อกอินบอกสภาพร้านตั้งแต่ก่อนเข้า — เปิดมาเห็นเลยว่าวันนี้มีอะไรรออยู่
+           แล้วค่อยเลือกว่าเป็นใคร · หน้าล็อกอินกลายเป็น "หน้าปก" ของหน้าแรก ต่อเนื่องกันเป็นเรื่องเดียว
+   ต่างจากตัวอื่น: มีตัวเลขจริงก่อนล็อกอิน · รายชื่อ **จัดกลุ่มตามสาขา** ไม่ใช่เรียงตามรหัสพนักงาน
+   ฟอนต์: Prompt 600 (geometric แบบป้ายบอกทาง อ่านชัดในระยะไกล — หัวเรื่องและตัวเลข)
+          + Krub 400/500 (body นุ่มกว่า Prompt กันไม่ให้ตัวเล็กแข็ง)
+   แดงใช้ตรงไหน: โลโก้กับปุ่มหลัก · **สีกลุ่ม --grp1..6 ทำหน้าที่แยกสาขา** ไม่ใช่แดงตัวเดียว
+   ⚠ จุดอ่อนที่เป็นเรื่องใหญ่: **มันเปิดตัวเลขธุรกิจให้คนที่ยังไม่ล็อกอินเห็น**
+     ใครได้ URL ก็รู้ว่าร้านมีรถกี่คันและมีลูกค้าค้างรับกี่ราย
+     ตอนลงจริงต้องเลือกอย่างใดอย่างหนึ่ง: เอาออก / เปลี่ยนเป็นตัวเลขที่ไม่ใช่เงิน (เช่น "วันนี้มีคิว 7 งาน")
+     และต้องเขียนด่าน privacy ตัวใหม่ เพราะ privacy-r5 ตอนนี้ตรวจแค่หลังล็อกอิน
+   ⚠ ลำดับปุ่มใน DOM ยังเป็น ST1..ST10 เป๊ะ — การจัดกลุ่มทำด้วย CSS order เท่านั้น
+     (ถ้าเรียง DOM ใหม่ ด่าน login-r27 [1] ที่เช็คลำดับจะแดงทันที)
+   ราคาพอร์ต: กลาง + ต้องเพิ่มด่าน privacy อีก 1 ชุด
+   ================================================ */
+:root{
+  --paper:#F6F4F1; --paper-2:#EDEAE5; --card:#FFFFFF; --dark:#1A1815;
+  --ink:#1A1815; --ink-soft:#403C36; --muted:#635E56;
+  --hairline:rgba(26,24,21,.16); --hairline-2:rgba(26,24,21,.08);
+  --accent:#C4000F; --accent-hover:#E0212D; --accent-deep:#94000B; --accent-wash:rgba(196,0,15,.07);
+  --pos:#166341; --attn:#7F4C09;
+  --grp1:#8E0812; --grp2:#28536F; --grp3:#166341; --grp4:#6F4A10; --grp5:#503A70; --grp6:#4C4A44;
+  --on-grp:#FFFFFF; --on-accent:#FFFFFF;
+  --s-half:4px; --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s5:48px; --s6:64px;
+  --r-input:10px; --r-card:14px; --r-lg:18px; --r-btn:12px; --r-pill:999px;
+  --t-label:12px; --t-table:14px; --t-body:15px; --t-lead:18px;
+  --t-h2:21px; --t-h1:28px; --t-stat:36px; --t-display:40px;
+  --f-display:'Prompt',system-ui,sans-serif; --f-body:'Krub',system-ui,sans-serif;
+  --f-num:'Prompt',system-ui,sans-serif;
+  --sh-sm:0 1px 2px rgba(26,24,21,.06); --sh-md:0 6px 20px rgba(26,24,21,.09);
+  --sh-lg:0 20px 48px rgba(26,24,21,.14); --glow:none;
+  --ease:cubic-bezier(.2,.8,.3,1); --dur-ui:.2s;
+}
+html[data-theme="dark"]{
+  --paper:#121316; --paper-2:#17191D; --card:#1C1E23; --dark:#0A0B0D;
+  --ink:#EDEEF1; --ink-soft:#C7CAD0; --muted:#979CA5;
+  --hairline:rgba(237,238,241,.18); --hairline-2:rgba(237,238,241,.09);
+  --accent:#FF4A55; --accent-hover:#FF757D; --accent-deep:#C4000F; --accent-wash:rgba(255,74,85,.11);
+  --pos:#43BF81; --attn:#DB9333;
+  --grp1:#FF7C84; --grp2:#7EAFD8; --grp3:#43BF81; --grp4:#DB9333; --grp5:#AC8CD7; --grp6:#A2A69E;
+  --on-grp:#121316; --on-accent:#141518;
+  --sh-sm:0 1px 2px rgba(0,0,0,.5); --sh-md:0 6px 20px rgba(0,0,0,.5); --sh-lg:0 20px 48px rgba(0,0,0,.6);
+}
+*{ box-sizing:border-box; margin:0; padding:0; }
+body{ background:var(--paper); color:var(--ink); font-family:var(--f-body);
+  font-size:var(--t-body); line-height:1.5; -webkit-font-smoothing:antialiased; }
+.off{ display:none !important; }
+.i{ width:20px; height:20px; flex:0 0 20px; }
+.i-sm{ width:15px; height:15px; flex:0 0 15px; }
+button,input{ font:inherit; color:inherit; }
+
+/* ---------------- LOGIN ---------------- */
+#login{ min-height:100dvh; display:flex; align-items:center; justify-content:center;
+  padding:var(--s4) var(--s3) 96px; }
+.wrap{ display:grid; grid-template-columns:340px 1fr; gap:var(--s4);
+  width:min(1000px,100%); align-items:start; }
+
+.side .logo{ font-family:var(--f-display); font-size:var(--t-h2); font-weight:600;
+  letter-spacing:.08em; }
+.side .logo b{ color:var(--accent); font-weight:600; }
+.side .day{ font-family:var(--f-display); font-size:var(--t-h1); font-weight:600;
+  line-height:1.25; margin:var(--s2) 0 var(--s3); }
+/* ตัวเลขสามตัวแทนบุลเล็ตการตลาด */
+.nums{ display:grid; gap:var(--s2); }
+.num{ display:flex; align-items:baseline; gap:var(--s2); padding-bottom:var(--s2);
+  border-bottom:1px solid var(--hairline-2); }
+.num i{ font-family:var(--f-num); font-style:normal; font-size:var(--t-stat); font-weight:600;
+  line-height:1; font-variant-numeric:tabular-nums; }
+.num span{ font-size:var(--t-table); color:var(--muted); }
+.num.a i{ color:var(--grp2); } .num.b i{ color:var(--grp4); } .num.c i{ color:var(--accent); }
+
+.main{ background:var(--card); border:1px solid var(--hairline-2); border-radius:var(--r-lg);
+  padding:var(--s3); box-shadow:var(--sh-sm); }
+.main h2{ font-family:var(--f-display); font-size:var(--t-lead); font-weight:600; }
+.hint{ color:var(--muted); font-size:var(--t-table); margin-bottom:var(--s2); }
+
+/* รายชื่อจัดกลุ่มตามสาขาด้วย CSS order — DOM ยังเรียง ST1..ST10 */
+#lgUsers{ display:flex; flex-wrap:wrap; gap:var(--s-half); }
+.brh{ flex:1 1 100%; display:flex; align-items:center; gap:var(--s1);
+  margin-top:var(--s2); padding-bottom:var(--s-half);
+  font-size:var(--t-label); font-weight:500; color:var(--muted); letter-spacing:.04em;
+  border-bottom:1px solid var(--hairline-2); }
+.brh:first-child{ margin-top:0; }
+.brh i{ width:9px; height:9px; border-radius:var(--r-pill); flex:0 0 9px; }
+.lg-u{ flex:1 1 220px; display:flex; align-items:center; gap:var(--s2); min-width:0;
+  text-align:left; min-height:52px; padding:var(--s1) var(--s2); cursor:pointer;
+  background:none; border:1px solid transparent; border-radius:var(--r-card);
+  transition:background var(--dur-ui) var(--ease), border-color var(--dur-ui) var(--ease); }
+@media (hover:hover){ .lg-u:hover{ background:var(--paper-2); } }
+.lg-u.on{ background:var(--paper-2); border-color:var(--ink); }
+.lg-u .av{ width:34px; height:34px; flex:0 0 34px; border-radius:var(--r-pill);
+  display:grid; place-items:center; color:var(--on-grp);
+  font-family:var(--f-display); font-size:var(--t-table); font-weight:600; }
+.lg-u .tx{ min-width:0; }
+.lg-u b{ display:block; font-size:var(--t-table); font-weight:500;
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.lg-u .r{ display:block; font-size:var(--t-label); color:var(--muted); }
+.lg-u .tick{ margin-left:auto; flex:0 0 15px; color:var(--accent); opacity:0; }
+.lg-u.on .tick{ opacity:1; }
+
+.act{ display:flex; align-items:center; gap:var(--s2); margin-top:var(--s3);
+  padding-top:var(--s2); border-top:1px solid var(--hairline); }
+.btn{ display:inline-flex; align-items:center; justify-content:center; gap:var(--s1);
+  min-height:50px; padding:0 var(--s4); background:var(--accent); color:var(--on-accent);
+  border:0; border-radius:var(--r-btn); font-family:var(--f-display); font-weight:600; cursor:pointer; }
+@media (hover:hover){ .btn:hover{ background:var(--accent-deep); color:#fff; } }
+.lnk{ min-height:50px; padding:0 var(--s2); background:none; border:0; color:var(--ink);
+  font-size:var(--t-table); cursor:pointer; text-decoration:underline; text-underline-offset:3px; }
+.fld{ margin-bottom:var(--s2); }
+.fl{ display:block; font-size:var(--t-label); color:var(--muted); margin-bottom:var(--s-half); }
+.inp{ width:100%; min-height:50px; padding:0 var(--s2); background:var(--card); color:var(--ink);
+  border:1px solid var(--hairline); border-radius:var(--r-input); }
+.inp:focus{ outline:2px solid var(--accent); outline-offset:1px; }
+
+@media (max-width:860px){
+  #login{ padding:var(--s2) var(--s2) 96px; align-items:flex-start; }
+  .wrap{ grid-template-columns:1fr; gap:var(--s3); }
+  .side .day{ font-size:var(--t-h2); margin:var(--s1) 0 var(--s2); }
+  /* สามตัวเลขยุบเป็นชิปแนวนอนสามใบ — กริดสามคอลัมน์ ไม่ใช่ flex ที่ล้นได้ */
+  .nums{ grid-template-columns:repeat(3,1fr); gap:var(--s1); }
+  .num{ flex-direction:column; align-items:flex-start; gap:2px; padding:var(--s2) var(--s1);
+    border:1px solid var(--hairline-2); border-radius:var(--r-card); background:var(--card); }
+  .num i{ font-size:var(--t-h2); }
+  .num span{ font-size:11px; line-height:1.3; }
+  .main{ padding:var(--s2); }
+  .act{ flex-wrap:wrap; }
+  .btn{ flex:1 1 100%; }
+}
+
+/* ---------------- หน้าแรก ---------------- */
+/* ตัวเลขสามตัวเดียวกันอยู่บนสุด — คนดูจะรู้สึกว่า login กับหน้าแรกเป็นหน้าเดียวกัน */
+#app{ min-height:100dvh; padding:var(--s3) var(--s3) 96px; }
+.dsh{ max-width:1000px; margin:0 auto; display:grid; gap:var(--s2); }
+.dsh-hd{ display:flex; flex-wrap:wrap; gap:var(--s2); align-items:baseline;
+  justify-content:space-between; }
+.dsh-hd b{ font-family:var(--f-display); font-size:var(--t-h1); font-weight:600; margin-right:var(--s2); }
+.dsh-hd span{ color:var(--muted); font-size:var(--t-table); }
+.dsh-me{ display:flex; align-items:center; gap:var(--s2); font-size:var(--t-table); color:var(--muted); }
+.dsh-out{ min-height:44px; padding:0 var(--s3); background:none; color:var(--ink); cursor:pointer;
+  border:1px solid var(--hairline); border-radius:var(--r-pill); font-size:var(--t-table); }
+@media (hover:hover){ .dsh-out:hover{ border-color:var(--accent); color:var(--accent); } }
+.dsh-grid{ display:grid; grid-template-columns:repeat(6,1fr); gap:var(--s2); }
+.dsh-grid>.dsh-c{ grid-column:span 2; }
+.dsh-c{ background:var(--card); border:1px solid var(--hairline-2); border-radius:var(--r-card);
+  padding:var(--s3); }
+.dsh-lab{ font-size:var(--t-label); color:var(--muted); }
+.dsh-val{ font-family:var(--f-num); font-size:var(--t-stat); font-weight:600; line-height:1.1;
+  font-variant-numeric:tabular-nums; margin-top:2px; }
+.dsh-val small{ font-family:var(--f-body); font-size:var(--t-table); font-weight:400;
+  color:var(--muted); margin-left:5px; }
+.dsh-sub{ font-size:var(--t-label); color:var(--muted); margin-top:var(--s-half); }
+.t-pos .dsh-val{ color:var(--pos); } .t-attn .dsh-val{ color:var(--attn); }
+.dsh-wide{ grid-column:1/-1; }
+.dsh-bars{ display:flex; align-items:flex-end; gap:var(--s1); height:116px; margin-top:var(--s2); }
+.dsh-bar{ flex:1; display:flex; flex-direction:column; justify-content:flex-end; gap:var(--s-half);
+  height:100%; text-align:center; }
+.dsh-bar i{ display:block; width:100%; max-width:38px; margin:0 auto; height:var(--h);
+  min-height:5px; border-radius:7px 7px 3px 3px; background:var(--grp2); }
+.dsh-bar span{ font-size:11px; color:var(--muted); }
+.dsh-rows{ display:grid; margin-top:var(--s2); }
+.dsh-row{ display:flex; align-items:center; gap:var(--s2); padding:var(--s1) 0;
+  border-top:1px solid var(--hairline-2); font-size:var(--t-table); }
+.dsh-row b{ font-weight:500; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.dsh-row span:not(.dsh-meter){ color:var(--muted); font-size:var(--t-label); }
+.dsh-row em{ margin-left:auto; font-style:normal; color:var(--muted); font-size:var(--t-label);
+  font-variant-numeric:tabular-nums; white-space:nowrap; }
+.dsh-dot{ width:8px; height:8px; flex:0 0 8px; border-radius:var(--r-pill); background:var(--attn); }
+.dsh-meter{ flex:1; height:8px; background:var(--paper-2); border-radius:var(--r-pill); overflow:hidden; }
+.dsh-mfill{ display:block; height:100%; background:var(--grp3); }
+@media (max-width:900px){
+  #app{ padding:var(--s2) var(--s2) 96px; }
+  .dsh-grid{ grid-template-columns:repeat(2,1fr); }
+  .dsh-grid>.dsh-c{ grid-column:span 1; }
+  .dsh-c{ padding:var(--s2); }
+}
+</style></head><body>
+
+<div id="login"><div class="wrap">
+  <aside class="side">
+    <div class="logo">FAMAI <b>MOTOR</b></div>
+    <div class="day" id="lgDay"></div>
+    <div class="nums" id="lgNums"></div>
+  </aside>
+
+  <main class="main">
+    <div id="lgDemo">
+      <h2>คุณคือใคร</h2>
+      <p class="hint">เลือกชื่อจากสาขาของคุณ</p>
+      <div id="lgUsers"></div>
+      <div class="act">
+        <button class="btn" id="lgGo">เข้าสู่ระบบ</button>
+        <button class="lnk" id="lgSwap"></button>
+      </div>
+    </div>
+    <div id="lgLive" style="display:none">
+      <h2>เข้าด้วยบัญชีจริง</h2>
+      <p class="hint">ใช้อีเมลและรหัสผ่านที่ผู้ดูแลระบบออกให้</p>
+      <div class="fld"><label class="fl" for="lgEmail">อีเมล</label>
+        <input class="inp" type="email" id="lgEmail" placeholder="sales2@famai.local" autocomplete="username"></div>
+      <div class="fld"><label class="fl" for="lgPw2">รหัสผ่าน</label>
+        <input class="inp" type="password" id="lgPw2" autocomplete="current-password"></div>
+      <div class="act">
+        <button class="btn" id="lgGo2">เข้าสู่ระบบ</button>
+        <button class="lnk" id="lgSwap2" type="button">กลับไปเลือกจากรายชื่อ</button>
+      </div>
+    </div>
+  </main>
+</div></div>
+
+<div id="app" class="off"></div>
+
+<script src="data.js"></script><script src="common.js"></script>
+<script>
+$('#lgGo').innerHTML  = 'เข้าสู่ระบบ '+ic('arrow','i i-sm');
+$('#lgGo2').innerHTML = 'เข้าสู่ระบบ '+ic('arrow','i i-sm');
+$('#lgSwap2').onclick = () => $('#lgSwap').click();
+$('#lgDay').textContent = thDate(D.today);
+$('#lgNums').innerHTML =
+   '<div class="num a"><i>'+B(D.kpi.stock)+'</i><span>รถพร้อมขายในสต๊อก</span></div>'
+ + '<div class="num b"><i>'+B(D.kpi.regWait)+'</i><span>งานทะเบียนที่ลูกค้ายังรอป้าย</span></div>'
+ + '<div class="num c"><i>'+B(D.kpi.arN)+'</i><span>รายที่ยังค้างชำระ</span></div>';
+
+/* กลุ่มตามสาขา — เรียงกลุ่มด้วย CSS order เท่านั้น ลำดับใน DOM ห้ามแตะ */
+const BR_ORDER = [...new Set(S.map(s=>s.branch))];   /* สาขาที่มีคนจริง เรียงตามที่เจอครั้งแรก */
+mountStaff(s => '<span class="av" style="background:var(--grp'+RGRP[s.role]+')">'+esc(lgInit(s.name))+'</span>'
+  + '<span class="tx"><b>'+esc(s.name)+'</b><span class="r">'+esc(ROLE[s.role])+'</span></span>'
+  + ic('check','i i-sm tick'));
+
+function afterStaff(){
+  const host = $('#lgUsers');
+  $$('.brh', host).forEach(x=>x.remove());
+  BR_ORDER.forEach((code, gi) => {
+    const n = S.filter(s=>s.branch===code).length;
+    const h = document.createElement('div');
+    h.className = 'brh'; h.style.order = gi*2;
+    h.innerHTML = '<i style="background:var(--grp'+(gi+1)+')"></i>'
+      + esc(BR[code].name) + ' · ' + n + ' คน';
+    host.appendChild(h);
+  });
+  $$('.lg-u', host).forEach((b,i) => { b.style.order = BR_ORDER.indexOf(S[i].branch)*2 + 1; });
+}
+afterStaff();
+boot(8);
+</script></body></html>

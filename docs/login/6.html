@@ -1,0 +1,237 @@
+<!doctype html><html lang="th"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>แบบ 6 · สลิปกระดาษ — Famai Motor</title>
+<script>try{var d=localStorage.getItem('famai_login_dark');if(d==='1'||(d===null&&matchMedia('(prefers-color-scheme:dark)').matches))document.documentElement.dataset.theme='dark';}catch(e){}</script>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Taviraj:wght@600&family=Niramit:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ============ แบบ 6 · สลิปกระดาษ ============
+   แนวคิด: ร้านนี้อยู่ได้ด้วยกระดาษ — ใบจอง ใบส่งมอบ ใบกำกับภาษี
+           หน้าล็อกอินจึงเป็นเอกสารอีกใบ ไม่ใช่หน้าเว็บ
+   ต่างจากตัวอื่น: รายชื่อเป็น **ตารางแบบใบฟอร์ม** มีหัวคอลัมน์ เลขลำดับ และช่องให้ติ๊ก
+           หน้าแรกก็ไม่ใช่ dashboard แต่เป็น **รายงาน** — เส้นคั่นแทนกล่อง ตัวเลขชิดขวา
+   ฟอนต์: Taviraj 600 (serif ไทยแบบสิ่งพิมพ์ — หัวเรื่องกับชื่อคน)
+          + Niramit 400/500 (body ที่มีกลิ่น calligraphic รับกับ serif ได้โดยไม่ตีกัน)
+   แดงใช้ตรงไหน: **ตราปั๊มมุมขวาบน** กับปุ่มหลัก — แดงเป็นหมึกตรายาง ไม่ใช่สีตกแต่ง
+   จุดอ่อน: serif ไทยตัวเล็กบนมือถือ Android ราคาถูกจะเละ ต้องดัน body ขึ้น 16px+ ทั้งแอปซึ่งกินพื้นที่
+            · เซลล์อายุ 25 อาจอ่านว่า "เชย"
+   ราคาพอร์ต: ถูก
+   ============================================= */
+:root{
+  --paper:#EDE6D8; --paper-2:#E3DACA; --card:#F8F4EC; --dark:#241E17;
+  --ink:#241E17; --ink-soft:#453B2E; --muted:#5F5548;
+  --hairline:rgba(36,30,23,.24); --hairline-2:rgba(36,30,23,.11);
+  --accent:#B0121B; --accent-hover:#CE2530; --accent-deep:#830A11; --accent-wash:rgba(176,18,27,.07);
+  --pos:#16603C; --attn:#7A4A08;
+  --grp1:#8A0710; --grp2:#2A4E67; --grp3:#16603C; --grp4:#6E4810; --grp5:#4C3868; --grp6:#4A473F;
+  --on-grp:#F8F4EC; --on-accent:#FFFFFF;
+  --s-half:4px; --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s5:48px; --s6:64px;
+  --r-input:3px; --r-card:3px; --r-lg:4px; --r-btn:3px; --r-pill:999px;
+  --t-label:12.5px; --t-table:15px; --t-body:16px; --t-lead:19px;
+  --t-h2:22px; --t-h1:28px; --t-stat:28px; --t-display:32px;
+  --f-display:'Taviraj',Georgia,serif; --f-body:'Niramit',system-ui,sans-serif;
+  --f-num:'Niramit',system-ui,sans-serif;
+  --sh-sm:0 1px 0 rgba(36,30,23,.08); --sh-md:0 2px 8px rgba(36,30,23,.12);
+  --sh-lg:0 14px 34px rgba(36,30,23,.20); --glow:none;
+  --ease:cubic-bezier(.2,.8,.3,1); --dur-ui:.18s;
+}
+html[data-theme="dark"]{
+  /* ยังต้องรู้สึกเป็นกระดาษ ไม่ใช่จอดำ — กระดาษเก่าใต้แสงตะเกียง */
+  --paper:#14120F; --paper-2:#1B1813; --card:#221E18; --dark:#EDE7DC;
+  --ink:#EDE7DC; --ink-soft:#CFC7B8; --muted:#A79D8D;
+  --hairline:rgba(237,231,220,.24); --hairline-2:rgba(237,231,220,.12);
+  --accent:#F2555F; --accent-hover:#FF7C84; --accent-deep:#B0121B; --accent-wash:rgba(242,85,95,.12);
+  --pos:#4DBE85; --attn:#D6952F;
+  --grp1:#FF8189; --grp2:#7FAFD2; --grp3:#4DBE85; --grp4:#D6952F; --grp5:#AE93D6; --grp6:#A9A597;
+  --on-grp:#14120F; --on-accent:#14120F;
+  --sh-sm:0 1px 0 rgba(0,0,0,.5); --sh-md:0 2px 8px rgba(0,0,0,.55); --sh-lg:0 14px 34px rgba(0,0,0,.65);
+}
+*{ box-sizing:border-box; margin:0; padding:0; }
+body{ background:var(--paper); color:var(--ink); font-family:var(--f-body);
+  font-size:var(--t-body); line-height:1.55; -webkit-font-smoothing:antialiased; }
+.off{ display:none !important; }
+.i{ width:19px; height:19px; flex:0 0 19px; }
+.i-sm{ width:15px; height:15px; flex:0 0 15px; }
+button,input{ font:inherit; color:inherit; }
+
+/* ---------------- LOGIN ---------------- */
+#login{ min-height:100dvh; display:flex; justify-content:center; align-items:flex-start;
+  padding:var(--s4) var(--s3) 96px; }
+/* กระดาษ A5 วางบนโต๊ะ */
+.sheet{ position:relative; width:min(580px,100%); background:var(--card);
+  border:1px solid var(--hairline-2); border-radius:var(--r-card);
+  padding:var(--s4) var(--s4) var(--s3); box-shadow:var(--sh-lg); }
+.stamp{ position:absolute; top:var(--s3); right:var(--s3); transform:rotate(-4deg);
+  border:2px solid var(--accent); color:var(--accent); border-radius:var(--r-input);
+  padding:3px 9px; font-family:var(--f-display); font-weight:600; font-size:var(--t-label);
+  letter-spacing:.12em; }
+.hd{ border-bottom:2px solid var(--ink); padding-bottom:var(--s2); }
+.hd .co{ font-family:var(--f-display); font-size:var(--t-h1); font-weight:600; line-height:1.2; }
+.hd .sub{ font-size:var(--t-label); color:var(--muted); margin-top:2px; }
+.meta{ display:flex; flex-wrap:wrap; gap:var(--s1) var(--s3); font-size:var(--t-label);
+  color:var(--muted); padding:var(--s2) 0; border-bottom:1px solid var(--hairline-2); }
+.meta b{ color:var(--ink); font-weight:500; }
+h2{ font-family:var(--f-display); font-size:var(--t-lead); font-weight:600; margin:var(--s3) 0 var(--s1); }
+
+/* ตารางแบบใบฟอร์ม */
+.thead{ display:grid; grid-template-columns:26px 1fr 96px; gap:var(--s2);
+  padding:0 0 var(--s-half); border-bottom:1px solid var(--ink);
+  font-size:var(--t-label); font-weight:500; color:var(--muted); letter-spacing:.04em; }
+.thead span:last-child{ text-align:right; }
+#lgUsers{ display:grid; }
+.lg-u{ display:grid; grid-template-columns:26px 1fr 96px; gap:var(--s2); align-items:center;
+  width:100%; text-align:left; min-height:46px; padding:var(--s1) 0; cursor:pointer;
+  background:none; border:0; border-bottom:1px dotted var(--hairline);
+  font-size:var(--t-table); }
+@media (hover:hover){ .lg-u:hover{ background:var(--paper-2); } }
+.lg-u.on{ background:var(--paper-2); }
+/* ช่องติ๊กแบบในฟอร์มกระดาษ — เครื่องหมายถูก ไม่ใช่แค่สี */
+.box{ width:20px; height:20px; border:1.5px solid var(--ink); border-radius:2px;
+  display:grid; place-items:center; color:var(--accent); }
+.box svg{ opacity:0; }
+.lg-u.on .box svg{ opacity:1; }
+.nm{ min-width:0; display:flex; align-items:baseline; gap:var(--s1); flex-wrap:wrap; }
+.nm b{ font-family:var(--f-display); font-weight:600; font-size:var(--t-table); }
+/* จุดไข่ปลานำสายตาแบบสารบัญหนังสือ */
+.nm .dots{ flex:1; min-width:20px; border-bottom:1px dotted var(--hairline);
+  transform:translateY(-3px); }
+.nm .r{ color:var(--muted); font-size:var(--t-label); }
+.br{ text-align:right; color:var(--muted); font-size:var(--t-label);
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.no{ font-variant-numeric:tabular-nums; color:var(--muted); font-size:var(--t-label); }
+
+.act{ display:flex; align-items:center; gap:var(--s2); margin-top:var(--s3); }
+.btn{ display:inline-flex; align-items:center; justify-content:center; gap:var(--s1);
+  min-height:48px; padding:0 var(--s4); background:var(--accent); color:var(--on-accent);
+  border:0; border-radius:var(--r-btn); font-weight:500; cursor:pointer; }
+@media (hover:hover){ .btn:hover{ background:var(--accent-deep); color:#fff; } }
+.lnk{ min-height:48px; padding:0 var(--s2); background:none; border:0; color:var(--ink);
+  font-size:var(--t-table); cursor:pointer; text-decoration:underline; text-underline-offset:3px; }
+
+/* ท่อนล่างของกระดาษใบเดียวกัน คั่นด้วยเส้นกรรไกร */
+.cut{ margin-top:var(--s4); padding-top:var(--s3); border-top:1.5px dashed var(--hairline);
+  position:relative; }
+.cut::before{ content:''; position:absolute; top:-11px; left:0; width:20px; height:20px;
+  border:1.5px solid var(--hairline); border-radius:var(--r-pill); background:var(--card); }
+.fld{ margin-bottom:var(--s2); }
+.fl{ display:block; font-size:var(--t-label); color:var(--muted); margin-bottom:var(--s-half); }
+.inp{ width:100%; min-height:46px; padding:0 var(--s2); background:transparent; color:var(--ink);
+  border:0; border-bottom:1px solid var(--ink); border-radius:0; }
+.inp:focus{ outline:none; border-bottom-width:2px; border-bottom-color:var(--accent); }
+
+@media (max-width:600px){
+  #login{ padding:var(--s2) var(--s2) 96px; }
+  .sheet{ padding:var(--s3) var(--s2); }
+  .stamp{ top:var(--s2); right:var(--s2); }
+  .hd .co{ font-size:var(--t-h2); padding-right:96px; }
+  .thead,.lg-u{ grid-template-columns:24px 1fr; }
+  .thead span:last-child,.br{ display:none; }
+  .nm{ display:block; }
+  .nm .dots{ display:none; }
+  .act{ flex-wrap:wrap; }
+  .btn{ flex:1 1 100%; }
+}
+
+/* ---------------- หน้าแรก = รายงาน ---------------- */
+#app{ min-height:100dvh; display:flex; justify-content:center; padding:var(--s4) var(--s3) 96px; }
+.dsh{ width:min(760px,100%); background:var(--card); border:1px solid var(--hairline-2);
+  border-radius:var(--r-card); padding:var(--s4); box-shadow:var(--sh-lg); display:grid; gap:var(--s3); }
+.dsh-hd{ display:flex; flex-wrap:wrap; gap:var(--s2); align-items:baseline;
+  justify-content:space-between; border-bottom:2px solid var(--ink); padding-bottom:var(--s2); }
+.dsh-hd b{ font-family:var(--f-display); font-size:var(--t-h1); font-weight:600; margin-right:var(--s2); }
+.dsh-hd span{ color:var(--muted); font-size:var(--t-label); }
+.dsh-me{ display:flex; align-items:center; gap:var(--s2); font-size:var(--t-label); color:var(--muted); }
+.dsh-out{ min-height:44px; padding:0 var(--s2); background:none; color:var(--ink); cursor:pointer;
+  border:1px solid var(--hairline); border-radius:var(--r-btn); font-size:var(--t-label); }
+/* ไม่มีการ์ด — คอลัมน์รายงาน */
+.dsh-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:var(--s3) var(--s4); }
+.dsh-c{ border-top:1px solid var(--hairline-2); padding-top:var(--s1); }
+.dsh-lab{ font-size:var(--t-label); color:var(--muted); }
+.dsh-val{ font-family:var(--f-display); font-size:var(--t-stat); font-weight:600; line-height:1.2;
+  font-variant-numeric:tabular-nums; }
+.dsh-val small{ font-family:var(--f-body); font-size:var(--t-label); font-weight:400;
+  color:var(--muted); margin-left:5px; }
+.dsh-sub{ font-size:var(--t-label); color:var(--muted); }
+.t-pos .dsh-val{ color:var(--pos); } .t-attn .dsh-val{ color:var(--attn); }
+.dsh-wide{ grid-column:1/-1; }
+.dsh-bars{ display:flex; align-items:flex-end; gap:var(--s2); height:92px; margin-top:var(--s2);
+  border-bottom:1px solid var(--ink); }
+.dsh-bar{ flex:1; display:flex; flex-direction:column; justify-content:flex-end; gap:var(--s-half);
+  height:100%; text-align:center; }
+.dsh-bar i{ display:block; width:100%; max-width:26px; margin:0 auto; height:var(--h);
+  min-height:4px; border-radius:0; background:var(--ink); }
+.dsh-bar span{ font-size:11px; color:var(--muted); margin-bottom:-18px; }
+.dsh-rows{ display:grid; margin-top:var(--s1); }
+.dsh-row{ display:flex; align-items:center; gap:var(--s2); padding:var(--s1) 0;
+  border-bottom:1px dotted var(--hairline); font-size:var(--t-table); }
+.dsh-row b{ font-family:var(--f-display); font-weight:600; min-width:0;
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.dsh-row span:not(.dsh-meter){ color:var(--muted); font-size:var(--t-label); }
+.dsh-row em{ margin-left:auto; font-style:normal; color:var(--ink); font-size:var(--t-label);
+  font-variant-numeric:tabular-nums; white-space:nowrap; }
+.dsh-dot{ width:6px; height:6px; flex:0 0 6px; border-radius:var(--r-pill); background:var(--attn); }
+.dsh-meter{ flex:1; height:3px; background:var(--paper-2); }
+.dsh-mfill{ display:block; height:3px; background:var(--ink); }
+@media (max-width:760px){
+  #app{ padding:var(--s2) var(--s2) 96px; }
+  .dsh{ padding:var(--s3) var(--s2); }
+  .dsh-grid{ grid-template-columns:repeat(2,1fr); }
+  .dsh-bars{ gap:var(--s1); }
+}
+</style></head><body>
+
+<div id="login"><div class="sheet">
+  <div class="stamp">ระบบภายใน</div>
+  <div class="hd">
+    <div class="co" id="lgCo"></div>
+    <div class="sub">แบบฟอร์มเข้าใช้งานระบบหลังบ้าน · FM-LOGIN-01</div>
+  </div>
+  <div class="meta">
+    <span>วันที่ <b id="lgDate"></b></span>
+    <span>สาขาที่เห็นได้ <b>ทุกสาขา</b></span>
+    <span>ผู้ใช้ในระบบ <b>10 คน</b></span>
+  </div>
+
+  <div id="lgDemo">
+    <h2>ข้อ 1 · ทำเครื่องหมายหน้าชื่อของท่าน</h2>
+    <div class="thead"><span></span><span>ผู้ใช้งาน / ตำแหน่ง</span><span>สาขา</span></div>
+    <div id="lgUsers"></div>
+    <div class="act">
+      <button class="btn" id="lgGo">เข้าสู่ระบบ</button>
+      <button class="lnk" id="lgSwap"></button>
+    </div>
+  </div>
+
+  <div id="lgLive" style="display:none">
+    <div class="cut">
+      <h2>สำหรับผู้มีบัญชีระบบ</h2>
+      <div class="fld"><label class="fl" for="lgEmail">อีเมล</label>
+        <input class="inp" type="email" id="lgEmail" placeholder="sales2@famai.local" autocomplete="username"></div>
+      <div class="fld"><label class="fl" for="lgPw2">รหัสผ่าน</label>
+        <input class="inp" type="password" id="lgPw2" autocomplete="current-password"></div>
+      <div class="act">
+        <button class="btn" id="lgGo2">เข้าสู่ระบบ</button>
+        <button class="lnk" id="lgSwap2" type="button">กลับไปแบบฟอร์มรายชื่อ</button>
+      </div>
+    </div>
+  </div>
+</div></div>
+
+<div id="app" class="off"></div>
+
+<script src="data.js"></script><script src="common.js"></script>
+<script>
+$('#lgCo').textContent = CO;
+$('#lgDate').textContent = thDate(D.today);
+$('#lgGo').innerHTML  = 'เข้าสู่ระบบ '+ic('arrow','i i-sm');
+$('#lgGo2').innerHTML = 'เข้าสู่ระบบ '+ic('arrow','i i-sm');
+$('#lgSwap2').onclick = () => $('#lgSwap').click();
+
+/* แถวฟอร์ม: เลขลำดับ + ช่องติ๊ก + ชื่อ...จุดไข่ปลา...ตำแหน่ง + สาขาชิดขวา */
+mountStaff((s,i) => '<span class="box">'+ic('check','i i-sm')+'</span>'
+  + '<span class="nm"><span class="no">'+(i+1)+'.</span><b>'+esc(s.name)+'</b>'
+  + '<span class="dots"></span><span class="r">'+esc(ROLE[s.role])+'</span></span>'
+  + '<span class="br">'+esc(BR[s.branch].name)+'</span>');
+boot(6);
+</script></body></html>

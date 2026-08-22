@@ -1,0 +1,194 @@
+<!doctype html><html lang="th"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>แบบ 4 · ตัวโตอ่านง่าย — Famai Motor</title>
+<script>try{var d=localStorage.getItem('famai_login_dark');if(d==='1'||(d===null&&matchMedia('(prefers-color-scheme:dark)').matches))document.documentElement.dataset.theme='dark';}catch(e){}</script>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai+Looped:wght@500;700&family=Sarabun:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ============ แบบ 4 · ตัวโตอ่านง่าย ============
+   แนวคิด: สมมติคนใช้อายุ 55 มือเปื้อนน้ำมัน ยืนอยู่กลางแดดหน้าร้าน
+           ทุกอย่างต้องโต คอนทราสต์ต้องสูงสุด และกดพลาดไม่ได้
+   ต่างจากตัวอื่น: **ไทยแบบมีหัว (Looped)** — ฟอนต์ 20 ตัวในหน้า Customize ของแอปตอนนี้
+           เป็นแบบไม่มีหัวเกือบหมด ทั้งที่คนไทยรุ่นก่อนอ่านแบบมีหัวได้เร็วกว่า นี่คือช่องว่างที่ยังไม่เคยลอง
+           และ **ไม่มีวงกลมอักษรย่อ** เพราะวงกลมกินความกว้างที่ชื่อควรได้
+   ฟอนต์: Noto Sans Thai Looped 500/700 (ทุกอย่างที่ต้องอ่าน) + Sarabun 400/500 (ป้ายเล็ก)
+   สี: หมึกดำ #0B0C0E บนขาวล้วน แทบไม่มีเทา
+   แดงใช้ตรงไหน: **ปุ่มเข้าสู่ระบบที่เดียว** — แดงที่โผล่ที่เดียวคือแดงที่คนเห็น
+   จุดอ่อน: 10 แถว × 72px ต้องเลื่อนแน่นอนบนมือถือ (แก้ด้วยปุ่มลอยติดขอบล่าง ซึ่งเป็นของใหม่อีกชิ้น)
+            · บนคอม 27 นิ้วคอลัมน์เดียวกลางจอดูโล่งจนเหมือนหน้ายังโหลดไม่เสร็จ — จงใจ ไม่ใช่ลืม
+   ราคาพอร์ต: ถูก
+   ================================================ */
+:root{
+  --paper:#FFFFFF; --paper-2:#F0F1F3; --card:#FFFFFF; --dark:#0B0C0E;
+  --ink:#0B0C0E; --ink-soft:#26282C; --muted:#55595F;
+  --hairline:rgba(11,12,14,.26); --hairline-2:rgba(11,12,14,.12);
+  --accent:#C7000E; --accent-hover:#E32330; --accent-deep:#96000B; --accent-wash:rgba(199,0,14,.08);
+  --pos:#14653C; --attn:#7E4B08;
+  --grp1:#8A0710; --grp2:#264C66; --grp3:#14653C; --grp4:#6F4A10; --grp5:#4E3A6B; --grp6:#454C55;
+  --on-grp:#FFFFFF; --on-accent:#FFFFFF;
+  --s-half:4px; --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s5:48px; --s6:64px;
+  --r-input:10px; --r-card:14px; --r-lg:18px; --r-btn:14px; --r-pill:999px;
+  /* สเกลตัวอักษรของแบบนี้ดันขึ้นทั้งชุด — นี่คือหัวใจ ไม่ใช่ของแถม */
+  --t-label:15px; --t-table:17px; --t-body:19px; --t-lead:22px;
+  --t-h2:26px; --t-h1:34px; --t-stat:44px; --t-display:48px;
+  --f-display:'Noto Sans Thai Looped',system-ui,sans-serif;
+  --f-body:'Noto Sans Thai Looped',system-ui,sans-serif;
+  --f-num:'Noto Sans Thai Looped',system-ui,sans-serif;
+  --sh-sm:none; --sh-md:0 4px 14px rgba(11,12,14,.10); --sh-lg:0 -6px 20px rgba(11,12,14,.10); --glow:none;
+  --ease:cubic-bezier(.2,.8,.3,1); --dur-ui:.16s;
+}
+html[data-theme="dark"]{
+  --paper:#000000; --paper-2:#16181C; --card:#000000; --dark:#FFFFFF;
+  --ink:#FFFFFF; --ink-soft:#DDE0E4; --muted:#A8AEB6;
+  --hairline:rgba(255,255,255,.34); --hairline-2:rgba(255,255,255,.16);
+  --accent:#FF5560; --accent-hover:#FF7C85; --accent-deep:#C7000E; --accent-wash:rgba(255,85,96,.14);
+  --pos:#45C98A; --attn:#E29B3C;
+  --grp1:#FF8189; --grp2:#84B6DE; --grp3:#45C98A; --grp4:#E29B3C; --grp5:#B392E0; --grp6:#A6AEB9;
+  --on-grp:#000000; --on-accent:#12141A;
+  --sh-md:0 4px 14px rgba(0,0,0,.7); --sh-lg:0 -6px 20px rgba(0,0,0,.8);
+}
+*{ box-sizing:border-box; margin:0; padding:0; }
+body{ background:var(--paper); color:var(--ink); font-family:var(--f-body);
+  font-size:var(--t-body); line-height:1.5; font-weight:500; -webkit-font-smoothing:antialiased; }
+.off{ display:none !important; }
+.i{ width:24px; height:24px; flex:0 0 24px; }
+.i-sm{ width:20px; height:20px; flex:0 0 20px; }
+button,input{ font:inherit; color:inherit; }
+.sr{ font-family:'Sarabun',system-ui,sans-serif; font-weight:400; }
+
+/* ---------------- LOGIN ---------------- */
+/* คอลัมน์เดียวเสมอ กว้างสุด 540px — จอคอมไม่ใช้พื้นที่ที่เหลือ ตั้งใจ */
+#login{ min-height:100dvh; display:flex; justify-content:center; }
+.pane{ width:min(540px,100%); padding:var(--s4) var(--s3) 0;
+  display:flex; flex-direction:column; min-height:100dvh; }
+.logo{ font-size:var(--t-h2); font-weight:700; letter-spacing:.06em; }
+.logo b{ color:var(--accent); font-weight:700; }
+.pane h1{ font-size:var(--t-h1); font-weight:700; line-height:1.3; margin:var(--s3) 0 var(--s1); }
+.hint{ font-size:var(--t-table); color:var(--muted); margin-bottom:var(--s3); }
+
+#lgUsers{ display:grid; gap:var(--s1); }
+.lg-u{ display:flex; align-items:center; gap:var(--s2); width:100%; text-align:left;
+  min-height:72px; padding:var(--s2); background:var(--card); cursor:pointer;
+  border:2px solid var(--hairline-2); border-radius:var(--r-card);
+  transition:border-color var(--dur-ui) var(--ease); }
+@media (hover:hover){ .lg-u:hover{ border-color:var(--muted); } }
+.lg-u.on{ border-color:var(--ink); border-width:3px; padding:calc(var(--s2) - 1px); }
+.lg-u .tx{ min-width:0; }
+.lg-u b{ display:block; font-size:var(--t-lead); font-weight:700; line-height:1.25; }
+.lg-u .r{ display:block; font-size:var(--t-table); color:var(--muted); }
+.lg-u .tick{ margin-left:auto; flex:0 0 28px; width:28px; height:28px; opacity:0; color:var(--ink); }
+.lg-u.on .tick{ opacity:1; }
+
+/* ปุ่มลอยติดขอบล่าง — 10 แถว × 72px ต้องเลื่อนแน่นอน ปุ่มจึงต้องตามมาด้วย */
+.dock{ position:sticky; bottom:0; margin-top:var(--s3);
+  padding:var(--s2) 0 var(--s3); background:var(--paper); box-shadow:var(--sh-lg); }
+.btn{ display:flex; align-items:center; justify-content:center; gap:var(--s2); width:100%;
+  min-height:64px; background:var(--accent); color:var(--on-accent); border:0;
+  border-radius:var(--r-btn); font-size:var(--t-lead); font-weight:700; cursor:pointer; }
+@media (hover:hover){ .btn:hover{ background:var(--accent-deep); color:#fff; } }
+.btn2{ display:flex; align-items:center; justify-content:center; width:100%; min-height:60px;
+  margin-top:var(--s1); background:none; color:var(--ink); border:2px solid var(--hairline);
+  border-radius:var(--r-btn); font-size:var(--t-table); font-weight:500; cursor:pointer; }
+@media (hover:hover){ .btn2:hover{ border-color:var(--ink); } }
+
+.fld{ margin-bottom:var(--s3); }
+.fl{ display:block; font-size:var(--t-table); color:var(--muted); margin-bottom:var(--s1); }
+.inp{ width:100%; min-height:64px; padding:0 var(--s2); background:var(--card); color:var(--ink);
+  border:2px solid var(--hairline); border-radius:var(--r-input); font-size:var(--t-body); }
+.inp:focus{ outline:3px solid var(--accent); outline-offset:2px; }
+
+@media (max-width:600px){
+  .pane{ padding:var(--s3) var(--s2) 0; }
+  .lg-u{ min-height:68px; }
+}
+
+/* ---------------- หน้าแรก ---------------- */
+/* การ์ดละเรื่อง ตัวเลขใหญ่ และ **มีประโยคไทยกำกับใต้ทุกตัวเลข** ไม่ต้องตีความเอง */
+#app{ min-height:100dvh; display:flex; justify-content:center; }
+.dsh{ width:min(540px,100%); padding:var(--s3) var(--s2) 96px; display:grid; gap:var(--s2); }
+.dsh-hd{ display:grid; gap:var(--s1); }
+.dsh-hd b{ font-size:var(--t-h1); font-weight:700; }
+.dsh-hd span{ font-size:var(--t-table); color:var(--muted); }
+.dsh-me{ display:flex; align-items:center; justify-content:space-between; gap:var(--s2);
+  font-size:var(--t-table); color:var(--muted); }
+.dsh-out{ min-height:52px; padding:0 var(--s3); background:none; color:var(--ink); cursor:pointer;
+  border:2px solid var(--hairline); border-radius:var(--r-btn); font-size:var(--t-table); font-weight:500; }
+@media (hover:hover){ .dsh-out:hover{ border-color:var(--ink); } }
+.dsh-grid{ display:grid; gap:var(--s2); }
+.dsh-c{ border:2px solid var(--hairline-2); border-radius:var(--r-card); padding:var(--s3); }
+.dsh-lab{ font-size:var(--t-table); color:var(--muted); }
+.dsh-val{ font-size:var(--t-stat); font-weight:700; line-height:1.1;
+  font-variant-numeric:tabular-nums; margin:var(--s-half) 0; }
+.dsh-val small{ font-size:var(--t-lead); font-weight:500; color:var(--muted); margin-left:6px; }
+.dsh-sub{ font-size:var(--t-table); color:var(--muted); }
+.t-pos .dsh-val{ color:var(--pos); } .t-attn .dsh-val{ color:var(--attn); }
+.dsh-bars{ display:flex; align-items:flex-end; gap:var(--s1); height:110px; margin-top:var(--s2); }
+.dsh-bar{ flex:1; display:flex; flex-direction:column; justify-content:flex-end; gap:var(--s-half);
+  height:100%; text-align:center; }
+.dsh-bar i{ display:block; width:100%; height:var(--h); min-height:6px; border-radius:5px 5px 0 0;
+  background:var(--ink); }
+.dsh-bar span{ font-size:13px; color:var(--muted); }
+.dsh-rows{ display:grid; gap:var(--s1); margin-top:var(--s2); }
+.dsh-row{ display:flex; align-items:center; gap:var(--s2); padding:var(--s2) 0;
+  border-top:2px solid var(--hairline-2); font-size:var(--t-table); }
+.dsh-row b{ font-weight:700; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.dsh-row span:not(.dsh-meter){ color:var(--muted); }
+.dsh-row em{ margin-left:auto; font-style:normal; color:var(--muted);
+  font-variant-numeric:tabular-nums; white-space:nowrap; }
+.dsh-dot{ width:12px; height:12px; flex:0 0 12px; border-radius:var(--r-pill); background:var(--attn); }
+.dsh-meter{ flex:1; height:12px; background:var(--paper-2); border-radius:var(--r-pill); overflow:hidden; }
+.dsh-mfill{ display:block; height:100%; background:var(--ink); }
+</style></head><body>
+
+<div id="login"><div class="pane">
+  <div class="logo">FAMAI <b>MOTOR</b></div>
+
+  <div id="lgDemo">
+    <h1>คุณคือใคร</h1>
+    <p class="hint sr">แตะชื่อของคุณหนึ่งครั้ง แล้วกดปุ่มแดงข้างล่าง</p>
+    <div id="lgUsers"></div>
+    <div class="dock">
+      <button class="btn" id="lgGo">เข้าสู่ระบบ</button>
+      <button class="btn2" id="lgSwap"></button>
+    </div>
+  </div>
+
+  <div id="lgLive" style="display:none">
+    <h1>เข้าด้วยบัญชีจริง</h1>
+    <p class="hint sr">ใช้อีเมลและรหัสผ่านที่ผู้ดูแลระบบออกให้</p>
+    <div class="fld"><label class="fl sr" for="lgEmail">อีเมล</label>
+      <input class="inp" type="email" id="lgEmail" placeholder="sales2@famai.local" autocomplete="username"></div>
+    <div class="fld"><label class="fl sr" for="lgPw2">รหัสผ่าน</label>
+      <input class="inp" type="password" id="lgPw2" autocomplete="current-password"></div>
+    <div class="dock">
+      <button class="btn" id="lgGo2">เข้าสู่ระบบ</button>
+      <button class="btn2" id="lgSwap2" type="button">กลับไปเลือกจากรายชื่อ</button>
+    </div>
+  </div>
+</div></div>
+
+<div id="app" class="off"></div>
+
+<script src="data.js"></script><script src="common.js"></script>
+<script>
+$('#lgGo').innerHTML  = 'เข้าสู่ระบบ '+ic('arrow','i');
+$('#lgGo2').innerHTML = 'เข้าสู่ระบบ '+ic('arrow','i');
+$('#lgSwap2').onclick = () => $('#lgSwap').click();
+
+/* ไม่มีวงกลมอักษรย่อ — ชื่อได้ความกว้างเต็ม
+   คนที่เลือกใช้ขอบหนา + เครื่องหมายถูก ไม่ใช้สีอย่างเดียว */
+mountStaff(s => '<span class="tx"><b>'+esc(s.name)+'</b>'
+  + '<span class="r sr">'+esc(staffLine(s))+'</span></span>'
+  + ic('check','i tick'));
+
+/* หน้าแรกของแบบนี้ต้องมีประโยคไทยกำกับใต้ตัวเลข — เติมท้ายด้วย dashExtra() */
+function dashExtra(D){
+  return '<div class="dsh-c"><div class="dsh-lab">สรุปเป็นประโยค</div>'
+    + '<p style="font-size:var(--t-body);margin-top:var(--s1);line-height:1.6">'
+    + 'ช่วง 30 วันที่ผ่านมา ขายได้ <b>'+D.kpi.sold+' คัน</b> เป็นเงิน <b>'+B(D.kpi.rev)+' บาท</b> '
+    + 'ตอนนี้มีรถพร้อมขาย <b>'+D.kpi.stock+' คัน</b> ในนั้นค้างเกิน '+D.aging+' วันอยู่ <b>'+D.kpi.stuck+' คัน</b> '
+    + 'และมีลูกค้ารอป้ายทะเบียนอีก <b>'+D.kpi.regWait+' คัน</b></p></div>';
+}
+boot(4);
+</script></body></html>

@@ -10,3 +10,5 @@ docs/*
 !docs/manual/**
 !docs/dash/
 !docs/dash/**
+!docs/login/
+!docs/login/**

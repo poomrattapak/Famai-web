@@ -1,0 +1,256 @@
+<!doctype html><html lang="th"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>แบบ 5 · พิมพ์ชื่อแล้วเข้า — Famai Motor</title>
+<script>try{var d=localStorage.getItem('famai_login_dark');if(d==='1'||(d===null&&matchMedia('(prefers-color-scheme:dark)').matches))document.documentElement.dataset.theme='dark';}catch(e){}</script>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bai+Jamjuree:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ============ แบบ 5 · พิมพ์ชื่อแล้วเข้า ============
+   แนวคิด: คุณรู้อยู่แล้วว่าคุณเป็นใคร พิมพ์สองตัวอักษรก็พอ
+           หน้าจอมีของชิ้นเดียวคือช่องพิมพ์ — ที่เหลือคือผลลัพธ์
+   ต่างจากตัวอื่น: **ไม่มีการ์ดคน** เป็นแบบเดียวใน 10 ที่ท้าทายสมมติฐานว่าต้องมีรายชื่อให้กด
+   ฟอนต์: Bai Jamjuree 300/400/500/600/700 **ตระกูลเดียวทั้งหน้า**
+          ความมินิมอลของแบบนี้อยู่ที่ "ฟอนต์เดียว น้ำหนักทำงานแทนสี" — 5 น้ำหนักพอให้เล่นชั้นข้อมูล
+   สี: เกือบไม่มีสีเลย กระดาษ #FCFCFB หมึก #111 เส้นผมเดียว
+       แดงยามาฮ่าปรากฏที่ **เคอร์เซอร์ (caret-color) กับวงโฟกัส** เท่านั้น — เล็กที่สุดในชุดทั้ง 10
+
+   ⚠ กติกาที่สำคัญที่สุดของแบบนี้ — การกรอง "ห้าม display:none" ปุ่มคนเด็ดขาด
+     ของจริงมีด่าน 14 ชุดที่คลิก [data-id="ST7"] ตรง ๆ ถ้ากรองแล้วซ่อน ด่านจะ timeout พร้อมกันทั้งกอง
+     ที่นี่จึงใช้ CSS `order` ย้ายตัวที่ไม่ตรงลงไปกลุ่มล่าง "ไม่ตรงคำค้น" ที่จางลงแต่ยังคลิกได้
+     ลำดับใน DOM ยังเป็น ST1..ST10 เป๊ะ เปลี่ยนแค่ลำดับที่ตาเห็น
+
+   จุดอ่อน: (1) คนเปิดครั้งแรกไม่รู้ว่าต้องทำอะไร ต้องพึ่ง placeholder กับรายการที่ขึ้นมาก่อน
+            (2) IME ไทยบน Android ส่ง input event มาเป็นก้อน การกรองสดจะกระตุก
+            (3) เร็วกว่าเดิมเฉพาะตอนที่จำชื่อตัวเองในระบบได้ — คนที่ชื่อในระบบไม่ตรงกับชื่อที่ใช้เรียกกันจะหาไม่เจอ
+   ราคาพอร์ต: แพง — ต้องรับกฎ "ห้ามซ่อนปุ่มด้วย display:none" ตั้งแต่วันแรก
+   ==================================================== */
+:root{
+  --paper:#FCFCFB; --paper-2:#F4F4F2; --card:#FFFFFF; --dark:#111213;
+  --ink:#111213; --ink-soft:#3B3D40; --muted:#63666B;
+  --hairline:rgba(17,18,19,.14); --hairline-2:rgba(17,18,19,.07);
+  --accent:#D50011; --accent-hover:#F0323F; --accent-deep:#A3000D; --accent-wash:rgba(213,0,17,.06);
+  --pos:#1C7247; --attn:#8F560C;
+  --grp1:#8A0710; --grp2:#33566F; --grp3:#256045; --grp4:#7C5216; --grp5:#5A4478; --grp6:#4E555C;
+  --on-grp:#FFFFFF;
+  --s-half:4px; --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s5:48px; --s6:64px;
+  /* มุมโค้งเกือบศูนย์ — ความเงียบของแบบนี้มาจากการไม่มีรูปทรงอะไรเลยนอกจากเส้น */
+  --r-input:4px; --r-card:4px; --r-lg:6px; --r-btn:4px; --r-pill:999px;
+  --t-label:12.5px; --t-table:14.5px; --t-body:16px; --t-lead:19px;
+  --t-h2:21px; --t-h1:27px; --t-stat:31px; --t-display:36px;
+  --f-display:'Bai Jamjuree',system-ui,sans-serif; --f-body:'Bai Jamjuree',system-ui,sans-serif;
+  --f-num:'Bai Jamjuree',system-ui,sans-serif;
+  --sh-sm:none; --sh-md:none; --sh-lg:0 1px 0 rgba(17,18,19,.06); --glow:none;
+  --ease:cubic-bezier(.16,1,.3,1); --dur-ui:.16s;
+}
+html[data-theme="dark"]{
+  --paper:#0C0D0F; --paper-2:#131417; --card:#0C0D0F; --dark:#EDEEF0;
+  --ink:#EDEEF0; --ink-soft:#C3C6CB; --muted:#9297A0;
+  --hairline:rgba(237,238,240,.18); --hairline-2:rgba(237,238,240,.09);
+  --accent:#FF4551; --accent-hover:#FF6E78; --accent-deep:#D50011; --accent-wash:rgba(255,69,81,.10);
+  --pos:#3DBA7A; --attn:#D98A2B;
+  --grp1:#FF7C84; --grp2:#7FB3E0; --grp3:#4FC489; --grp4:#DE9440; --grp5:#B48DDD; --grp6:#A3AAB6;
+  --on-grp:#0C0D0F;
+  --sh-lg:0 1px 0 rgba(237,238,240,.08);
+}
+*{ box-sizing:border-box; margin:0; padding:0; }
+body{ background:var(--paper); color:var(--ink); font-family:var(--f-body);
+  font-size:var(--t-body); line-height:1.5; font-weight:400; -webkit-font-smoothing:antialiased; }
+.off{ display:none !important; }
+.i{ width:20px; height:20px; flex:0 0 20px; }
+.i-sm{ width:15px; height:15px; flex:0 0 15px; }
+button,input{ font:inherit; color:inherit; }
+
+/* ---------------- LOGIN ---------------- */
+#login{ min-height:100dvh; display:flex; flex-direction:column; align-items:center;
+  justify-content:flex-start; padding:14vh var(--s3) 96px; }
+.pane{ width:min(560px,100%); }
+.logo{ font-size:var(--t-label); font-weight:600; letter-spacing:.28em; color:var(--muted);
+  margin-bottom:var(--s4); }
+.logo b{ color:var(--accent); font-weight:600; }
+
+/* ช่องพิมพ์ — ของชิ้นเดียวบนหน้าจอ */
+.q{ display:flex; align-items:center; gap:var(--s2); border-bottom:2px solid var(--ink);
+  padding-bottom:var(--s2); }
+.q .i{ color:var(--muted); }
+#lgQ{ flex:1; min-width:0; min-height:44px; border:0; background:none; outline:none;
+  font-size:var(--t-h1); font-weight:300; letter-spacing:-.01em; caret-color:var(--accent); }
+#lgQ::placeholder{ color:var(--muted); font-weight:300; }
+.qn{ font-size:var(--t-label); color:var(--muted); white-space:nowrap;
+  font-variant-numeric:tabular-nums; }
+
+/* รายชื่อ = บรรทัดเปล่า ไม่มีกล่อง */
+#lgUsers{ display:flex; flex-direction:column; margin-top:var(--s2); }
+.lg-u{ display:flex; align-items:baseline; gap:var(--s2); width:100%; text-align:left;
+  min-height:46px; padding:var(--s1) 0 var(--s1) var(--s2); background:none; border:0;
+  border-left:2px solid transparent; cursor:pointer; order:0;
+  transition:border-color var(--dur-ui) var(--ease), opacity var(--dur-ui) var(--ease); }
+.lg-u b{ font-size:var(--t-body); font-weight:500; }
+.lg-u .r{ font-size:var(--t-table); color:var(--muted); font-weight:300; }
+.lg-u .k{ margin-left:auto; font-size:var(--t-label); color:var(--muted); font-weight:400;
+  opacity:0; white-space:nowrap; }
+.lg-u.on{ border-left-color:var(--accent); }
+.lg-u.on b{ font-weight:700; }
+.lg-u.on .k{ opacity:1; color:var(--ink); }
+@media (hover:hover){ .lg-u:hover b{ text-decoration:underline; text-underline-offset:3px; } }
+/* ไม่ตรงคำค้น = จางลงและย้ายลงล่าง แต่ยังอยู่ ยังกดได้ ยังอ่านออก (4.5:1 ยังผ่าน) */
+.lg-u.dim{ order:2; opacity:.72; }
+#lgSep{ order:1; display:none; font-size:var(--t-label); color:var(--muted); font-weight:500;
+  letter-spacing:.06em; padding:var(--s3) 0 var(--s1) var(--s2); border-top:1px solid var(--hairline-2);
+  margin-top:var(--s2); }
+#lgSep.on{ display:block; }
+
+.act{ display:flex; align-items:center; gap:var(--s2); margin-top:var(--s4);
+  padding-top:var(--s3); border-top:1px solid var(--hairline); }
+.btn{ display:inline-flex; align-items:center; justify-content:center; gap:var(--s1);
+  min-height:46px; padding:0 var(--s3); background:var(--ink); color:var(--paper);
+  border:0; border-radius:var(--r-btn); font-weight:600; cursor:pointer; }
+@media (hover:hover){ .btn:hover{ background:var(--accent-deep); color:#fff; } }
+.lnk{ min-height:46px; padding:0 var(--s2); background:none; border:0; color:var(--muted);
+  font-weight:400; cursor:pointer; text-decoration:underline; text-underline-offset:3px;
+  border-radius:var(--r-btn); }
+@media (hover:hover){ .lnk:hover{ color:var(--ink); } }
+.tip{ margin-top:var(--s2); font-size:var(--t-label); color:var(--muted); font-weight:300; }
+
+/* โหมดบัญชีจริง — ยังเป็นเส้นเหมือนกันทั้งหน้า */
+#lgLive h2{ font-size:var(--t-lead); font-weight:600; margin-bottom:var(--s3); }
+.fld{ border-bottom:1px solid var(--hairline); margin-bottom:var(--s3); padding-bottom:var(--s1); }
+.fl{ display:block; font-size:var(--t-label); color:var(--muted); font-weight:400; }
+.inp{ width:100%; min-height:44px; border:0; background:none; outline:none;
+  font-size:var(--t-lead); font-weight:400; caret-color:var(--accent); }
+.fld:focus-within{ border-bottom-color:var(--accent); }
+
+@media (max-width:600px){
+  #login{ padding:var(--s5) var(--s3) 96px; }
+  #lgQ{ font-size:var(--t-h2); }
+  .act{ flex-wrap:wrap; }
+  .btn{ flex:1 1 100%; }
+}
+
+/* ---------------- หน้าแรก ---------------- */
+/* แนวเดียวกับหน้าล็อกอิน: เส้นผมแทนกล่อง ไม่มีพื้นการ์ด ไม่มีเงา */
+#app{ min-height:100dvh; padding:var(--s5) var(--s3) 96px; }
+.dsh{ max-width:920px; margin:0 auto; display:grid; gap:var(--s5); }
+.dsh-hd{ display:flex; flex-wrap:wrap; gap:var(--s2); align-items:baseline;
+  justify-content:space-between; border-bottom:2px solid var(--ink); padding-bottom:var(--s2); }
+.dsh-hd b{ font-size:var(--t-h1); font-weight:300; letter-spacing:-.01em; margin-right:var(--s2); }
+.dsh-hd span{ color:var(--muted); font-size:var(--t-table); font-weight:300; }
+.dsh-me{ display:flex; align-items:center; gap:var(--s2); font-size:var(--t-table); color:var(--muted); }
+.dsh-out{ min-height:44px; padding:0 var(--s2); background:none; border:0; cursor:pointer;
+  color:var(--ink); text-decoration:underline; text-underline-offset:3px; font-size:var(--t-table); }
+.dsh-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:var(--s4) var(--s3); }
+.dsh-c{ border-top:1px solid var(--hairline); padding-top:var(--s2); }
+.dsh-lab{ font-size:var(--t-label); color:var(--muted); font-weight:400; letter-spacing:.03em; }
+.dsh-val{ font-size:var(--t-stat); font-weight:300; line-height:1.15; letter-spacing:-.02em;
+  font-variant-numeric:tabular-nums; margin-top:var(--s-half); }
+.dsh-val small{ font-size:var(--t-table); font-weight:400; color:var(--muted); margin-left:5px; }
+.dsh-sub{ font-size:var(--t-label); color:var(--muted); font-weight:300; margin-top:var(--s-half); }
+.t-pos .dsh-val{ color:var(--pos); } .t-attn .dsh-val{ color:var(--attn); }
+.dsh-wide{ grid-column:1/-1; }
+.dsh-bars{ display:flex; align-items:flex-end; gap:var(--s2); height:96px; margin-top:var(--s3); }
+.dsh-bar{ flex:1; display:flex; flex-direction:column; justify-content:flex-end; gap:var(--s1);
+  height:100%; text-align:center; }
+.dsh-bar i{ display:block; width:100%; max-width:2px; margin:0 auto; height:var(--h);
+  min-height:3px; border-radius:0; background:var(--ink); }
+.dsh-bar span{ font-size:11px; color:var(--muted); font-weight:300; }
+.dsh-rows{ display:grid; margin-top:var(--s2); }
+.dsh-row{ display:flex; align-items:center; gap:var(--s2); padding:var(--s2) 0;
+  border-top:1px solid var(--hairline-2); font-size:var(--t-table); }
+.dsh-row b{ font-weight:500; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.dsh-row span:not(.dsh-meter){ color:var(--muted); font-size:var(--t-label); font-weight:300; }
+.dsh-row em{ margin-left:auto; font-style:normal; color:var(--muted); font-size:var(--t-label);
+  font-variant-numeric:tabular-nums; white-space:nowrap; }
+.dsh-dot{ width:5px; height:5px; flex:0 0 5px; border-radius:var(--r-pill); background:var(--attn); }
+.dsh-meter{ flex:1; height:1px; background:var(--hairline); }
+.dsh-mfill{ display:block; height:1px; background:var(--ink); }
+@media (max-width:760px){
+  #app{ padding:var(--s4) var(--s3) 96px; }
+  .dsh{ gap:var(--s4); }
+  .dsh-grid{ grid-template-columns:repeat(2,1fr); }
+  .dsh-hd b{ font-size:var(--t-h2); }
+}
+</style></head><body>
+
+<div id="login"><div class="pane">
+  <div class="logo">FAMAI <b>MOTOR</b></div>
+
+  <div id="lgDemo">
+    <div class="q">
+      <input id="lgQ" type="text" autocomplete="off" spellcheck="false"
+             placeholder="พิมพ์ชื่อคุณ" aria-label="พิมพ์ชื่อเพื่อค้นหาผู้ใช้">
+      <span class="qn" id="lgQn"></span>
+    </div>
+    <div id="lgUsers"></div>
+    <div id="lgSep">ไม่ตรงคำค้น — ยังเลือกได้</div>
+    <div class="act">
+      <button class="btn" id="lgGo">เข้าสู่ระบบ</button>
+      <button class="lnk" id="lgSwap"></button>
+    </div>
+    <p class="tip">พิมพ์ชื่อ ชื่อเล่น ตำแหน่ง หรือสาขาก็ได้ · ลูกศรขึ้น-ลงเลื่อน · Enter เข้าเลย</p>
+  </div>
+
+  <div id="lgLive" style="display:none">
+    <h2>เข้าด้วยบัญชีจริง</h2>
+    <div class="fld"><label class="fl" for="lgEmail">อีเมล</label>
+      <input class="inp" type="email" id="lgEmail" placeholder="sales2@famai.local" autocomplete="username"></div>
+    <div class="fld"><label class="fl" for="lgPw2">รหัสผ่าน</label>
+      <input class="inp" type="password" id="lgPw2" autocomplete="current-password"></div>
+    <div class="act">
+      <button class="btn" id="lgGo2">เข้าสู่ระบบ</button>
+      <button class="lnk" id="lgSwap2" type="button">กลับไปโหมดสาธิต</button>
+    </div>
+  </div>
+</div></div>
+
+<div id="app" class="off"></div>
+
+<script src="data.js"></script><script src="common.js"></script>
+<script>
+$('#lgGo').innerHTML  = 'เข้าสู่ระบบ '+ic('arrow','i i-sm');
+$('#lgGo2').innerHTML = 'เข้าสู่ระบบ '+ic('arrow','i i-sm');
+$('#lgQ').insertAdjacentHTML('beforebegin', ic('search'));
+
+/* บรรทัดเปล่า ไม่มีวงกลม ไม่มีกล่อง — ชื่อ + ตำแหน่ง·สาขา + คำว่า "เลือกอยู่" */
+mountStaff(s => '<b>'+esc(s.name)+'</b><span class="r">'+esc(staffLine(s))+'</span>'
+  + '<span class="k">เลือกอยู่</span>');
+
+/* ---- กรองสด ----
+   ห้าม display:none เด็ดขาด (ดูคอมเมนต์หัวไฟล์) — ใช้ CSS order ย้ายลงล่างแทน
+   ลำดับใน DOM ยังเป็น ST1..ST10 ตัวตรวจสัญญาจึงยังผ่าน */
+function norm(x){ return String(x||'').toLowerCase().replace(/\s+/g,''); }
+function filt(){
+  const q = norm($('#lgQ').value);
+  let hit = 0;
+  $$('#lgUsers .lg-u').forEach((b,i) => {
+    const s = S[i];
+    const hay = norm(s.name + s.nick + ROLE[s.role] + BR[s.branch].name + s.id);
+    const ok = !q || hay.indexOf(q) >= 0;
+    b.classList.toggle('dim', !ok);
+    if (ok) hit++;
+  });
+  $('#lgSep').classList.toggle('on', !!q && hit < S.length);
+  $('#lgQn').textContent = q ? hit + ' จาก ' + S.length : S.length + ' คน';
+  /* ถ้าคนที่เลือกอยู่หลุดคำค้น ให้ย้ายไปคนแรกที่ตรง — ไม่งั้นกด Enter แล้วได้คนที่มองไม่เห็น */
+  if (q && hit) { const on = $('#lgUsers .lg-u.on');
+    if (!on || on.classList.contains('dim')) pick(visible()[0]); }
+}
+const visible = () => $$('#lgUsers .lg-u').filter(b => !b.classList.contains('dim'));
+function pick(b){ if(!b) return; $$('#lgUsers .lg-u').forEach(x=>x.classList.remove('on')); b.classList.add('on');
+  b.scrollIntoView({block:'nearest'}); }
+
+$('#lgQ').oninput = filt;
+$('#lgQ').onkeydown = e => {
+  const list = visible().concat($$('#lgUsers .lg-u.dim'));   /* ลำดับเดียวกับที่ตาเห็น */
+  const i = list.indexOf($('#lgUsers .lg-u.on'));
+  if (e.key === 'ArrowDown'){ e.preventDefault(); pick(list[Math.min(i+1, list.length-1)]); }
+  else if (e.key === 'ArrowUp'){ e.preventDefault(); pick(list[Math.max(i-1, 0)]); }
+  else if (e.key === 'Enter'){ e.preventDefault(); $('#lgGo').click(); }
+};
+/* พิมพ์อีเมลลงช่องค้นหา = คำใบ้ว่ามีโหมดบัญชีจริง (แต่ปุ่มสลับยังอยู่ให้เห็นเสมอ ไม่พึ่งความบังเอิญ) */
+onPick = () => { $('#lgQ').focus({preventScroll:true}); };
+function afterStaff(){ filt(); }
+$('#lgSwap2').onclick = () => $('#lgSwap').click();
+function afterSwap(live){ if(!live) filt(); }
+boot(5);
+filt();
+</script></body></html>
