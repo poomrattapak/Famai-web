@@ -2851,6 +2851,10 @@ const PERM_ACTS=[
   ['act:sites','แก้จุดลงเวลา', ['admin','manager']],
   ['act:care','ติ๊กงานฝ่ายบริการ', ['admin','manager','care']],
   ['act:voidSale','ยกเลิกการขาย · ลูกค้าเท · ออกรหัสติดตามใหม่', ['admin','manager']],
+  /* v1.31 (B6): เดิมขั้นไฟแนนซ์ไม่มีด่านสิทธิ์เลย — ใครเปิดหน้าดีลได้ก็กดอนุมัติ/ปฏิเสธได้
+     เซลล์ต้องเดินเรื่องของลูกค้าตัวเองได้ จึงอยู่ในค่าเริ่มต้นด้วย (การ "อนุมัติ" คือบันทึกผล
+     จากไฟแนนซ์ภายนอก ไม่ใช่การอนุมัติภายในร้าน) — แอดมินตัดเซลล์ออกได้จากตารางสิทธิ์ */
+  ['act:finStage','เดินขั้นเคสไฟแนนซ์ (ส่งเรื่อง · บันทึกผล · ยื่นใหม่)', ['admin','manager','sales']],
   /* QA รอบส่งมอบ: สองด่านนี้เดิมเป็น role ตายตัว — หน้าตั้งค่าสิทธิ์ทำให้เข้าใจว่าคุมได้แต่จริง ๆ ไม่คุม */
   ['act:hrApprove','อนุมัติใบลา/คำขอออกนอกสถานที่ · แก้เวลา/ตรวจการลงเวลา', ['admin','manager','hr']],
   ['act:execCal','ปฏิทินผู้บริหาร · เพิ่ม/ลบวันหยุดบริษัท', ['admin','manager']]
@@ -5439,7 +5443,9 @@ function rTransfer(){
   const u0=UNITS.find(x=>x.id===$('#tUnit').value); $('#tFrom').value=u0?bName(u0.branch):'';
   perBar('trPer','transfer', rTransfer);
   $('#expTr').onclick=expTransfers;
-  const trL=TRANSFERS.filter(t=>inPer('transfer',t.at)).map(t=>({t, u:UNITS.find(x=>x.id===t.unitId)}));
+  /* v1.31 (B7): จอต้องกรองขอบเขตสาขาเหมือนไฟล์ (expTransfers) — เดิมจอโชว์ทุกสาขา
+     คนสาขาเดียวเห็นการโอนย้ายของสาขาอื่นทั้งระบบ และจอกับไฟล์เล่าคนละเรื่อง */
+  const trL=TRANSFERS.filter(t=>(inScope(t.from)||inScope(t.to))&&inPer('transfer',t.at)).map(t=>({t, u:UNITS.find(x=>x.id===t.unitId)}));
   tbl($('#tList'), ['วันที่','รุ่น','จาก','ไป','สถานะ',''],
     trL.map(({t,u})=>'<tr><td>'+thDate(t.at)+'</td><td><b>'+esc(u?u.model:'—')+'</b><div class="tsub mono">'+esc(u?u.engine:'')+'</div></td>'
         +'<td>'+esc(bName(t.from))+'</td><td>'+esc(bName(t.to))+'</td>'
@@ -6245,8 +6251,12 @@ function syncFinToReg(c){
    แยกออกจาก drawer เพื่อให้หน้าดีลกับแผ่นเดิมเรียกตัวเดียวกัน กติกาจึงมีชุดเดียว
    ด่านอยู่ในฟังก์ชัน ไม่ใช่ที่ปุ่ม — ทุกตัวเช็กสถานะปัจจุบันเองก่อนเขียน และคืน true เมื่อสำเร็จ */
 const finLog = (c,to) => { (c.log=c.log||[]).push({to, at:TODAY}); };
+/* v1.31 (B6): ด่านสิทธิ์ขั้นไฟแนนซ์ — อยู่ในฟังก์ชันเขียนทุกตัว ไม่ใช่ที่ปุ่ม (§9b) */
+const canFinStage = () => permW('act:finStage');
+const finStageDeny = () => { toast('บทบาทของคุณเดินขั้นไฟแนนซ์ไม่ได้','ตั้งสิทธิ์ได้ที่ ตั้งค่าระบบ > สิทธิ์การเข้าถึง',1); return false; };
 function finAdvance(id){
   const c=FINCASES.find(x=>x.id===id); if(!c) return false;
+  if(!canFinStage()) return finStageDeny();
   const i=FIN_STAGES.indexOf(c.status);
   if(i<0 || i>=FIN_STAGES.length-1) return false;   /* ปฏิเสธแล้ว หรืออนุมัติแล้ว ไม่มีขั้นถัดไป */
   c.status=FIN_STAGES[i+1]; finLog(c,c.status); syncFinToReg(c);
@@ -6256,6 +6266,7 @@ function finAdvance(id){
 }
 function finBack(id){
   const c=FINCASES.find(x=>x.id===id); if(!c) return false;
+  if(!canFinStage()) return finStageDeny();
   const i=FIN_STAGES.indexOf(c.status); if(i<=0) return false;
   c.status=FIN_STAGES[i-1]; finLog(c,c.status);
   toast('ถอยกลับแล้ว', c.status); refreshAll(); return true;
@@ -6268,8 +6279,13 @@ function finBack(id){
 const FIN_REJECT=['ติดไฟแนนซ์เจ้าอื่น','เครดิตบูโรไม่ผ่าน','รายได้ไม่พอ','เอกสารไม่ครบ','ดาวน์ไม่พอ','อื่น ๆ'];
 function finReject(id, reason, blocker, note){
   const c=FINCASES.find(x=>x.id===id); if(!c || c.status==='ปฏิเสธ') return false;
+  if(!canFinStage()) return finStageDeny();
+  /* v1.31 (B5): ด่านเหตุผลย้ายจากปุ่ม #rjGo เข้ามาในฟังก์ชันเขียน (§9b) —
+     เดิมเรียกตรง ๆ แล้วบันทึกเคสปฏิเสธที่ไม่มีเหตุผลได้ ('ไม่ระบุเหตุผล' คือการปล่อยผ่าน ไม่ใช่การกัน) */
+  if(!String(reason||'').trim()){ toast('เลือกเหตุผลก่อน','ต้องรู้ว่าไม่ผ่านเพราะอะไร ถึงจะรู้ว่าทำอะไรต่อได้',1); return false; }
+  if(reason==='ติดไฟแนนซ์เจ้าอื่น' && !String(blocker||'').trim()){ toast('บอกด้วยว่าติดเจ้าไหน','',1); return false; }
   c.status='ปฏิเสธ'; c.rejectAt=TODAY;
-  c.rejectReason = reason || 'ไม่ระบุเหตุผล';
+  c.rejectReason = reason;
   c.rejectWith   = (reason==='ติดไฟแนนซ์เจ้าอื่น') ? String(blocker||'').trim() : '';
   c.rejectNote   = String(note||'').trim();
   finLog(c,'ปฏิเสธ · '+c.rejectReason+(c.rejectWith? ' ('+c.rejectWith+')' : ''));
@@ -6306,6 +6322,7 @@ function finRejectModal(id){
 /* ปฏิเสธไม่ใช่ทางตัน — เลือกยื่นเจ้าอื่นได้ after = สิ่งที่ต้องทำต่อหลังยื่นสำเร็จ (เช่นปิดแผ่น) */
 function finResubmit(id, after){
   const c=FINCASES.find(x=>x.id===id); if(!c) return false;
+  if(!canFinStage()) return finStageDeny();
   const others=finActive().filter(x=>x.id!==c.finId);
   if(!others.length){ toast('ไม่มีไฟแนนซ์อื่นที่เปิดใช้งาน','เพิ่มได้ที่หน้าตั้งค่าระบบ',1); return false; }
   openModal('ยื่นใหม่กับไฟแนนซ์อื่น',
@@ -6313,6 +6330,7 @@ function finResubmit(id, after){
     +others.map(x=>'<option value="'+x.id+'">'+esc(x.name)+' ('+x.rate+'%/เดือน · ดาวน์ขั้นต่ำ '+x.minDownPct+'%)</option>').join('')
     +'</select></div></div><div style="margin-top:var(--s2)"><button class="btn" id="rsGo">ยื่นเรื่องใหม่</button></div>');
   $('#rsGo').onclick=()=>{
+    if(!canFinStage()) return finStageDeny();          /* ด่านซ้ำที่จุดเขียนจริง — โมดัลไม่ใช่การกัน */
     const nf=$('#rsFin').value;
     const s=SALES.find(x=>x.id===c.saleId), cu=CUSTOMERS.find(x=>x.id===c.custId);
     c.finId=nf; c.status='ส่งเรื่อง'; c.at=TODAY;
@@ -6453,10 +6471,13 @@ function arRows(){
 }
 function rAr(){
   if(!$('#expAr').dataset.init){ $('#expAr').dataset.init=1;
-    $('#expAr').onclick=()=> csvMoney('เงินค้างรับ',['ลูกค้า','รุ่น','ประเภท','ผู้จ่าย','ยอดที่ต้องรับ','รับแล้ว','คงค้าง','ครบกำหนด'],[4,5,6],
+    /* v1.31 (B10): เดิมส่ง moneyCols สลับตำแหน่งกับ rows — csvMoney(name,head,rows,moneyCols)
+       ไฟล์ที่ออกจึงเป็นเลขคอลัมน์ [4,5,6] แทนข้อมูลจริงมาตลอด */
+    $('#expAr').onclick=()=> csvMoney('เงินค้างรับ',['ลูกค้า','รุ่น','ประเภท','ผู้จ่าย','ยอดที่ต้องรับ','รับแล้ว','คงค้าง','ครบกำหนด'],
       AR.filter(a=>inScope(a.branch)).map(a=>{ const s=SALES.find(x=>x.id===a.saleId), u=UNITS.find(x=>x.id===s.unitId),
         c=CUSTOMERS.find(x=>x.id===s.custId), f=FIN_CO.find(x=>x.id===a.finId);
-        return [c?c.name:'',u.model,a.kind==='finance'?'ไฟแนนซ์':'ลูกค้า',f?f.name:'—',a.due,a.paid,a.due-a.paid,a.dueAt]; }));
+        return [c?c.name:'',u.model,a.kind==='finance'?'ไฟแนนซ์':'ลูกค้า',f?f.name:'—',a.due,a.paid,a.due-a.paid,a.dueAt]; }),
+      [4,5,6]);
   }
   const list=AR.filter(a=>inScope(a.branch));
   const outstanding=list.filter(a=>a.due-a.paid>0);
@@ -6851,7 +6872,12 @@ function bookkeeperPack(){
   csv(label+'_ขายอะไหล่',['วันที่','สาขา','รหัส','ชื่ออะไหล่','จำนวน','ราคา/ชิ้น','รวม'],
     pm.map(x=>{ const p=PARTS.find(y=>y.id===x.partId);
       return [x.at,bName(x.branch),p?p.code:'',p?p.name:'',-x.qty,p?p.price:0,p?p.price*-x.qty:0]; }));
-  toast('ส่งออกชุดส่งบัญชีแล้ว','5 ไฟล์ · '+perText('expense'));
+  /* v1.31 (B11): บิลขายส่งเคยหายจากชุดส่งบัญชีทั้งหมด — บัญชีที่รับไฟล์ไปลงจะขาดยอดขายก้อนใหญ่ */
+  const wsB=WSALES.filter(w=>inScope(w.branch)&&inM(w.at));
+  csv(label+'_ขายส่ง',['วันที่','สาขา','ผู้ซื้อ','เลขที่บิล','จำนวนคัน','ก่อน VAT','VAT '+CFG.vat+'%','รวม'],
+    wsB.map(w=>{ const p=wsPartnerById(w.partnerId), base=Math.round(w.total/(1+CFG.vat/100));
+      return [w.at,bName(w.branch),p?p.name:'',w.docNo,w.items.length,base,w.total-base,w.total]; }));
+  toast('ส่งออกชุดส่งบัญชีแล้ว','6 ไฟล์ · '+perText('expense'));
 }
 function rExpense(){
   if(!$('#eSave').dataset.init){ $('#eSave').dataset.init=1;
@@ -8450,30 +8476,37 @@ function prSlip(){
 /* ============================= 19. ผู้ใช้ ============================= */
 function rUsers(){
   $('#expStaff').onclick=expStaffList;
+  /* v1.31 (B12): หน้านี้เคยอ่านบิตจาก ROLES (ค่าเริ่มต้น) — แอดมินแก้ตารางสิทธิ์ (J3) แล้ว
+     หน้านี้ยังโชว์ของเดิม ทำให้เข้าใจผิดว่าการตั้งค่าไม่มีผล · เมนูกับตัวเงินต้องอ่าน PERMS จริง
+     (allBranch/approve เป็นบิตประจำบทบาท ไม่อยู่ในตารางสิทธิ์ — อ่านจาก ROLES ตามเดิมถูกแล้ว) */
+  const roleMoney = r => ((PERMS[r]||{})['data:money']||'none')!=='none';
+  const roleMenus = r => MENU.filter(m=>m.k && ((PERMS[r]||{})['page:'+m.k]||'none')!=='none');
   tbl($('#uTable'), ['ชื่อ','ชื่อเล่น','บทบาท','สาขา','เห็นทุกสาขา','เห็นตัวเงิน','อนุมัติได้'],
     STAFF.map(s=>{ const p=ROLES[s.role];
       return '<tr><td><b>'+esc(s.name)+'</b></td><td>'+esc(s.nick)+'</td><td>'+pill(p.name,'info')+'</td>'
         +'<td>'+esc(bName(s.branch))+'</td>'
         +'<td>'+(p.allBranch?pill('ใช่','good'):pill('เฉพาะสาขาตัวเอง','mut'))+'</td>'
-        +'<td>'+(p.money?pill('เห็น','good'):pill('ซ่อน','mut'))+'</td>'
+        +'<td>'+(roleMoney(s.role)?pill('เห็น','good'):pill('ซ่อน','mut'))+'</td>'
         +'<td>'+(p.approve?pill('ได้','good'):pill('ไม่ได้','mut'))+'</td></tr>'; }),
     'ไม่มีผู้ใช้',
     STAFF.map(s=>{ const p=ROLES[s.role];
       return crow('', esc(s.name), pill(p.name,'info'),
         esc(s.nick)+' · '+esc(bName(s.branch)),
         (p.allBranch?pill('ทุกสาขา','good'):pill('เฉพาะสาขาตัวเอง','mut'))+' '
-        +(p.money?pill('เห็นตัวเงิน','good'):pill('ซ่อนตัวเงิน','mut'))+' '
+        +(roleMoney(s.role)?pill('เห็นตัวเงิน','good'):pill('ซ่อนตัวเงิน','mut'))+' '
         +(p.approve?pill('อนุมัติได้','good'):'')); }));
   const keys=Object.keys(ROLES);
-  tbl($('#roleTable'), ['บทบาท','เห็นตัวเงิน','เห็นทุกสาขา','อนุมัติ','จัดการระบบ','เมนูที่เข้าถึงได้'],
-    keys.map(k=>{ const p=ROLES[k]; const menus=MENU.filter(m=>m.k&&m.r.indexOf(k)>=0);
+  tbl($('#roleTable'), ['บทบาท','เห็นตัวเงิน','เห็นทุกสาขา','อนุมัติ','จัดการระบบ','เมนูที่เข้าถึงได้ (สิทธิ์ที่ตั้งไว้จริง)'],
+    keys.map(k=>{ const p=ROLES[k]; const menus=roleMenus(k);
       return '<tr><td><b>'+esc(p.name)+'</b></td>'
-        +['money','allBranch','approve','admin'].map(x=>'<td>'+(p[x]?ic('check','i i-sm'):'<span class="tsub">—</span>')+'</td>').join('')
+        +'<td>'+(roleMoney(k)?ic('check','i i-sm'):'<span class="tsub">—</span>')+'</td>'
+        +['allBranch','approve','admin'].map(x=>'<td>'+(p[x]?ic('check','i i-sm'):'<span class="tsub">—</span>')+'</td>').join('')
         +'<td><span class="tsub">'+menus.map(m=>esc(m.t)).join(' · ')+'</span></td></tr>'; }),
     '',
-    keys.map(k=>{ const p=ROLES[k]; const menus=MENU.filter(m=>m.k&&m.r.indexOf(k)>=0);
-      const flags=[['money','เห็นตัวเงิน'],['allBranch','เห็นทุกสาขา'],['approve','อนุมัติ'],['admin','จัดการระบบ']]
+    keys.map(k=>{ const p=ROLES[k]; const menus=roleMenus(k);
+      const flags=[['allBranch','เห็นทุกสาขา'],['approve','อนุมัติ'],['admin','จัดการระบบ']]
         .filter(x=>p[x[0]]).map(x=>x[1]);
+      if(roleMoney(k)) flags.unshift('เห็นตัวเงิน');
       return crow('', esc(p.name), menus.length+' เมนู',
         (flags.length? 'สิทธิ์: '+flags.join(' · ') : 'ไม่มีสิทธิ์พิเศษ')
         +'<br>เข้าถึงได้: '+menus.map(m=>esc(m.t)).join(' · ')); }));
@@ -9328,10 +9361,18 @@ function rpBuild(tab){
       const base=Math.round(s.net/(1+CFG.vat/100));
       return [thDate(s.soldAt), (s.docs&&s.docs.TAXINV)||s.docNo||'(ยังไม่ออกใบกำกับ)', c?c.name:'—',
         u?u.model:'—', base, s.net-base, s.net]; });
-    const outVat=ss.reduce((s,x)=>s+(x.net-Math.round(x.net/(1+CFG.vat/100))),0);
+    /* v1.31 (B11): บิลขายส่งเป็นยอดขายมี VAT เหมือนกัน แต่ไม่เคยถูกนับในรายงานภาษีเลย —
+       ร้านที่ยื่นภาษีจากหน้านี้จะยื่นขาดเท่ายอดขายส่งทั้งช่วง · ราคาขายส่งรวม VAT แล้ว (สูตรเดียวกับ wsPrint) */
+    const ws=WSALES.filter(w=>sc.inB(w.branch)&&sc.inR(w.at)).sort((a,b)=>String(a.at).localeCompare(String(b.at)));
+    ws.forEach(w=>{ const p=wsPartnerById(w.partnerId);
+      const base=Math.round(w.total/(1+CFG.vat/100));
+      rows.push([thDate(w.at), w.docNo, (p?p.name:'—')+' (ขายส่ง)',
+        'ขายส่ง '+w.items.length+' คัน', base, w.total-base, w.total]); });
+    const outVat=ss.reduce((s,x)=>s+(x.net-Math.round(x.net/(1+CFG.vat/100))),0)
+                +ws.reduce((s,w)=>s+(w.total-Math.round(w.total/(1+CFG.vat/100))),0);
     const expInv=EXPENSES.filter(e=>sc.inB(e.branch)&&sc.inR(e.at)&&e.inv);
     const inVat=Math.round(expInv.reduce((s,e)=>s+e.amt,0)*CFG.vat/(100+CFG.vat));
-    return { card:{title:2,right:6}, kpi:[['ภาษีขาย', money(outVat), ss.length+' ใบ · '+perText('report')],
+    return { card:{title:2,right:6}, kpi:[['ภาษีขาย', money(outVat), ss.length+' ใบขายปลีก + '+ws.length+' บิลขายส่ง · '+perText('report')],
         ['ภาษีซื้อ (ประมาณ)', money(inVat), 'จากรายจ่ายที่มีเลขใบกำกับ '+expInv.length+' ใบ'],
         ['ต้องนำส่ง (ประมาณ)', money(outVat-inVat),'ภาษีขาย − ภาษีซื้อ']],
       head:[{t:'วันที่'},{t:'เลขที่ใบกำกับ'},{t:'ลูกค้า'},{t:'รายการ'},{t:'ก่อนภาษี',n:1,money:1},{t:'VAT '+CFG.vat+'%',n:1,money:1},{t:'รวม',n:1,money:1}],

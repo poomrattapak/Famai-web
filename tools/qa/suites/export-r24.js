@@ -8,7 +8,8 @@ const { chromium, EXE, BASE } = require('./env');
 const BTN = [
   ['dash',      '#expSales',  null, 1], ['stock',   '#expStock',  null,  1],
   ['deal',      '#expDeal',   null, 1], ['ar',      '#expAr',     null,  1],
-  ['expense',   '#expExp',    null, 1], ['expense', '#expBook',   null,  5],
+  /* v1.31 (B11): ชุดส่งบัญชีเพิ่มไฟล์ขายส่ง 5 → 6 ไฟล์ ตามคำสั่งเจ้าของรอบ 2 */
+  ['expense',   '#expExp',    null, 1], ['expense', '#expBook',   null,  6],
   ['payroll',   '#expPr',     null, 1], ['report',  '#rpCsv',     null,  1],
   ['service',   '#expSv',     'v2', 1], ['service', '#expRemind', 'v3',  1],
   ['parts',     '#expParts',  'pt1',1], ['parts',   '#expMove',   'pt2', 1],

@@ -29,8 +29,9 @@ const { chromium, EXE, BASE } = require('./env');
   if (!n2.some(n => n.includes('อะไหล่'))) fails.push('expParts wrong csv name: ' + n2);
   const n3 = await run('expense', '#expExp', 1, 'expExp');
   if (!n3.some(n => n.includes('ค่าใช้จ่าย'))) fails.push('expExp wrong csv name: ' + n3);
-  const n4 = await run('expense', '#expBook', 5, 'expBook');
-  for (const sfx of ['_ขาย', '_ค่าใช้จ่าย', '_รับเงิน', '_ศูนย์ซ่อม', '_ขายอะไหล่'])
+  /* v1.31 (B11): ชุดส่งบัญชีเพิ่มไฟล์ขายส่ง 5 → 6 ไฟล์ ตามคำสั่งเจ้าของรอบ 2 */
+  const n4 = await run('expense', '#expBook', 6, 'expBook');
+  for (const sfx of ['_ขาย', '_ค่าใช้จ่าย', '_รับเงิน', '_ศูนย์ซ่อม', '_ขายอะไหล่', '_ขายส่ง'])
     if (!n4.some(n => n.includes(sfx))) fails.push('expBook missing: ' + sfx + ' in ' + n4);
 
   // เนื้อไฟล์ _ขายอะไหล่ ต้องมีราคาคูณจำนวนจริง
