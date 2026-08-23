@@ -1730,7 +1730,37 @@ body.lock{ overflow:hidden; }
         </div></div>
       </section>
 
-
+      <!-- ============ 8e. จองรถ (บรีฟรอบ 2 ข้อ 2 · v1.37) ============
+           จอง = เก็บข้อมูลคร่าว ๆ ก่อนตัดสินใจ (คำตอบเจ้าของ) — รถติดสถานะ "จองแล้ว" กันขายทับ
+           เปิดการขายจริงค่อยไหลไปฟอร์มขาย · ยกเลิกรถคืนสต๊อก + บันทึกคืนมัดจำ -->
+      <section class="screen" id="s-booking">
+        <div class="g2">
+          <div class="card"><div class="hd"><h3>จองรถ</h3><div class="d">กรอกแค่ชื่อกับเบอร์ก็พอ — ข้อมูลเต็มค่อยเก็บตอนเปิดการขายจริง</div></div><div class="bd">
+            <div class="f">
+              <div class="f2">
+                <div><label class="fl">ชื่อลูกค้า</label><input class="inp" id="bkName" placeholder="คุณสมชาย ใจดี"></div>
+                <div><label class="fl">เบอร์โทร</label><input class="inp" id="bkPhone" placeholder="081-234-5678"></div>
+              </div>
+              <div><label class="fl">ค้นหารถเร็ว</label><input class="inp mono" id="bkQ" placeholder="พิมพ์ เลขเครื่อง / เลขถัง / รหัสรุ่น แล้วช่องล่างเติมให้" autocomplete="off"></div>
+              <div class="f3">
+                <div><label class="fl">รุ่นรถ</label><select class="inp" id="bkModel"></select></div>
+                <div><label class="fl">รหัสรุ่น</label><select class="inp" id="bkVariant"></select></div>
+                <div><label class="fl">สี</label><select class="inp" id="bkColor"></select></div>
+              </div>
+              <div><label class="fl">คันที่จอง (เลขถัง · จากสต๊อก)</label><select class="inp" id="bkUnit"></select></div>
+              <div class="f2">
+                <div><label class="fl">มัดจำ (฿ — เว้นว่าง = ไม่วางมัดจำ)</label><input class="inp num" id="bkDeposit" placeholder="0"></div>
+                <div><label class="fl">หมายเหตุ</label><input class="inp" id="bkNote" placeholder="เช่น รอเงินเดือนออก · ตัดสินใจเสาร์นี้"></div>
+              </div>
+            </div>
+            <div class="savebar"><button class="btn" id="bkSave">บันทึกการจอง</button></div>
+          </div></div>
+          <div class="card"><div class="hd"><h3>จองอยู่ตอนนี้</h3><div class="d">เปิดการขาย = พาไปฟอร์มขายพร้อมข้อมูล · ยกเลิก = รถคืนสต๊อกทันที</div></div>
+            <div class="bd flush"><div class="tw"><table id="bkTable"></table></div></div></div>
+        </div>
+        <div class="card"><div class="hd"><h3>ประวัติการจอง</h3><div class="d">เปิดขายแล้วและยกเลิก — เก็บไว้ตอบลูกค้าและตรวจย้อนหลัง</div></div>
+          <div class="bd flush"><div class="tw"><table id="bkHist"></table></div></div></div>
+      </section>
 
       <!-- ============ 11. เงินค้างรับ ============ -->
       <section class="screen" id="s-ar">
@@ -2457,6 +2487,9 @@ let WS_PARTNERS=[
 let WS_PRICES={};                 /* variant → ราคาขายส่ง/คัน (ตั้งได้ที่ตั้งค่า > ขายส่ง) */
 let WSALES=[];                    /* {id,partnerId,branch,items:[{unitId,price}],at,total,docNo,note,finApproval,demo} */
 let ODOCS=[];                     /* v1.36 ใบกำกับภาษีอื่นๆ (นอกระบบสต๊อกรถ) {id,no,branch,name,taxId,addr,item,amt,at,note,by} */
+/* v1.37 การจอง (บรีฟรอบ 2 ข้อ 2 + คำตอบเจ้าของข้อ 1-2): พักรถเป็น "จองแล้ว" กันขายทับ
+   ยังไม่ตัดสต๊อกเป็นขายแล้ว · มัดจำเลือกได้ · ยกเลิกรถคืน available · ไม่มีวันหมดอายุอัตโนมัติ */
+let BOOKINGS=[];                  /* {id,name,phone,custId,unitId,deposit,depositNo,status,at,by,branch,note,upAt,saleId,cancelAt,cancelReason,refunded} */
 const wsPartnerById = id => WS_PARTNERS.find(x=>x.id===id);
 const bOf   = c => BRANCHES.find(b=>b.code===c) || BRANCHES[0];
 
@@ -2615,7 +2648,7 @@ const FIN_LEGACY = {'ยื่นเอกสาร':'รอผลพิจา�
 const finStageNorm = c => { if(FIN_LEGACY[c.status]) c.status=FIN_LEGACY[c.status]; return c.status; };
 
 function seedDemo(){
-  CUSTOMERS=[]; SALES=[]; TASKS=[]; REGS=[]; FINCASES=[]; AR=[]; SERVICE=[]; REMIND=[]; TRANSFERS=[]; QUOTES=[]; CARE=[]; WSALES=[]; WS_CART=[]; ODOCS=[];
+  CUSTOMERS=[]; SALES=[]; TASKS=[]; REGS=[]; FINCASES=[]; AR=[]; SERVICE=[]; REMIND=[]; TRANSFERS=[]; QUOTES=[]; CARE=[]; WSALES=[]; WS_CART=[]; ODOCS=[]; BOOKINGS=[];
   PERMS=permDefaults();   /* สิทธิ์กลับค่าเริ่มต้นพร้อมข้อมูลสาธิตชุดใหม่ */
   /* คืนสถานะรถทุกคันก่อนสร้างข้อมูลสาธิตใหม่ ไม่งั้นเข้าระบบรอบสองจะไม่มีข้อมูลเลย */
   UNITS.forEach(u=>{ u.status='available'; });   /* คืนเฉพาะสถานะ — ราคาเคลียร์ที่ตั้งไว้ต้องอยู่ต่อ */
@@ -2712,6 +2745,25 @@ function seedDemo(){
   });
   LEADS.forEach(l=> CUSTOMERS.push({id:nid('CU'), name:l[0], phone:l[1], src:l[2], stage:l[3],
     branch:'FMG01', variant:l[4], owner:pick(SALESPEOPLE,0), demo:true}));
+  /* v1.37: การจองสาธิต 2 ราย — "คุณแนน สุดา" (stage จอง อยู่แล้ว) วางมัดจำ · อีกรายไม่วาง
+     รถสองคันติดสถานะจองแล้ว ตัวกรอง "จองแล้ว" ในสต๊อกจึงมีของจริงให้เห็น (B4) */
+  (function(){
+    /* จองจากท้ายรายการเสมอ — คันแรกของสต๊อกคือค่าเริ่มต้นของฟอร์มขาย ถ้าเอาคันหน้าไปจอง
+       ทุกคนที่เปิดฟอร์มขายจะเจอคันติดจองค้างอยู่ในช่องทันที */
+    const avR=UNITS.filter(u=>u.status==='available').reverse();
+    const cNan=CUSTOMERS.find(x=>x.name==='คุณแนน สุดา');
+    const u1=(cNan && avR.find(u=>u.variant===cNan.variant)) || avR[0];
+    if(cNan && u1){ u1.status='reserved';
+      BOOKINGS.push({id:nid('BK'), name:cNan.name, phone:cNan.phone, custId:cNan.id, unitId:u1.id,
+        deposit:1000, depositNo:nextDocNo(u1.branch,'RECEIPT'), status:'จองอยู่',
+        at:addDays(TODAY,-2), by:'คุณเบล', branch:u1.branch, note:'รอเงินเดือนออกสิ้นเดือน',
+        upAt:new Date().toISOString(), demo:true}); }
+    const u2=avR.find(u=>u.status==='available' && (!u1 || u.id!==u1.id));
+    if(u2){ u2.status='reserved';
+      BOOKINGS.push({id:nid('BK'), name:'คุณกล้า อยากได้', phone:'084-000-1122', custId:'', unitId:u2.id,
+        deposit:0, depositNo:'', status:'จองอยู่', at:addDays(TODAY,-1), by:'คุณเบล',
+        branch:u2.branch, note:'ขอปรึกษาที่บ้านก่อน', upAt:new Date().toISOString(), demo:true}); }
+  })();
   /* โอนย้ายตัวอย่างจากรถที่ค้างนานที่สุด — v1.36 (B9): ต้องอยู่บริษัทเดียวกัน (กติกา A3
      ข้ามบริษัทต้องมีบิลขายส่ง) และรถต้องติดสถานะกำลังย้าย ไม่ใช่ยังว่างให้ขายซ้ำได้ */
   const oldest = UNITS.filter(u=>u.status==='available').sort((a,b)=>age(b)-age(a))[0];
@@ -2936,6 +2988,7 @@ const MENU = [
   {k:'quote',    t:'ใบเสนอราคา',       s:'เทียบรถและไฟแนนซ์ให้ลูกค้า',    ic:'file', r:['admin','manager','sales']},
   {k:'deal',     t:'ลูกค้าและดีล',      s:'ขาย ไฟแนนซ์ ส่งมอบ จบในหน้าเดียว', ic:'users', r:['admin','manager','acct','sales']},
   {k:'invoice',  t:'ใบกำกับภาษี',       s:'ลูกค้า · ขายส่ง · อื่นๆ — เลขรันร่วมต่อบริษัท', ic:'file', r:['admin','manager','acct']},
+  {k:'booking',  t:'จองรถ',            s:'พักรถให้ลูกค้าที่ยังไม่ตัดสินใจ — ยกเลิกได้', ic:'clock', r:['admin','manager','sales']},
   /* v1.35 (บรีฟข้อ 17): งานป้ายของฝ่ายทะเบียน — รถส่งมอบแล้วรอทะเบียนไหลมารวมที่นี่ */
   {k:'plate',    t:'ทะเบียนรถ',        s:'รถส่งมอบแล้วรอป้ายจริงจากขนส่ง',  ic:'clipboard', r:['admin','manager','reg']},
   {k:'ar',       t:'เงินค้างรับ',       s:'ยอดที่ยังไม่ได้รับ',           ic:'cash', r:['admin','manager','acct']},
@@ -2986,6 +3039,7 @@ const PERM_ACTS=[
   ['act:hrApprove','อนุมัติใบลา/คำขอออกนอกสถานที่ · แก้เวลา/ตรวจการลงเวลา', ['admin','manager','hr']],
   /* v1.35: งานป้ายเป็นของฝ่ายทะเบียน — บันทึก/ปิด/ถอยขั้นทะเบียนจากหน้าทะเบียนรถ */
   ['act:plate','บันทึกเลขทะเบียน · เดินขั้นงานทะเบียน', ['admin','manager','reg']],
+  ['act:booking','จองรถ · ยกเลิกการจอง', ['admin','manager','sales']],
   ['act:execCal','ปฏิทินผู้บริหาร · เพิ่ม/ลบวันหยุดบริษัท', ['admin','manager']]
 ];
 const PERM_DATA=[
@@ -3474,7 +3528,7 @@ function go(k, sub){
 function refreshAll(){ render(); badges(); promoBar(); }
 function render(){
   const f={dash:rDash,cal:rCal,report:rReport,recv:rRecv,stock:rStock,sell:rSell,transfer:rTransfer,quote:rQuote,
-    deal:rDeal,invoice:rInvoice,ar:rAr,service:rService,aftercare:rCare,plate:rPlate,parts:rParts,
+    deal:rDeal,invoice:rInvoice,booking:rBooking,ar:rAr,service:rService,aftercare:rCare,plate:rPlate,parts:rParts,
     expense:rExpense,attend:rAttend,hr:rHr,payroll:rPayroll,users:rUsers,imp:rImp,settings:rSettings,
     custom:rCustom,flow:rFlow}[CUR];
   if(f) f();
@@ -4402,7 +4456,9 @@ function clearanceModal(id){
 function statusPill(s){ return {available:pill('พร้อมขาย','good'),reserved:pill('จองแล้ว','info'),
   in_transfer:pill('กำลังโอนย้าย','info'),sold:pill('ขายแล้ว','mut')}[s]||pill(s,'mut'); }
 /* สีจุดสถานะ — ใช้ในช่องแคบที่ป้ายเต็มใบไม่พอดี */
-const STATUS_DOT={ available:'var(--pos)', reserved:'var(--ink-soft)',
+/* v1.37 (B4): จุดสีจองเดิมเป็นสีหมึกจาง มองแทบไม่ต่างจากขายแล้ว — แยกเป็นสี info ให้เห็นชัด
+   (ข้อความ "จองแล้ว" ยังคู่กับจุดเสมอ ตามกฎสถานะห้ามสื่อด้วยสีอย่างเดียว) */
+const STATUS_DOT={ available:'var(--pos)', reserved:'var(--info)',
   in_transfer:'var(--attn)', sold:'var(--muted)' };
 
 /* ============================= 2. ปฏิทิน ============================= */
@@ -4839,7 +4895,10 @@ function vehCascadeWire(ids, pool, redraw){
 }
 /* กติการถที่ขายได้ + ผังช่องของหน้าขาย — ใช้ซ้ำใน sUnitSet/ปุ่มภายนอกที่จะเลือกคันให้ */
 const SELL_CAS={q:'svQ', model:'svModel', variant:'svVariant', color:'svColor', unit:'sUnit'};
-const sellPool=()=>uAvail().filter(u=>u.status==='available'&&u.retail!=null);
+/* v1.37: คันติดจองยังโผล่ในตัวเลือกขาย (ติดป้าย "ติดจอง") เพราะลูกค้าที่จองต้องเปิดการขายได้
+   — ใครซื้อได้จริงเป็นด่านใน saveSale ไม่ใช่การซ่อนตัวเลือก (§9b) */
+const bookOf = unitId => BOOKINGS.find(b=>b.status==='จองอยู่' && b.unitId===unitId);
+const sellPool=()=>uAvail().filter(u=>(u.status==='available'||(u.status==='reserved'&&bookOf(u.id)))&&u.retail!=null);
 function rSell(){
   if(!$('#sUnit').dataset.init){ $('#sUnit').dataset.init=1;
     $('#sSales').innerHTML=SALESPEOPLE.map(s=>'<option>'+esc(s)+'</option>').join('');
@@ -4899,7 +4958,7 @@ function rSell(){
   const cur=$('#sUnit').value;
   /* บรีฟรอบ 1: ตัดราคาออกจากรายการเลือกคัน ("มันจะแอบงง") — ราคายังอยู่ในสรุปดีลด้านข้าง
      v1.33: รายการนี้ถูกกรองด้วย รุ่น/รหัสรุ่น/สี/ค้นหา ข้างบนแล้ว — โชว์เลขถังนำเพราะเป็นตัวชี้คัน */
-  $('#sUnit').innerHTML= av.length? av.map(u=>'<option value="'+u.id+'">'+esc(u.frame)+' · '+esc(u.model)+' '+esc(u.variant)+' · '+esc(u.color)+(u.clearance?' · เคลียร์สต๊อก':'')+'</option>').join('')
+  $('#sUnit').innerHTML= av.length? av.map(u=>'<option value="'+u.id+'">'+esc(u.frame)+' · '+esc(u.model)+' '+esc(u.variant)+' · '+esc(u.color)+(u.clearance?' · เคลียร์สต๊อก':'')+(u.status==='reserved'?' · ติดจอง':'')+'</option>').join('')
     : '<option value="">ไม่มีรถตรงตามที่กรอง</option>';
   if(av.some(u=>u.id===cur)) $('#sUnit').value=cur;
   sFreeDraw();
@@ -5047,6 +5106,14 @@ function saveSale(force, confirmed){
     'รถอยู่ '+bName(u.branch)+' — ย้ายรถผ่านหน้าโอนย้าย หรือเลือกสาขาให้ตรง',1); return; }
   const name=$('#sCust').value.trim();
   if(!name){ toast('กรอกชื่อลูกค้าก่อน','',1); return; }
+  /* v1.37 (คำตอบเจ้าของข้อ 1): รถติดจองขายได้เฉพาะลูกค้าที่จองไว้ — ด่านในฟังก์ชันเขียน
+     (ตัวเลือกแค่ติดป้าย "ติดจอง" การซ่อนไม่ใช่การกัน §9b) · เทียบจาก ลูกค้าที่เลือก/เบอร์/ชื่อ */
+  const bkHold=BOOKINGS.find(b=>b.status==='จองอยู่' && b.unitId===u.id);
+  if(bkHold){
+    const pn=$('#sPhone').value.replace(/\D/g,''), bpn=String(bkHold.phone||'').replace(/\D/g,'');
+    const same=(sCustSel && sCustSel===bkHold.custId) || (pn && bpn && pn===bpn) || name===bkHold.name;
+    if(!same){ toast('รถคันนี้ติดจองของ '+bkHold.name,'ขายให้คนอื่นต้องยกเลิกการจองก่อน (หน้าจองรถ)',1); return; }
+  }
   const disc=num($('#sDisc').value), net=u.retail-disc;
   const pay=$('#sPay').value;
   const gl=sGiftList();
@@ -5111,12 +5178,17 @@ function saveSale(force, confirmed){
     gifts:gl,                                        /* [{id,name,qty,cost,price}] — คืนสต๊อกตามจำนวนถ้ายกเลิก */
     /* การเงินต้องเข้ามาตรวจก่อนออกใบกำกับภาษี (G1-G3) */
     finApproval:{status:'รอตรวจ', by:'', at:'', note:''},
-    docNo: nextDocNo(u.branch,'TAXINV'),   /* เลขใบกำกับภาษีออกตอนบันทึก ไม่ใช่ตอนพรีวิว */
+    /* v1.36: เลขที่การขาย (audit ภายใน) — ใบกำกับภาษีตัวจริงออกเลขซีรีส์รวมตอนพิมพ์หลังส่งมอบ
+       คำสั่งใหม่ข้อ 26 ทำให้การจองเลขใบกำกับตั้งแต่วันขายกลายเป็นการเผาเลขทิ้ง (ขายแล้วเทได้) */
+    docNo: nextDocNo(u.branch,'SALE'),
     /* รหัสติดตามของลูกค้า ออกพร้อมเลขเอกสาร — ฝั่ง SQL เป็น default ของคอลัมน์
        ทุกทางที่สร้างการขายจึงได้ครบ ไม่ใช่เฉพาะทางที่ผ่านฟอร์มนี้ */
     pubToken: pubToken()};
-  s.docs={TAXINV:s.docNo};   /* เอกสารประเภทอื่นออกเลขครั้งแรกที่พิมพ์ (docNoFor) */
+  s.docs={};   /* เอกสารทุกประเภทออกเลขครั้งแรกที่พิมพ์จริง (docNoFor) — ไม่จองเลขล่วงหน้า */
   SALES.push(s); u.status='sold';
+  /* v1.37: การจองของคันนี้ปิดเป็น "เปิดขายแล้ว" เมื่อการขายเกิดจริง — เก็บเป็นประวัติ ไม่ลบ */
+  if(bkHold){ bkHold.status='เปิดขายแล้ว'; bkHold.saleId=s.id; bkHold.upAt=new Date().toISOString();
+    if(LIVE) dbPatch('booking', bkHold.id, { status:bkHold.status, sale_id:s.id }); }
   gl.forEach(g=>{ if(!g.id) return; const gg=GIFTS.find(x=>x.id===g.id); if(gg) gg.qty=Math.max(0,gg.qty-g.qty); });
   /* ---------- write-through ลงฐานข้อมูลจริง (A1 — เริ่มที่แกนของกลุ่มเงินก่อน) ----------
      ปิดข้อค้าง "ต่อระบบจริงให้บันทึกการขาย" ที่คอมเมนต์ไว้เหนือ liveLogin
@@ -5492,7 +5564,8 @@ const docAllowed = pay => pay==='finance' ? ['RECEIPT','DOWNTX','FINTX'] : ['REC
 let DOC_SEL='RECEIPT', DOC_SALE='';
 /* เลขเอกสารของการขายจริง — ออกครั้งแรกครั้งเดียวต่อประเภท เก็บไว้พิมพ์ซ้ำ */
 function docNoFor(s, type){
-  s.docs = s.docs || (s.docNo? {TAXINV:s.docNo} : {});
+  /* การขายเก่าก่อน v1.36 เคยจองเลขใบกำกับไว้ใน docNo — คงเลขเดิมเฉพาะระเบียนแบบนั้น */
+  s.docs = s.docs || (s.docNo && s.docNo.indexOf('-TAXINV-')>=0? {TAXINV:s.docNo} : {});
   /* v1.36 (คำตอบเจ้าของข้อ 7): ใบกำกับภาษีทุกใบใช้ซีรีส์รวมต่อบริษัทต่อปี — ใบเสร็จแยกเหมือนเดิม */
   if(!s.docs[type]) s.docs[type]= DOC_DEFS[type].tax? nextTaxNo(s.branch) : nextDocNo(s.branch, type);
   return s.docs[type];
@@ -5785,6 +5858,156 @@ function rOdList(){
       '<span class="mono">'+esc(o.no)+'</span> · '+esc(o.item)+' · '+thDate(o.at),
       canPrintDoc()? '<button class="lnk" data-odp="'+o.id+'">พิมพ์</button>':'')));
   $$('#s-invoice [data-odp]').forEach(b=> b.onclick=()=>odPrint(b.dataset.odp));
+}
+
+/* ============================= 5d. จองรถ (v1.37 — บรีฟข้อ 2 + คำตอบเจ้าของข้อ 1-2) =============================
+   จอง = hold รถเป็น "จองแล้ว" กันขายทับ ยังไม่ใช่การขาย · มัดจำเลือกได้ (วาง = ออกเลขใบเสร็จมัดจำ
+   คืนเมื่อยกเลิก) · ไม่มีวันหมดอายุอัตโนมัติ — คนกดปล่อยเอง · ด่านทั้งหมดอยู่ใน bookSave/bookCancel (§9b) */
+const canBooking = () => permW('act:booking');
+const BK_CAS={q:'bkQ', model:'bkModel', variant:'bkVariant', color:'bkColor', unit:'bkUnit'};
+const bookPool=()=>uAvail().filter(u=>u.status==='available');
+function bookSave(){
+  if(!canBooking()){ toast('บทบาทของคุณจองรถไม่ได้','ต้องเป็นเซลล์ ผู้บริหาร หรือแอดมิน',1); return false; }
+  const name=$('#bkName').value.trim(), phone=$('#bkPhone').value.trim();
+  if(!name || !phone){ toast('กรอกชื่อและเบอร์โทรก่อน','จองไว้แล้วต้องติดต่อกลับได้',1); return false; }
+  const u=UNITS.find(x=>x.id===$('#bkUnit').value);
+  if(!u){ toast('เลือกคันที่จะจองก่อน','',1); return false; }
+  if(u.status!=='available' || !inScope(u.branch)){ toast('คันนี้ไม่ว่างแล้ว','เลือกคันอื่น หรือรีเฟรชรายการ',1); return false; }
+  const dep=num($('#bkDeposit').value);
+  confirmSave('ยืนยันการจอง', [
+    ['ลูกค้า', name+' · '+phone],
+    ['รถ', u.model+' '+(u.variant||'')+' · '+u.color], ['เลขถัง', u.frame],
+    ['มัดจำ', dep>0? fmt(dep)+' ฿' : 'ไม่วางมัดจำ'],
+    ['หมายเหตุ', $('#bkNote').value.trim()]
+  ], ()=>{
+    /* ลูกค้า: หาคนเดิมจากเบอร์/ชื่อ ไม่เจอค่อยสร้าง — จองคือข้อมูลคร่าว ๆ (คำตอบเจ้าของ) */
+    const pd=phone.replace(/\D/g,'');
+    let c = CUSTOMERS.find(x=>(x.phone||'').replace(/\D/g,'')===pd) || CUSTOMERS.find(x=>x.name===name);
+    if(!c){ c={id: LIVE? dbId() : nid('CU'), name, phone, src:'จองรถ', stage:'จอง',
+      branch:u.branch, variant:u.variant, owner:ME.nick, createdAt:TODAY}; CUSTOMERS.push(c); }
+    else if(c.stage!=='รับรถสำเร็จ') c.stage='จอง';
+    c.upAt=new Date().toISOString();
+    const b={ id: LIVE? dbId() : nid('BK'), name, phone, custId:c.id, unitId:u.id,
+      deposit:dep>0?dep:0, depositNo: dep>0? nextDocNo(u.branch,'RECEIPT') : '',
+      status:'จองอยู่', at:TODAY, by:ME.nick, branch:u.branch,
+      note:$('#bkNote').value.trim(), upAt:new Date().toISOString() };
+    BOOKINGS.unshift(b);
+    u.status='reserved';
+    if(LIVE){
+      dbUp('customer', { id:c.id, branch_id:BR_IDS[c.branch]||null, full_name:c.name,
+        phone:c.phone||null, source:c.src||null, stage:c.stage });
+      dbUp('booking', { id:b.id, branch_id:BR_IDS[u.branch], customer_id:c.id, unit_id:u.id,
+        name:b.name, phone:b.phone, deposit:b.deposit, deposit_no:b.depositNo||null,
+        status:b.status, booked_at:b.at, note:b.note||null });
+      dbUp('motorcycle_unit', { id:u.id, status:'reserved' });
+    }
+    toast('จองแล้ว', u.model+' · '+name+(dep>0? ' · มัดจำ '+fmt(dep)+' ฿ ('+b.depositNo+')':''));
+    ['bkName','bkPhone','bkDeposit','bkNote','bkQ'].forEach(k=>$('#'+k).value='');
+    refreshAll();
+  });
+  return true;
+}
+function bookCancel(id, reason){
+  if(!canBooking()){ toast('บทบาทของคุณยกเลิกการจองไม่ได้','',1); return false; }
+  const b=BOOKINGS.find(x=>x.id===id); if(!b || b.status!=='จองอยู่') return false;
+  const rv=String(reason==null?'':reason).trim();
+  if(!rv){ toast('กรอกเหตุผลที่ยกเลิกก่อน','ประวัติต้องตอบได้ว่าทำไมรถถูกปล่อย',1); return false; }
+  b.status='ยกเลิก'; b.cancelAt=TODAY; b.cancelReason=rv;
+  if(b.deposit>0) b.refunded=true;                 /* คำตอบเจ้าของข้อ 2: ยกเลิกคืนมัดจำ */
+  b.upAt=new Date().toISOString();
+  const u=UNITS.find(x=>x.id===b.unitId);
+  if(u && u.status==='reserved') u.status='available';
+  if(LIVE){ dbPatch('booking', b.id, { status:b.status, canceled_at:b.cancelAt,
+      cancel_reason:rv, refunded:!!b.refunded });
+    if(u) dbUp('motorcycle_unit', { id:u.id, status:u.status }); }
+  toast('ยกเลิกการจองแล้ว', (u?u.model+' คืนสต๊อก':'')+(b.refunded? ' · บันทึกคืนมัดจำ '+fmt(b.deposit)+' ฿':''));
+  refreshAll(); return true;
+}
+function bookCancelModal(id){
+  const b=BOOKINGS.find(x=>x.id===id); if(!b) return;
+  openModal('ยกเลิกการจอง — '+esc(b.name),
+    '<div class="f"><div><label class="fl">เหตุผลที่ยกเลิก</label>'
+    +'<input class="inp" id="bkcReason" placeholder="เช่น ลูกค้าเปลี่ยนใจ · เงียบหายเกินสัปดาห์"></div>'
+    +(b.deposit>0? '<div class="note b">'+ic('info','i i-sm')+'<span>มีมัดจำ <b>'+fmt(b.deposit)+' ฿</b> ('+esc(b.depositNo)+') — ยกเลิกแล้วระบบบันทึกว่าคืนมัดจำ อย่าลืมคืนเงินจริงให้ลูกค้า</span></div>':'')
+    +'</div><div class="savebar"><button class="btn dgr" id="bkcGo">ยืนยันยกเลิกการจอง</button></div>');
+  $('#bkcGo').onclick=()=>{ if(bookCancel(id, $('#bkcReason').value)) closeModal(); };
+}
+/* เปิดการขายจากการจอง — พาไปฟอร์มขายพร้อมลูกค้า+คันที่จอง (การปิดจองเกิดตอน saveSale จริง §9g) */
+function bookOpenSale(id){
+  const b=BOOKINGS.find(x=>x.id===id); if(!b || b.status!=='จองอยู่') return;
+  if(!canSee('sell')){ toast('บทบาทของคุณเปิดการขายไม่ได้','',1); return; }
+  go('sell'); sellTab('p1');
+  sCustSel=b.custId||'';
+  $('#sCust').value=b.name; $('#sPhone').value=b.phone||'';
+  sUnitSet(b.unitId);
+  toast('เปิดการขายจากการจอง', b.name+(b.deposit>0? ' · มีมัดจำ '+fmt(b.deposit)+' ฿ — หักจากยอดชำระเอง':''));
+}
+function bookDepositPrint(id){
+  const b=BOOKINGS.find(x=>x.id===id); if(!b || !(b.deposit>0)) return false;
+  if(!canPrintDoc()){ toast('พิมพ์เอกสารไม่ได้','เฉพาะการเงินและผู้บริหารเท่านั้น',1); return false; }
+  const u=UNITS.find(x=>x.id===b.unitId)||{}, co=coOf(b.branch), br=bOf(b.branch);
+  printHTML('<div class="doc">'
+    +(CFG.logo? '<img src="'+CFG.logo+'" alt="" style="height:34pt;margin-bottom:4pt">':'')
+    +'<h2>'+esc(co.name)+'</h2>'
+    +'<div class="dsub">'+esc(co.addr||CFG.address)+' · โทร '+esc(co.phone||CFG.phone)+'<br>'+esc(br.name)+'</div>'
+    +'<h2 style="margin-top:var(--s2)">ใบเสร็จรับเงินมัดจำ</h2>'
+    +'<div class="co"><div><b>ลูกค้า</b><br>'+esc(b.name)+'<br>'+esc(b.phone||'')+'</div>'
+    +'<div style="text-align:right"><b>เลขที่</b> <span class="mono">'+esc(b.depositNo)+'</span><br>'
+    +'<b>วันที่</b> '+thDate(b.at)+'</div></div>'
+    +'<table><thead><tr><th>รายการ</th><th class="n">จำนวนเงิน</th></tr></thead><tbody>'
+    +'<tr><td>มัดจำจองรถ — '+esc(u.model||'—')+' ('+esc(u.variant||'')+') สี'+esc(u.color||'—')
+    +'<br><span class="tsub mono">เลขถัง '+esc(u.frame||'—')+'</span></td>'
+    +'<td class="n">'+fmt(b.deposit)+'</td></tr></tbody></table>'
+    +'<div class="tot"><div class="g"><span>รวมทั้งสิ้น</span><span>'+fmt(b.deposit)+' ฿</span></div></div>'
+    +'<div class="tsub" style="margin-top:4pt">มัดจำหักจากยอดชำระเมื่อเปิดการขาย · ยกเลิกการจองคืนเต็มจำนวน</div>'
+    +'<div class="sig"><div>ผู้รับเงิน</div><div>ผู้วางมัดจำ</div></div></div>');
+  return true;
+}
+function rBooking(){
+  if(!$('#bkSave').dataset.init){ $('#bkSave').dataset.init=1;
+    $('#bkSave').onclick=bookSave;
+    vehCascadeWire(BK_CAS, bookPool, hit=>{ rBooking(); if(hit) $('#bkUnit').value=hit; });
+  }
+  const av=vehCascadeFill(BK_CAS, bookPool);
+  const cur=$('#bkUnit').value;
+  $('#bkUnit').innerHTML= av.length? av.map(u=>'<option value="'+u.id+'">'+esc(u.frame)+' · '+esc(u.model)+' '+esc(u.variant)+' · '+esc(u.color)+'</option>').join('')
+    : '<option value="">ไม่มีรถว่างตรงตามที่กรอง</option>';
+  if(av.some(u=>u.id===cur)) $('#bkUnit').value=cur;
+  const act=BOOKINGS.filter(b=>b.status==='จองอยู่'&&inScope(b.branch));
+  const hist=BOOKINGS.filter(b=>b.status!=='จองอยู่'&&inScope(b.branch));
+  const may=canBooking();
+  /* คอลัมน์น้อยเข้าไว้ — การ์ดนี้กว้างครึ่งจอ ห้าคอลัมน์แล้วชื่อลูกค้าถูกบีบจนอ่านไม่ได้ */
+  tbl($('#bkTable'), ['ลูกค้า','รถ',{t:'มัดจำ',n:1},''],
+    act.map(b=>{ const u=UNITS.find(x=>x.id===b.unitId)||{};
+      return '<tr><td style="min-width:120px"><b>'+esc(b.name)+'</b><div class="tsub">'+esc(b.phone||'—')
+        +' · จอง '+thDate(b.at)+(b.note?'<br>'+esc(b.note):'')+'</div></td>'
+        +'<td>'+esc(u.model||'—')+'<div class="tsub mono">'+esc(u.frame||'')+'</div></td>'
+        +'<td class="n">'+(b.deposit>0? fmt(b.deposit)+(canPrintDoc()? '<div><button class="lnk noprint" data-bkdp="'+b.id+'">ใบเสร็จ</button></div>':'') : '<span class="tsub">—</span>')+'</td>'
+        +'<td class="noprint" style="white-space:nowrap">'
+        +(canSee('sell')? '<div><button class="lnk" data-bkgo="'+b.id+'">เปิดการขาย</button></div>':'')
+        +(may? '<button class="lnk" data-bkc="'+b.id+'">ยกเลิก</button>':'')+'</td></tr>'; }),
+    'ไม่มีการจองค้างอยู่',
+    act.map(b=>{ const u=UNITS.find(x=>x.id===b.unitId)||{};
+      return crow('', esc(b.name), b.deposit>0? fmt(b.deposit)+' ฿':'ไม่มีมัดจำ',
+        esc(b.phone||'—')+' · '+esc(u.model||'—')+' · <span class="mono">'+esc(u.frame||'')+'</span> · '+thDate(b.at),
+        (canSee('sell')? '<button class="lnk" data-bkgo="'+b.id+'">เปิดการขาย</button> ':'')
+        +(may? '<button class="lnk" data-bkc="'+b.id+'">ยกเลิก</button>':'')); }));
+  tbl($('#bkHist'), ['ลูกค้า','รถ','สถานะ','เมื่อ','หมายเหตุ'],
+    hist.map(b=>{ const u=UNITS.find(x=>x.id===b.unitId)||{};
+      return '<tr><td><b>'+esc(b.name)+'</b><div class="tsub">'+esc(b.phone||'—')+'</div></td>'
+        +'<td>'+esc(u.model||'—')+'</td>'
+        +'<td>'+(b.status==='เปิดขายแล้ว'? pill('เปิดขายแล้ว','good') : pill('ยกเลิก','bad'))+'</td>'
+        +'<td>'+thDate(b.cancelAt||b.at)+'</td>'
+        +'<td>'+esc(b.cancelReason||'')+(b.refunded? (b.cancelReason?' · ':'')+'คืนมัดจำ '+fmt(b.deposit)+' ฿':'')+'</td></tr>'; }),
+    'ยังไม่มีประวัติ',
+    hist.map(b=>{ const u=UNITS.find(x=>x.id===b.unitId)||{};
+      return crow('', esc(b.name),
+        b.status==='เปิดขายแล้ว'? pill('เปิดขายแล้ว','good') : pill('ยกเลิก','bad'),
+        esc(u.model||'—')+' · '+thDate(b.cancelAt||b.at)
+        +(b.cancelReason?' · '+esc(b.cancelReason):'')+(b.refunded?' · คืนมัดจำ':''), ''); }));
+  $$('#s-booking [data-bkgo]').forEach(x=> x.onclick=()=>bookOpenSale(x.dataset.bkgo));
+  $$('#s-booking [data-bkc]').forEach(x=> x.onclick=()=>bookCancelModal(x.dataset.bkc));
+  $$('#s-booking [data-bkdp]').forEach(x=> x.onclick=()=>bookDepositPrint(x.dataset.bkdp));
 }
 
 
@@ -6237,6 +6460,10 @@ function dealActions(d){
       +(it==='เงินสด'? ic('tag')+' เปิดการขาย (เงินสด)'
       : it==='เงินผ่อน'? ic('bank')+' ยื่นไฟแนนซ์ให้ลูกค้าคนนี้'
       : ic('arrow')+' ไปต่อ — เลือกเงินสด/ผ่อนก่อน')+'</button>');
+    /* v1.37: ลูกค้าที่มีจองค้าง — บอกบนแถบเลย จะได้ไม่เปิดการขายผิดคัน (ข้อความ+จุดสี ไม่ใช่ปุ่ม) */
+    const bkc=BOOKINGS.find(x=>x.status==='จองอยู่' && x.custId===d.c.id);
+    if(bkc){ const bu=UNITS.find(x=>x.id===bkc.unitId);
+      b.push('<span class="pill p-info">จองคันนี้อยู่ · '+esc(bu? bu.model+' '+(bu.variant||''):'')+'</span>'); }
     if(d.c.stage!=='สนใจ') b.push('<button class="btn sec" data-dlwarm="'+d.c.id+'">ทำเครื่องหมายว่าสนใจ</button>');
     b.push('<button class="btn sec" data-dledit="'+d.c.id+'">แก้ข้อมูลลูกค้า</button>');
   }
@@ -10587,7 +10814,7 @@ async function liveLogin(){
     }));
 
     /* ข้อมูลจริงมีแต่รถ — ไม่สร้างยอดขาย/ลูกค้าปลอมทับ · ใบลา/คำขอสาธิตก็ต้องไม่ปนโหมดจริง (QA P10) */
-    SALES=[]; CUSTOMERS=[]; TASKS=[]; REGS=[]; FINCASES=[]; AR=[]; SERVICE=[]; REMIND=[]; TRANSFERS=[]; QUOTES=[]; CARE=[]; WSALES=[]; WS_CART=[]; ODOCS=[]; LEAVES=[]; OFFS=[]; ATT=[];
+    SALES=[]; CUSTOMERS=[]; TASKS=[]; REGS=[]; FINCASES=[]; AR=[]; SERVICE=[]; REMIND=[]; TRANSFERS=[]; QUOTES=[]; CARE=[]; WSALES=[]; WS_CART=[]; ODOCS=[]; BOOKINGS=[]; LEAVES=[]; OFFS=[]; ATT=[];
     /* ลงเวลาโหมดจริง: เฉพาะแถวจริงของบัญชีนี้ — ข้อมูลสาธิต ST1-10 ห้ามปนหน้าเข้างาน/เงินเดือน (v1.26 ข้อ 5) */
     if(att) ATT = att.map(r=>({ staffId: me.id, date: r.work_date,
       in: tsHms(r.check_in), out: tsHms(r.check_out), status:'' }));
