@@ -65,17 +65,22 @@ const ALLOWED = ['admin', 'manager', 'acct'];
     }
 
     /* 4 · แท็บเอกสารในหน้าขายรถต้องไม่มีแล้ว (ย้ายไปหน้าดีล)
-       v1.18: ช่อง p3 ถูกใช้ใหม่เป็นแท็บขายส่ง (B2B) ตามบรีฟกลุ่ม ④ — สิ่งที่ห้ามกลับมาคือ
-       "เอกสาร" จึงเช็คจากป้ายแท็บ ไม่ใช่ id ช่อง · แถมคุมว่าแท็บขายส่งโชว์ตรงสิทธิ์ act:wholesale */
+       v1.36: แท็บขายส่งก็ย้ายออกไปหน้าใบกำกับภาษีแล้ว — หน้าขายเหลือ 2 แท็บ
+       แท็บขายส่งในหน้าใบกำกับต้องโชว์ตรงสิทธิ์ act:wholesale (UX — ด่านจริงใน wsSave) */
     if (await p.evaluate(() => canSee('sell'))) {
       const t = await p.evaluate(() => { go('sell');
-        return { labels: [...document.querySelectorAll('#sellTabs button')].map(b => b.textContent),
-          wsShown: document.querySelector('#sellTabWs').style.display !== 'none',
-          wsMay: canWholesale() }; });
+        return { labels: [...document.querySelectorAll('#sellTabs button')].map(b => b.textContent) }; });
       if (t.labels.some(x => x.includes('เอกสาร')))
         bad('[' + role + '] หน้าขายรถมีแท็บเอกสารกลับมา (ต้องอยู่หน้าดีลเท่านั้น)');
-      if (t.wsShown !== t.wsMay)
-        bad('[' + role + '] แท็บขายส่งโชว์ไม่ตรงสิทธิ์ (เห็น=' + t.wsShown + ' · สิทธิ์=' + t.wsMay + ')');
+      if (t.labels.some(x => x.includes('ขายส่ง')))
+        bad('[' + role + '] หน้าขายรถมีแท็บขายส่งกลับมา (v1.36 ย้ายไปหน้าใบกำกับภาษี)');
+    }
+    if (await p.evaluate(() => canSee('invoice'))) {
+      const t2 = await p.evaluate(() => { go('invoice');
+        return { wsShown: document.querySelector('#ivTabWs').style.display !== 'none',
+          wsMay: canWholesale() }; });
+      if (t2.wsShown !== t2.wsMay)
+        bad('[' + role + '] แท็บขายส่งในหน้าใบกำกับโชว์ไม่ตรงสิทธิ์ (เห็น=' + t2.wsShown + ' · สิทธิ์=' + t2.wsMay + ')');
     }
 
     await ctx.close();

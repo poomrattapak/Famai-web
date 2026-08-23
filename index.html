@@ -1510,7 +1510,7 @@ body.lock{ overflow:hidden; }
 
       <!-- ============ 5. ขายรถ ============ -->
       <section class="screen" id="s-sell">
-        <div class="tabs" id="sellTabs"><button class="on" data-p="p1">เปิดการขาย</button><button data-p="p2">คำนวณค่างวด</button><button data-p="p3" id="sellTabWs">ขายส่ง (B2B)</button></div>
+        <div class="tabs" id="sellTabs"><button class="on" data-p="p1">เปิดการขาย</button><button data-p="p2">คำนวณค่างวด</button></div>
         <div class="pane on" id="p1"><div class="g2">
           <div class="card"><div class="hd"><h3>รายละเอียดการขาย</h3></div><div class="bd">
             <div class="f">
@@ -1592,27 +1592,6 @@ body.lock{ overflow:hidden; }
           <div class="savebar"><button class="btn sec" id="fPrint"><svg class="i i-sm"><use href="#i-print"/></svg> พิมพ์ให้ลูกค้า</button></div>
         </div></div></div>
         <!-- ขายส่ง B2B (บรีฟรอบ 1 · F1-F5) — หลายคันต่อบิล เลขเครื่อง/เลขถังจากสต๊อกจริง -->
-        <div class="pane" id="p3"><div class="g2">
-          <div class="card"><div class="hd"><h3>เปิดบิลขายส่ง</h3><div class="d">ขายยกล็อตให้คู่ค้า หรือโอนรถให้บริษัทในเครือ (ต้องมีบิลเสมอ — บริษัทโยกบริษัทเฉย ๆ ไม่ได้)</div></div><div class="bd">
-            <div class="f">
-              <div class="f2">
-                <div><label class="fl">ขายให้ (บริษัทผู้ซื้อ)</label><select class="inp" id="wsPartner"></select></div>
-                <div><label class="fl">ขายจากสาขา</label><select class="inp" id="wsBranch"></select></div>
-              </div>
-              <div id="wsDestBox" style="display:none"><label class="fl">รถเข้าสต๊อกสาขาไหนของบริษัทผู้ซื้อ</label><select class="inp" id="wsDest"></select></div>
-              <div><label class="fl">เพิ่มรถเข้าบิล (เลขเครื่อง · เลขถัง จากสต๊อก)</label>
-                <div style="display:grid;grid-template-columns:1fr auto;gap:var(--s1)">
-                  <select class="inp" id="wsUnit"></select>
-                  <button class="btn sec" id="wsAdd">+ เพิ่ม</button>
-                </div></div>
-              <div id="wsCart"></div>
-              <div><label class="fl">หมายเหตุ</label><input class="inp" id="wsNote" placeholder="เงื่อนไขการชำระ เครดิต ฯลฯ"></div>
-            </div>
-            <div class="savebar"><button class="btn" id="wsSave">บันทึกบิลขายส่ง</button></div>
-          </div></div>
-          <div id="wsPer"></div>
-          <div class="card"><div class="hd"><h3>บิลขายส่งในช่วงที่เลือก</h3><div class="sp"></div><button class="lnk noprint" id="expWs"><svg class="i i-sm"><use href="#i-download"/></svg> ส่งออก</button></div><div class="bd" id="wsList"></div>
-        </div></div></div>
       </section>
 
       <!-- ============ 6. โอนย้ายระหว่างสาขา ============ -->
@@ -1626,6 +1605,16 @@ body.lock{ overflow:hidden; }
                 <div><label class="fl">ไปสาขา</label><select class="inp" id="tTo"></select></div>
               </div>
               <div><label class="fl">เหตุผล</label><input class="inp" id="tNote" placeholder="เช่น ค้างสต๊อก 689 วัน · สาขาปลายทางมีลูกค้ารอ"></div>
+              <!-- v1.36 (บรีฟข้อ 12): ปลายทางข้ามบริษัท = ต้องมีบิลขายส่งระหว่างบริษัท
+                   โผล่ทันทีที่เลือกปลายทางข้ามบริษัท ไม่ต้องรอกดบันทึกแล้วเจอทางตัน -->
+              <div id="tCross" style="display:none">
+                <div class="note b" id="tCrossWarn"></div>
+                <div class="f2" style="margin-top:var(--s1)">
+                  <div><label class="fl">ราคาขายระหว่างบริษัท (฿)</label><input class="inp num" id="tcPrice"></div>
+                  <div style="align-self:end"><button class="btn sec noprint" id="tcGo" style="width:100%">เปิดบิลขายส่งระหว่างบริษัท</button></div>
+                </div>
+                <div class="tsub" id="tcVat"></div>
+              </div>
             </div>
             <div class="savebar"><button class="btn" id="tSave">ส่งคำขอโอนย้าย</button></div>
           </div></div>
@@ -1683,6 +1672,62 @@ body.lock{ overflow:hidden; }
           </div>
         </div>
         <div id="dlOne" style="display:none"></div>
+      </section>
+
+      <!-- ============ 8d. ใบกำกับภาษี (บรีฟรอบ 2 ข้อ 26 · v1.36) ============
+           สามส่วนในหน้าเดียว: ลูกค้า (ขายปลีกที่ส่งมอบแล้ว) · ขายส่ง (ย้ายมาจากหน้าขายรถ) ·
+           อื่นๆ (กรอกอิสระ) — เลขใบกำกับรันร่วมซีรีส์เดียวต่อบริษัทต่อปีผ่าน nextTaxNo() -->
+      <section class="screen" id="s-invoice">
+        <div class="tabs" id="ivTabs"><button class="on" data-p="iv1">ลูกค้า</button><button data-p="iv2" id="ivTabWs">ขายส่ง (B2B)</button><button data-p="iv3">อื่นๆ</button></div>
+        <div class="pane on" id="iv1">
+          <div class="card"><div class="hd"><h3>ใบกำกับภาษีขายปลีก</h3><div class="d">ลูกค้าที่รับรถแล้ว — ใบกำกับตัวรถออกได้หลังส่งมอบ · ใบกำกับเงินดาวน์ออกได้ตั้งแต่วางเงิน (พิมพ์จากหน้าดีล)</div></div>
+            <div class="bd flush"><div class="tw"><table id="ivSales"></table></div></div></div>
+          <div class="card" id="ivDocCard" style="display:none"><div class="hd"><h3 id="ivDocT">เอกสาร</h3><div class="sp"></div><button class="lnk noprint" id="ivDocClose">ปิด</button></div>
+            <div class="bd" id="ivDocBox"></div></div>
+        </div>
+        <div class="pane" id="iv2"><div class="g2">
+          <div class="card"><div class="hd"><h3>เปิดบิลขายส่ง</h3><div class="d">ขายยกล็อตให้คู่ค้า หรือโอนรถให้บริษัทในเครือ (ต้องมีบิลเสมอ — บริษัทโยกบริษัทเฉย ๆ ไม่ได้)</div></div><div class="bd">
+            <div class="f">
+              <div><label class="fl">ขายในนามบริษัท (ผู้ขาย)</label><select class="inp" id="wsCo"></select></div>
+              <div class="f2">
+                <div><label class="fl">ขายให้ (บริษัทผู้ซื้อ)</label><select class="inp" id="wsPartner"></select></div>
+                <div><label class="fl">ดึงรถจากสาขา</label><select class="inp" id="wsBranch"></select></div>
+              </div>
+              <div id="wsDestBox" style="display:none"><label class="fl">รถเข้าสต๊อกสาขาไหนของบริษัทผู้ซื้อ</label><select class="inp" id="wsDest"></select></div>
+              <div><label class="fl">เพิ่มรถเข้าบิล (เลขเครื่อง · เลขถัง จากสต๊อก)</label>
+                <div style="display:grid;grid-template-columns:1fr auto;gap:var(--s1)">
+                  <select class="inp" id="wsUnit"></select>
+                  <button class="btn sec" id="wsAdd">+ เพิ่ม</button>
+                </div></div>
+              <div id="wsCart"></div>
+              <div><label class="fl">หมายเหตุ</label><input class="inp" id="wsNote" placeholder="เงื่อนไขการชำระ เครดิต ฯลฯ"></div>
+            </div>
+            <div class="savebar"><button class="btn" id="wsSave">บันทึกบิลขายส่ง</button></div>
+          </div></div>
+          <div id="wsPer"></div>
+          <div class="card"><div class="hd"><h3>บิลขายส่งในช่วงที่เลือก</h3><div class="sp"></div><button class="lnk noprint" id="expWs"><svg class="i i-sm"><use href="#i-download"/></svg> ส่งออก</button></div><div class="bd" id="wsList"></div>
+        </div></div></div>
+        <div class="pane" id="iv3"><div class="g2">
+          <div class="card"><div class="hd"><h3>ออกใบกำกับภาษีอื่นๆ</h3><div class="d">ของนอกระบบสต๊อกรถ เช่น อุปกรณ์แต่ง ค่าบริการ — กรอกอิสระทุกช่อง</div></div><div class="bd">
+            <div class="f">
+              <div class="f2">
+                <div><label class="fl">ผู้ซื้อ (ชื่อบุคคล/บริษัท)</label><input class="inp" id="odName" placeholder="บริษัท ตัวอย่าง จำกัด"></div>
+                <div><label class="fl">เลขผู้เสียภาษี (ถ้ามี)</label><input class="inp mono" id="odTaxId" placeholder="0 0000 00000 00 0"></div>
+              </div>
+              <div><label class="fl">ที่อยู่ (ถ้ามี)</label><input class="inp" id="odAddr"></div>
+              <div><label class="fl">รายการ</label><input class="inp" id="odItem" placeholder="เช่น กล่องท้าย + ติดตั้ง"></div>
+              <div class="f3">
+                <div><label class="fl">ยอดรวม (รวม VAT แล้ว)</label><input class="inp num" id="odAmt" placeholder="10700"></div>
+                <div><label class="fl">วันที่</label><input class="inp" type="date" id="odDate"></div>
+                <div><label class="fl">ออกในนามสาขา</label><select class="inp" id="odBranch"></select></div>
+              </div>
+              <div class="tsub" id="odVatPrev"></div>
+              <div><label class="fl">หมายเหตุ (ถ้ามี)</label><input class="inp" id="odNote"></div>
+            </div>
+            <div class="savebar"><button class="btn" id="odSave">บันทึกและออกเลขใบกำกับ</button></div>
+          </div></div>
+          <div class="card"><div class="hd"><h3>ใบกำกับอื่นๆ ที่ออกแล้ว</h3></div><div class="bd flush"><div class="tw"><table id="odList"></table></div></div></div>
+        </div></div>
       </section>
 
 
@@ -2411,6 +2456,7 @@ let WS_PARTNERS=[
 ];
 let WS_PRICES={};                 /* variant → ราคาขายส่ง/คัน (ตั้งได้ที่ตั้งค่า > ขายส่ง) */
 let WSALES=[];                    /* {id,partnerId,branch,items:[{unitId,price}],at,total,docNo,note,finApproval,demo} */
+let ODOCS=[];                     /* v1.36 ใบกำกับภาษีอื่นๆ (นอกระบบสต๊อกรถ) {id,no,branch,name,taxId,addr,item,amt,at,note,by} */
 const wsPartnerById = id => WS_PARTNERS.find(x=>x.id===id);
 const bOf   = c => BRANCHES.find(b=>b.code===c) || BRANCHES[0];
 
@@ -2569,7 +2615,7 @@ const FIN_LEGACY = {'ยื่นเอกสาร':'รอผลพิจา�
 const finStageNorm = c => { if(FIN_LEGACY[c.status]) c.status=FIN_LEGACY[c.status]; return c.status; };
 
 function seedDemo(){
-  CUSTOMERS=[]; SALES=[]; TASKS=[]; REGS=[]; FINCASES=[]; AR=[]; SERVICE=[]; REMIND=[]; TRANSFERS=[]; QUOTES=[]; CARE=[]; WSALES=[]; WS_CART=[];
+  CUSTOMERS=[]; SALES=[]; TASKS=[]; REGS=[]; FINCASES=[]; AR=[]; SERVICE=[]; REMIND=[]; TRANSFERS=[]; QUOTES=[]; CARE=[]; WSALES=[]; WS_CART=[]; ODOCS=[];
   PERMS=permDefaults();   /* สิทธิ์กลับค่าเริ่มต้นพร้อมข้อมูลสาธิตชุดใหม่ */
   /* คืนสถานะรถทุกคันก่อนสร้างข้อมูลสาธิตใหม่ ไม่งั้นเข้าระบบรอบสองจะไม่มีข้อมูลเลย */
   UNITS.forEach(u=>{ u.status='available'; });   /* คืนเฉพาะสถานะ — ราคาเคลียร์ที่ตั้งไว้ต้องอยู่ต่อ */
@@ -2666,10 +2712,15 @@ function seedDemo(){
   });
   LEADS.forEach(l=> CUSTOMERS.push({id:nid('CU'), name:l[0], phone:l[1], src:l[2], stage:l[3],
     branch:'FMG01', variant:l[4], owner:pick(SALESPEOPLE,0), demo:true}));
-  /* โอนย้ายตัวอย่างจากรถที่ค้างนานที่สุด */
+  /* โอนย้ายตัวอย่างจากรถที่ค้างนานที่สุด — v1.36 (B9): ต้องอยู่บริษัทเดียวกัน (กติกา A3
+     ข้ามบริษัทต้องมีบิลขายส่ง) และรถต้องติดสถานะกำลังย้าย ไม่ใช่ยังว่างให้ขายซ้ำได้ */
   const oldest = UNITS.filter(u=>u.status==='available').sort((a,b)=>age(b)-age(a))[0];
-  if(oldest) TRANSFERS.push({id:nid('TR'), unitId:oldest.id, from:oldest.branch, to:'FCG01',
-    at:addDays(TODAY,-3), status:'กำลังโอนย้าย', note:'ค้างสต๊อก '+age(oldest)+' วัน · สาขาปลายทางมีลูกค้ารอ', demo:true});
+  const tSib = oldest && BRANCHES.find(b=>b.active!==false && b.code!==oldest.branch && sameCo(b.code, oldest.branch));
+  if(oldest && tSib){
+    TRANSFERS.push({id:nid('TR'), unitId:oldest.id, from:oldest.branch, to:tSib.code,
+      at:addDays(TODAY,-3), status:'กำลังโอนย้าย', note:'ค้างสต๊อก '+age(oldest)+' วัน · สาขาปลายทางมีลูกค้ารอ', demo:true});
+    oldest.status='in_transfer';
+  }
   /* ใบเสนอราคาสาธิต — ใบแรกชี้รุ่นที่มีรถพร้อมขาย เพื่อสาธิต "เปิดการขายจากใบเสนอ" ได้จริง */
   const qAvail = UNITS.filter(u=>u.status==='available' && u.retail!=null && !u.clearance);
   if(qAvail.length && FIN_CO.length){
@@ -2846,6 +2897,20 @@ function nextDocNo(branchCode, type){
   DOC_COUNTER[k] = (DOC_COUNTER[k]||0)+1;
   return bOf(branchCode).prefix+'-'+type+'-'+y+'-'+String(DOC_COUNTER[k]).padStart(5,'0');
 }
+/* v1.36 เลขใบกำกับภาษีรันร่วม (คำตอบเจ้าของข้อ 7 — ระดับซีรีส์ยังรอยืนยัน ใช้ default ปลอดภัย):
+   ซีรีส์เดียวต่อบริษัทต่อปี ใช้ร่วมกับใบกำกับภาษีทุกใบ ทั้งขายปลีก ขายส่ง และอื่นๆ
+   เปลี่ยนกติกาได้ที่นี่จุดเดียว · ใบเสร็จ/ใบเสนอ/ใบส่งของขายส่ง ใช้ nextDocNo ต่อสาขาเหมือนเดิม */
+const taxKey = branchCode => 'TAX|'+coOf(branchCode).id+'|'+(NOW.getFullYear()+543);
+function taxPrefix(branchCode){ const hq=branchesOf(coOf(branchCode).id)[0];
+  return (hq||bOf(branchCode)).prefix; }
+function nextTaxNo(branchCode){
+  const k=taxKey(branchCode); DOC_COUNTER[k]=(DOC_COUNTER[k]||0)+1;
+  return taxPrefix(branchCode)+'-TAX-'+(NOW.getFullYear()+543)+'-'+String(DOC_COUNTER[k]).padStart(5,'0');
+}
+const peekTaxNo = branchCode => taxPrefix(branchCode)+'-TAX-'+(NOW.getFullYear()+543)
+  +'-'+String((DOC_COUNTER[taxKey(branchCode)]||0)+1).padStart(5,'0');
+/* แยกยอดรวม VAT กลับเป็นฐาน+ภาษี — ใช้ทั้งพรีวิวฟอร์มและเอกสารจริง ชุดสูตรเดียว */
+const vatSplit = amt => { const r=CFG.vat/100, base=amt/(1+r); return { base, vat:amt-base }; };
 
 /* ---------- สถานะผู้ใช้ปัจจุบัน ---------- */
 let ME = null;
@@ -2870,6 +2935,7 @@ const MENU = [
   {g:'ลูกค้าและการเงิน'},
   {k:'quote',    t:'ใบเสนอราคา',       s:'เทียบรถและไฟแนนซ์ให้ลูกค้า',    ic:'file', r:['admin','manager','sales']},
   {k:'deal',     t:'ลูกค้าและดีล',      s:'ขาย ไฟแนนซ์ ส่งมอบ จบในหน้าเดียว', ic:'users', r:['admin','manager','acct','sales']},
+  {k:'invoice',  t:'ใบกำกับภาษี',       s:'ลูกค้า · ขายส่ง · อื่นๆ — เลขรันร่วมต่อบริษัท', ic:'file', r:['admin','manager','acct']},
   /* v1.35 (บรีฟข้อ 17): งานป้ายของฝ่ายทะเบียน — รถส่งมอบแล้วรอทะเบียนไหลมารวมที่นี่ */
   {k:'plate',    t:'ทะเบียนรถ',        s:'รถส่งมอบแล้วรอป้ายจริงจากขนส่ง',  ic:'clipboard', r:['admin','manager','reg']},
   {k:'ar',       t:'เงินค้างรับ',       s:'ยอดที่ยังไม่ได้รับ',           ic:'cash', r:['admin','manager','acct']},
@@ -3408,7 +3474,7 @@ function go(k, sub){
 function refreshAll(){ render(); badges(); promoBar(); }
 function render(){
   const f={dash:rDash,cal:rCal,report:rReport,recv:rRecv,stock:rStock,sell:rSell,transfer:rTransfer,quote:rQuote,
-    deal:rDeal,ar:rAr,service:rService,aftercare:rCare,plate:rPlate,parts:rParts,
+    deal:rDeal,invoice:rInvoice,ar:rAr,service:rService,aftercare:rCare,plate:rPlate,parts:rParts,
     expense:rExpense,attend:rAttend,hr:rHr,payroll:rPayroll,users:rUsers,imp:rImp,settings:rSettings,
     custom:rCustom,flow:rFlow}[CUR];
   if(f) f();
@@ -4820,13 +4886,10 @@ function rSell(){
     $('#sCust').onblur=$('#sPhone').onblur=()=>setTimeout(sugHide,150);
     $$('#sellTabs button').forEach(b=> b.onclick=()=>{ $$('#sellTabs button').forEach(x=>x.classList.remove('on'));
       b.classList.add('on'); $$('#s-sell .pane').forEach(p=>p.classList.toggle('on',p.id===b.dataset.p));
-      if(b.dataset.p==='p2') finCompare();
-      if(b.dataset.p==='p3') rWsSale(); });
+      if(b.dataset.p==='p2') finCompare(); });
     ['fNet','fDown'].forEach(k=> $('#'+k).oninput=finCompare);
     $('#fModel').onchange=finCompare;
   }
-  /* แท็บขายส่งโชว์เฉพาะคนมีสิทธิ์ — เป็นแค่ UX ด่านจริงอยู่ใน wsSave (กฎ §9b/§9h) */
-  $('#sellTabWs').style.display = canWholesale()? '':'none';
   /* เติมใหม่ทุกครั้ง — รับการเพิ่ม/ลบ/ปิดใช้งานไฟแนนซ์ */
   (function(){ const el=$('#sFinCo'), want=el.value, act=finActive();
     el.innerHTML= act.length? act.map(f=>'<option value="'+f.id+'">'+esc(f.name)+' ('+f.rate+'%/เดือน)</option>').join('')
@@ -5230,6 +5293,8 @@ function rWsSale(){
       rWsSale(); };
     $('#wsPartner').onchange=rWsSale;
     $('#wsBranch').onchange=()=>{ WS_CART=[]; rWsSale(); };   /* เปลี่ยนสาขาขาย = เริ่มบิลใหม่ */
+    /* v1.36 (บรีฟข้อ 26): ขายในนามบริษัท — เปลี่ยนบริษัทแล้วสาขาดึงรถกลับไปสำนักงานใหญ่ของบริษัทนั้น */
+    $('#wsCo').onchange=()=>{ WS_CART=[]; $('#wsBranch').innerHTML=''; rWsSale(); };
     $('#wsSave').onclick=wsSave;
   }
   /* ผู้ซื้อ + สาขาผู้ขาย */
@@ -5237,9 +5302,14 @@ function rWsSale(){
     el.innerHTML=WS_PARTNERS.filter(p=>p.active).map(p=>'<option value="'+p.id+'">'+esc(p.name)
       +(p.own?' (ในเครือ)':'')+'</option>').join('') || '<option value="">ยังไม่มีบริษัทขายส่ง — เพิ่มที่ตั้งค่า > ขายส่ง</option>';
     if(want && WS_PARTNERS.some(p=>p.id===want&&p.active)) el.value=want; })();
-  (function(){ const el=$('#wsBranch'), want=el.value;
-    el.innerHTML=BRANCHES.filter(b=>inScope(b.code)&&b.active!==false).map(b=>'<option value="'+b.code+'">'+esc(b.name)+'</option>').join('');
-    if(want) el.value=want; })();
+  (function(){ const el=$('#wsCo'), want=el.value;
+    const cos=COMPANIES.filter(c=>c.active!==false && branchesOf(c.id).some(b=>inScope(b.code)));
+    el.innerHTML=cos.map(c=>'<option value="'+c.id+'">'+esc(c.name)+'</option>').join('');
+    if(want && cos.some(c=>c.id===want)) el.value=want; })();
+  (function(){ const el=$('#wsBranch'), want=el.value, co=$('#wsCo').value;
+    const bs=BRANCHES.filter(b=>inScope(b.code)&&b.active!==false&&(!co||b.co===co));
+    el.innerHTML=bs.map(b=>'<option value="'+b.code+'">'+esc(b.name)+'</option>').join('');
+    if(want && bs.some(b=>b.code===want)) el.value=want; })();
   /* ผู้ซื้อในเครือ → ต้องเลือกสาขาปลายทางของบริษัทนั้น */
   const p=wsPartnerById($('#wsPartner').value);
   const own=p && p.own;
@@ -5275,7 +5345,8 @@ function rWsSale(){
         +(w.note? ' · '+esc(w.note):'')+'</div>'
         +'<div class="psAct">'
         +(canPrintDoc()? '<button class="lnk" data-wsp2="'+w.id+'">พิมพ์ใบส่งของ/ใบเสร็จ</button>'
-          +' <button class="lnk" data-wsptx="'+w.id+'">พิมพ์ใบกำกับภาษี</button>':'')
+          +' <button class="lnk" data-wsptx="'+w.id+'">พิมพ์ใบกำกับภาษี</button>'
+          +' <button class="lnk" data-wsbill="'+w.id+'">ใบวางบิล</button>':'')
         +(canFinApprove()&&st!=='ผ่าน'? ' <button class="lnk" data-wsap="'+w.id+'">การเงินตรวจ: ผ่าน</button>':'')
         +'</div></div>'; }).join('')
     : '<div class="empty"><b>ยังไม่มีบิลขายส่ง</b>บิลแรกจะขึ้นที่นี่</div>';
@@ -5287,6 +5358,30 @@ function rWsSale(){
     toast('การเงินตรวจแล้ว — ผ่าน', w.docNo||''); rWsSale(); });
   $$('#wsList [data-wsp2]').forEach(b=> b.onclick=()=>wsPrint(b.dataset.wsp2, false));
   $$('#wsList [data-wsptx]').forEach(b=> b.onclick=()=>wsPrint(b.dataset.wsptx, true));
+  $$('#wsList [data-wsbill]').forEach(b=> b.onclick=()=>wsBilling(b.dataset.wsbill));
+}
+/* ใบวางบิล (บรีฟข้อ 30) — 1 ใบต่อ 1 บิลขายส่ง เลขออกครั้งแรกครั้งเดียว พิมพ์ซ้ำใช้เลขเดิม */
+function wsBilling(wsId){
+  const w=WSALES.find(x=>x.id===wsId); if(!w) return false;
+  if(!canPrintDoc()){ toast('พิมพ์เอกสารไม่ได้','เฉพาะการเงินและผู้บริหารเท่านั้น',1); return false; }
+  if(!w.billNo){ w.billNo=nextDocNo(w.branch,'BILLING'); if(LIVE) dbPatch('wholesale_sale', w.id, { bill_no:w.billNo }); }
+  const p=wsPartnerById(w.partnerId)||{}, co=coOf(w.branch);
+  printHTML('<div class="doc">'
+    +(CFG.logo? '<img src="'+CFG.logo+'" alt="" style="height:34pt;margin-bottom:4pt">':'')
+    +'<h2>'+esc(co.name)+'</h2>'
+    +'<div class="dsub">'+esc(co.addr||CFG.address)+' · โทร '+esc(co.phone||CFG.phone)+'</div>'
+    +'<h2 style="margin-top:var(--s2)">'+esc(DOC_DEFS.BILLING.n)+'</h2>'
+    +'<div class="co"><div><b>เรียน</b><br>'+esc(p.name||'—')
+    +(p.addr? '<br><span class="tsub">'+esc(p.addr)+'</span>':'')+'</div>'
+    +'<div style="text-align:right"><b>เลขที่</b> <span class="mono">'+esc(w.billNo)+'</span><br>'
+    +'<b>วันที่</b> '+thDate(TODAY)+'</div></div>'
+    +'<table><thead><tr><th>รายการ</th><th class="n">จำนวนเงิน</th></tr></thead><tbody>'
+    +'<tr><td>บิลขายส่งเลขที่ <span class="mono">'+esc(w.docNo)+'</span> ลงวันที่ '+thDate(w.at)
+    +' ('+w.items.length+' คัน)'+(w.note? '<br><span class="tsub">'+esc(w.note)+'</span>':'')+'</td>'
+    +'<td class="n">'+fmt(w.total)+'</td></tr></tbody></table>'
+    +'<div class="tot"><div class="g"><span>ยอดที่ขอวางบิล</span><span>'+fmt(w.total)+' ฿</span></div></div>'
+    +'<div class="sig"><div>ผู้วางบิล</div><div>ผู้รับวางบิล</div></div></div>');
+  rWsSale(); return true;
 }
 function wsSave(){
   /* ด่านทั้งหมดอยู่ที่นี่ — ปุ่มเป็นแค่ทางเข้า */
@@ -5311,29 +5406,36 @@ function wsSave(){
     ['รวมทั้งบิล', fmt(total)+' ฿'],
     ['หมายเหตุ', $('#wsNote').value.trim()]
   ].filter(Boolean), ()=>{
-    const w={ id: LIVE? dbId() : nid('WS'), partnerId:p.id, branch:br, at:TODAY,
-      items:WS_CART.map(x=>({unitId:x.unitId, price:num(x.price)})), total,
-      note:$('#wsNote').value.trim(), docNo:nextDocNo(br,'WSALE'),
-      finApproval:{status:'รอตรวจ', by:'', at:'', note:''} };
-    WSALES.push(w);
-    w.items.forEach(x=>{ const u=UNITS.find(z=>z.id===x.unitId); if(!u) return;
-      if(p.own){ u.branch=dest; }                    /* ในเครือ: รถย้ายเข้าบริษัทผู้ซื้อ (มีบิลรองรับ) */
-      else u.status='sold';                          /* คู่ค้าภายนอก: ขายขาด */
-    });
-    if(LIVE){
-      /* โหมดจริง p.id เป็น uuid จากตาราง wholesale_partner (โหลดตอน login) — อ้าง FK ได้ตรง */
-      dbUp('wholesale_sale', { id:w.id, branch_id:BR_IDS[br], partner_id:p.id,
-        sold_at:w.at, doc_no:w.docNo, total:w.total, note:w.note||null, fin_approval:w.finApproval });
-      w.items.forEach(x=> dbUp('wholesale_sale_item',
-        { id:dbId(), ws_id:w.id, unit_id:x.unitId, price:x.price }, 'ws_id,unit_id'));
-      w.items.forEach(x=> dbUp('motorcycle_unit', p.own
-        ? { id:x.unitId, branch_id:BR_IDS[dest] }        /* ในเครือ: รถย้ายสาขา สถานะยังว่าง */
-        : { id:x.unitId, status:'sold' }));
-    }
+    const w=wsCommit(p, br, dest, WS_CART, $('#wsNote').value);
     toast('บันทึกบิลขายส่งแล้ว', w.docNo+' · '+w.items.length+' คัน · '+fmt(total)+' ฿');
     WS_CART=[]; $('#wsNote').value='';
     refreshAll(); rWsSale();
   });
+}
+/* v1.36: แกนเขียนบิลขายส่ง — ฟอร์มขายส่ง (wsSave) กับทางลัดข้ามบริษัทหน้าโอนย้าย (tcGo)
+   วิ่งมาที่นี่ทั้งคู่ กติกามีชุดเดียว (§9g) · ด่านสิทธิ์/ความถูกต้องต้องผ่านก่อนเรียก */
+function wsCommit(p, br, dest, items, note){
+  const total=items.reduce((s,x)=>s+num(x.price),0);
+  const w={ id: LIVE? dbId() : nid('WS'), partnerId:p.id, branch:br, at:TODAY,
+    items:items.map(x=>({unitId:x.unitId, price:num(x.price)})), total,
+    note:String(note||'').trim(), docNo:nextDocNo(br,'WSALE'),
+    finApproval:{status:'รอตรวจ', by:'', at:'', note:''} };
+  WSALES.push(w);
+  w.items.forEach(x=>{ const u=UNITS.find(z=>z.id===x.unitId); if(!u) return;
+    if(p.own){ u.branch=dest; }                    /* ในเครือ: รถย้ายเข้าบริษัทผู้ซื้อ (มีบิลรองรับ) */
+    else u.status='sold';                          /* คู่ค้าภายนอก: ขายขาด */
+  });
+  if(LIVE){
+    /* โหมดจริง p.id เป็น uuid จากตาราง wholesale_partner (โหลดตอน login) — อ้าง FK ได้ตรง */
+    dbUp('wholesale_sale', { id:w.id, branch_id:BR_IDS[br], partner_id:p.id,
+      sold_at:w.at, doc_no:w.docNo, total:w.total, note:w.note||null, fin_approval:w.finApproval });
+    w.items.forEach(x=> dbUp('wholesale_sale_item',
+      { id:dbId(), ws_id:w.id, unit_id:x.unitId, price:x.price }, 'ws_id,unit_id'));
+    w.items.forEach(x=> dbUp('motorcycle_unit', p.own
+      ? { id:x.unitId, branch_id:BR_IDS[dest] }        /* ในเครือ: รถย้ายสาขา สถานะยังว่าง */
+      : { id:x.unitId, status:'sold' }));
+  }
+  return w;
 }
 /* เอกสารขายส่งหลายรายการ — tax=true คือใบกำกับภาษี (ติดด่านการเงินตรวจแบบเดียวกับขายปลีก) */
 function wsPrint(wsId, tax){
@@ -5341,6 +5443,8 @@ function wsPrint(wsId, tax){
   if(!canPrintDoc()){ toast('พิมพ์เอกสารไม่ได้','เฉพาะการเงินและผู้บริหารเท่านั้น',1); return; }
   if(tax && finApStatus(w)!=='ผ่าน'){
     toast('ยังออกใบกำกับภาษีไม่ได้','การเงินยังไม่ตรวจ ('+finApStatus(w)+') — ใบส่งของพิมพ์ได้',1); return; }
+  /* v1.36 (คำตอบข้อ 7): ใบกำกับภาษีขายส่งกินเลขจากซีรีส์รวมต่อบริษัท — ออกครั้งแรกที่พิมพ์ ใช้เลขเดิมตลอด */
+  if(tax && !w.taxNo){ w.taxNo=nextTaxNo(w.branch); if(LIVE) dbPatch('wholesale_sale', w.id, { tax_no:w.taxNo }); }
   const p=wsPartnerById(w.partnerId)||{}, co=coOf(w.branch), br=bOf(w.branch);
   const rate=CFG.vat/100, base=w.total/(1+rate), vat=w.total-base;
   const rows=w.items.map((x,i)=>{ const u=UNITS.find(z=>z.id===x.unitId)||{};
@@ -5356,8 +5460,9 @@ function wsPrint(wsId, tax){
     +'<div class="co"><div><b>ลูกค้า</b><br>'+esc(p.name||'—')
     +(p.taxId? '<br><span class="tsub mono">เลขผู้เสียภาษี '+esc(p.taxId)+'</span>':'')
     +(p.addr? '<br><span class="tsub">'+esc(p.addr)+'</span>':'')+'</div>'
-    +'<div style="text-align:right"><b>เลขที่</b> <span class="mono">'+esc(w.docNo)+'</span><br>'
-    +'<b>วันที่</b> '+thDate(w.at)+'</div></div>'
+    +'<div style="text-align:right"><b>เลขที่</b> <span class="mono">'+esc(tax? w.taxNo : w.docNo)+'</span><br>'
+    +'<b>วันที่</b> '+thDate(w.at)
+    +(tax? '<br><span class="tsub">อ้างอิงใบส่งของ <span class="mono">'+esc(w.docNo)+'</span></span>':'')+'</div></div>'
     +'<table><thead><tr><th>รายการ</th><th class="n">จำนวน</th><th class="n">ราคา</th></tr></thead><tbody>'+rows+'</tbody></table>'
     +'<div class="tot"><div><span>มูลค่าก่อนภาษี</span><span>'+fmt(base)+'</span></div>'
     +'<div><span>ภาษีมูลค่าเพิ่ม '+CFG.vat+'%</span><span>'+fmt(vat)+'</span></div>'
@@ -5380,14 +5485,16 @@ const DOC_DEFS = {
   TAXINV :{n:'ใบกำกับภาษี (เต็มรูป)',      copies:2, tax:true},
   TAXABB :{n:'ใบกำกับภาษีอย่างย่อ',        copies:1, tax:true},
   DOWNTX :{n:'ใบกำกับภาษีเงินดาวน์',       copies:2, tax:true},
-  FINTX  :{n:'ใบกำกับภาษีออกให้ไฟแนนซ์',   copies:2, tax:true}
+  FINTX  :{n:'ใบกำกับภาษีออกให้ไฟแนนซ์',   copies:2, tax:true},
+  BILLING:{n:'ใบวางบิล',                  copies:1}   /* v1.36 บรีฟข้อ 30 — ต่อบิลขายส่ง 1 ใบ */
 };
 const docAllowed = pay => pay==='finance' ? ['RECEIPT','DOWNTX','FINTX'] : ['RECEIPT','TAXINV','TAXABB'];
 let DOC_SEL='RECEIPT', DOC_SALE='';
 /* เลขเอกสารของการขายจริง — ออกครั้งแรกครั้งเดียวต่อประเภท เก็บไว้พิมพ์ซ้ำ */
 function docNoFor(s, type){
   s.docs = s.docs || (s.docNo? {TAXINV:s.docNo} : {});
-  if(!s.docs[type]) s.docs[type]=nextDocNo(s.branch, type);
+  /* v1.36 (คำตอบเจ้าของข้อ 7): ใบกำกับภาษีทุกใบใช้ซีรีส์รวมต่อบริษัทต่อปี — ใบเสร็จแยกเหมือนเดิม */
+  if(!s.docs[type]) s.docs[type]= DOC_DEFS[type].tax? nextTaxNo(s.branch) : nextDocNo(s.branch, type);
   return s.docs[type];
 }
 /* ข้อมูลที่เอกสารต้องใช้ — มาจากการขายจริงเสมอ
@@ -5419,7 +5526,8 @@ function docHTML(type, d){
   const rate=CFG.vat/100, base=amt/(1+rate), tax=amt-base;
   /* render = ดูตัวอย่างเท่านั้น ห้ามกินเลขจากตัวนับ — เลข commit จริงใน printCurrentDoc ครั้งแรกที่พิมพ์
      (เดิมเปิดดูดีลเฉย ๆ ก็กินเลขทิ้ง ใบกำกับเลยขาดช่วงทั้งที่ไม่มีใบจริง) */
-  const docNo = (d.s && d.s.docs && d.s.docs[type]) || peekDocNo(u.branch, type);
+  const docNo = (d.s && d.s.docs && d.s.docs[type])
+    || (DOC_DEFS[type].tax? peekTaxNo(u.branch) : peekDocNo(u.branch, type));
   const fin = d.s? finById(d.s.finId) : finById($('#sFinCo').value);
   const buyer = type==='FINTX' && fin ? fin.name+' (ผู้ให้เช่าซื้อ)' : d.cust;
   const itemName = ov.item || (esc(u.model)+' ('+esc(u.variant)+') สี'+esc(u.color));
@@ -5492,11 +5600,15 @@ function printCurrentDoc(){
   /* ใบกำกับภาษีต้องผ่านการเงินก่อน (G3) — เอกสารภาษีออกแล้วยกเลิกยาก */
   if(DOC_DEFS[DOC_SEL].tax && d.s && finApStatus(d.s)!=='ผ่าน'){
     toast('ยังออกใบกำกับภาษีไม่ได้','การเงินยังไม่ตรวจ ('+finApStatus(d.s)+') — ใบเสร็จรับเงินพิมพ์ได้',1); return; }
+  /* v1.36 (บรีฟข้อ 26): ใบกำกับตัวรถออกหลังส่งมอบเท่านั้น — ยกเว้นใบกำกับเงินดาวน์
+     ซึ่งเป็นของเงินที่รับมาแล้วจริง ต้องออกได้ตั้งแต่วางเงิน ไม่ใช่รอรถถึงมือ */
+  if(DOC_DEFS[DOC_SEL].tax && DOC_SEL!=='DOWNTX' && d.s && !regDone(REGS.find(r=>r.saleId===d.s.id))){
+    toast('ยังออกใบกำกับตัวรถไม่ได้','รถยังไม่ส่งมอบ — ใบกำกับตัวรถออกได้หลังส่งมอบ',1); return; }
   /* เลขเอกสารออกจริง ณ วินาทีพิมพ์ครั้งแรกเท่านั้น — docHTML เป็นแค่คนวาด ไม่แตะตัวนับ */
   if(d.s) docNoFor(d.s, DOC_SEL);
   const html=docHTML(DOC_SEL, d);
   printHTML(DOC_DEFS[DOC_SEL].copies===2 ? docCopies(html) : html);
-  if(d.s) rDeal();   /* เลขที่เพิ่งออกจริงต้องโชว์ทันที */
+  if(d.s){ if(CUR==='invoice') rInvoice(); else rDeal(); }   /* เลขที่เพิ่งออกจริงต้องโชว์ทันที */
 }
 /* ---------- เอกสารของดีลใบนี้ ----------
    เดิมเป็นแท็บในหน้าขายรถที่ต้องเลือกการขายจากรายการก่อน ทั้งที่เอกสารเป็นของดีล ไม่ใช่ของฟอร์ม
@@ -5551,14 +5663,180 @@ function docOvModal(saleId){
     closeModal(); toast('ล้างกลับอัตโนมัติแล้ว'); refreshAll(); };
 }
 
+/* ============================= 5c. หน้าใบกำกับภาษี (v1.36 — บรีฟข้อ 26) =============================
+   สามส่วนในหน้าเดียว: ลูกค้า (ขายปลีกส่งมอบแล้ว) · ขายส่ง · อื่นๆ — เลขรันร่วมผ่าน nextTaxNo()
+   แท็บขายส่งโชว์ตามสิทธิ์ act:wholesale เป็นแค่ UX — ด่านจริงอยู่ใน wsSave/printCurrentDoc/odSave (§9h) */
+let IV_SEL='iv1', IV_SALE='';
+function ivTab(pane){
+  if(pane==='iv2' && !canWholesale()) pane='iv1';
+  IV_SEL=pane;
+  $$('#ivTabs button').forEach(b=>b.classList.toggle('on', b.dataset.p===pane));
+  $$('#s-invoice .pane').forEach(x=>x.classList.toggle('on', x.id===pane));
+}
+function rInvoice(){
+  if(!$('#ivTabs').dataset.init){ $('#ivTabs').dataset.init=1;
+    $$('#ivTabs button').forEach(b=> b.onclick=()=>{ ivTab(b.dataset.p); rInvoice(); });
+    $('#ivDocClose').onclick=()=>{ IV_SALE=''; rInvoice(); };
+    /* VAT ย้อนกลับ (บรีฟข้อ 28): กรอกยอดรวม VAT แล้วเห็นฐาน+ภาษีทันที ไม่ต้องกดเครื่องคิดเลข */
+    $('#odAmt').oninput=()=>{ const a=num($('#odAmt').value);
+      $('#odVatPrev').textContent = a>0
+        ? 'แยกภาษี: ก่อน VAT '+fmt(vatSplit(a).base)+' · VAT '+CFG.vat+'% '+fmt(vatSplit(a).vat) : ''; };
+    $('#odSave').onclick=odSave;
+  }
+  $('#ivTabWs').style.display = canWholesale()? '':'none';
+  ivTab(IV_SEL);
+  rIvSales();
+  if(canWholesale()) rWsSale();
+  rOdList();
+}
+/* ส่วนลูกค้า — เฉพาะการขายที่ส่งมอบแล้ว (ใบกำกับตัวรถออกหลังส่งมอบ · ด่านจริงใน printCurrentDoc) */
+function rIvSales(){
+  const rows=SALES.filter(s=>!s.void && inScope(s.branch) && regDone(REGS.find(r=>r.saleId===s.id)))
+    .sort((a,b)=>String(b.soldAt).localeCompare(String(a.soldAt)))
+    .map(s=>({s, c:CUSTOMERS.find(x=>x.id===s.custId), u:UNITS.find(x=>x.id===s.unitId)}));
+  tbl($('#ivSales'), ['ลูกค้า','รถ','วันขาย',{t:'สุทธิ',n:1},'การเงินตรวจ','ใบกำกับที่ออกแล้ว',''],
+    rows.map(({s,c,u})=>{ const taxed=Object.keys(s.docs||{}).filter(t=>DOC_DEFS[t]&&DOC_DEFS[t].tax);
+      const st=finApStatus(s);
+      return '<tr><td><b>'+esc(c?c.name:'—')+'</b><div class="tsub">'+esc(c&&c.phone||'—')+'</div></td>'
+        +'<td>'+esc(u?u.model:'—')+'</td><td>'+thDate(s.soldAt)+'</td><td class="n">'+money(s.net)+'</td>'
+        +'<td>'+pill(st, st==='ผ่าน'?'good':(st==='ไม่ผ่าน'?'bad':'warn'))+'</td>'
+        +'<td>'+(taxed.length? taxed.map(t=>'<span class="mono">'+esc(s.docs[t])+'</span>').join('<br>')
+          : '<span class="tsub">ยังไม่ออก</span>')+'</td>'
+        +'<td class="noprint"><button class="lnk" data-ivopen="'+s.id+'">เปิดเอกสาร</button></td></tr>'; }),
+    'ยังไม่มีการขายที่ส่งมอบแล้ว',
+    rows.map(({s,c,u})=>crow('data-ivopen="'+s.id+'"', esc(c?c.name:'—'), money(s.net),
+      esc(u?u.model:'—')+' · ขาย '+thDate(s.soldAt),
+      pill(finApStatus(s), finApStatus(s)==='ผ่าน'?'good':'warn'))));
+  $$('#s-invoice [data-ivopen]').forEach(el=> el.onclick=()=>{ IV_SALE=el.dataset.ivopen; rInvoice(); });
+  const s=IV_SALE && SALES.find(x=>x.id===IV_SALE && !x.void);
+  $('#ivDocCard').style.display = s? '':'none';
+  if(!s) return;
+  DOC_SALE=s.id;
+  const c=CUSTOMERS.find(x=>x.id===s.custId);
+  $('#ivDocT').textContent='เอกสาร — '+(c?c.name:'');
+  const allowed=docAllowed(s.pay);
+  if(allowed.indexOf(DOC_SEL)<0) DOC_SEL=allowed[0];
+  const dd=docData();
+  $('#ivDocBox').innerHTML = dd? '<div class="chips" style="margin-bottom:var(--s2)">'
+      +allowed.map(t=>'<button class="chip'+(t===DOC_SEL?' on':'')+'" data-ivdt="'+t+'">'+esc(DOC_DEFS[t].n)+'</button>').join('')
+      +'<span class="sp"></span>'
+      +'<button class="btn sec sm noprint" id="ivOv">แก้ก่อนพิมพ์</button>'
+      +'<button class="btn sec sm noprint" id="ivPrint">'+ic('print','i i-sm')+' พิมพ์</button></div>'
+      +'<div class="docwrap">'+docHTML(DOC_SEL, dd)+'</div>' : '';
+  $$('#ivDocBox [data-ivdt]').forEach(b=> b.onclick=()=>{ DOC_SEL=b.dataset.ivdt; rInvoice(); });
+  if($('#ivOv')) $('#ivOv').onclick=()=>docOvModal(s.id);
+  if($('#ivPrint')) $('#ivPrint').onclick=()=>{ DOC_SALE=s.id; printCurrentDoc(); };
+}
+/* ส่วนอื่นๆ — ขายของนอกระบบสต๊อกรถ กรอกอิสระ · ด่านสิทธิ์ = คนที่พิมพ์เอกสารการเงินได้ */
+function odSave(){
+  if(!canPrintDoc()){ toast('ออกใบกำกับไม่ได้','เฉพาะการเงินและผู้บริหารเท่านั้น',1); return false; }
+  const name=$('#odName').value.trim(), item=$('#odItem').value.trim(), amt=num($('#odAmt').value);
+  if(!name || !item || !(amt>0)){ toast('กรอก ผู้ซื้อ รายการ และยอดรวม ให้ครบ','',1); return false; }
+  const br=$('#odBranch').value || ME.branch;
+  const o={ id: LIVE? dbId() : nid('OD'), no:nextTaxNo(br), branch:br,
+    name, taxId:$('#odTaxId').value.trim(), addr:$('#odAddr').value.trim(), item,
+    amt, at:$('#odDate').value||TODAY, note:$('#odNote').value.trim(), by:ME.nick };
+  ODOCS.unshift(o);
+  if(LIVE) dbUp('other_doc', { id:o.id, branch_id:BR_IDS[br]||null, doc_no:o.no,
+    buyer_name:o.name, buyer_tax_id:o.taxId||null, buyer_addr:o.addr||null,
+    item:o.item, amount:o.amt, issued_at:o.at, note:o.note||null });
+  toast('ออกใบกำกับแล้ว', o.no+' · '+fmt(o.amt)+' ฿');
+  ['odName','odTaxId','odAddr','odItem','odAmt','odNote'].forEach(k=>$('#'+k).value='');
+  $('#odVatPrev').textContent='';
+  refreshAll(); return o;
+}
+function odPrint(id){
+  const o=ODOCS.find(x=>x.id===id); if(!o) return false;
+  if(!canPrintDoc()){ toast('พิมพ์เอกสารไม่ได้','เฉพาะการเงินและผู้บริหารเท่านั้น',1); return false; }
+  const co=coOf(o.branch), br=bOf(o.branch), v=vatSplit(o.amt);
+  printHTML(docCopies('<div class="doc">'
+    +(CFG.logo? '<img src="'+CFG.logo+'" alt="" style="height:34pt;margin-bottom:4pt">':'')
+    +'<h2>'+esc(co.name)+'</h2>'
+    +'<div class="dsub">'+esc(co.addr||CFG.address)+' · โทร '+esc(co.phone||CFG.phone)
+    +'<br>เลขประจำตัวผู้เสียภาษี '+esc(co.taxId||CFG.taxId)+' · สาขา '+esc(br.name)+' ('+esc(br.branchNo)+')</div>'
+    +'<h2 style="margin-top:var(--s2)">ใบกำกับภาษี / ใบเสร็จรับเงิน</h2>'
+    +'<div class="co"><div><b>ลูกค้า</b><br>'+esc(o.name)
+    +(o.taxId? '<br><span class="tsub mono">เลขผู้เสียภาษี '+esc(o.taxId)+'</span>':'')
+    +(o.addr? '<br><span class="tsub">'+esc(o.addr)+'</span>':'')+'</div>'
+    +'<div style="text-align:right"><b>เลขที่</b> <span class="mono">'+esc(o.no)+'</span><br>'
+    +'<b>วันที่</b> '+thDate(o.at)+'</div></div>'
+    +'<table><thead><tr><th>รายการ</th><th class="n">จำนวนเงิน</th></tr></thead><tbody>'
+    +'<tr><td>'+esc(o.item)+'</td><td class="n">'+fmt(o.amt)+'</td></tr></tbody></table>'
+    +'<div class="tot"><div><span>มูลค่าก่อนภาษี</span><span>'+fmt(v.base)+'</span></div>'
+    +'<div><span>ภาษีมูลค่าเพิ่ม '+CFG.vat+'%</span><span>'+fmt(v.vat)+'</span></div>'
+    +'<div class="g"><span>รวมทั้งสิ้น</span><span>'+fmt(o.amt)+' ฿</span></div></div>'
+    +(o.note? '<div class="tsub" style="margin-top:4pt">'+esc(o.note)+'</div>':'')
+    +'<div class="sig"><div>ผู้รับเงิน</div><div>ผู้รับสินค้า</div></div></div>'));
+  return true;
+}
+function rOdList(){
+  (function(){ const el=$('#odBranch'), want=el.value;
+    el.innerHTML=BRANCHES.filter(b=>inScope(b.code)&&b.active!==false)
+      .map(b=>'<option value="'+b.code+'">'+esc(b.name)+'</option>').join('');
+    if(want) el.value=want; })();
+  if(!$('#odDate').value) $('#odDate').value=TODAY;
+  const rows=ODOCS.filter(o=>inScope(o.branch));
+  tbl($('#odList'), ['เลขที่','ผู้ซื้อ','รายการ',{t:'ยอดรวม',n:1},'วันที่',''],
+    rows.map(o=>'<tr><td class="mono">'+esc(o.no)+'</td><td><b>'+esc(o.name)+'</b></td><td>'+esc(o.item)+'</td>'
+      +'<td class="n">'+fmt(o.amt)+'</td><td>'+thDate(o.at)+'</td>'
+      +'<td class="noprint">'+(canPrintDoc()? '<button class="lnk" data-odp="'+o.id+'">พิมพ์</button>':'')+'</td></tr>'),
+    'ยังไม่มีใบกำกับอื่นๆ',
+    rows.map(o=>crow('', esc(o.name), fmt(o.amt)+' ฿',
+      '<span class="mono">'+esc(o.no)+'</span> · '+esc(o.item)+' · '+thDate(o.at),
+      canPrintDoc()? '<button class="lnk" data-odp="'+o.id+'">พิมพ์</button>':'')));
+  $$('#s-invoice [data-odp]').forEach(b=> b.onclick=()=>odPrint(b.dataset.odp));
+}
+
 
 /* ============================= 6. โอนย้าย ============================= */
 /* ตรงกับ r ของเมนู transfer — แต่ต้องมีสำเนาที่ตัวเขียนด้วย เพราะเมนูเป็นแค่การซ่อนปุ่ม */
 const canTransfer = () => permW('act:transfer');
+/* กล่องข้ามบริษัท (v1.36) — โชว์เมื่อรถกับปลายทางอยู่คนละนิติบุคคล พร้อมราคาตั้งต้นจากราคาขายส่ง */
+function tCrossSync(){
+  const box=$('#tCross'); if(!box) return;
+  const u=UNITS.find(x=>x.id===$('#tUnit').value), dest=$('#tTo').value;
+  const cross=!!(u && dest && !sameCo(u.branch, dest));
+  box.style.display = cross? '':'none';
+  if(!cross) return;
+  $('#tCrossWarn').innerHTML=ic('alert','i i-sm')+'<span><b>'+esc(bName(dest))+' อยู่คนละบริษัทกับรถคันนี้</b>'
+    +' — ข้ามนิติบุคคลโยกเฉย ๆ ไม่ได้ (ทรัพย์สินหายจากบัญชี) ต้องเปิดบิลขายส่งระหว่างบริษัทเพื่อออกใบเสร็จ/ใบกำกับรองรับ</span>';
+  if(!$('#tcPrice').value){ const v=WS_PRICES[u.variant];
+    $('#tcPrice').value = v!=null? v : (u.retail||''); }
+  const a=num($('#tcPrice').value);
+  $('#tcVat').textContent = a>0
+    ? 'แยกภาษี: ก่อน VAT '+fmt(vatSplit(a).base)+' · VAT '+CFG.vat+'% '+fmt(vatSplit(a).vat) : '';
+}
 function rTransfer(){
   if(!$('#tUnit').dataset.init){ $('#tUnit').dataset.init=1;
     $('#tUnit').onchange=()=>{ const u=UNITS.find(x=>x.id===$('#tUnit').value);
-      $('#tFrom').value=u?bName(u.branch):''; };
+      $('#tFrom').value=u?bName(u.branch):''; tCrossSync(); };
+    /* v1.36 (บรีฟข้อ 12): เตือนตั้งแต่เลือกปลายทางข้ามบริษัท ไม่ใช่รอกดบันทึกแล้วเจอทางตัน */
+    $('#tTo').onchange=tCrossSync;
+    $('#tcPrice').oninput=()=>{ const a=num($('#tcPrice').value);
+      $('#tcVat').textContent = a>0
+        ? 'แยกภาษี: ก่อน VAT '+fmt(vatSplit(a).base)+' · VAT '+CFG.vat+'% '+fmt(vatSplit(a).vat) : ''; };
+    $('#tcGo').onclick=()=>{
+      const u=UNITS.find(x=>x.id===$('#tUnit').value);
+      if(!u){ toast('เลือกรถก่อน','',1); return; }
+      const dest=$('#tTo').value;
+      if(sameCo(u.branch, dest)){ toast('ปลายทางอยู่บริษัทเดียวกัน','ใช้ปุ่มส่งคำขอโอนย้ายปกติได้เลย',1); return; }
+      /* ด่านเดียวกับบิลขายส่ง — ทางลัดนี้คือบิลขายส่งจริง ไม่ใช่ช่องหลบ (§9b/§9g) */
+      if(!canWholesale()){ toast('เปิดบิลขายส่งไม่ได้','ต้องเป็นแอดมินหรือผู้บริหาร (สิทธิ์เปิดบิลขายส่ง)',1); return; }
+      if(u.status!=='available' || !inScope(u.branch)){ toast('รถคันนี้ไม่ว่างหรืออยู่นอกขอบเขตสาขาของคุณ','',1); return; }
+      const price=num($('#tcPrice').value);
+      if(!(price>0)){ toast('ใส่ราคาขายระหว่างบริษัทก่อน','',1); return; }
+      const pt=WS_PARTNERS.find(x=>x.active && x.own===coOf(dest).id);
+      if(!pt){ toast('ยังไม่มีบริษัทในเครือปลายทางในรายชื่อคู่ค้าขายส่ง','เพิ่มได้ที่ ตั้งค่า > ขายส่ง',1); return; }
+      confirmSave('เปิดบิลขายส่งระหว่างบริษัท', [
+        ['รถ', u.model+' · '+u.color], ['เลขเครื่อง', u.engine],
+        ['จาก', bName(u.branch)], ['ขายให้', pt.name],
+        ['รถเข้าสต๊อก', bName(dest)], ['ราคา', fmt(price)+' ฿']
+      ], ()=>{
+        const w=wsCommit(pt, u.branch, dest, [{unitId:u.id, price}], $('#tNote').value);
+        toast('เปิดบิลขายส่งแล้ว — รอการเงินตรวจ', w.docNo+' · '+fmt(price)+' ฿');
+        $('#tNote').value=''; $('#tcPrice').value=''; refreshAll();
+      });
+    };
     /* ด่านอยู่ที่นี่ ไม่ใช่ที่เมนู (กฎ §9b) — เดิมหน้านี้ไม่มีด่านเลย ใครเปิดหน้าได้ก็โอนได้ */
     $('#tSave').onclick=()=>{ const u=UNITS.find(x=>x.id===$('#tUnit').value);
       if(!canTransfer()){ toast('บทบาทของคุณโอนย้ายรถไม่ได้','ต้องเป็นแอดมิน ผู้จัดการ หรือสต๊อก',1); return; }
@@ -5568,15 +5846,21 @@ function rTransfer(){
       /* กติกาเจ้าของ (A3): "บริษัทโยกบริษัทไม่ได้ ต้องเปิดการขายระหว่างบริษัทก่อน"
          คนละนิติบุคคล = ต้องมีใบเสร็จ/ใบกำกับ — โยกฟรีคือทรัพย์สินหายจากบัญชีบริษัทหนึ่งไปโผล่อีกบริษัท */
       if(!sameCo(u.branch, $('#tTo').value)){
-        toast('ข้ามบริษัทโอนย้ายเฉย ๆ ไม่ได้', 'ต้องเปิดการขายขายส่งระหว่างบริษัท (หน้าขายรถ แท็บขายส่ง) เพื่อออกใบเสร็จก่อน',1); return; }
+        tCrossSync();   /* โชว์กล่องเปิดบิลขายส่งในหน้าเดียว — ด่านบล็อกโอนเฉย ๆ ยังอยู่ (A3) */
+        toast('ข้ามบริษัทโอนย้ายเฉย ๆ ไม่ได้', 'ใช้กล่อง "เปิดบิลขายส่งระหว่างบริษัท" ด้านล่างแทน',1); return; }
       confirmSave('ยืนยันการโอนย้าย', [
         ['รถ', u.model+' · '+u.color], ['เลขเครื่อง', u.engine],
         ['จาก', bName(u.branch)], ['ไป', bName($('#tTo').value)],
         ['หมายเหตุ', $('#tNote').value.trim()]
       ], ()=>{
-        TRANSFERS.push({id:nid('TR'),unitId:u.id,from:u.branch,to:$('#tTo').value,at:TODAY,
-          status:'กำลังโอนย้าย',note:$('#tNote').value.trim()});
+        const t={id: LIVE? dbId() : nid('TR'), unitId:u.id, from:u.branch, to:$('#tTo').value, at:TODAY,
+          status:'กำลังโอนย้าย', note:$('#tNote').value.trim()};
+        TRANSFERS.push(t);
         u.status='in_transfer';
+        /* v1.36 (B8): ตาราง unit_transfer มีตั้งแต่ migration 01 แต่ไม่เคยถูกเขียน — โหมดจริงหายทุกรายการ */
+        if(LIVE){ dbUp('unit_transfer', { id:t.id, unit_id:u.id, from_branch:BR_IDS[u.branch],
+            to_branch:BR_IDS[t.to], status:'in_transit', note:t.note||null });
+          dbUp('motorcycle_unit', { id:u.id, status:'in_transfer' }); }
         toast('ส่งคำขอโอนย้ายแล้ว', u.model+' ไป '+bName($('#tTo').value)); $('#tNote').value=''; refreshAll();
       }); };
   }
@@ -5587,6 +5871,7 @@ function rTransfer(){
   $('#tTo').innerHTML=COMPANIES.map(co=>'<optgroup label="'+esc(co.name)+'">'
     +branchesOf(co.id).map(b=>'<option value="'+b.code+'">'+esc(b.name)+'</option>').join('')+'</optgroup>').join('');
   const u0=UNITS.find(x=>x.id===$('#tUnit').value); $('#tFrom').value=u0?bName(u0.branch):'';
+  tCrossSync();
   perBar('trPer','transfer', rTransfer);
   $('#expTr').onclick=expTransfers;
   /* v1.31 (B7): จอต้องกรองขอบเขตสาขาเหมือนไฟล์ (expTransfers) — เดิมจอโชว์ทุกสาขา
@@ -5608,6 +5893,8 @@ function rTransfer(){
     if(!canTransfer()){ toast('บทบาทของคุณยืนยันรับรถไม่ได้','',1); return; }
     if(!inScope(t.to)){ toast('สาขาปลายทางอยู่นอกขอบเขตของคุณ','',1); return; }
     const u=UNITS.find(x=>x.id===t.unitId); t.status='รับแล้ว'; if(u){ u.branch=t.to; u.status='available'; }
+    if(LIVE){ dbUp('unit_transfer', { id:t.id, status:'received', received_at:new Date().toISOString() });
+      if(u) dbUp('motorcycle_unit', { id:u.id, branch_id:BR_IDS[t.to], status:'available' }); }
     toast('รับรถเข้าสาขาแล้ว', bName(t.to)); refreshAll(); });
 }
 
@@ -5972,6 +6259,9 @@ function dealActions(d){
     if(d.s && !d.s.void) b.push('<button class="btn sec" data-sdet="'+d.s.id+'">'+ic('file')+' ดูใบขาย/เอกสาร</button>');
     b.push('<button class="btn" data-dlv="'+d.rg.id+'">'+ic('bike')+' ส่งมอบรถ</button>');
   }
+  /* v1.36 (บรีฟข้อ 25): ปุ่มใบเสร็จบนแถบ — โชว์เฉพาะคนที่พิมพ์ได้ ด่านจริงอยู่ใน printCurrentDoc */
+  if(d.s && !d.s.void && canPrintDoc())
+    b.push('<button class="btn sec" data-dlrcpt="'+d.s.id+'">'+ic('print')+' พิมพ์ใบเสร็จ</button>');
   let h=b.join('');
   if(d.s && !d.s.void && !d.delivered && canVoidSale())
     h+='</div><div class="dlact dlrisk">'
@@ -6150,6 +6440,8 @@ function rDealOne(id){
   const ovc=$('#dlOvClr'); if(ovc) ovc.onclick=()=>{ const s=SALES.find(x=>x.id===DOC_SALE);
     if(s && s.docOv){ delete s.docOv[DOC_SEL]; toast('ล้างกลับอัตโนมัติแล้ว'); refreshAll(); } };
   $$('#dlOne [data-dlv]').forEach(b=> b.onclick=()=>regDeliverModal(b.dataset.dlv));
+  $$('#dlOne [data-dlrcpt]').forEach(b=> b.onclick=()=>{
+    DOC_SALE=b.dataset.dlrcpt; DOC_SEL='RECEIPT'; printCurrentDoc(); });
   wireSaleLinks();
 }
 /* ทางเดียวในหน้านี้ที่ต้องออกไปหน้าอื่นจริง ๆ เพราะการเปิดการขายเป็นฟอร์มยาวคนละเรื่อง
@@ -10295,7 +10587,7 @@ async function liveLogin(){
     }));
 
     /* ข้อมูลจริงมีแต่รถ — ไม่สร้างยอดขาย/ลูกค้าปลอมทับ · ใบลา/คำขอสาธิตก็ต้องไม่ปนโหมดจริง (QA P10) */
-    SALES=[]; CUSTOMERS=[]; TASKS=[]; REGS=[]; FINCASES=[]; AR=[]; SERVICE=[]; REMIND=[]; TRANSFERS=[]; QUOTES=[]; CARE=[]; WSALES=[]; WS_CART=[]; LEAVES=[]; OFFS=[]; ATT=[];
+    SALES=[]; CUSTOMERS=[]; TASKS=[]; REGS=[]; FINCASES=[]; AR=[]; SERVICE=[]; REMIND=[]; TRANSFERS=[]; QUOTES=[]; CARE=[]; WSALES=[]; WS_CART=[]; ODOCS=[]; LEAVES=[]; OFFS=[]; ATT=[];
     /* ลงเวลาโหมดจริง: เฉพาะแถวจริงของบัญชีนี้ — ข้อมูลสาธิต ST1-10 ห้ามปนหน้าเข้างาน/เงินเดือน (v1.26 ข้อ 5) */
     if(att) ATT = att.map(r=>({ staffId: me.id, date: r.work_date,
       in: tsHms(r.check_in), out: tsHms(r.check_out), status:'' }));

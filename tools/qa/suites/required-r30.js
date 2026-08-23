@@ -50,7 +50,8 @@ const CASES = [
   { id:'sCust',     open: scr('sell'), save:'saveSale(false)', want:'กรอกชื่อลูกค้า' },
   { id:'gxName',    open: seq(scr('sell'), tap('#sFreeAdd')), save:'#gxGo', want:'กรอกชื่อของแถม' },
   { id:'fNet',      open: seq(scr('sell'), tap('#sellTabs [data-p="p2"]')), save:'finComparePrint()', want:'กรอกราคาสุทธิ' },
-  { id:'wsPartner', open: seq(scr('sell'), tap('#sellTabs [data-p="p3"]')), save:'wsSave()', want:'เลือกบริษัทผู้ซื้อ' },
+  /* v1.36: แท็บขายส่งย้ายไปหน้าใบกำกับภาษี */
+  { id:'wsPartner', open: seq(scr('invoice'), tap('#ivTabs [data-p="iv2"]')), save:'wsSave()', want:'เลือกบริษัทผู้ซื้อ' },
 
   /* ---- โอนย้าย · ใบเสนอราคา · เคลียร์สต๊อก ---- */
   { id:'tUnit',   open: scr('transfer'), save:'#tSave', want:'เลือกรถก่อน' },

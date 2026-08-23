@@ -13,7 +13,8 @@ const BTN = [
   ['payroll',   '#expPr',     null, 1], ['report',  '#rpCsv',     null,  1],
   ['service',   '#expSv',     'v2', 1], ['service', '#expRemind', 'v3',  1],
   ['parts',     '#expParts',  'pt1',1], ['parts',   '#expMove',   'pt2', 1],
-  ['parts',     '#expGift',   'pt3',1], ['sell',    '#expWs',     'p3',  1],
+  /* v1.36: แท็บขายส่งย้ายจากหน้าขายไปหน้าใบกำกับภาษี */
+  ['parts',     '#expGift',   'pt3',1], ['invoice', '#expWs',     'iv2', 1],
   ['quote',     '#expQuote',  null, 1], ['transfer','#expTr',     null,  1],
   ['aftercare', '#expCare',   null, 1], ['hr',      '#expLeave',  null,  1],
   ['users',     '#expStaff',  null, 1]
