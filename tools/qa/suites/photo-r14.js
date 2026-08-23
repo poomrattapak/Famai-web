@@ -128,25 +128,32 @@ const { chromium, EXE, BASE } = require('./env');
     if (!(prep.bytes < prep.orig)) fails.push('imgPrepare ไม่ได้ทำให้เล็กลง');
   }
 
-  /* ---------- 6 · bikeArt เลือกตามลำดับ URL → dataURL → เงารถ ---------- */
+  /* ---------- 6 · bikeArt เลือกตามลำดับ URL → dataURL → เงารถ ----------
+     v1.31: รูปผูกกับ "สี" ไม่ใช่ "รุ่น" — ลำดับเดิมทั้งหมด แค่ย้ายที่เก็บลงไปอยู่ในสี */
   const art = await p.evaluate(() => {
     const v = Object.keys(PRICE)[0], p0 = PRICE[v];
-    const keepU = p0.imgUrl, keepI = p0.img;
-    delete p0.imgUrl; delete p0.img;
-    const svg = bikeArt(v, 'ดำ');
-    p0.img = 'data:image/jpeg;base64,AAAA';
-    const dataUrl = bikeArt(v, 'ดำ');
-    p0.imgUrl = 'https://x.test/card.webp';
-    const url = bikeArt(v, 'ดำ');
-    if (keepU) p0.imgUrl = keepU; else delete p0.imgUrl;
-    if (keepI) p0.img = keepI; else delete p0.img;
-    return { svg, dataUrl, url };
+    const cc = Object.keys(p0.c)[0], e = p0.c[cc], nm = e.name;
+    const keepU = e.imgUrl, keepI = e.img;
+    delete e.imgUrl; delete e.img;
+    const svg = bikeArt(v, nm, cc);
+    e.img = 'data:image/jpeg;base64,AAAA';
+    const dataUrl = bikeArt(v, nm, cc);
+    e.imgUrl = 'https://x.test/card.webp';
+    const url = bikeArt(v, nm, cc);
+    /* รูปของสีอื่นในรุ่นเดียวกันต้องไม่โดนรูปนี้กลบ — นี่คือทั้งหมดที่เจ้าของขอ */
+    const other = Object.keys(p0.c)[1];
+    const otherArt = other ? bikeArt(v, p0.c[other].name, other) : '<svg';
+    if (keepU) e.imgUrl = keepU; else delete e.imgUrl;
+    if (keepI) e.img = keepI; else delete e.img;
+    return { svg, dataUrl, url, otherArt, nOther: other ? 1 : 0 };
   });
   if (!/<svg/.test(art.svg))                       fails.push('ไม่มีรูปเลยต้องวาดเงารถ');
   if (!/src="data:image/.test(art.dataUrl))        fails.push('มี dataURL ในเซสชันต้องใช้ก่อนเงารถ');
   if (!/src="https:\/\/x\.test\/card\.webp"/.test(art.url))
     fails.push('มี URL จาก Storage ต้องใช้ก่อน dataURL');
   if (!/loading="lazy"/.test(art.url))             fails.push('รูปจาก Storage ควรโหลดแบบ lazy');
+  if (art.nOther && !/<svg/.test(art.otherArt))
+    fails.push('ใส่รูปให้สีหนึ่ง แล้วสีอื่นในรุ่นเดียวกันหยิบรูปนั้นไปใช้ด้วย — รูปต้องผูกกับสี');
 
   console.log(fails.length ? 'FAILS:\n' + fails.join('\n') : 'ALL_CHECKS_PASS');
   console.log(`card ${Math.round(r.card.size/1024)} KB · full ${Math.round(r.full.size/1024)} KB`
