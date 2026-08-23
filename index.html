@@ -320,7 +320,7 @@ h6[data-grp].mg6{ color:var(--grp6); border-bottom-color:var(--grp6); }
 }
 /* หน้าที่ navbar รับช่วงเวลาไปแล้ว ซ่อนแถบในหน้า — state/handler ยังอยู่ครบ (ด่านที่ยิงตรงใช้ต่อได้)
    #wsPer/#movePer ไม่ซ่อน: เป็นช่วงเวลาของแท็บย่อยในหน้า sell/parts ไม่ใช่ของทั้งหน้า */
-#dPer,#rpPer,#trPer,#quotePer,#carePer,#expPer{ display:none; }
+#dPer,#rpPer,#trPer,#quotePer,#expPer{ display:none; }
 /* v1.29: ขอบเขตบริษัท-สาขาอยู่บน navbar ที่เดียว — ตัวกรองในหน้าซ่อน แต่ยังเป็นตัวเก็บค่าอยู่
    (คำสั่งเจ้าของ: ไม่ให้มีที่เลือกสาขาสองที่จนขัดกันเอง) */
 #dBranch,#stBranch,#dlBranch,#abBranch,#rpBranch{ display:none; }
@@ -1730,12 +1730,29 @@ body.lock{ overflow:hidden; }
         <div class="pane" id="v3"><div class="card"><div class="hd"><h3>เตือนเช็กระยะ</h3><div class="d">ตามรอบที่ตั้งไว้ในหน้าตั้งค่า</div><div class="sp"></div><button class="btn sec sm" id="svLine">รายการส่ง LINE</button><button class="lnk noprint" id="expRemind"><svg class="i i-sm"><use href="#i-download"/></svg> ส่งออก</button></div><div class="bd flush"><div class="tw"><table id="svRemind"></table></div></div></div></div>
       </section>
 
-      <!-- ============ 12b. ดูแลหลังส่งมอบ (ฝ่ายบริการ — บรีฟรอบ 1) ============ -->
+      <!-- ============ 12b. ดูแลหลังส่งมอบ (ฝ่ายบริการ — ยกเครื่อง v1.35) ============
+           รับช่วงหลังได้ป้ายทะเบียน (คำตอบเจ้าของข้อ 3) — หน้าเป็นกระดานงานของฝ่ายบริการ:
+           งานที่ถึงกำหนดขึ้นก่อน รายละเอียดรายลูกค้าเปิดเป็น drawer ไม่กางทุกคนพร้อมกัน -->
       <section class="screen" id="s-aftercare">
         <div class="kpis k3" id="acKpi"></div>
-        <div id="carePer"></div>
-        <div class="card"><div class="hd"><h3>ลูกค้าที่ส่งมอบแล้ว</h3><div class="d">ติ๊ก checklist ส่งมอบ และตามรอบ 7/30/60/90/120 วัน — เซลล์เห็นความคืบหน้าในดีลของตัวเอง</div><div class="sp"></div><button class="lnk noprint" id="expCare"><svg class="i i-sm"><use href="#i-download"/></svg> ส่งออก</button></div>
-          <div class="bd" id="acList"></div></div>
+        <div class="card"><div class="hd"><h3>งานวันนี้</h3><div class="d">รอบติดตามที่ถึงกำหนดแล้ว — โทรเสร็จกดบันทึกได้จากแถวเลย</div></div>
+          <div class="bd flush"><div class="tw"><table id="acToday"></table></div></div></div>
+        <div class="card"><div class="hd"><h3>ลูกค้าในความดูแล</h3><div class="d">แตะรายชื่อเพื่อดู checklist ส่งมอบ + ประวัติติดตามครบทุกรอบ</div><div class="sp"></div><button class="lnk noprint" id="expCare"><svg class="i i-sm"><use href="#i-download"/></svg> ส่งออก</button></div>
+          <div class="bd flush"><div class="tw"><table id="acCust"></table></div></div></div>
+      </section>
+
+      <!-- ============ 12c. ทะเบียนรถ (ฝ่ายทะเบียน — บรีฟรอบ 2 ข้อ 18 · v1.35) ============
+           งานป้ายถูกถอดออกจากแถบดีลของเซลล์ (v1.34) มารวมที่หน้าเดียว — ฝ่ายทะเบียนเห็นทุกสาขา
+           เพราะงานขนส่งรวมศูนย์ (คำตอบเจ้าของข้อ 6) · ด่านเขียนอยู่ใน regAdvance ไม่ใช่ที่ปุ่ม -->
+      <section class="screen" id="s-plate">
+        <div class="kpis k3" id="plKpi"></div>
+        <div class="card"><div class="hd"><h3>รอป้ายจริงจากขนส่ง</h3><div class="d">กรอกเลขทะเบียนแล้วปิดงาน — ระบบส่งต่อลูกค้าให้ฝ่ายบริการทันทีที่ได้ป้าย</div><div class="sp"></div><button class="lnk noprint" id="expPlate"><svg class="i i-sm"><use href="#i-download"/></svg> ส่งออก</button></div>
+          <div class="bd">
+            <input class="inp mono" id="plQ" placeholder="ค้นหา เลขถัง / เลขเครื่อง / ชื่อลูกค้า / เบอร์" autocomplete="off">
+            <div class="tw" style="margin-top:var(--s2)"><table id="plTable"></table></div>
+          </div></div>
+        <div class="card"><div class="hd"><h3>ได้ป้ายแล้วล่าสุด</h3><div class="d">ปิดงานผิดคันกดถอยกลับได้จากแถว</div></div>
+          <div class="bd flush"><div class="tw"><table id="plDone"></table></div></div></div>
       </section>
 
 
@@ -2532,9 +2549,10 @@ const LEADS = [
 ];
 
 let CUSTOMERS=[], SALES=[], TASKS=[], REGS=[], FINCASES=[], AR=[], SERVICE=[], REMIND=[], TRANSFERS=[], QUOTES=[];
-/* งานดูแลหลังส่งมอบของฝ่ายบริการ (E2-E4) — เกิดอัตโนมัติตอนส่งมอบรถ หนึ่งดีลหนึ่งแถว
+/* งานดูแลหลังการขายของฝ่ายบริการ (E2-E4) — v1.35: เกิดอัตโนมัติตอน "ได้ทะเบียนแล้ว"
+   (คำตอบเจ้าของข้อ 3: ฝ่ายบริการรับช่วงหลังได้ป้าย — ช่วงส่งมอบ→ป้ายเป็นของฝ่ายทะเบียน)
    check = checklist ส่งมอบ (จาก CFG.careList ณ วันสร้าง — แช่ไว้ ไม่เปลี่ยนตามตั้งค่าย้อนหลัง)
-   tasks = รอบติดตาม 7/30/60/90/120 วันนับจากวันส่งมอบ (CFG.careDays) — ฝ่ายบริการแก้กำหนด/เพิ่มเองได้ */
+   tasks = รอบติดตาม 7/30/60/90/120 วันนับจากวันได้ป้าย (CFG.careDays) — ฝ่ายบริการแก้กำหนด/เพิ่มเองได้ */
 let CARE=[];
 /* v1.28 (คำสั่งเจ้าของ): งานจริงคือส่งมอบรถก่อน ลูกค้าใช้ป้ายชั่วคราวไประหว่างรอทะเบียนจริง
    "ป้ายขาว" เดิมจึงกลายเป็น "ได้ทะเบียนแล้ว" ที่ท้ายสุด และส่งมอบขยับขึ้นมากลางเส้นทาง */
@@ -2594,12 +2612,6 @@ function seedDemo(){
       demo:true};
     if(dlv){ rgSeed.deliveredAt=addDays(soldAt, CFG.regDays); s.deliveredAt=rgSeed.deliveredAt; }
     REGS.push(rgSeed);
-    /* ดีลที่ส่งมอบแล้วมีงานฝ่ายบริการ — รายเก่าติ๊กไปบ้างแล้ว ให้เห็นทั้งงานค้างและงานที่เดินอยู่ */
-    if(dlv){
-      const cr=careCreate(s);
-      if(cr && ago>40){ cr.check.forEach(x=>{ x.done=true; x.at=cr.createdAt; x.by='คุณฝน'; });
-        const t0=cr.tasks[0]; if(t0){ t0.done=true; t0.doneAt=addDays(cr.createdAt,7); t0.note='ลูกค้าใช้งานปกติ'; } }
-    }
     /* ไฟแนนซ์ + เงินค้างรับ */
     if(pay==='finance'){
       const st = FIN_STAGES[Math.min(FIN_STAGES.length-1, Math.floor(ago/7))];
@@ -2627,6 +2639,13 @@ function seedDemo(){
         pays:[{at:addDays(soldAt,3), amt:net-3000, way:'เงินสด'}]});
     }
     if(regDone(rgSeed)) cust.stage='รับรถสำเร็จ';   /* ส่งมอบจริงแล้วเท่านั้นถึงนับจบ */
+    /* งานฝ่ายบริการเกิดเฉพาะดีลที่ได้ป้ายแล้ว (v1.35) — ต้องมาหลังท่อนไฟแนนซ์
+       เพราะเคสปฏิเสธถูกดันทะเบียนถอยกลับ สร้างก่อนจะได้งานผีของลูกค้าที่ไม่ผ่าน */
+    if(regPlated(rgSeed)){
+      const cr=careCreate(s);
+      if(cr && ago>40){ cr.check.forEach(x=>{ x.done=true; x.at=cr.createdAt; x.by='คุณฝน'; });
+        const t0=cr.tasks[0]; if(t0){ t0.done=true; t0.doneAt=addDays(cr.createdAt,7); t0.note='ลูกค้าใช้งานปกติ'; } }
+    }
     /* งานติดตาม */
     String(CFG.cadence).split(',').map(x=>parseInt(x)).forEach(d=>{
       TASKS.push({id:nid('TK'), custId:cust.id, saleId:s.id, branch:s.branch, kind:d+' วัน',
@@ -2729,7 +2748,10 @@ const ROLES = {
   tech   :{name:'ช่าง',        money:0, allBranch:0, approve:0, admin:0},
   /* บทบาทใหม่ (E2): ฝ่ายบริการ — ดูแลลูกค้าหลังส่งมอบ ติดต่อเป็นระยะ เช็คไมล์ เช็คเครื่อง
      เห็นทุกสาขาเพราะโทรตามลูกค้าไม่เกี่ยงว่าซื้อสาขาไหน · ไม่เห็นเงิน */
-  care   :{name:'ฝ่ายบริการ',  money:0, allBranch:1, approve:0, admin:0}
+  care   :{name:'ฝ่ายบริการ',  money:0, allBranch:1, approve:0, admin:0},
+  /* v1.35 (บรีฟข้อ 17 + คำตอบข้อ 6): ฝ่ายทะเบียน — รับช่วงหลังส่งมอบจนได้ป้ายจริง
+     เห็นทุกสาขาเพราะงานยื่นขนส่งรวมศูนย์ · ไม่เห็นตัวเงิน */
+  reg    :{name:'ฝ่ายทะเบียน', money:0, allBranch:1, approve:0, admin:0}
 };
 let STAFF = [
   {id:'ST1',name:'สมชาย ปัญญา',  nick:'คุณสมชาย', role:'admin',   phone:'081-000-1001', branch:'FMG01', salary:38000, bank:'014-3-88210-1', ssn:'1234567890123'},
@@ -2741,7 +2763,8 @@ let STAFF = [
   {id:'ST7',name:'นุช บัญชี',    nick:'บัญชีนุช',  role:'acct',    phone:'081-000-1007', branch:'FMG01', salary:22000, bank:'014-3-22075-4', ssn:'1234567890129'},
   {id:'ST8',name:'ณัฐชภา กิจดี',  nick:'HR กิ๊ฟ',   role:'hr',      phone:'081-000-1008', branch:'FMG01', salary:20000, bank:'014-3-11086-0', ssn:'1234567890130'},
   {id:'ST9',name:'เอก ช่างดี',    nick:'ช่างเอก',   role:'tech',    phone:'081-000-1009', branch:'FMG01', salary:16000, bank:'014-3-99097-6', ssn:'1234567890131'},
-  {id:'ST10',name:'ฝน ใส่ใจ',     nick:'คุณฝน',     role:'care',    phone:'081-000-1010', branch:'FMG01', salary:17000, bank:'014-3-99098-4', ssn:'1234567890132'}
+  {id:'ST10',name:'ฝน ใส่ใจ',     nick:'คุณฝน',     role:'care',    phone:'081-000-1010', branch:'FMG01', salary:17000, bank:'014-3-99098-4', ssn:'1234567890132'},
+  {id:'ST11',name:'ปอ ทะเบียนดี',  nick:'คุณปอ',     role:'reg',     phone:'081-000-1011', branch:'FMG01', salary:16000, bank:'014-3-99099-2', ssn:'1234567890133'}
 ];
 /* ---------- ประวัติลงเวลา 45 วันย้อนหลัง ----------
    สร้างแบบคงที่ ไม่สุ่ม — ตัวเลขเงินเดือนจึงตรวจซ้ำได้ทุกครั้ง
@@ -2837,7 +2860,7 @@ const MENU = [
   {g:'ภาพรวม'},
   {k:'dash',     t:'Dashboard',        s:'ภาพรวมทั้งกิจการ',            ic:'chart', r:['admin','manager','acct','sales','stock','hr','tech']},
   /* บรีฟรอบ 1 (H5): ปฏิทินบริษัทเปิดทุกบทบาท — วันหยุด/วันลา/งานสาขาคือข้อมูลที่ทุกคนใช้วางแผน */
-  {k:'cal',      t:'ปฏิทิน',           s:'ปฏิทินบริษัท และปฏิทินผู้บริหาร',   ic:'calendar', r:['admin','manager','acct','sales','hr','stock','tech','care']},
+  {k:'cal',      t:'ปฏิทิน',           s:'ปฏิทินบริษัท และปฏิทินผู้บริหาร',   ic:'calendar', r:['admin','manager','acct','sales','hr','stock','tech','care','reg']},
   {k:'report',   t:'รายงาน',           s:'สรุปแยกประเภท พิมพ์และส่งออกได้', ic:'files', r:['admin','manager','acct','stock','hr']},
   {g:'มอเตอร์ไซค์'},
   {k:'recv',     t:'รับรถเข้าสต๊อก',    s:'บันทึกรถทีละคัน',              ic:'inbox', r:['admin','manager','stock']},
@@ -2846,26 +2869,28 @@ const MENU = [
   {k:'transfer', t:'โอนย้ายสาขา',      s:'ย้ายรถระหว่างสาขา',            ic:'repeat', r:['admin','manager','stock']},
   {g:'ลูกค้าและการเงิน'},
   {k:'quote',    t:'ใบเสนอราคา',       s:'เทียบรถและไฟแนนซ์ให้ลูกค้า',    ic:'file', r:['admin','manager','sales']},
-  {k:'deal',     t:'ลูกค้าและดีล',      s:'ขาย ไฟแนนซ์ ทะเบียน จบในหน้าเดียว', ic:'users', r:['admin','manager','acct','sales']},
+  {k:'deal',     t:'ลูกค้าและดีล',      s:'ขาย ไฟแนนซ์ ส่งมอบ จบในหน้าเดียว', ic:'users', r:['admin','manager','acct','sales']},
+  /* v1.35 (บรีฟข้อ 17): งานป้ายของฝ่ายทะเบียน — รถส่งมอบแล้วรอทะเบียนไหลมารวมที่นี่ */
+  {k:'plate',    t:'ทะเบียนรถ',        s:'รถส่งมอบแล้วรอป้ายจริงจากขนส่ง',  ic:'clipboard', r:['admin','manager','reg']},
   {k:'ar',       t:'เงินค้างรับ',       s:'ยอดที่ยังไม่ได้รับ',           ic:'cash', r:['admin','manager','acct']},
   {g:'บริการและอะไหล่'},
   {k:'service',  t:'ศูนย์ซ่อม',        s:'ใบงานซ่อมและเช็กระยะ',         ic:'wrench', r:['admin','manager','tech','stock','care']},
   /* ฝ่ายบริการ (E2-E4): ดีลที่ส่งมอบแล้วไหลเข้าที่นี่ — checklist ส่งมอบ + ติดตาม 7-120 วัน
      เซลล์ไม่เห็นหน้านี้ แต่เห็นความคืบหน้าแบบอ่านอย่างเดียวในดีลของตัวเอง */
-  {k:'aftercare',t:'ดูแลหลังส่งมอบ',   s:'checklist ส่งมอบ และติดตามลูกค้าเป็นระยะ', ic:'repeat', r:['admin','manager','care']},
+  {k:'aftercare',t:'ดูแลหลังการขาย',   s:'ติดตามลูกค้าเป็นรอบ นับจากวันได้ป้ายทะเบียน', ic:'repeat', r:['admin','manager','care']},
   {k:'parts',    t:'อะไหล่และของแถม',  s:'ของคงเหลือ เบิก/ขาย และของแถม', ic:'cog', r:['admin','manager','stock','tech','acct','sales']},
   {g:'บัญชีและพนักงาน'},
   {k:'expense',  t:'ค่าใช้จ่าย',        s:'บันทึกรายจ่ายพร้อมใบเสร็จ',    ic:'files', r:['admin','manager','acct']},
   {k:'attend',   t:'ภาพรวมการเข้างาน',  s:'ใครมาแล้ว ใครสาย ใครยังไม่มา',   ic:'users', r:['admin','manager','hr']},
-  {k:'hr',       t:'ลงเวลาและลา',      s:'เวลาเข้าออกและใบลา',           ic:'clock', r:['admin','manager','hr','sales','stock','tech','acct']},
+  {k:'hr',       t:'ลงเวลาและลา',      s:'เวลาเข้าออกและใบลา',           ic:'clock', r:['admin','manager','hr','sales','stock','tech','acct','care','reg']},
   {k:'payroll',  t:'เงินเดือนและ OT',   s:'เงินเดือน คอมมิชชั่น สลิป',     ic:'card', r:['admin','manager','hr','acct']},
   {k:'users',    t:'บัญชีผู้ใช้',       s:'ผู้ใช้ บทบาท และสิทธิ์',        ic:'key', r:['admin']},
   {g:'ข้อมูลและตั้งค่า'},
   {k:'imp',      t:'นำเข้าข้อมูล',      s:'อ่านไฟล์จากระบบยามาฮ่า',       ic:'folder', r:['admin','manager','stock']},
   {k:'settings', t:'ตั้งค่าระบบ',       s:'เกณฑ์ทั้งหมดที่ระบบใช้',        ic:'sliders',  r:['admin','manager']},
   /* บรีฟรอบ 1 (I2-I6): ปรับแต่งหน้าตาต่อคน — ทุกบทบาทเข้าได้ เก็บเฉพาะเครื่อง/ผู้ใช้ ไม่กระทบคนอื่น */
-  {k:'custom',   t:'ปรับแต่ง',          s:'ธีม ขนาดอักษร ฟอนต์ — เฉพาะคุณ', ic:'sliders',  r:['admin','manager','sales','stock','acct','hr','tech','care']},
-  {k:'flow',     t:'ผังกระบวนการ',      s:'ใครทำอะไรตอนไหน',             ic:'route',  r:['admin','manager','sales','stock','acct','hr','tech']}
+  {k:'custom',   t:'ปรับแต่ง',          s:'ธีม ขนาดอักษร ฟอนต์ — เฉพาะคุณ', ic:'sliders',  r:['admin','manager','sales','stock','acct','hr','tech','care','reg']},
+  {k:'flow',     t:'ผังกระบวนการ',      s:'ใครทำอะไรตอนไหน',             ic:'route',  r:['admin','manager','sales','stock','acct','hr','tech','care','reg']}
 ];
 const menuOf = k => MENU.find(m=>m.k===k);
 /* เลขกลุ่มของหน้า 1-6 — นับจากลำดับ MENU ชุดเดียวกับที่ buildNav ใช้ จึงไม่มีทางหลุดจากกัน
@@ -2893,6 +2918,8 @@ const PERM_ACTS=[
   ['act:finStage','เดินขั้นเคสไฟแนนซ์ (ส่งเรื่อง · บันทึกผล · ยื่นใหม่)', ['admin','manager','sales']],
   /* QA รอบส่งมอบ: สองด่านนี้เดิมเป็น role ตายตัว — หน้าตั้งค่าสิทธิ์ทำให้เข้าใจว่าคุมได้แต่จริง ๆ ไม่คุม */
   ['act:hrApprove','อนุมัติใบลา/คำขอออกนอกสถานที่ · แก้เวลา/ตรวจการลงเวลา', ['admin','manager','hr']],
+  /* v1.35: งานป้ายเป็นของฝ่ายทะเบียน — บันทึก/ปิด/ถอยขั้นทะเบียนจากหน้าทะเบียนรถ */
+  ['act:plate','บันทึกเลขทะเบียน · เดินขั้นงานทะเบียน', ['admin','manager','reg']],
   ['act:execCal','ปฏิทินผู้บริหาร · เพิ่ม/ลบวันหยุดบริษัท', ['admin','manager']]
 ];
 const PERM_DATA=[
@@ -3071,9 +3098,9 @@ function expTransfers(){
       return [t.at, u?u.engine:'', u?u.model:'', bName(t.from), bName(t.to), t.status, t.note||'']; }));
 }
 function expCareList(){
-  const rows=CARE.filter(r=>inScope(r.branch)&&inPer('care',r.createdAt));
-  csv('ดูแลหลังส่งมอบ_'+perFile('care'),
-    ['วันส่งมอบ','ลูกค้า','เบอร์โทร','รุ่น','สาขา','checklist ครบ','งานติดตามเสร็จ','รอบถัดไป','เลยกำหนด'],
+  const rows=CARE.filter(r=>inScope(r.branch));   /* v1.35: ไฟล์ = จอ — กระดานงานสดไม่กรองช่วงเวลา */
+  csv('ดูแลหลังการขาย_'+TODAY,
+    ['วันได้ป้าย','ลูกค้า','เบอร์โทร','รุ่น','สาขา','checklist ครบ','งานติดตามเสร็จ','รอบถัดไป','เลยกำหนด'],
     rows.map(r=>{ const c=CUSTOMERS.find(x=>x.id===r.custId), s=SALES.find(x=>x.id===r.saleId);
       const u=s&&UNITS.find(x=>x.id===s.unitId), nx=r.tasks.find(t=>!t.done);
       return [r.createdAt, c?c.name:'—', c?c.phone:'', u?u.model:'—', bName(r.branch),
@@ -3189,12 +3216,12 @@ function ageTag(d){ const a=CFG.aging; if(d<=a*0.34) return pill(d+' วัน',
 /* ============================= LOGIN ============================= */
 /* สีวงกลมประจำบทบาท — ใช้ชุดสีกลุ่มเมนูเดิม ไม่เพิ่มสีใหม่ · สีเป็นตัวช่วยเท่านั้น
    ชื่อบทบาทเขียนเป็นข้อความอยู่ใต้ชื่อคนเสมอ (กฎข้อ 3) */
-const LG_GRP={admin:1,manager:1,sales:2,stock:3,acct:4,hr:5,tech:6,care:6};
+const LG_GRP={admin:1,manager:1,sales:2,stock:3,acct:4,hr:5,tech:6,care:6,reg:4};
 /* อักษรย่อในวงกลม — ไทยมีสระนำหน้า (เ แ โ ใ ไ) ตัวเดียวอ่านไม่ออก ต้องเอาพยัญชนะมาด้วย */
 function lgInit(n){ return /^[\u0E40-\u0E44]/.test(n) ? n.slice(0,2) : n.slice(0,1); }
 function renderLogin(){
   const co=$('#lgCo'); if(co) co.textContent=CFG.company;
-  $('#lgUsers').innerHTML = STAFF.filter(s=>['admin','manager','sales','stock','acct','hr','tech','care'].indexOf(s.role)>=0)
+  $('#lgUsers').innerHTML = STAFF.filter(s=>['admin','manager','sales','stock','acct','hr','tech','care','reg'].indexOf(s.role)>=0)
     .map((s,i)=>'<button class="lg-u'+(i===0?' on':'')+'" data-id="'+s.id+'">'
       +'<span class="av" style="background:var(--grp'+(LG_GRP[s.role]||1)+')">'+esc(lgInit(s.name))+'</span>'
       +'<span class="tx"><b>'+esc(s.name)+'</b><span>'+esc(ROLES[s.role].name)+' · '+esc(bName(s.branch))+'</span></span>'
@@ -3242,7 +3269,8 @@ const BTABS = {
   stock:  {tabs:['dash','stock','parts'],      fab:'recv'},
   tech:   {tabs:['dash','service','parts'],    fab:'service'},
   hr:     {tabs:['dash','attend','hr','payroll'], fab:null},
-  care:   {tabs:['dash','aftercare','service'],   fab:null}
+  care:   {tabs:['dash','aftercare','service'],   fab:null},
+  reg:    {tabs:['dash','plate','cal'],           fab:null}
 };
 function buildTabs(){
   const cfg = BTABS[ME.role] || {tabs:['dash'], fab:null};
@@ -3380,7 +3408,7 @@ function go(k, sub){
 function refreshAll(){ render(); badges(); promoBar(); }
 function render(){
   const f={dash:rDash,cal:rCal,report:rReport,recv:rRecv,stock:rStock,sell:rSell,transfer:rTransfer,quote:rQuote,
-    deal:rDeal,ar:rAr,service:rService,aftercare:rCare,parts:rParts,
+    deal:rDeal,ar:rAr,service:rService,aftercare:rCare,plate:rPlate,parts:rParts,
     expense:rExpense,attend:rAttend,hr:rHr,payroll:rPayroll,users:rUsers,imp:rImp,settings:rSettings,
     custom:rCustom,flow:rFlow}[CUR];
   if(f) f();
@@ -3393,7 +3421,7 @@ function render(){
    ช่วงเวลา: perBar ผูกกับ host ของตัวเอง (#navPerBox) ใช้ perSt(key) ร่วมกับแถบในหน้า
    สาขา: proxy ล้วน — อ่าน/เขียน select ของหน้าปัจจุบันแล้วยิง onchange เดิม ไม่มี state กลางใหม่
    จึงไม่แตะ closeFilters()/fsheet และพฤติกรรมรายหน้าเหมือนผู้ใช้กดที่หน้าเป๊ะ */
-const NAV_PER={dash:'dash',report:'report',transfer:'transfer',quote:'quote',aftercare:'care',expense:'expense'};
+const NAV_PER={dash:'dash',report:'report',transfer:'transfer',quote:'quote',expense:'expense'};
 const NAV_BR ={dash:'dBranch',stock:'stBranch',deal:'dlBranch',attend:'abBranch',report:'rpBranch'};
 function perLbl(key){
   const st=perSt(key), p=perOf(key);
@@ -6566,7 +6594,10 @@ function finResubmit(id, after){
   return true;
 }
 /* ---------- ตัวทำงานของงานทะเบียน ---------- */
+/* v1.35: งานป้ายเป็นของฝ่ายทะเบียน — ด่านอยู่ในฟังก์ชันเขียนทุกตัว (§9b) ซ่อนเมนูไม่ใช่การกัน */
+const canPlate = () => permW('act:plate');
 function regSavePlate(id, plate){
+  if(!canPlate()){ toast('เฉพาะฝ่ายทะเบียนและผู้บริหาร','',1); return false; }
   const r=REGS.find(x=>x.id===id); if(!r) return false;
   const pv=String(plate==null?'':plate).trim();
   if(!pv){ toast('กรอกเลขทะเบียนก่อน','',1); return false; }
@@ -6579,10 +6610,10 @@ function regMarkDelivered(r){
   const s=SALES.find(x=>x.id===r.saleId); if(s) s.deliveredAt=TODAY;
   const c=s&&CUSTOMERS.find(x=>x.id===s.custId);
   if(c) c.stage='รับรถสำเร็จ';   /* จุดเดียวที่ลูกค้าถึง "รับรถสำเร็จ" — ตอนส่งมอบจริง */
-  /* ส่งต่อฝ่ายบริการทันทีที่ส่งมอบ (บรีฟ: จบขั้นตอนของเซลล์แล้วส่งต่อฝ่ายบริการ) */
-  if(s){ careCreate(s); toast('ส่งต่อฝ่ายบริการแล้ว','สร้าง checklist ส่งมอบ + รอบติดตาม '+String(CFG.careDays)); }
+  /* v1.35: จุดส่งต่อฝ่ายบริการย้ายไปตอน "ได้ทะเบียนแล้ว" (คำตอบเจ้าของข้อ 3 — นับจากวันได้ป้าย) */
 }
 function regAdvance(id, plate){
+  if(!canPlate()){ toast('เฉพาะฝ่ายทะเบียนและผู้บริหาร','',1); return false; }
   const r=REGS.find(x=>x.id===id); if(!r) return false;
   const i=REG_STAGES.indexOf(r.stage);
   if(i<0 || i>=REG_STAGES.length-1) return false;
@@ -6595,7 +6626,12 @@ function regAdvance(id, plate){
   }
   r.stage=nxt; r.log.push({to:nxt, at:TODAY}); touchSale(r.saleId);
   if(nxt==='ส่งมอบแล้ว') regMarkDelivered(r);
-  toast('อัปเดตขั้นตอนแล้ว', nxt); refreshAll(); return true;
+  toast('อัปเดตขั้นตอนแล้ว', nxt);
+  /* ได้ป้ายจริง = จุดส่งต่อฝ่ายบริการจุดเดียวของระบบ (§9g) — ปิดงานจากหน้าไหนก็ผ่านตรงนี้
+     รอบติดตามนับจากวันได้ป้าย (คำตอบเจ้าของข้อ 3) — careCreate อ่านวันจาก log ของงานนี้เอง */
+  if(nxt==='ได้ทะเบียนแล้ว'){ const s=SALES.find(x=>x.id===r.saleId);
+    if(s && careCreate(s)) toast('ส่งต่อฝ่ายบริการแล้ว','รอบติดตามนับจากวันได้ป้าย ('+String(CFG.careDays)+' วัน)'); }
+  refreshAll(); return true;
 }
 /* ---------- v1.34 (บรีฟข้อ 14+15): ปุ่มส่งมอบปุ่มเดียว + กล่องข้อมูลส่งมอบ ----------
    ขั้นทะเบียนภายใน (ส่งไฟแนนซ์/อนุมัติ) เป็นกลไก ไม่ใช่งานของคน — ปุ่มส่งมอบกระโดดถึง
@@ -6640,10 +6676,23 @@ function regDeliverModal(id){
   };
 }
 function regBack(id){
+  if(!canPlate()){ toast('เฉพาะฝ่ายทะเบียนและผู้บริหาร','',1); return false; }
   const r=REGS.find(x=>x.id===id); if(!r) return false;
   const i=REG_STAGES.indexOf(r.stage); if(i<=0) return false;
   r.stage=REG_STAGES[i-1]; r.log.push({to:r.stage, at:TODAY});
   toast('ถอยกลับแล้ว', r.stage); refreshAll(); return true;
+}
+/* ปิดงานจากหน้าทะเบียน (v1.35) — เดินผ่าน regAdvance ทีละขั้นเสมอ:
+   ด่านสิทธิ์ ด่านเลขทะเบียน และจุดส่งต่อฝ่ายบริการอยู่ใน regAdvance ที่เดียว (§9g) */
+function regPlateClose(id, plate){
+  const r=REGS.find(x=>x.id===id); if(!r) return false;
+  if(!regDone(r)){ toast('รถยังไม่ส่งมอบ — ยังไม่เข้าคิวป้าย','',1); return false; }
+  const pv=String(plate==null?'':plate).trim();
+  if(!pv){ toast('กรอกเลขทะเบียนก่อนปิดงาน','',1); return false; }
+  let n=0;
+  while(!regPlated(r) && n++<3){ if(!regAdvance(id, pv)) return false; }
+  if(LIVE) dbPatch('registration', r.id, { stage:r.stage, plate:r.plate });
+  return regPlated(r);
 }
 /* ยกเลิกการขาย — ย้อนทุกอย่างที่ saveSale สร้าง ยกเว้นเลขเอกสาร (ต้อง audit ได้)
    มีเงินเข้าแล้วยกเลิกไม่ได้ ต้องทำเรื่องคืนเงินก่อน */
@@ -6894,14 +6943,18 @@ function svSave(){
   $('#svSymptom').value=''; $('#svKm').value=''; refreshAll();
 }
 
-/* ============================= 12b. ดูแลหลังส่งมอบ (ฝ่ายบริการ — E2-E4) =============================
-   งานเกิดอัตโนมัติตอนส่งมอบรถ (regAdvance) — checklist ส่งมอบ + รอบติดตามนับจากวันส่งมอบจริง
-   ด่านเขียนอยู่ใน careTick/careTask (กฎ §9b) — เซลล์เห็นความคืบหน้าแบบอ่านอย่างเดียวในดีล */
+/* ============================= 12b. ดูแลหลังการขาย (ฝ่ายบริการ — E2-E4) =============================
+   v1.35: งานเกิดอัตโนมัติตอน "ได้ทะเบียนแล้ว" (regAdvance ขั้นสุดท้าย) — รอบติดตามนับจากวันได้ป้าย
+   (คำตอบเจ้าของข้อ 3) · ด่านเขียนอยู่ใน careTick/careTask (กฎ §9b) — เซลล์เห็นแบบอ่านอย่างเดียวในดีล */
 const canCare = () => permW('act:care');
 const careOf  = saleId => CARE.find(x=>x.saleId===saleId);
 function careCreate(s){
   if(!s || careOf(s.id)) return null;                     /* กันสร้างซ้ำ */
-  const at=s.deliveredAt||TODAY;
+  /* v1.35: ยังไม่ได้ป้าย = ยังไม่มีงานฝ่ายบริการ — วันตั้งต้นอ่านจาก log จริง ไม่คำนวณใหม่ (§9i) */
+  const rg=REGS.find(x=>x.saleId===s.id);
+  if(!regPlated(rg)) return null;
+  const lg=(rg.log||[]).filter(l=>l.to==='ได้ทะเบียนแล้ว').pop();
+  const at=(lg&&lg.at)||TODAY;
   const rec={ id:nid('CA'), saleId:s.id, custId:s.custId, branch:s.branch, createdAt:at, note:'',
     /* แช่รายการ ณ วันสร้าง — แก้ตั้งค่าย้อนหลังต้องไม่พลิกงานที่ติ๊กไปแล้ว (กฎ §9i) */
     check: String(CFG.careList||'').split('\n').map(x=>x.trim()).filter(Boolean)
@@ -6933,50 +6986,162 @@ function careBrief(saleId){
   return 'checklist '+ck+'/'+r.check.length+' · ติดตามแล้ว '+tk+'/'+r.tasks.length
     +(nxt? ' · รอบต่อไป '+nxt.kind+' ('+thDate(nxt.due)+')' : ' · ครบทุกรอบแล้ว');
 }
+/* v1.35 ยกเครื่อง: หน้าเป็นกระดานงาน — งานที่ถึงกำหนดเป็นตาราง ปิดได้จากแถว
+   รายละเอียดรายลูกค้า (checklist + ทุกรอบ) ย้ายไปอยู่ใน drawer เปิดทีละคน */
+function careCtModal(careId, taskId){
+  openModal('บันทึกการติดต่อ',
+    '<div class="f"><div><label class="fl">คุยแล้วเป็นยังไง (ไม่บังคับ)</label>'
+    +'<input class="inp" id="ctNote" placeholder="เช่น ลูกค้าโอเค นัดเช็กระยะเสาร์นี้"></div></div>'
+    +'<div class="savebar"><button class="btn" id="ctGo">บันทึก</button></div>');
+  $('#ctGo').onclick=()=>{ const n=$('#ctNote').value; closeModal(); careTask(careId, taskId, n); };
+}
 function rCare(){
-  perBar('carePer','care', rCare);
+  /* v1.35: หน้าเป็นกระดานงานสด — ไม่กรองช่วงเวลา งานค้างต้องไม่หายเพราะลูกค้าได้ป้ายมานาน */
   $('#expCare').onclick=expCareList;
-  const rows=CARE.filter(r=>inScope(r.branch)&&inPer('care',r.createdAt))
+  const rows=CARE.filter(r=>inScope(r.branch))
     .map(r=>({r, c:CUSTOMERS.find(x=>x.id===r.custId), s:SALES.find(x=>x.id===r.saleId)}))
     .filter(x=>x.c && x.s && !x.s.void)
     .sort((a,b)=>{ const na=(a.r.tasks.find(t=>!t.done)||{}).due||'9999',
                    nb=(b.r.tasks.find(t=>!t.done)||{}).due||'9999';
       return na.localeCompare(nb); });
-  const dueNow=rows.filter(x=>x.r.tasks.some(t=>!t.done && t.due<=TODAY));
-  const ckOpen=rows.filter(x=>x.r.check.some(c=>!c.done));
+  /* งานวันนี้ = รอบติดตามที่ถึง/เลยกำหนดและยังไม่ปิด — หนึ่งรอบหนึ่งแถว โทรเสร็จปิดจากแถวเลย */
+  const todo=[]; rows.forEach(x=> x.r.tasks.forEach(t=>{ if(!t.done && t.due<=TODAY) todo.push({r:x.r,c:x.c,s:x.s,t}); }));
+  todo.sort((a,b)=>String(a.t.due).localeCompare(String(b.t.due)));
+  const lateN=todo.filter(x=>x.t.due<TODAY).length;
   $('#acKpi').innerHTML=[
-    ['ถึงรอบติดตามแล้ว', dueNow.length+' <small>ราย</small>', 'ต้องโทรหาลูกค้า'],
-    ['checklist ยังไม่ครบ', ckOpen.length+' <small>ราย</small>', 'งานส่งมอบค้าง'],
-    ['ดูแลอยู่ทั้งหมด', rows.length+' <small>ราย</small>', 'ลูกค้าส่งมอบแล้ว']
+    ['ต้องโทรวันนี้', todo.length+' <small>งาน</small>', 'ถึงรอบติดตามแล้ว'],
+    ['เลยกำหนด', lateN+' <small>งาน</small>', 'ควรโทรก่อนใคร'],
+    ['ดูแลอยู่ทั้งหมด', rows.length+' <small>ราย</small>', 'ลูกค้าได้ป้ายแล้ว']
   ].map(k=>'<div class="kpi"><div class="l">'+k[0]+'</div><div class="v">'+k[1]+'</div><div class="s">'+k[2]+'</div></div>').join('');
   const edit=canCare();
-  $('#acList').innerHTML = rows.length? rows.map(({r,c,s})=>{
-    const u=UNITS.find(x=>x.id===s.unitId);
-    const ck=r.check.map((x,i)=>'<div class="frow">'
-      +(edit? '<button class="lnk" data-ck="'+r.id+'|'+i+'">'+(x.done?'☑':'☐')+'</button>'
-            : '<span>'+(x.done?'☑':'☐')+'</span>')
-      +'<span'+(x.done?' style="color:var(--muted)"':'')+'>'+esc(x.t)
-      +(x.done?' <span class="tsub">'+esc(x.by)+' · '+thDate(x.at)+'</span>':'')+'</span></div>').join('');
-    const tk=r.tasks.map(t=>{ const dd=days(t.due,TODAY);
-      return '<div class="frow">'
-        +(t.done? pill('โทรแล้ว '+thDate(t.doneAt),'good')
-          : (dd>=0? pill('ถึงรอบ'+(dd>0?' (เลย '+dd+' วัน)':''),'warn') : pill('อีก '+(-dd)+' วัน','mut')))
-        +'<span>'+esc(t.kind)+' · '+thDate(t.due)+(t.note?' · '+esc(t.note):'')+'</span>'
-        +(!t.done && edit? '<button class="lnk fx" data-ct="'+r.id+'|'+t.id+'">บันทึกว่าติดต่อแล้ว</button>':'')
-        +'</div>'; }).join('');
-    /* บล็อกละคน คั่นด้วยเส้น ไม่มีกล่องหุ้ม (กฎ §9c) — .abr เป็นแถว flex ใช้ห่อบล็อกไม่ได้ */
-    return '<div class="acblk"><b>'+esc(c.name)+'</b> <span class="tsub">'+esc(c.phone||'—')+' · '
-      +esc(u?u.model:'—')+' · ส่งมอบ '+thDate(r.createdAt)+' · '+esc(bName(r.branch))+'</span>'
-      +'<h4 class="sec">Checklist ส่งมอบ</h4>'+ck
-      +'<h4 class="sec">รอบติดตาม</h4>'+tk+'</div>';
-  }).join('') : '<div class="empty"><b>ยังไม่มีลูกค้าหลังส่งมอบ</b>ดีลที่กดส่งมอบจะไหลเข้ามาที่นี่เอง</div>';
-  $$('#acList [data-ck]').forEach(b=> b.onclick=()=>{ const p=b.dataset.ck.split('|'); careTick(p[0], +p[1]); });
-  $$('#acList [data-ct]').forEach(b=> b.onclick=()=>{ const p=b.dataset.ct.split('|');
-    openModal('บันทึกการติดต่อ',
-      '<div class="f"><div><label class="fl">คุยแล้วเป็นยังไง (ไม่บังคับ)</label>'
-      +'<input class="inp" id="ctNote" placeholder="เช่น ลูกค้าโอเค นัดเช็กระยะเสาร์นี้"></div></div>'
-      +'<div class="savebar"><button class="btn" id="ctGo">บันทึก</button></div>');
-    $('#ctGo').onclick=()=>{ const n=$('#ctNote').value; closeModal(); careTask(p[0], p[1], n); }; });
+  tbl($('#acToday'), ['ลูกค้า','รถ','รอบ','ครบกำหนด','สถานะ',''],
+    todo.map(({r,c,s,t})=>{ const u=UNITS.find(x=>x.id===s.unitId); const dd=days(t.due,TODAY);
+      return '<tr><td><b>'+esc(c.name)+'</b><div class="tsub">'+esc(c.phone||'—')+'</div></td>'
+        +'<td>'+esc(u?u.model:'—')+'</td><td>'+esc(t.kind)+'</td><td>'+thDate(t.due)+'</td>'
+        +'<td>'+(dd>0? pill('เลย '+dd+' วัน','warn') : pill('ครบวันนี้','info'))+'</td>'
+        +'<td class="noprint">'+(edit? '<button class="lnk" data-ct="'+r.id+'|'+t.id+'">บันทึกว่าติดต่อแล้ว</button>':'')+'</td></tr>'; }),
+    'ไม่มีงานถึงกำหนดวันนี้',
+    todo.map(({r,c,s,t})=>{ const u=UNITS.find(x=>x.id===s.unitId); const dd=days(t.due,TODAY);
+      return crow('', esc(c.name), esc(t.kind),
+        esc(c.phone||'—')+' · '+esc(u?u.model:'—')+' · ครบ '+thDate(t.due),
+        (dd>0? pill('เลย '+dd+' วัน','warn') : pill('ครบวันนี้','info'))
+        +(edit? ' <button class="lnk" data-ct="'+r.id+'|'+t.id+'">บันทึกว่าติดต่อแล้ว</button>':'')); }));
+  tbl($('#acCust'), ['ลูกค้า','รถ','ได้ป้าย','checklist','ติดตาม','รอบต่อไป'],
+    rows.map(({r,c,s})=>{ const u=UNITS.find(x=>x.id===s.unitId); const nx=r.tasks.find(t=>!t.done);
+      return '<tr data-cdrw="'+r.id+'"><td><b>'+esc(c.name)+'</b><div class="tsub">'+esc(c.phone||'—')+' · '+esc(bName(r.branch))+'</div></td>'
+        +'<td>'+esc(u?u.model:'—')+'</td><td>'+thDate(r.createdAt)+'</td>'
+        +'<td>'+r.check.filter(x=>x.done).length+'/'+r.check.length+'</td>'
+        +'<td>'+r.tasks.filter(t=>t.done).length+'/'+r.tasks.length+'</td>'
+        +'<td>'+(nx? esc(nx.kind)+' · '+thDate(nx.due) : pill('ครบทุกรอบแล้ว','good'))+'</td></tr>'; }),
+    'ยังไม่มีลูกค้าหลังได้ป้าย',
+    rows.map(({r,c,s})=>{ const u=UNITS.find(x=>x.id===s.unitId); const nx=r.tasks.find(t=>!t.done);
+      return crow('data-cdrw="'+r.id+'"', esc(c.name),
+        r.tasks.filter(t=>t.done).length+'/'+r.tasks.length+' รอบ',
+        esc(c.phone||'—')+' · '+esc(u?u.model:'—')+' · ได้ป้าย '+thDate(r.createdAt),
+        nx? '<span class="tsub">รอบต่อไป '+esc(nx.kind)+' · '+thDate(nx.due)+'</span>' : pill('ครบทุกรอบแล้ว','good')); }));
+  $$('#s-aftercare [data-ct]').forEach(b=> b.onclick=e=>{ e.stopPropagation();
+    const p=b.dataset.ct.split('|'); careCtModal(p[0], p[1]); });
+  $$('#s-aftercare [data-cdrw]').forEach(el=> el.onclick=()=>careDrawer(el.dataset.cdrw));
+}
+/* ประวัติครบของลูกค้าหนึ่งคน — ติ๊ก checklist/ปิดรอบจากใน drawer ได้ (ด่านจริงอยู่ใน careTick/careTask) */
+function careDrawer(careId){
+  const r=CARE.find(x=>x.id===careId); if(!r) return;
+  const c=CUSTOMERS.find(x=>x.id===r.custId), s=SALES.find(x=>x.id===r.saleId);
+  const u=s&&UNITS.find(x=>x.id===s.unitId), rg=s&&REGS.find(x=>x.saleId===s.id);
+  const edit=canCare();
+  const ck=r.check.map((x,i)=>'<div class="frow">'
+    +(edit? '<button class="lnk" data-ck="'+r.id+'|'+i+'">'+(x.done?'☑':'☐')+'</button>'
+          : '<span>'+(x.done?'☑':'☐')+'</span>')
+    +'<span'+(x.done?' style="color:var(--muted)"':'')+'>'+esc(x.t)
+    +(x.done?' <span class="tsub">'+esc(x.by)+' · '+thDate(x.at)+'</span>':'')+'</span></div>').join('');
+  const tk=r.tasks.map(t=>{ const dd=days(t.due,TODAY);
+    return '<div class="frow">'
+      +(t.done? pill('โทรแล้ว '+thDate(t.doneAt),'good')
+        : (dd>=0? pill('ถึงรอบ'+(dd>0?' (เลย '+dd+' วัน)':''),'warn') : pill('อีก '+(-dd)+' วัน','mut')))
+      +'<span>'+esc(t.kind)+' · '+thDate(t.due)+(t.note?' · '+esc(t.note):'')+'</span>'
+      +(!t.done && edit? '<button class="lnk fx" data-ct="'+r.id+'|'+t.id+'">บันทึกว่าติดต่อแล้ว</button>':'')
+      +'</div>'; }).join('');
+  openDrawer('ดูแลหลังการขาย — '+(c?c.name:''),
+    '<div class="tsub" style="margin-bottom:var(--s2)">'+esc(c?c.phone||'—':'—')+' · '+esc(u?u.model:'—')
+      +(rg&&rg.plate? ' · ทะเบียน <span class="mono">'+esc(rg.plate)+'</span>':'')
+      +' · ได้ป้าย '+thDate(r.createdAt)+' · '+esc(bName(r.branch))+'</div>'
+    +'<h4 class="sec">Checklist ส่งมอบ</h4>'+ck
+    +'<h4 class="sec">รอบติดตาม</h4>'+tk);
+  $$('#drwB [data-ck]').forEach(b=> b.onclick=()=>{ const p=b.dataset.ck.split('|');
+    if(careTick(p[0], +p[1])) careDrawer(careId); });
+  $$('#drwB [data-ct]').forEach(b=> b.onclick=()=>{ const p=b.dataset.ct.split('|');
+    careCtModal(p[0], p[1]); });
+}
+
+/* ============================= 12c. ทะเบียนรถ (ฝ่ายทะเบียน — v1.35) =============================
+   คิวเดียวทั้งบริษัท: รถส่งมอบแล้วที่ยังไม่มีป้ายจริงจากขนส่ง — กรอกเลขแล้วปิดงานที่นี่ที่เดียว
+   ด่านเขียนอยู่ใน regAdvance/regSavePlate/regBack (act:plate) ไม่ใช่ที่ปุ่ม (§9b) */
+let PL_Q='';
+const plateAt = r => { const lg=(r.log||[]).filter(l=>l.to==='ได้ทะเบียนแล้ว').pop();
+  return (lg&&lg.at)||r.deliveredAt||''; };
+function rPlate(){
+  if(!$('#plQ').dataset.init){ $('#plQ').dataset.init=1;
+    $('#plQ').oninput=()=>{ PL_Q=$('#plQ').value; rPlate(); };
+    $('#expPlate').onclick=expPlate; }
+  if($('#plQ').value!==PL_Q) $('#plQ').value=PL_Q;
+  const pick=r=>{ const s=SALES.find(x=>x.id===r.saleId);
+    return {r, s, c:s&&CUSTOMERS.find(x=>x.id===s.custId), u:s&&UNITS.find(x=>x.id===s.unitId)}; };
+  const q=PL_Q.trim().toLowerCase();
+  const hit=x=>!q || [x.u&&x.u.frame, x.u&&x.u.engine, x.c.name, x.c.phone, x.r.plate]
+    .some(v=>String(v||'').toLowerCase().indexOf(q)>=0);
+  const wait=REGS.filter(r=>inScope(r.branch) && regDone(r) && !regPlated(r)).map(pick)
+    .filter(x=>x.s && !x.s.void && x.c).filter(hit)
+    .sort((a,b)=>String(a.r.due||'9999').localeCompare(String(b.r.due||'9999')));
+  const doneAll=REGS.filter(r=>inScope(r.branch) && regPlated(r)).map(pick)
+    .filter(x=>x.s && !x.s.void && x.c)
+    .sort((a,b)=>String(plateAt(b.r)).localeCompare(String(plateAt(a.r))));
+  const late=wait.filter(x=>days(x.r.due,TODAY)>0);
+  $('#plKpi').innerHTML=[
+    ['รอปิดงาน', wait.length+' <small>คัน</small>', 'ส่งมอบแล้ว ยังไม่มีป้ายจริง'],
+    ['เลยกำหนด', late.length+' <small>คัน</small>', 'เกินกำหนดของงานทะเบียน'],
+    ['ได้ป้ายแล้ว', doneAll.length+' <small>คัน</small>', 'ปิดงานสะสมทั้งหมด']
+  ].map(k=>'<div class="kpi"><div class="l">'+k[0]+'</div><div class="v">'+k[1]+'</div><div class="s">'+k[2]+'</div></div>').join('');
+  const edit=canPlate();
+  const inpCell=x=> edit
+    ? '<input class="inp mono" style="width:130px" placeholder="1กก 1234" data-plin="'+x.r.id+'" value="'+esc(x.r.plate||'')+'">'
+    : '<span class="tsub">—</span>';
+  const btnCell=x=> edit? '<button class="btn sm" data-plc="'+x.r.id+'">ปิดงาน</button>' : '';
+  tbl($('#plTable'), ['ลูกค้า','รถ','สาขา','ส่งมอบ','ครบกำหนด','เลขทะเบียน',''],
+    wait.map(x=>{ const dd=days(x.r.due,TODAY);
+      return '<tr><td><b>'+esc(x.c.name)+'</b><div class="tsub">'+esc(x.c.phone||'—')+'</div></td>'
+        +'<td>'+esc(x.u?x.u.model:'—')+'<div class="tsub mono">ถัง '+esc(x.u&&x.u.frame||'—')+'</div></td>'
+        +'<td>'+esc(bName(x.r.branch))+'</td><td>'+thDate(x.r.deliveredAt)+'</td>'
+        +'<td>'+thDate(x.r.due)+(dd>0? ' '+pill('เลย '+dd+' วัน','warn'):'')+'</td>'
+        +'<td>'+inpCell(x)+'</td><td class="noprint" style="white-space:nowrap">'+btnCell(x)+'</td></tr>'; }),
+    q? 'ไม่พบงานที่ค้นหา' : 'ไม่มีรถรอป้าย — ปิดงานครบทุกคันแล้ว',
+    wait.map(x=>{ const dd=days(x.r.due,TODAY);
+      return crow('', esc(x.c.name), thDate(x.r.due),
+        esc(x.u?x.u.model:'—')+' · <span class="mono">'+esc(x.u&&x.u.frame||'—')+'</span> · '+esc(bName(x.r.branch)),
+        (dd>0? pill('เลย '+dd+' วัน','warn')+' ':'')+inpCell(x)+' '+btnCell(x)); }));
+  tbl($('#plDone'), ['ลูกค้า','รถ','เลขทะเบียน','วันได้ป้าย',''],
+    doneAll.slice(0,20).map(x=>'<tr><td><b>'+esc(x.c.name)+'</b></td>'
+      +'<td>'+esc(x.u?x.u.model:'—')+'</td><td class="mono">'+esc(x.r.plate||'—')+'</td>'
+      +'<td>'+thDate(plateAt(x.r))+'</td>'
+      +'<td class="noprint">'+(edit? '<button class="lnk" data-plb="'+x.r.id+'">ถอยกลับ</button>':'')+'</td></tr>'),
+    'ยังไม่มีคันที่ได้ป้าย',
+    doneAll.slice(0,20).map(x=>crow('', esc(x.c.name), '<span class="mono">'+esc(x.r.plate||'—')+'</span>',
+      esc(x.u?x.u.model:'—')+' · ได้ป้าย '+thDate(plateAt(x.r)),
+      edit? '<button class="lnk" data-plb="'+x.r.id+'">ถอยกลับ</button>':'')));
+  $$('#s-plate [data-plc]').forEach(b=> b.onclick=()=>{
+    const el=$('#s-plate [data-plin="'+b.dataset.plc+'"]');
+    regPlateClose(b.dataset.plc, el? el.value : ''); });
+  $$('#s-plate [data-plb]').forEach(b=> b.onclick=()=>regBack(b.dataset.plb));
+}
+function expPlate(){
+  const rows=REGS.filter(r=>inScope(r.branch)&&regDone(r)&&!regPlated(r))
+    .map(r=>({r, s:SALES.find(x=>x.id===r.saleId)}))
+    .filter(x=>x.s && !x.s.void)
+    .sort((a,b)=>String(a.r.due||'9999').localeCompare(String(b.r.due||'9999')));
+  csv('งานทะเบียนรอป้าย_'+TODAY,
+    ['ลูกค้า','เบอร์โทร','รุ่น','เลขถัง','เลขเครื่อง','สาขา','วันส่งมอบ','ครบกำหนด'],
+    rows.map(({r,s})=>{ const c=CUSTOMERS.find(x=>x.id===s.custId), u=UNITS.find(x=>x.id===s.unitId);
+      return [c?c.name:'—', c?c.phone:'', u?u.model:'—', u?u.frame:'', u?u.engine:'',
+        bName(r.branch), r.deliveredAt, r.due]; }));
 }
 
 /* ============================= 13-14. อะไหล่ ============================= */

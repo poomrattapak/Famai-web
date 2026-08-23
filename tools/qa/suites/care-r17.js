@@ -1,5 +1,6 @@
 /* กลุ่ม ③ ลูกค้า (บรีฟแก้ไขครั้งที่ 1) — ยิงที่ฟังก์ชันจริงตามกฎ §9b
-   1) ส่งมอบรถ → งานฝ่ายบริการเกิดอัตโนมัติ: checklist + รอบติดตามตาม CFG.careDays จากวันส่งมอบ
+   1) v1.35 (คำตอบเจ้าของข้อ 3): งานฝ่ายบริการเกิดตอน "ได้ทะเบียนแล้ว" ไม่ใช่ตอนส่งมอบ —
+      checklist + รอบติดตามตาม CFG.careDays นับจากวันได้ป้าย · ส่งมอบอย่างเดียวต้องยังไม่มีงาน
    2) เซลล์เรียก careTick/careTask ตรง ๆ ต้องถูกปฏิเสธ · ฝ่ายบริการทำได้
    3) ลูกค้าเท (E1): ไม่กรอกรายละเอียด → ไม่ผ่าน · เทแล้ว รถกลับ available + ของแถมคืน
       + s.drop ครบ + เลขเอกสารคงอยู่ + งาน CARE ถูกลบ
@@ -21,7 +22,7 @@ const { chromium, EXE, BASE } = require('./env');
     await page.waitForTimeout(350);
   };
 
-  /* ---- 1) ส่งมอบ → CARE เกิด + รอบติดตามตรงวัน ---- */
+  /* ---- 1) ได้ป้าย → CARE เกิด + รอบติดตามนับจากวันได้ป้าย (v1.35 คำตอบเจ้าของข้อ 3) ---- */
   await login('ST1');
   const t1 = await page.evaluate(() => {
     /* v1.28: ส่งมอบมาก่อนทะเบียนจริงแล้ว — ขั้นก่อนส่งมอบคือ "อนุมัติ" ไม่ใช่ "ป้ายขาว" */
@@ -30,11 +31,16 @@ const { chromium, EXE, BASE } = require('./env');
       if (rg) { rg.stage = 'อนุมัติ'; } }
     if (!rg) return { skip: true };
     const before = CARE.length;
-    regAdvance(rg.id);
+    regAdvance(rg.id);                                   /* อนุมัติ → ส่งมอบแล้ว */
     const s = SALES.find(x => x.id === rg.saleId);
+    const noneAtDeliver = CARE.length === before && !careOf(s.id);
+    regAdvance(rg.id);                                   /* ส่งมอบแล้ว → รอทะเบียน */
+    regAdvance(rg.id, '1กก 7350');                        /* รอทะเบียน → ได้ทะเบียนแล้ว = จุดเกิดงาน */
     const cr = careOf(s.id);
-    regAdvance(rg.id);                                   /* กดซ้ำต้องไม่สร้างซ้ำ */
-    return { skip: false, created: CARE.length === before + 1 && !!cr,
+    regBack(rg.id); regAdvance(rg.id, '1กก 7350');        /* ถอยแล้วปิดใหม่ต้องไม่สร้างซ้ำ */
+    return { skip: false, noneAtDeliver,
+      created: CARE.length === before + 1 && !!cr,
+      atPlate: cr ? cr.createdAt === TODAY : false,
       nTasks: cr ? cr.tasks.length : 0,
       days: cr ? cr.tasks.map(t => days(cr.createdAt, t.due)) : [],
       nCheck: cr ? cr.check.length : 0,
@@ -43,9 +49,11 @@ const { chromium, EXE, BASE } = require('./env');
   });
   if (t1.skip) fails.push('หาดีลให้ส่งมอบไม่ได้ — seed เปลี่ยน?');
   else {
-    if (!t1.created) fails.push('ส่งมอบแล้ว CARE ไม่เกิด');
-    if (t1.dup !== 1) fails.push('ส่งมอบซ้ำสร้างงานซ้ำ: ' + t1.dup);
-    if (String(t1.days) !== '7,30,60,90,120') fails.push('รอบติดตามไม่ตรง 7/30/60/90/120 จากวันส่งมอบ: ' + t1.days);
+    if (!t1.noneAtDeliver) fails.push('ส่งมอบแล้ว CARE เกิดทันที — คำตอบเจ้าของข้อ 3 ให้เกิดตอนได้ป้าย');
+    if (!t1.created) fails.push('ได้ป้ายแล้ว CARE ไม่เกิด');
+    if (!t1.atPlate) fails.push('CARE ไม่ได้ตั้งต้นที่วันได้ป้าย (createdAt ผิด)');
+    if (t1.dup !== 1) fails.push('ปิดงานซ้ำสร้างงานซ้ำ: ' + t1.dup);
+    if (String(t1.days) !== '7,30,60,90,120') fails.push('รอบติดตามไม่ตรง 7/30/60/90/120 จากวันได้ป้าย: ' + t1.days);
     if (t1.nCheck < 3) fails.push('checklist ส่งมอบน้อยผิดปกติ: ' + t1.nCheck);
   }
 
