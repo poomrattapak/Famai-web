@@ -558,6 +558,10 @@ tfoot th.n{ text-align:right; }
 .f2{ display:grid; grid-template-columns:1fr 1fr; gap:var(--s2); }
 .f3{ display:grid; grid-template-columns:repeat(3,1fr); gap:var(--s2); }
 label.fl{ display:block; font-size:var(--t-label); color:var(--muted); margin-bottom:var(--s-half); }
+/* ดอกจันแดง = ช่องนี้เว้นว่างแล้วกดบันทึกไม่ผ่าน (เจ้าของสั่ง 23 ส.ค. 2569)
+   เป็น "สัญลักษณ์ + สี" ไม่ใช่สีล้วน — ปรินต์ขาวดำหรือตาบอดสีก็ยังเห็นดอกจัน (กฎข้อ 3)
+   ตัวที่กันจริงคือ if(...) return ในฟังก์ชันบันทึก ดอกจันเป็นป้ายบอกทางเท่านั้น (§9b) */
+.rq{ color:var(--accent); font-weight:700; margin-left:2px; }
 .inp,select.inp,textarea.inp{ width:100%; height:40px; padding:0 var(--s2);
   border:1px solid var(--hairline); border-radius:var(--r-input); background:var(--card);
   font-size:var(--t-table); transition:border-color var(--dur-ui) var(--ease); }
@@ -795,6 +799,23 @@ textarea.inp{ height:auto; padding:var(--s1) var(--s2); resize:vertical; line-he
 .pstep .pn.slow::after{ content:''; position:absolute; top:-3px; right:-3px; width:9px; height:9px;
   border-radius:var(--r-pill); background:var(--attn); border:2px solid var(--card); }
 .pstep.lab .pst.at em{ color:var(--ink); font-weight:600; }
+/* บนจอคอมแถบขั้นตอนต้องอ่านได้จากระยะที่นั่ง ไม่ใช่ต้องเพ่ง (เจ้าของสั่ง 23 ส.ค. 2569)
+   ขยายเฉพาะ ≥901px — ที่ 390px ขนาดเดิมพอดีกรอบอยู่แล้ว 5 ขั้นที่ 40px จะล้นออกข้างทันที
+   ขยายแค่ตัวเลขขนาด ไม่เพิ่มพื้น/มุมโค้ง/ระยะขอบข้างให้ .pstep หรือ .pst (กฎกล่อง 2 ชั้น) */
+@media (min-width:901px){
+  .pstep .pn{ width:40px; height:40px; }
+  .pstep .pn .i-sm{ width:22px; height:22px; flex:0 0 22px; }
+  .pstep .pn.now{ box-shadow:0 0 0 6px var(--pos-wash); }
+  /* หนาขึ้นให้เห็นเส้นเขียว แต่ไม่ขยาย min-width ของเส้น — ค่านั้นเป็นแค่พื้นตอนที่ตารางแคบ
+     ถ้าดันขึ้นด้วย คอลัมน์ความคืบหน้าจะกว้างขึ้นอีก 16px แล้วตารางดีลจะเลื่อนข้างบนจอ 1024px */
+  .pstep .pl{ height:5px; border-radius:3px; }
+  .pstep .pn.slow::after{ top:-4px; right:-4px; width:11px; height:11px; }
+  /* เส้นต้องอยู่กลางวงพอดี: (40-5)/2 = 17.5 → 18 */
+  .pstep.lab .pl{ margin-top:18px; }
+  .pstep.lab .pst{ max-width:120px; }
+  .pstep.lab em{ font-size:13px; }
+  .pstep .pdt{ font-size:11px; }
+}
 /* สองบรรทัดเหนือแถบ — หัวเรื่องบอกว่าต้องทำอะไรต่อ บรรทัดรองบอกขั้นและเวลาที่ค้าง */
 .phead{ margin-bottom:var(--s2); }
 .phead b{ display:block; font-family:var(--f-display); font-size:var(--t-lead);
@@ -2869,7 +2890,45 @@ function closeDrawer(){ $('#drw').classList.remove('on'); $('#ov').classList.rem
   /* ล้างเนื้อในหลังเฟดจบ — id ในแผ่นเก่า (เช่น psNext) เคยค้างแล้วชนกับจออื่น (ดูคอมเมนต์ที่ punchSheet)
      เช็ค .on อีกรอบกันเคสเปิดแผ่นใหม่เร็วกว่า 350ms แล้วเนื้อหาโดนลบทิ้ง */
   setTimeout(()=>{ if(!$('#drw').classList.contains('on')) $('#drwB').innerHTML=''; }, 350); }
-function openModal(title, html){ $('#mdT').textContent=title; $('#mdB').innerHTML=html; $('#modal').classList.add('on'); syncLock(); }
+function openModal(title, html){ $('#mdT').textContent=title; $('#mdB').innerHTML=html; markReq(); $('#modal').classList.add('on'); syncLock(); }
+/* ---------- ช่องที่จำเป็นต้องกรอก ----------
+   REQ = ช่องที่ "เว้นว่างแล้วฟังก์ชันบันทึก return ก่อนเขียนข้อมูล" ทั้งแอป ประกาศที่เดียว
+   ด่านจริงยังอยู่ในฟังก์ชันเขียนข้อมูลทุกตัวเหมือนเดิม (§9b) — รายการนี้เป็นป้ายบอกทาง ไม่ใช่ตัวกัน
+   ด่าน required-r30 เคลียร์ทีละช่องแล้วยิงฟังก์ชันบันทึกจริง ถ้าใครเพิ่มชื่อลงนี่โดยโค้ดไม่ได้กัน
+   หรือกันแล้วแต่ไม่ได้ใส่ชื่อไว้นี่ ด่านจะแดงทั้งสองทาง — ดอกจันจึงโกหกไม่ได้
+   จงใจไม่อยู่ในรายการ:
+   · บังคับ "บางกรณี" — wsDest (ผู้ซื้อในเครือ) · psWhy (นอกจุดลงเวลา) · psNote (กดติดปัญหา)
+     · rjWith (ติดไฟแนนซ์เจ้าอื่น) — ดอกจันถาวรบนช่องที่บางทีไม่ต้องกรอก สอนให้คนเลิกเชื่อดอกจัน
+     สี่ช่องนี้เขียนเงื่อนไขไว้ในป้ายแทน
+   · svSearch — ช่องค้นหา ไม่ใช่ช่องของฟอร์มบันทึก
+   · sUnit — ด่านคือ "ไม่มีรถว่างให้ขาย" ไม่ใช่ "ลืมเลือก"
+   · dlPlate กับช่องราคาในตะกร้าขายส่ง — ไม่มี label ให้แปะ ใส่ดอกจันไว้ในมาร์กอัปตรงนั้นเลย */
+const REQ = [
+  'lgEmail','lgPw2',                                   /* เข้าระบบด้วยบัญชีจริง */
+  'rEngine','rFrame',                                  /* รับรถเข้าสต๊อก */
+  'sCust','fNet','wsPartner','tUnit','qV1','clPrice',  /* ขาย · เทียบค่างวด · ขายส่ง · โอนย้าย · ใบเสนอราคา · เคลียร์สต๊อก */
+  'cmName','fapWhy','rjWhy','cdDetail','arAmt',        /* ลูกค้า · ตีกลับ · ไฟแนนซ์ไม่ผ่าน · ลูกค้าเท · ลงรับเงิน */
+  'svName','pCode','pName','msPart','msQty',           /* ใบงานบริการ · อะไหล่ */
+  'gName','geName','gxName',                           /* ของแถม */
+  'eAmt','eCat','eStaff','eapWhy',                     /* ค่าใช้จ่าย */
+  'fxWhy','lvFrom','lvTo','lvNo','ofDate','ofPlace','ofNo',  /* แก้เวลา · ใบลา · ออกนอกสถานที่ */
+  'hoDate','hoName','evTitle',                         /* ปฏิทิน */
+  'fcName','feName','siName',                          /* ไฟแนนซ์ · จุดลงเวลา */
+  'ocName','obName','obCode','oeName','beName','wpName',     /* บริษัท · สาขา · คู่ค้าขายส่ง */
+  'vmCode','vmName','vmColors'                         /* รุ่นรถและสี */
+];
+/* แปะดอกจันเข้า label ของช่อง — ป้ายคือ label.fl ตัวที่อยู่ก่อนหน้าช่องในกล่องเดียวกัน
+   เรียกซ้ำได้ ไม่ซ้อน · ช่องที่ถูกล็อกไว้ (disabled) ไม่ต้องแปะ จะได้ไม่สั่งให้คนกรอกของที่แตะไม่ได้ */
+function markReq(){
+  REQ.forEach(id=>{
+    const el=document.getElementById(id); if(!el || el.disabled) return;
+    for(let s=el.previousElementSibling; s; s=s.previousElementSibling)
+      if(s.matches('label.fl')){
+        if(!s.querySelector('.rq')) s.insertAdjacentHTML('beforeend','<span class="rq" title="จำเป็นต้องกรอก">*</span>');
+        return;
+      }
+  });
+}
 /* ปิดกล้องทุกครั้งที่กล่องลอยปิด ไม่ว่าจะปิดด้วยปุ่ม X, ESC หรือกดยืนยัน
    ถ้าไม่ทำ MediaStream ค้างและไฟกล้องไม่ดับเพราะ closeModal ไม่ล้าง innerHTML */
 /* ปิดแผ่นแล้วต้องปล่อยทรัพยากรทุกตัวจากที่เดียว — กล้อง นาฬิกา และการเฝ้าดูตำแหน่ง
@@ -3287,6 +3346,7 @@ function render(){
   badges();
   notifSync();   /* กระดิ่งเดินคู่กับ badge เสมอ — คิดสดจากระเบียนชุดเดียวกัน */
   navPer();      /* ตัวกรองบนแถบบนตามหน้าปัจจุบัน (v1.26 ข้อ 3) */
+  markReq();     /* ดอกจันแดงหน้าช่องที่จำเป็น — วาดหน้าใหม่แล้วต้องยังอยู่ */
 }
 /* ---------- ช่วงเวลา+สาขาบนแถบบน (v1.26 ข้อ 3) ----------
    ช่วงเวลา: perBar ผูกกับ host ของตัวเอง (#navPerBox) ใช้ perSt(key) ร่วมกับแถบในหน้า
@@ -5047,7 +5107,7 @@ function rWsSale(){
       const u=UNITS.find(z=>z.id===x.unitId); if(!u) return '';
       return '<div class="frow"><span><b>'+esc(u.model)+'</b> · '+esc(u.color)
         +' <span class="tsub mono">'+esc(u.engine)+' / '+esc(u.frame)+'</span></span>'
-        +'<input class="inp num" style="max-width:110px" data-wci="'+i+'" value="'+x.price+'">'
+        +'<span class="rq" title="จำเป็นต้องกรอก">*</span><input class="inp num" style="max-width:110px" data-wci="'+i+'" value="'+x.price+'">'
         +'<button class="lnk fx" data-wcd="'+i+'">เอาออก</button></div>'; }).join('')
       +'<div class="frow"><span><b>รวม '+WS_CART.length+' คัน</b></span><span class="fx"><b>'+fmt(total)+' ฿</b></span></div>'
     : '<p class="foot">ยังไม่มีรถในบิล — เลือกรถแล้วกด "+ เพิ่ม" ได้เรื่อย ๆ</p>';
@@ -5716,7 +5776,7 @@ function dealActions(d){
     const i=REG_STAGES.indexOf(d.rg.stage);
     /* ช่องเลขทะเบียนโผล่ตั้งแต่ขั้น "รอทะเบียน" — กรอกจากป้ายจริงเท่านั้น ไม่มีการสุ่ม */
     if(i>=REG_STAGES.indexOf('รอทะเบียน'))
-      b.push('<span class="dlplate"><input class="inp mono" id="dlPlate" value="'+esc(d.rg.plate||'')
+      b.push('<span class="dlplate"><span class="rq" title="จำเป็นต้องกรอก">*</span><input class="inp mono" id="dlPlate" value="'+esc(d.rg.plate||'')
         +'" placeholder="1กก 1234"><button class="btn sec" data-dlplate="'+d.rg.id+'">บันทึกทะเบียน</button></span>');
     if(i>=0 && i<REG_STAGES.length-1)
       b.push('<button class="btn" data-dlrnext="'+d.rg.id+'">ไป: '+esc(REG_STAGES[i+1])+ic('arrow')+'</button>');
@@ -6359,7 +6419,7 @@ function custDropModal(saleId){
     '<div class="f">'
     +'<div><label class="fl">เทเรื่องอะไร</label><select class="inp" id="cdReason">'
       +DROP_REASONS.map(r=>'<option>'+r+'</option>').join('')+'</select></div>'
-    +'<div><label class="fl">รายละเอียด (จำเป็น — เขียนไว้กันลืมและกันเถียง)</label>'
+    +'<div><label class="fl">รายละเอียด (เขียนไว้กันลืมและกันเถียง)</label>'
       +'<textarea class="inp" id="cdDetail" rows="2" placeholder="เช่น ไปถึงหน้าบ้านแล้วลูกค้าบอกแฟนไม่ให้ซื้อ"></textarea></div>'
     +(s.down>0? '<div><label class="fl">เงินดาวน์ '+fmt(s.down)+' ฿</label>'
       +'<select class="inp" id="cdDown"><option value="0">ไม่คืน (ตามเงื่อนไขปกติ)</option>'
@@ -7476,7 +7536,7 @@ function attFixModal(s, date, after){
     +'<div class="f"><div class="f2">'
     +'<div><label class="fl">เวลาเข้า</label><input class="inp mono" id="fxIn" value="'+esc(a.in||'')+'" placeholder="08:30:00"></div>'
     +'<div><label class="fl">เวลาออก</label><input class="inp mono" id="fxOut" value="'+esc(a.out||'')+'" placeholder="17:30:00"></div></div>'
-    +'<div><label class="fl">เหตุผล (จำเป็น)</label><input class="inp" id="fxWhy" placeholder="เช่น ลืมลงเวลา ระบบล่ม"></div></div>'
+    +'<div><label class="fl">เหตุผล</label><input class="inp" id="fxWhy" placeholder="เช่น ลืมลงเวลา ระบบล่ม"></div></div>'
     +'<div class="savebar"><button class="btn" id="fxGo">บันทึก<svg class="i"><use href="#i-check"/></svg></button></div>');
   $('#fxGo').onclick=()=>{ const why=$('#fxWhy').value.trim();
     if(!why){ toast('ต้องระบุเหตุผล','การแก้เวลาย้อนหลังต้องมีบันทึก',1); return; }
@@ -9794,6 +9854,7 @@ async function liveLogin(){
 
 /* ============================= BOOT ============================= */
 renderLogin();
+markReq();   /* หน้าล็อกอินบัญชีจริงก็เป็นฟอร์ม — ต้องมีดอกจันตั้งแต่ก่อนเข้าระบบ */
 $('#lgSwap').onclick=()=>{
   const live = $('#lgLive').style.display==='none';
   $('#lgLive').style.display = live?'':'none';

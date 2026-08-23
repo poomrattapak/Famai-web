@@ -34,6 +34,9 @@ const SHAPE = `el => {
 
   for (const W of [1440, 390]) {
     const tag = W + 'px';
+    /* v1.30: บนจอคอม (≥901px) วงไอคอนโต 28→40 ให้อ่านจากระยะที่นั่งได้ · มือถือคงเดิม
+       ผูกค่ากับความกว้างจอตรงนี้ที่เดียว ถ้าใครลบ media query ออก 1440 จะแดงทันที */
+    const PN = W >= 901 ? 40 : 28;
     const ctx = await b.newContext({ timezoneId: 'Asia/Bangkok', viewport: { width: W, height: 900 } });
     const p = await ctx.newPage();
     p.on('pageerror', e => errors.push(tag + ' PAGEERROR ' + e.message));
@@ -57,7 +60,7 @@ const SHAPE = `el => {
       const doneAll = s.nowN === 0 && s.done.length === s.n;
       const cur = doneAll ? s.n : s.now;
       if (s.nowN !== 1 && !doneAll) bad(at + ': ขั้นปัจจุบันมี ' + s.nowN + ' จุด ควรมีจุดเดียว (หรือจบครบแล้วไม่มีเลย)');
-      if (s.size !== 28)          bad(at + ': วงไอคอนสูง ' + s.size + 'px ควรเป็น 28');
+      if (s.size !== PN)          bad(at + ': วงไอคอนสูง ' + s.size + 'px ควรเป็น ' + PN);
       if (s.done.join(',') !== [...Array(cur).keys()].join(','))
         bad(at + ': ขั้นที่ผ่านแล้วเป็น [' + s.done + '] แต่ขั้นปัจจุบันคือ ' + cur);
       if (s.linesOn !== Math.min(cur, s.n - 1))
@@ -81,6 +84,7 @@ const SHAPE = `el => {
     const one = await p.$eval('#dlOne .pstep', eval(SHAPE));
     if (!await p.$('#dlOne .pstep.lab')) bad(tag + ': แถบในรายละเอียดไม่ได้เป็นแบบมีชื่อขั้น');
     if (one.labels.length !== one.n) bad(tag + ': มี ' + one.n + ' ขั้น แต่มีชื่อขั้น ' + one.labels.length + ' อัน');
+    if (one.size !== PN) bad(tag + ': วงไอคอนในหน้ารายละเอียดสูง ' + one.size + 'px ควรเป็น ' + PN);
     if (one.n === 5 && one.labels.join('|') !== TRACK.join('|'))
       bad(tag + ': ชื่อขั้นเป็น [' + one.labels + '] ควรเป็น [' + TRACK + ']');
 
