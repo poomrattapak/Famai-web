@@ -22,6 +22,8 @@ const hrLeave = tap('#hrTabs [data-p="h2"]');   /* ใบลา + ขอออ�
 const OPEN = {
   clPrice : js(`(()=>{ const u=UNITS[0]; clearanceModal(u.id); })()`),
   cust    : js(`custModal()`),
+  /* v1.32: ฟอร์มบังคับก่อนออกจากขั้นคุยกับลูกค้า — เปิดกับลูกค้าที่ยังไม่มีใบขาย */
+  dp      : js(`(()=>{ const c=CUSTOMERS.find(x=>!SALES.some(y=>y.custId===x.id&&!y.void)); dealProceed(c.id); })()`),
   rj      : js(`(()=>{ const c=FINCASES[0]; finRejectModal(c.id); })()`),
   drop    : js(`(()=>{ const s=SALES.find(x=>!x.void && !(AR.find(a=>a.saleId===x.id)||{}).paid); custDropModal(s.id); })()`),
   model   : js(`modelModal()`),
@@ -57,6 +59,15 @@ const CASES = [
 
   /* ---- ลูกค้าและดีล ---- */
   { id:'cmName',   open: seq(scr('deal'), OPEN.cust), save:'#cmGo', want:'กรอกชื่อลูกค้า' },
+
+  /* ---- v1.32 ฟอร์มบังคับก่อนออกจากขั้น "คุยกับลูกค้า" (บรีฟข้อ 7) ----
+     fill ช่องอื่นให้ครบก่อน เพื่อให้ด่านที่เด้งเป็นของช่องที่กำลังตรวจจริง ๆ
+     dpIntent เป็น select ที่มีค่า "ยังไม่ระบุ" — เคลียร์ = เลือกกลับไปตัวแรก */
+  { id:'dpName',   open: seq(scr('deal'), OPEN.dp), fill:{ dpPhone:'081-000-0000', dpAddr:'ที่อยู่ทดสอบ', dpIdNo:'1111111111119', dpIntent:'เงินสด' }, save:'#dpGo', want:'กรอกชื่อ-นามสกุล' },
+  { id:'dpPhone',  open: seq(scr('deal'), OPEN.dp), fill:{ dpName:'ทดสอบ ระบบ', dpAddr:'ที่อยู่ทดสอบ', dpIdNo:'1111111111119', dpIntent:'เงินสด' }, save:'#dpGo', want:'กรอกเบอร์โทร' },
+  { id:'dpAddr',   open: seq(scr('deal'), OPEN.dp), fill:{ dpName:'ทดสอบ ระบบ', dpPhone:'081-000-0000', dpIdNo:'1111111111119', dpIntent:'เงินสด' }, save:'#dpGo', want:'กรอกที่อยู่' },
+  { id:'dpIdNo',   open: seq(scr('deal'), OPEN.dp), fill:{ dpName:'ทดสอบ ระบบ', dpPhone:'081-000-0000', dpAddr:'ที่อยู่ทดสอบ', dpIntent:'เงินสด' }, save:'#dpGo', want:'กรอกเลขบัตรประชาชน' },
+  { id:'dpIntent', open: seq(scr('deal'), OPEN.dp), fill:{ dpName:'ทดสอบ ระบบ', dpPhone:'081-000-0000', dpAddr:'ที่อยู่ทดสอบ', dpIdNo:'1111111111119' }, save:'#dpGo', want:'เลือกเงินสดหรือเงินผ่อน' },
   { id:'rjWhy',    open: seq(scr('deal'), OPEN.rj),   save:'#rjGo', want:'เลือกเหตุผลก่อน' },
   { id:'cdDetail', open: seq(scr('deal'), OPEN.drop), save:'#cdGo', want:'เขียนรายละเอียดก่อน' },
   { id:'fapWhy',   open: seq(scr('deal'), tap('#dlTable [data-deal]'), tap('#dlOne [data-fapno]')), save:'#fapGo', want:'บอกเหตุผลก่อน' },

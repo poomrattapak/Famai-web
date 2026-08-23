@@ -1504,7 +1504,7 @@ body.lock{ overflow:hidden; }
                    บังคับแค่ชื่อ+เบอร์ ที่เหลือมีไว้ให้ครบตอนออกใบกำกับ ไม่กรอกก็ขายได้ -->
               <div class="fsh">ข้อมูลลูกค้า</div>
               <div class="f2">
-                <div style="position:relative"><label class="fl">ชื่อลูกค้า</label><input class="inp" id="sCust" placeholder="คุณศิริพร ทวีทรัพย์" autocomplete="off"><div class="sug" id="sSugN" style="display:none"></div></div>
+                <div style="position:relative"><label class="fl">ชื่อลูกค้า <button class="lnk noprint" id="sNewCust" type="button" style="float:right">+ เพิ่มลูกค้าใหม่</button></label><input class="inp" id="sCust" placeholder="คุณศิริพร ทวีทรัพย์" autocomplete="off"><div class="sug" id="sSugN" style="display:none"></div></div>
                 <div style="position:relative"><label class="fl">เบอร์โทร</label><input class="inp" id="sPhone" placeholder="081-555-2210" autocomplete="off"><div class="sug" id="sSugP" style="display:none"></div></div>
               </div>
               <div class="f2">
@@ -1638,6 +1638,7 @@ body.lock{ overflow:hidden; }
           <div class="kpis k4" id="dlKpi"></div>
           <div class="card"><div class="hd"><h3>ลูกค้าและดีล</h3><div class="d">แตะแถวเพื่อจัดการทั้งดีลในหน้าเดียว</div><div class="sp"></div>
             <select class="inp ct" id="dlStage"></select>
+            <select class="inp ct" id="dlPay"></select>
             <select class="inp ct" id="dlSales"></select>
             <select class="inp ct" id="dlBranch"></select>
             <input class="inp ct" id="dlQ" placeholder="ค้นหา ชื่อ / เบอร์ / เลขเครื่อง">
@@ -2911,6 +2912,7 @@ const REQ = [
   'lgEmail','lgPw2',                                   /* เข้าระบบด้วยบัญชีจริง */
   'rEngine','rFrame',                                  /* รับรถเข้าสต๊อก */
   'sCust','fNet','wsPartner','tUnit','qV1','clPrice',  /* ขาย · เทียบค่างวด · ขายส่ง · โอนย้าย · ใบเสนอราคา · เคลียร์สต๊อก */
+  'dpName','dpPhone','dpAddr','dpIdNo','dpIntent',     /* v1.32 ฟอร์มบังคับก่อนออกจากขั้นคุยกับลูกค้า (บรีฟข้อ 7) */
   'cmName','fapWhy','rjWhy','cdDetail','arAmt',        /* ลูกค้า · ตีกลับ · ไฟแนนซ์ไม่ผ่าน · ลูกค้าเท · ลงรับเงิน */
   'svName','pCode','pName','msPart','msQty',           /* ใบงานบริการ · อะไหล่ */
   'gName','geName','gxName',                           /* ของแถม */
@@ -3263,7 +3265,7 @@ const FILTERS = {
     f:[['stModel','รุ่น'],['stColor','สี'],['stStatus','สถานะ'],
        ['stQ','ค้นหา เลขเครื่อง / เลขถัง / รุ่น / สี']] },
   deal  :{ t:'ตัวกรองลูกค้าและดีล', sum:'dlFsum',
-    f:[['dlStage','ขั้นตอน'],['dlSales','เซลล์'],['dlQ','ค้นหา ชื่อ / เบอร์ / เลขเครื่อง']] }
+    f:[['dlStage','ขั้นตอน'],['dlPay','เงินสด/ผ่อน'],['dlSales','เซลล์'],['dlQ','ค้นหา ชื่อ / เบอร์ / เลขเครื่อง']] }
 };
 let FS_OPEN=null, FS_HOME=[];
 function fsSummary(key){
@@ -4640,6 +4642,13 @@ function rStock(){
 
 /* ============================= 5. ขายรถ ============================= */
 let sFree={}, sFreeX=[], sCustSel='', FIN_TERM=24;   /* sFree = id→จำนวน · sFreeX = ของแถมนอกคลัง · FIN_TERM = งวดที่เลือกในมุมมองมือถือ */
+/* v1.32 (บั๊กข้อ 27 ของบรีฟ): ตัวสลับวิธีชำระตัวเดียวของทั้งแอป — เดิม 3 ทาง (ใบเสนอ · ตารางค่างวด ·
+   หน้าดีล) ตั้ง #sPay เองแล้วเปิดกล่องให้แค่ #sFinBox กล่อง #sFinPay ไม่เปิดและไม่ recalc
+   ลูกค้าเงินผ่อนเข้ามาแล้วช่องไม่ขึ้น ต้องกดสลับไปมาให้ onchange ทำงานเอง */
+function setPay(mode){
+  const el=$('#sPay'); el.value = mode==='finance'? 'finance' : 'cash';
+  if(el.onchange) el.onchange(); else calcSell();
+}
 function rSell(){
   if(!$('#sUnit').dataset.init){ $('#sUnit').dataset.init=1;
     $('#sSales').innerHTML=SALESPEOPLE.map(s=>'<option>'+esc(s)+'</option>').join('');
@@ -4649,6 +4658,10 @@ function rSell(){
       $('#sFinBox').style.display=fin?'grid':'none'; $('#sFinPay').style.display=fin?'grid':'none'; calcSell(); };
     /* สรุปดีลต้องขยับตามทุกช่องที่กระทบเงิน (บรีฟ: "auto adjust ตลอด") — เดิมขาด
        เงินดาวน์/งวด/ไฟแนนซ์ ทำให้เปลี่ยนสามช่องนี้แล้วสรุปนิ่งเฉย */
+    /* v1.32 (บรีฟข้อ 3): เพิ่มลูกค้าใหม่ได้จากหน้าขายเลย — บันทึกแล้วเติมชื่อ/เบอร์ให้ทันที */
+    $('#sNewCust').onclick=()=> custModal(null, c=>{
+      sCustSel=c.id; $('#sCust').value=c.name; $('#sPhone').value=c.phone||'';
+      if(c.intent==='เงินผ่อน'||c.intent==='เงินสด') setPay(c.intent==='เงินผ่อน'?'finance':'cash'); });
     ['sUnit','sDisc','sDown'].forEach(k=> $('#'+k).oninput=calcSell);
     ['sUnit','sTerm','sFinCo'].forEach(k=> $('#'+k).onchange=calcSell);
     /* บริษัท/สาขาที่ขาย — เปลี่ยนบริษัทเติมสาขาใหม่ · เปลี่ยนคันรถตั้งค่าตามที่รถอยู่จริง */
@@ -5026,7 +5039,7 @@ function finCompare(){
   /* แตะค่างวดที่ถูกใจ → เงื่อนไขทั้งชุด (ไฟแนนซ์/งวด/ดาวน์) ไหลกลับเข้าฟอร์มขายให้เอง */
   $$('#finCmp [data-pick]').forEach(td=> td.onclick=()=>{
     const pk=td.dataset.pick.split('|'), f=FIN_CO.find(x=>x.id===pk[0]);
-    $('#sPay').value='finance'; $('#sFinBox').style.display='grid';
+    setPay('finance');
     $('#sFinCo').value=pk[0]; $('#sTerm').value=pk[1];
     $('#sDown').value=num($('#fDown').value);
     sellTab('p1'); calcSell();
@@ -5531,7 +5544,7 @@ function quoteToSale(qid){
     const pd=(q.phone||'').replace(/\D/g,'');
     const c=pd? CUSTOMERS.find(x=>(x.phone||'').replace(/\D/g,'')===pd) : null;
     sCustSel = c? c.id : '';
-    $('#sPay').value='finance'; $('#sFinBox').style.display='grid';
+    setPay('finance');
     if(q.f1 && finActive().some(f=>f.id===q.f1)) $('#sFinCo').value=q.f1;
     $('#sDown').value=q.down;
     calcSell();
@@ -5586,28 +5599,39 @@ const idFmt = v => { const d=String(v||'').replace(/\D/g,''); return d.length===
 const idMask = v => { const d=String(v||'').replace(/\D/g,''); return d.length===13
   ? d[0]+'-'+d.slice(1,5)+'-xxxxx-'+d.slice(10,12)+'-'+d[12] : (v? '···' : ''); };
 const idDisp = v => canSeeId()? idFmt(v) : idMask(v);
-function custModal(id){
+function custModal(id, after){
   const c=id? CUSTOMERS.find(x=>x.id===id) : null;
   const opt=(list,sel)=>list.map(x=>'<option'+(x===sel?' selected':'')+'>'+esc(x)+'</option>').join('');
   /* เลขบัตร: คนไม่มีสิทธิ์เห็นแบบปิดกลางและแก้ไม่ได้ — จะได้ไม่เผลอเขียนทับด้วยค่าที่ตัวเองอ่านไม่เห็น */
   const idEdit=canSeeId() || !(c&&c.idNo);
+  /* v1.32 (บรีฟข้อ 3): ลูกค้าใหม่เก็บสั้น ๆ ก่อน — ชื่อ·เบอร์·รุ่นที่สนใจ·สนใจแบบ
+     ช่องที่เหลือพับใต้ "กรอกเพิ่มเติม" (แก้ลูกค้าเก่ากางเต็ม เพราะเข้ามาเพื่อดู/แก้ข้อมูล)
+     ใช้ display:contents ให้ช่องที่พับยังเรียงในกริด .f เดิม ไม่เกิดกล่องซ้อนชั้นใหม่ (§9c) */
+  const brief=!c;
   openModal(c? 'แก้ไข '+c.name : 'เพิ่มลูกค้า',
     '<div class="f"><div class="f2">'
     +'<div><label class="fl">ชื่อ</label><input class="inp" id="cmName" value="'+esc(c?c.name:'')+'"></div>'
     +'<div><label class="fl">เบอร์โทร</label><input class="inp" id="cmPhone" value="'+esc(c?c.phone||'':'')+'"></div></div>'
+    +'<div class="f2">'
+    /* v1.32 (B3): เดิม select ไม่มีตัวเลือกว่าง เบราว์เซอร์เลือกรุ่นแรก (FINN) ให้ลูกค้าใหม่ทุกคนเงียบ ๆ
+       — แยกไม่ออกว่าใครสนใจ FINN จริงกับใครแค่ไม่ได้กรอก */
+    +'<div><label class="fl">รุ่นที่สนใจ</label><select class="inp" id="cmModel"><option value="">ยังไม่ระบุ</option>'
+    +Object.keys(PRICE).map(v=>'<option value="'+v+'"'+((c?c.variant:'')===v?' selected':'')+'>'+esc(PRICE[v].m)+' · '+v+'</option>').join('')+'</select></div>'
+    +'<div><label class="fl">สนใจแบบ</label><select class="inp" id="cmIntent">'+opt(['ยังไม่ระบุ','เงินสด','เงินผ่อน'], c?c.intent||'ยังไม่ระบุ':'ยังไม่ระบุ')+'</select></div></div>'
+    +(brief? '<button class="lnk" id="cmMoreBtn" type="button">'+ic('plus','i i-sm')+' กรอกเพิ่มเติม — วันเกิด · เลขบัตร · ที่อยู่ · อื่น ๆ</button>':'')
+    +'<div id="cmMore" style="display:'+(brief?'none':'contents')+'">'
     +'<div class="f2">'
     +'<div><label class="fl">วันเดือนปีเกิด</label><input class="inp" type="date" id="cmBirth" value="'+esc(c?c.birth||'':'')+'"></div>'
     +'<div><label class="fl">เลขบัตรประชาชน/ผู้เสียภาษี</label>'
       +(idEdit? '<input class="inp mono" id="cmIdNo" value="'+esc(c?c.idNo||'':'')+'">'
               : '<input class="inp mono" id="cmIdNo" value="'+esc(idMask(c.idNo))+'" readonly>')+'</div></div>'
     +'<div><label class="fl">ที่อยู่</label><input class="inp" id="cmAddr" value="'+esc(c?c.addr||'':'')+'"></div>'
-    +'<div class="f2">'
     +'<div><label class="fl">รู้จักจาก</label><select class="inp" id="cmSrc">'+opt(['Facebook','เดินเข้าร้าน','เพื่อนแนะนำ','LINE','TikTok'], c?c.src:'เดินเข้าร้าน')+'</select></div>'
-    +'<div><label class="fl">สนใจแบบ</label><select class="inp" id="cmIntent">'+opt(['ยังไม่ระบุ','เงินสด','เงินผ่อน'], c?c.intent||'ยังไม่ระบุ':'ยังไม่ระบุ')+'</select></div></div>'
-    +'<div><label class="fl">รุ่นที่สนใจ</label><select class="inp" id="cmModel">'
-    +Object.keys(PRICE).map(v=>'<option value="'+v+'"'+((c?c.variant:'')===v?' selected':'')+'>'+esc(PRICE[v].m)+' · '+v+'</option>').join('')+'</select></div>'
-    +'<div><label class="fl">หมายเหตุ</label><input class="inp" id="cmNote" value="'+esc(c?c.note||'':'')+'"></div></div>'
+    +'<div><label class="fl">หมายเหตุ</label><input class="inp" id="cmNote" value="'+esc(c?c.note||'':'')+'"></div>'
+    +'</div></div>'
     +'<div class="savebar"><button class="btn" id="cmGo">'+(c?'บันทึก':'เพิ่มลูกค้า')+'<svg class="i"><use href="#i-check"/></svg></button></div>');
+  const more=$('#cmMoreBtn');
+  if(more) more.onclick=()=>{ $('#cmMore').style.display='contents'; more.remove(); };
   $('#cmGo').onclick=()=>{ const n=$('#cmName').value.trim();
     if(!n){ toast('กรอกชื่อลูกค้า','',1); return; }
     const put=o=>{ o.name=n; o.phone=$('#cmPhone').value.trim(); o.addr=$('#cmAddr').value.trim();
@@ -5621,8 +5645,11 @@ function custModal(id){
       toast('เพิ่มลูกค้าแล้ว', n+' · ตามความคืบหน้าได้ที่หน้า “ลูกค้าและดีล”'); }
     if(LIVE) dbUp('customer', { id:saved.id, branch_id:BR_IDS[saved.branch]||null, full_name:saved.name,
       phone:saved.phone||null, address:saved.addr||null, tax_id:saved.idNo||null,
-      birth_date:saved.birth||null, source:saved.src||null, stage:saved.stage });
-    closeModal(); refreshAll(); };
+      birth_date:saved.birth||null, source:saved.src||null, stage:saved.stage,
+      /* v1.32: สองช่องนี้ไม่เคยถูกเขียนลงฐาน — โหมดจริงข้อมูลหายทุกครั้งที่รีโหลด (migration 22) */
+      purchase_intent: saved.intent==='ยังไม่ระบุ'? null : saved.intent||null,
+      interested_variant_id: VARIANT_IDS[saved.variant]||null });
+    closeModal(); if(after) after(saved); refreshAll(); };
 }
 /* ค่าที่เก็บใน c.stage: เข้ามาดูรถ · สนใจ · จอง · ผ่าน · ไม่ผ่าน · รับรถสำเร็จ
    ตั้งแต่ v1.11 ฟิลด์นี้ไม่ได้เป็นตัวขับแถบความคืบหน้าอีกแล้ว — หน้าดีลคำนวณขั้นจากระเบียนจริง
@@ -5668,7 +5695,10 @@ function dealOf(id){
   const ars=s? AR.filter(a=>a.saleId===s.id) : [];
   const owe=ars.reduce((n,a)=>n+Math.max(0,a.due-a.paid),0);
   const tasks=TASKS.filter(t=>t.custId===id && !t.done).sort((a,b)=>a.due.localeCompare(b.due));
-  const cash = !!s && s.pay==='cash';
+  /* v1.32 (เรื่องที่ 1 ของบรีฟรอบ 2): ก่อนมีใบขาย ระบบไม่เคยรู้ว่าเงินสดหรือผ่อน —
+     อ่านจาก "สนใจแบบ" (c.intent) ที่เซลล์กรอกตอนคุย · มีใบขายแล้ววิธีชำระจริงชนะเสมอ
+     ยังไม่ระบุ = เดินเส้นเต็ม (มีขั้นไฟแนนซ์) ตามหลัก fail-open §9i */
+  const cash = s? s.pay==='cash' : c.intent==='เงินสด';
   /* เงินสดไม่มีขั้นไฟแนนซ์ — ตัดออกจากเส้นทางไปเลย ดีกว่าโชว์แล้วเขียนกำกับว่า "ข้าม" */
   const track = cash? DEAL_TRACK.filter(x=>x.k!=='fin') : DEAL_TRACK;
   let k, off=false, offWhy='';
@@ -5762,7 +5792,13 @@ const dealStageName = d => d.off? 'ไม่ผ่าน' : (d.track[d.i]? d.tra
 function dealActions(d){
   const b=[];
   if(d.k==='lead'){
-    b.push('<button class="btn" data-dlsell="'+d.c.id+'">'+ic('tag')+' เปิดการขายให้ลูกค้าคนนี้</button>');
+    /* v1.32 (บรีฟข้อ 4+15): ปุ่มต้องพาไปขั้นที่แถบชี้ — ผ่อนไปไฟแนนซ์ เงินสดไปเปิดการขาย
+       ทุกทางผ่าน dealProceed ที่เด้งฟอร์มบังคับ (บรีฟข้อ 7) ก่อนออกจากขั้นคุยกับลูกค้า */
+    const it=d.c.intent;
+    b.push('<button class="btn" data-dlgo="'+d.c.id+'">'
+      +(it==='เงินสด'? ic('tag')+' เปิดการขาย (เงินสด)'
+      : it==='เงินผ่อน'? ic('bank')+' ยื่นไฟแนนซ์ให้ลูกค้าคนนี้'
+      : ic('arrow')+' ไปต่อ — เลือกเงินสด/ผ่อนก่อน')+'</button>');
     if(d.c.stage!=='สนใจ') b.push('<button class="btn sec" data-dlwarm="'+d.c.id+'">ทำเครื่องหมายว่าสนใจ</button>');
     b.push('<button class="btn sec" data-dledit="'+d.c.id+'">แก้ข้อมูลลูกค้า</button>');
   }
@@ -5910,6 +5946,7 @@ function rDealOne(id){
   $('#dlBack').onclick=()=>{ DEAL_SEL=''; rDeal(); window.scrollTo(0,0); };
   const on=(sel,fn)=> $$('#dlOne ['+sel+']').forEach(b=> b.onclick=()=>fn(b.dataset[sel.replace('data-','')]));
   on('data-dlsell', dealSell);
+  on('data-dlgo', dealProceed);
   on('data-dlwarm', cid=>{ const c=CUSTOMERS.find(x=>x.id===cid); if(!c) return;
     c.stage='สนใจ'; toast('อัปเดตแล้ว', c.name+' → สนใจ'); refreshAll(); });
   on('data-dledit', custModal);
@@ -5969,17 +6006,65 @@ function dealSell(id){
   if(!canSee('sell')){ toast('ไม่มีสิทธิ์เปิดการขาย','บทบาท '+ROLES[ME.role].name+' ทำรายการนี้ไม่ได้',1); return; }
   go('sell'); sellTab('p1');
   sCustSel=c.id; $('#sCust').value=c.name; $('#sPhone').value=c.phone||'';
-  toast('เปิดการขาย', 'เติมชื่อ '+c.name+' ให้แล้ว เลือกคันรถต่อได้เลย');
+  /* v1.32: วิธีชำระตามที่ลูกค้าบอกไว้ — เงินผ่อนเปิดช่องไฟแนนซ์ให้เลย (ปิดบั๊กข้อ 27 ฝั่งหน้าดีล) */
+  setPay(c.intent==='เงินผ่อน'? 'finance' : 'cash');
+  toast(c.intent==='เงินผ่อน'? 'ยื่นไฟแนนซ์' : 'เปิดการขาย',
+    'เติมชื่อ '+c.name+(c.intent&&c.intent!=='ยังไม่ระบุ'? ' ('+c.intent+')':'')+' ให้แล้ว เลือกคันรถต่อได้เลย');
+}
+/* ---------- ฟอร์มบังคับก่อนออกจากขั้น "คุยกับลูกค้า" (บรีฟข้อ 7) ----------
+   เจ้าของสั่ง: ก่อนไปไฟแนนซ์หรือเงินสด เด้งหน้าข้อมูลลูกค้าให้แก้/กรอกเพิ่ม
+   บังคับ ชื่อ-นามสกุล · เบอร์ · ที่อยู่ · เลขบัตร · เงินสด/ผ่อน — ด่านอยู่ใน dealProceedSave ไม่ใช่ปุ่ม */
+function dealProceed(cid){
+  const c=CUSTOMERS.find(x=>x.id===cid); if(!c) return;
+  const idEdit=canSeeId() || !c.idNo;
+  openModal('ข้อมูลลูกค้าก่อนไปต่อ — '+c.name,
+    '<p class="foot" style="margin:0 0 var(--s2)">กรอกให้ครบก่อนยื่นไฟแนนซ์หรือเปิดการขาย — ใช้ออกเอกสารและติดตามลูกค้า</p>'
+    +'<div class="f"><div class="f2">'
+    +'<div><label class="fl">ชื่อ-นามสกุล</label><input class="inp" id="dpName" value="'+esc(c.name||'')+'"></div>'
+    +'<div><label class="fl">เบอร์โทร</label><input class="inp" id="dpPhone" value="'+esc(c.phone||'')+'"></div></div>'
+    +'<div><label class="fl">ที่อยู่</label><input class="inp" id="dpAddr" value="'+esc(c.addr||'')+'" placeholder="ที่อยู่ตามบัตรประชาชน"></div>'
+    +'<div class="f2">'
+    +'<div><label class="fl">เลขบัตรประชาชน</label>'
+      +(idEdit? '<input class="inp mono" id="dpIdNo" value="'+esc(c.idNo||'')+'">'
+              : '<input class="inp mono" id="dpIdNo" value="'+esc(idMask(c.idNo))+'" readonly>')+'</div>'
+    +'<div><label class="fl">สนใจแบบ</label><select class="inp" id="dpIntent">'
+      +['ยังไม่ระบุ','เงินสด','เงินผ่อน'].map(x=>'<option'+(x===(c.intent||'ยังไม่ระบุ')?' selected':'')+'>'+x+'</option>').join('')
+      +'</select></div></div></div>'
+    +'<div class="savebar"><button class="btn" id="dpGo">บันทึกและไปต่อ<svg class="i"><use href="#i-arrow"/></svg></button></div>');
+  $('#dpGo').onclick=()=>dealProceedSave(cid);
+}
+function dealProceedSave(cid){
+  const c=CUSTOMERS.find(x=>x.id===cid); if(!c) return false;
+  const name=$('#dpName').value.trim(), phone=$('#dpPhone').value.trim(), addr=$('#dpAddr').value.trim();
+  const idEdit=canSeeId() || !c.idNo;
+  const idNo=idEdit? $('#dpIdNo').value.trim() : (c.idNo||'');
+  const intent=$('#dpIntent').value;
+  if(!name){ toast('กรอกชื่อ-นามสกุล','',1); return false; }
+  if(!phone){ toast('กรอกเบอร์โทร','',1); return false; }
+  if(!addr){ toast('กรอกที่อยู่','ใช้ออกใบกำกับภาษีตอนเปิดการขาย',1); return false; }
+  if(!idNo){ toast('กรอกเลขบัตรประชาชน','ใช้ยื่นไฟแนนซ์และออกเอกสาร',1); return false; }
+  if(intent!=='เงินสด' && intent!=='เงินผ่อน'){ toast('เลือกเงินสดหรือเงินผ่อน','ขั้นถัดไปต่างกันตามวิธีชำระ',1); return false; }
+  c.name=name; c.phone=phone; c.addr=addr; c.intent=intent;
+  if(idEdit) c.idNo=idNo;
+  if(LIVE) dbUp('customer', { id:c.id, full_name:c.name, phone:c.phone, address:c.addr,
+    tax_id:c.idNo||null, purchase_intent:c.intent });
+  closeModal(); dealSell(cid); refreshAll(); return true;
 }
 /* ---------- มุมมองรายการ ----------
    dealAll/dealRows อยู่นอก rDealList เพราะปุ่มส่งออกผูก onclick ครั้งเดียวตอน init
    ถ้าอ่านรายการจาก closure ของการวาดครั้งแรก ไฟล์ที่ส่งออกจะเป็นข้อมูลเก่าค้าง */
 const dealAll = () => CUSTOMERS.filter(c=>inScope(c.branch)).map(c=>dealOf(c.id)).filter(Boolean);
+/* v1.32 (บรีฟข้อ 16): ป้ายเงินสด/ผ่อนของดีล — มีใบขายอ่านจากใบขาย ไม่มีอ่านจาก "สนใจแบบ" */
+const dealPay = d => d.s? (d.s.pay==='cash'?'เงินสด':'เงินผ่อน')
+  : (d.c.intent==='เงินสด'||d.c.intent==='เงินผ่อน'? d.c.intent : 'ยังไม่ระบุ');
+const dealPayPill = d => { const v=dealPay(d);
+  return pill(v, v==='เงินสด'?'good': v==='เงินผ่อน'?'info':'mut'); };
 function dealRows(){
   const g=id=>{ const el=$('#'+id); return el? el.value : ''; };
-  const q=g('dlQ').trim().toLowerCase(), st=g('dlStage'), sp=g('dlSales'), br=g('dlBranch');
+  const q=g('dlQ').trim().toLowerCase(), st=g('dlStage'), sp=g('dlSales'), br=g('dlBranch'), py=g('dlPay');
   return dealAll().filter(d=>
       (!st || dealStageName(d)===st)
+   && (!py || dealPay(d)===py)
    && brMatch(br, d.c.branch)
    && (!sp || ((d.s?d.s.sales:d.c.owner)||'')===sp)
    && (!q  || (d.c.name+(d.c.phone||'')+(d.u?d.u.engine:'')).toLowerCase().indexOf(q)>=0))
@@ -5996,19 +6081,20 @@ function rDealList(){
     if(want && opts.indexOf(want)>=0) el.value=want; };
   const all=dealAll();
   fill($('#dlStage'), DEAL_TRACK_N.concat(['ไม่ผ่าน']), 'ทุกขั้นตอน');
+  fill($('#dlPay'), ['เงินสด','เงินผ่อน','ยังไม่ระบุ'], 'เงินสด+ผ่อน');
   fill($('#dlSales'), [...new Set(all.map(d=>(d.s?d.s.sales:d.c.owner)||'').filter(Boolean))].sort(), 'ทุกเซลล์');
   (function(){ const el=$('#dlBranch'), want=el.value;
     el.innerHTML=brFilterHTML('ทุกสาขาที่ดูแล');
     if(want) el.value=want; })();
   if(!$('#dlStage').dataset.init){ $('#dlStage').dataset.init=1;
-    ['dlStage','dlSales','dlBranch'].forEach(k=> $('#'+k).onchange=rDeal);
+    ['dlStage','dlPay','dlSales','dlBranch'].forEach(k=> $('#'+k).onchange=rDeal);
     $('#dlQ').oninput=rDeal;
     $('#dlFilt').onclick=()=>openFilters('deal');
     $('#dlAdd').onclick=()=>custModal();
     $('#expDeal').onclick=()=> csv('ลูกค้าและดีล',
-      ['ลูกค้า','เบอร์','สาขา','เซลล์','รถ','เลขเครื่อง','ขั้นตอน','สิ่งที่ต้องทำต่อ',
+      ['ลูกค้า','เบอร์','เงินสด/ผ่อน','สาขา','เซลล์','รถ','เลขเครื่อง','ขั้นตอน','สิ่งที่ต้องทำต่อ',
        'เหตุผลที่ไม่ผ่าน','ติดไฟแนนซ์เจ้าไหน','ครบกำหนดทะเบียน','ทะเบียน'],
-      dealRows().map(d=>[d.c.name,d.c.phone||'',bName(d.c.branch),(d.s?d.s.sales:d.c.owner)||'',
+      dealRows().map(d=>[d.c.name,d.c.phone||'',dealPay(d),bName(d.c.branch),(d.s?d.s.sales:d.c.owner)||'',
         d.u?d.u.model:'', d.u?d.u.engine:'', dealStageName(d), dealHead(d).head,
         d.fc&&d.fc.rejectReason||'', d.fc&&d.fc.rejectWith||'',
         d.rg?d.rg.due:'', d.rg?d.rg.plate:'']));
@@ -6031,12 +6117,12 @@ function rDealList(){
   const veh = d => d.u? esc(d.u.model)+' · '+esc(d.u.color)+' <span class="tsub mono">'+esc(d.u.engine)+'</span>'
                       : '<span class="tsub">สนใจ '+esc(PRICE[d.c.variant]?PRICE[d.c.variant].m:d.c.variant||'—')+'</span>';
   tbl($('#dlTable'), ['ลูกค้า','รถ','เซลล์','ความคืบหน้า','ต้องทำต่อ'],
-    rows.map(d=>'<tr class="clk" data-deal="'+d.c.id+'"><td><b>'+esc(d.c.name)+'</b><div class="tsub">'+esc(d.c.phone||'')+'</div></td>'
+    rows.map(d=>'<tr class="clk" data-deal="'+d.c.id+'"><td><b>'+esc(d.c.name)+'</b><div class="tsub">'+esc(d.c.phone||'')+' '+dealPayPill(d)+'</div></td>'
       +'<td>'+veh(d)+'</td><td>'+esc((d.s?d.s.sales:d.c.owner)||'—')+'</td>'
       +'<td style="min-width:170px">'+bar(d)+'</td>'
       +'<td>'+esc(dealHead(d).head)+(d.late>0? ' '+pill('เลย '+d.late+' วัน','bad'):'')+'</td></tr>'),
     'ไม่พบลูกค้าตามเงื่อนไข',
-    rows.map(d=>crow('data-deal="'+d.c.id+'"', esc(d.c.name), badge(d),
+    rows.map(d=>crow('data-deal="'+d.c.id+'"', esc(d.c.name), dealPayPill(d)+badge(d),
       veh(d)+' · '+esc((d.s?d.s.sales:d.c.owner)||'—'),
       bar(d)+'<span class="pslab'+(d.off?' off':'')+'">'+esc(dealHead(d).head)+'</span>')));
   $$('#dlTable [data-deal]').forEach(r=> r.onclick=()=>{ DEAL_SEL=r.dataset.deal; rDeal(); window.scrollTo(0,0); });
