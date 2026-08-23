@@ -1465,6 +1465,7 @@ body.lock{ overflow:hidden; }
         <div class="hd"><h3>สต๊อกรถ</h3><div class="sp"></div>
           <select class="inp ct" id="stBranch"></select>
           <select class="inp ct" id="stModel"></select>
+          <select class="inp ct" id="stVariant"></select>
           <select class="inp ct" id="stColor"></select>
           <select class="inp ct" id="stStatus">
             <option value="">ทุกสถานะ</option><option value="available">พร้อมขาย</option>
@@ -1493,7 +1494,15 @@ body.lock{ overflow:hidden; }
           <div class="card"><div class="hd"><h3>รายละเอียดการขาย</h3></div><div class="bd">
             <div class="f">
               <div class="fsh">รถ</div>
-              <div><label class="fl">เลือกคันรถ</label><select class="inp" id="sUnit"></select></div>
+              <!-- v1.33 (บรีฟข้อ 11): เลือกรถแบบไล่ระดับ รุ่น → รหัสรุ่น → สี → คันจริง
+                   บนสุดมีช่องค้นหา พิมพ์เลขเครื่อง/เลขถัง/รหัสรุ่นแล้วช่องล่างเติมให้เอง -->
+              <div><label class="fl">ค้นหารถเร็ว</label><input class="inp mono" id="svQ" placeholder="พิมพ์ เลขเครื่อง / เลขถัง / รหัสรุ่น แล้วช่องล่างเติมให้" autocomplete="off"></div>
+              <div class="f3">
+                <div><label class="fl">รุ่นรถ</label><select class="inp" id="svModel"></select></div>
+                <div><label class="fl">รหัสรุ่น</label><select class="inp" id="svVariant"></select></div>
+                <div><label class="fl">สี</label><select class="inp" id="svColor"></select></div>
+              </div>
+              <div><label class="fl">เลือกคันรถ (เลขตัวถัง)</label><select class="inp" id="sUnit"></select></div>
               <!-- บรีฟรอบ 1: เลือกบริษัทและสาขาที่ขาย — เลือกไม่ตรงกับที่รถอยู่ = เตือนให้ย้ายรถก่อน -->
               <div class="f2">
                 <div><label class="fl">ขายในนามบริษัท</label><select class="inp" id="sCo"></select></div>
@@ -3262,7 +3271,7 @@ const FILTERS = {
   hrday :{ t:'เลือกวันลงเวลา', sum:'attFsum', f:[['attDay','วันที่']] },
   payrol:{ t:'เลือกงวดเงินเดือน', sum:'prFsum', f:[['prMonth','งวดเดือน']] },
   stock :{ t:'ตัวกรองสต๊อกรถ', sum:'stFsum',
-    f:[['stModel','รุ่น'],['stColor','สี'],['stStatus','สถานะ'],
+    f:[['stModel','รุ่น'],['stVariant','รหัสรุ่น'],['stColor','สี'],['stStatus','สถานะ'],
        ['stQ','ค้นหา เลขเครื่อง / เลขถัง / รุ่น / สี']] },
   deal  :{ t:'ตัวกรองลูกค้าและดีล', sum:'dlFsum',
     f:[['dlStage','ขั้นตอน'],['dlPay','เงินสด/ผ่อน'],['dlSales','เซลล์'],['dlQ','ค้นหา ชื่อ / เบอร์ / เลขเครื่อง']] }
@@ -4239,7 +4248,7 @@ function unitDrawer(id){
   wireSaleLinks();
   $$('[data-clr]').forEach(b=> b.onclick=()=>clearanceModal(b.dataset.clr));
   $$('[data-usell]').forEach(b=> b.onclick=()=>{ closeDrawer(); go('sell');
-    setTimeout(()=>{ $('#sUnit').value=b.dataset.usell; calcSell(); },30); });
+    setTimeout(()=>{ sUnitSet(b.dataset.usell); },30); });
 }
 /* ตั้งราคาเคลียร์สต๊อก — ผู้จัดการกรอกเอง ระบบไม่เดาราคาให้ */
 function clearanceModal(id){
@@ -4501,6 +4510,7 @@ function stList(){
   return UNITS.filter(u=> inScope(u.branch)
     && brMatch($('#stBranch').value, u.branch)
     && (!$('#stModel').value  || u.model===$('#stModel').value)
+    && (!$('#stVariant').value|| u.variant===$('#stVariant').value)
     && (!$('#stColor').value  || u.color===$('#stColor').value)
     && (!$('#stStatus').value || u.status===$('#stStatus').value)
     && (!q || (u.engine+u.frame+u.model+u.variant+u.color).toLowerCase().indexOf(q)>=0));
@@ -4508,11 +4518,30 @@ function stList(){
 /* ตัวเลือกสีเติมใหม่ทุกครั้ง และผูกกับรุ่นที่เลือกอยู่ — เลือก NMAX แล้วต้องเห็นเฉพาะสีที่ NMAX มีจริง
    ถ้าสีที่เลือกค้างอยู่ไม่มีในรุ่นใหม่ ให้ล้างทิ้ง ไม่งั้นตารางจะว่างโดยไม่รู้สาเหตุ */
 function stColorOpts(){
-  const el=$('#stColor'), want=el.value, m=$('#stModel').value;
-  const cs=[...new Set(UNITS.filter(u=>inScope(u.branch) && (!m || u.model===m)).map(u=>u.color))]
+  const el=$('#stColor'), want=el.value, m=$('#stModel').value, v=$('#stVariant').value;
+  const cs=[...new Set(UNITS.filter(u=>inScope(u.branch) && (!m || u.model===m) && (!v || u.variant===v)).map(u=>u.color))]
     .filter(Boolean).sort((a,b)=>a.localeCompare(b,'th'));
   el.innerHTML='<option value="">ทุกสี</option>'+cs.map(c=>'<option>'+esc(c)+'</option>').join('');
   el.value = cs.indexOf(want)>=0 ? want : '';
+}
+/* v1.33 (B2): ตัวเลือกรุ่นเดิมสร้างครั้งเดียวตอน init และไม่กรอง inScope —
+   รับรถรุ่นใหม่เข้ามาแล้วไม่โผล่จนกว่าจะรีโหลด และคนสาขาเดียวเห็นชื่อรุ่นของสาขาอื่น
+   เปลี่ยนเป็นสร้างใหม่ทุกครั้งแบบเดียวกับ stColorOpts (คงค่าที่เลือกไว้ถ้ายังมีอยู่) */
+function stModelOpts(){
+  const el=$('#stModel'), want=el.value;
+  const ms=[...new Set(UNITS.filter(u=>inScope(u.branch)).map(u=>u.model))]
+    .filter(Boolean).sort((a,b)=>a.localeCompare(b,'th'));
+  el.innerHTML='<option value="">ทุกรุ่น</option>'+ms.map(m=>'<option>'+esc(m)+'</option>').join('');
+  el.value = ms.indexOf(want)>=0 ? want : '';
+}
+/* v1.33 (บรีฟข้อ 1): ตัวกรองรหัสรุ่น — รถ 6 ชื่อรุ่นมี 14 รหัสรุ่นที่ราคาต่างกัน
+   ผูกกับรุ่นที่เลือกอยู่ (เลือก FINN เหลือเฉพาะรหัสของ FINN) */
+function stVariantOpts(){
+  const el=$('#stVariant'), want=el.value, m=$('#stModel').value;
+  const vs=[...new Set(UNITS.filter(u=>inScope(u.branch) && (!m || u.model===m)).map(u=>u.variant))]
+    .filter(Boolean).sort();
+  el.innerHTML='<option value="">ทุกรหัสรุ่น</option>'+vs.map(v=>'<option>'+esc(v)+'</option>').join('');
+  el.value = vs.indexOf(want)>=0 ? want : '';
 }
 /* สลับแท็บจากที่ไหนก็ได้ — แกลเลอรีใช้พาไปดูรุ่นที่กดในแท็บตาราง */
 function stTab(v){
@@ -4523,20 +4552,20 @@ function stTab(v){
 function rStock(){
   if(!$('#stBranch').dataset.init){ $('#stBranch').dataset.init=1;
     $('#stBranch').innerHTML=brFilterHTML('ทุกสาขา');
-    $('#stModel').innerHTML='<option value="">ทุกรุ่น</option>'+[...new Set(UNITS.map(u=>u.model))].map(m=>'<option>'+esc(m)+'</option>').join('');
-    ['stBranch','stModel','stColor','stStatus'].forEach(k=> $('#'+k).onchange=rStock);
+    ['stBranch','stModel','stVariant','stColor','stStatus'].forEach(k=> $('#'+k).onchange=rStock);
+    /* เปลี่ยนรุ่นแล้วรหัสรุ่นที่เลือกค้างอาจไม่อยู่ในรุ่นใหม่ — stVariantOpts ล้างให้เองตอนวาด */
     $('#stQ').oninput=rStock;
     $('#stFilt').onclick=()=>openFilters('stock');
     $$('#s-stock .tabs button[data-v]').forEach(b=> b.onclick=()=>{ stTab(b.dataset.v); });
     /* ปุ่มรับรถ พาไปหน้ารับรถเข้าสต๊อกที่มีอยู่แล้ว ไม่ทำฟอร์มซ้ำ */
     $('#stAdd').onclick=()=> go('recv');
     $('#expStock').onclick=()=> csvMoney('สต๊อกรถ',
-      ['สาขา','รุ่น','แบบรถ','สี','เลขเครื่อง','เลขถัง','รับเข้าเมื่อ','อายุ(วัน)','สถานะ','ต้นทุน','ราคาขาย','กำไร','เคลียร์สต๊อก','หมายเหตุราคา'],
+      ['สาขา','รุ่น','รหัสรุ่น','สี','เลขเครื่อง','เลขถัง','รับเข้าเมื่อ','อายุ(วัน)','สถานะ','ต้นทุน','ราคาขาย','กำไร','เคลียร์สต๊อก','หมายเหตุราคา'],
       stList().map(u=>[bName(u.branch),u.model,u.variant,u.color,u.engine,u.frame,u.received,age(u),statusText(u.status),
         u.cost, u.retail==null?'รอกำหนดราคา':u.retail, u.retail==null?'':gpOf(u), u.clearance?'ใช่':'', u.priceNote||'']),
       [9,10,11]);
   }
-  stColorOpts();
+  stModelOpts(); stVariantOpts(); stColorOpts();
   /* ปุ่มรับรถขึ้นเฉพาะคนที่เข้าหน้ารับรถได้จริง (admin / ผู้จัดการ / คลัง) */
   $('#stAdd').style.display = canSee('recv')? '' : 'none';
   fsSync('stock');
@@ -4592,7 +4621,7 @@ function rStock(){
       stOpen[k]=!stOpen[k]; rStock(); });
     wireUnitRows();
     $$('#stGrp [data-sell]').forEach(b=> b.onclick=e=>{ e.stopPropagation(); go('sell');
-      setTimeout(()=>{ $('#sUnit').value=b.dataset.sell; calcSell(); },30); });
+      setTimeout(()=>{ sUnitSet(b.dataset.sell); },30); });
   } else if(stView==='table'){
     /* เจ้าของสั่งว่าแท็บนี้ต้องเป็น "ตารางจริง" ทั้งบนจอเล็ก จึงไม่ส่งการ์ดเข้า tbl()
        แต่ลดเหลือ 4 คอลัมน์ให้พอดี 390px แทน — คอลัมน์ที่ตัดออกไปอยู่ในบรรทัดรองของช่องแรก */
@@ -4629,14 +4658,17 @@ function rStock(){
       grp[k].n++; grp[k].age+=age(u); grp[k].colors[u.color]=(grp[k].colors[u.color]||0)+1;
       if(u.status==='sold') grp[k].sold++; });
     $('#stGal').innerHTML = Object.keys(grp).length? Object.keys(grp).map(k=>{ const g=grp[k];
-      return '<button class="gcard" data-gmodel="'+esc(g.u.model)+'"><div class="ph">'+bikeArt(g.u.variant, g.u.color)+'<span class="qty">'+g.n+'</span></div>'
+      return '<button class="gcard" data-gmodel="'+esc(g.u.model)+'" data-gvariant="'+esc(g.u.variant)+'"><div class="ph">'+bikeArt(g.u.variant, g.u.color)+'<span class="qty">'+g.n+'</span></div>'
         +'<div class="gb"><b>'+esc(g.u.model)+'</b><div class="c">'+esc(g.u.variant)+' · '+esc(g.u.modelTh||'—')+'</div>'
         +'<div class="c">'+(g.u.retail==null?'<span style="color:var(--attn)">รอกำหนดราคา</span>':baht(g.u.retail)+(g.u.clearance?' <span style="color:var(--attn)">· เคลียร์</span>':''))+'</div>'
         +'<div class="cs">'+Object.keys(g.colors).map(c=>'<span class="pill p-mut"><span class="dot" style="background:'+(COLOR_HEX[c]||'#ccc')+'"></span>'+esc(c)+' '+g.colors[c]+'</span>').join('')+'</div>'
         +'<div class="tsub" style="margin-top:var(--s1)">'+(g.sold===g.n? 'ขายแล้วทั้งหมด' : 'อายุเฉลี่ย '+Math.round(g.age/g.n)+' วัน')+'</div></div></button>';
     }).join('') : '<div class="empty"><b>ไม่พบรถ</b>ลองปรับตัวกรอง</div>';
     /* แตะรุ่นในแกลเลอรี → กรองเป็นรุ่นนั้นแล้วไปดูรายคันในแท็บตาราง */
-    $$('#stGal [data-gmodel]').forEach(c=> c.onclick=()=>{ $('#stModel').value=c.dataset.gmodel; stTab('table'); });
+    /* v1.33 (B1): การ์ดเป็นรายรหัสรุ่น (จัดกลุ่มด้วย variant) แต่เดิมกดแล้วตั้งแค่ชื่อรุ่น —
+       กด "Grand Filano BJKD00 ABS" ได้ทั้ง 3 รหัสที่ราคาต่าง 56,600–64,600 · ตั้งรหัสรุ่นให้ตรงการ์ด */
+    $$('#stGal [data-gmodel]').forEach(c=> c.onclick=()=>{ $('#stModel').value=c.dataset.gmodel;
+      stVariantOpts(); $('#stVariant').value=c.dataset.gvariant; stTab('table'); });
   }
 }
 
@@ -4649,6 +4681,45 @@ function setPay(mode){
   const el=$('#sPay'); el.value = mode==='finance'? 'finance' : 'cash';
   if(el.onchange) el.onchange(); else calcSell();
 }
+/* ---------- v1.33 (บรีฟข้อ 11+29): ตัวเลือกรถแบบไล่ระดับ ใช้ร่วมทุกหน้าที่หยิบคันจริงจากสต๊อก ----------
+   ids  = {q, model, variant, color, unit} — id ของช่องทั้งห้า (ช่องไหนไม่มีให้เว้น)
+   pool = ฟังก์ชันคืนรายการคันที่เลือกได้ของหน้านั้น (กติกาใครกติกามัน)
+   สร้าง options ใหม่ทุกครั้งที่เรียก fill (คงค่าที่เลือกถ้ายังอยู่) — ไม่เก็บสถานะชุดที่สอง (กฎข้อ 8)
+   ช่องค้นหา: เจอคันแรกที่ตรง → ตั้งรุ่น/รหัส/สีให้ แล้วเลือกคันนั้นเลย (back-fill ตามบรีฟ) */
+function vehCascadeFill(ids, pool){
+  const g=k=>ids[k]? $('#'+ids[k]) : null;
+  const q=(g('q')&&g('q').value.trim().toLowerCase())||'';
+  const all=pool();
+  const fill=(el,vals,label)=>{ if(!el) return; const want=el.value;
+    el.innerHTML='<option value="">'+label+'</option>'+vals.map(v=>'<option>'+esc(v)+'</option>').join('');
+    el.value = vals.indexOf(want)>=0? want : ''; };
+  fill(g('model'),  [...new Set(all.map(u=>u.model))].filter(Boolean).sort((a,b)=>a.localeCompare(b,'th')), 'ทุกรุ่น');
+  const m=g('model')? g('model').value:'';
+  fill(g('variant'),[...new Set(all.filter(u=>!m||u.model===m).map(u=>u.variant))].filter(Boolean).sort(), 'ทุกรหัสรุ่น');
+  const v=g('variant')? g('variant').value:'';
+  fill(g('color'),  [...new Set(all.filter(u=>(!m||u.model===m)&&(!v||u.variant===v)).map(u=>u.color))].filter(Boolean).sort((a,b)=>a.localeCompare(b,'th')), 'ทุกสี');
+  const c=g('color')? g('color').value:'';
+  return all.filter(u=> (!m||u.model===m) && (!v||u.variant===v) && (!c||u.color===c)
+    && (!q || (u.engine+u.frame+u.model+u.variant+u.color).toLowerCase().indexOf(q)>=0));
+}
+function vehCascadeWire(ids, pool, redraw){
+  const g=k=>ids[k]? $('#'+ids[k]) : null;
+  ['model','variant','color'].forEach(k=>{ const el=g(k); if(el) el.onchange=redraw; });
+  const qEl=g('q');
+  if(qEl) qEl.oninput=()=>{
+    const q=qEl.value.trim().toLowerCase();
+    if(q.length>=3){
+      const hit=pool().find(u=>(u.engine+' '+u.frame+' '+u.variant).toLowerCase().indexOf(q)>=0);
+      if(hit){ if(g('model'))g('model').value=hit.model; if(g('variant'))g('variant').value=hit.variant;
+        if(g('color'))g('color').value=hit.color;
+        redraw(hit.id); return; }
+    }
+    redraw();
+  };
+}
+/* กติการถที่ขายได้ + ผังช่องของหน้าขาย — ใช้ซ้ำใน sUnitSet/ปุ่มภายนอกที่จะเลือกคันให้ */
+const SELL_CAS={q:'svQ', model:'svModel', variant:'svVariant', color:'svColor', unit:'sUnit'};
+const sellPool=()=>uAvail().filter(u=>u.status==='available'&&u.retail!=null);
 function rSell(){
   if(!$('#sUnit').dataset.init){ $('#sUnit').dataset.init=1;
     $('#sSales').innerHTML=SALESPEOPLE.map(s=>'<option>'+esc(s)+'</option>').join('');
@@ -4658,6 +4729,7 @@ function rSell(){
       $('#sFinBox').style.display=fin?'grid':'none'; $('#sFinPay').style.display=fin?'grid':'none'; calcSell(); };
     /* สรุปดีลต้องขยับตามทุกช่องที่กระทบเงิน (บรีฟ: "auto adjust ตลอด") — เดิมขาด
        เงินดาวน์/งวด/ไฟแนนซ์ ทำให้เปลี่ยนสามช่องนี้แล้วสรุปนิ่งเฉย */
+    vehCascadeWire(SELL_CAS, sellPool, hit=>{ rSell(); if(hit){ $('#sUnit').value=hit; calcSell(); } });
     /* v1.32 (บรีฟข้อ 3): เพิ่มลูกค้าใหม่ได้จากหน้าขายเลย — บันทึกแล้วเติมชื่อ/เบอร์ให้ทันที */
     $('#sNewCust').onclick=()=> custModal(null, c=>{
       sCustSel=c.id; $('#sCust').value=c.name; $('#sPhone').value=c.phone||'';
@@ -4706,14 +4778,20 @@ function rSell(){
     el.innerHTML= act.length? act.map(f=>'<option value="'+f.id+'">'+esc(f.name)+' ('+f.rate+'%/เดือน)</option>').join('')
       : '<option value="">ยังไม่มีไฟแนนซ์ที่เปิดใช้งาน</option>';
     if(want && act.some(f=>f.id===want)) el.value=want; })();
-  const av=uAvail().filter(u=>u.status==='available'&&u.retail!=null);
+  const av=vehCascadeFill(SELL_CAS, sellPool);
   const cur=$('#sUnit').value;
-  /* บรีฟรอบ 1: ตัดราคาออกจากรายการเลือกคัน ("มันจะแอบงง") — ราคายังอยู่ในสรุปดีลด้านข้าง */
-  $('#sUnit').innerHTML= av.length? av.map(u=>'<option value="'+u.id+'">'+esc(u.model)+' · '+esc(u.color)+' · '+esc(u.engine)+(u.clearance?' · เคลียร์สต๊อก':'')+'</option>').join('')
-    : '<option value="">ไม่มีรถพร้อมขาย</option>';
+  /* บรีฟรอบ 1: ตัดราคาออกจากรายการเลือกคัน ("มันจะแอบงง") — ราคายังอยู่ในสรุปดีลด้านข้าง
+     v1.33: รายการนี้ถูกกรองด้วย รุ่น/รหัสรุ่น/สี/ค้นหา ข้างบนแล้ว — โชว์เลขถังนำเพราะเป็นตัวชี้คัน */
+  $('#sUnit').innerHTML= av.length? av.map(u=>'<option value="'+u.id+'">'+esc(u.frame)+' · '+esc(u.model)+' '+esc(u.variant)+' · '+esc(u.color)+(u.clearance?' · เคลียร์สต๊อก':'')+'</option>').join('')
+    : '<option value="">ไม่มีรถตรงตามที่กรอง</option>';
   if(av.some(u=>u.id===cur)) $('#sUnit').value=cur;
   sFreeDraw();
   calcSell();
+}
+/* เลือกคันจากภายนอก (ดีล/ใบเสนอ/สต๊อก) — ล้างตัวกรองก่อน ไม่งั้นคันที่ส่งมาอาจโดนกรองหาย */
+function sUnitSet(id){
+  ['svQ','svModel','svVariant','svColor'].forEach(k=>{ const el=$('#'+k); if(el) el.value=''; });
+  rSell(); $('#sUnit').value=id; calcSell();
 }
 /* ---------- ชิปของแถม: กดเลือก · เพิ่ม-ลดจำนวนในชิป · เพิ่มของนอกคลังได้ (B7=ค) ----------
    ของนอกคลังไม่ตัดสต๊อกและไม่มีทุน — เป็นแค่รายการมูลค่าบนใบเสร็จ */
@@ -5539,7 +5617,7 @@ function quoteToSale(qid){
   if(!u){ toast('ไม่มีรถรุ่นนี้พร้อมขายในสาขาของคุณ', (PRICE[q.v1]?PRICE[q.v1].m:q.v1)+' — เช็กสต๊อกหรือขอโอนย้ายก่อน',1); return; }
   go('sell');
   setTimeout(()=>{ sellTab('p1');
-    $('#sUnit').value=u.id;
+    sUnitSet(u.id);
     $('#sCust').value=q.name; $('#sPhone').value=q.phone||'';
     const pd=(q.phone||'').replace(/\D/g,'');
     const c=pd? CUSTOMERS.find(x=>(x.phone||'').replace(/\D/g,'')===pd) : null;
@@ -9310,7 +9388,7 @@ function rpBuild(tab){
     return { card:{title:0,right:3}, kpi:[['คงเหลือ',av.length+' <small>คัน</small>',''],
         ['ทุนจมรวม', money(av.reduce((s,u)=>s+u.cost,0)),''],
         ['ค้างเกิน '+CFG.aging+' วัน', av.filter(u=>age(u)>CFG.aging).length+' <small>คัน</small>','ต้องเร่งระบาย']],
-      head:[{t:'รุ่น'},{t:'รหัส'},{t:'สี'},{t:'คงเหลือ',n:1},{t:'มูลค่าทุน',n:1,money:1},{t:'มูลค่าขาย',n:1},{t:'อายุเฉลี่ย (วัน)',n:1},{t:'ค้างเกินเกณฑ์',n:1},{t:'รอราคา'}],
+      head:[{t:'รุ่น'},{t:'รหัสรุ่น'},{t:'สี'},{t:'คงเหลือ',n:1},{t:'มูลค่าทุน',n:1,money:1},{t:'มูลค่าขาย',n:1},{t:'อายุเฉลี่ย (วัน)',n:1},{t:'ค้างเกินเกณฑ์',n:1},{t:'รอราคา'}],
       rows, note:'สต็อก ณ ปัจจุบัน — ช่วงเวลาไม่มีผลกับแท็บนี้ (นับรถที่มีอยู่ตอนนี้ ไม่ใช่ที่เคยมีในช่วง)' };
   }
   if(tab==='pstock'){
