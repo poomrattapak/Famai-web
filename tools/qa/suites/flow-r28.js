@@ -1,16 +1,14 @@
-/* ด่านของเส้นทางดีล v1.28 — คำสั่งเจ้าของคำต่อคำ:
-   "flow คือ คุยกับลูกค้า > ไฟแนนซ์ > เปิดการขาย > ส่งมอบ > ทะเบียนรถ
-    เพราะความเป็นจริงคือลูกค้าจะต้องยื่นไฟแนนซ์ผ่าน ร้านถึงจะเปิดการขายได้ ...
-    เมื่อส่งมอบรถแล้วลูกค้าก็จะใช้ป้ายชั่วคราวไปก่อนเพื่อรอทะเบียนจริงจากขนส่ง ...
-    อยากให้เช็คให้ทุกหน้ามี flow ที่เป็นไปในทางเดียวกันด้วย"
+/* ด่านของเส้นทางดีล v1.28 → ปรับสัญญา v1.34 ตามบรีฟรอบ 2 + คำตอบเจ้าของ:
+   แถบเหลือ 4 ขั้น "คุยกับลูกค้า > ไฟแนนซ์ > เปิดการขาย > ส่งมอบ" — ทะเบียนรถย้ายไป
+   เป็นหน้าของฝ่ายทะเบียน · ไฟแนนซ์ยุบเหลือ 3 ขั้น ส่งเรื่อง > รอผลพิจารณา > อนุมัติแล้ว
 
    กติกาที่ล็อกไว้:
-   1 ลำดับขั้นตรงตามคำสั่ง                5 ปิดงานทะเบียนไม่ได้ถ้าไม่มีเลขทะเบียน
-   2 เดินครบเส้นทางแล้ว k/i ตรงทุกช่วง    6 ส่งมอบ → งานฝ่ายบริการเกิดเอง
-   3 ไฟแนนซ์ยังไม่ผ่าน = ยังไม่เปิดการขาย  7 ทุกหน้าเรียงตรงกัน ไม่มีหน้าไหนสวน
-   4 ส่งมอบ = จบงาน แต่แถบยังไม่เต็ม      8 หน้าสาธารณะไม่หลุดกฎศักดิ์ศรี */
+   1 ลำดับขั้นตรงตามคำสั่ง (4 ขั้น·เงินสด 3)   5 ปิดงานทะเบียนไม่ได้ถ้าไม่มีเลขทะเบียน
+   2 เดินครบเส้นทางแล้ว k/i ตรงทุกช่วง        6 ส่งมอบ → งานฝ่ายบริการเกิดเอง
+   3 ไฟแนนซ์ยังไม่ผ่าน = ยังไม่เปิดการขาย      7 ทุกหน้าเรียงตรงกัน ไม่มีหน้าไหนสวน
+   4 ส่งมอบ = จบงานและแถบเต็ม (งานป้ายเป็น waitPlate ไม่ใช่ขั้น)  8 หน้าสาธารณะไม่หลุดกฎ */
 const { chromium, EXE, BASE } = require('./env');
-const WANT = ['คุยกับลูกค้า', 'ไฟแนนซ์', 'เปิดการขาย', 'ส่งมอบ', 'ทะเบียนรถ'];
+const WANT = ['คุยกับลูกค้า', 'ไฟแนนซ์', 'เปิดการขาย', 'ส่งมอบ'];
 
 (async () => {
   const b = await chromium.launch({ executablePath: EXE });
@@ -30,7 +28,7 @@ const WANT = ['คุยกับลูกค้า', 'ไฟแนนซ์', '
     fails.push('[1] ลำดับขั้นไม่ตรงคำสั่ง: ได้ "' + t1.names.join(' > ') + '"');
   if (t1.keys.indexOf('fin') > t1.keys.indexOf('sale'))
     fails.push('[1] ขั้นไฟแนนซ์อยู่หลังเปิดการขาย — กลับด้านกับงานจริง');
-  if (t1.cash.length !== 4) fails.push('[1] เส้นทางเงินสดควรมี 4 ขั้น ได้ ' + t1.cash.length);
+  if (t1.cash.length !== 3) fails.push('[1] เส้นทางเงินสดควรมี 3 ขั้น ได้ ' + t1.cash.length);
 
   /* 2+3+4+5+6 · เดินดีลผ่อนหนึ่งเส้นด้วยฟังก์ชันจริง แล้วดูทุกช่วง */
   const walk = await p.evaluate(() => {
@@ -39,19 +37,18 @@ const WANT = ['คุยกับลูกค้า', 'ไฟแนนซ์', '
       && REGS.some(r => r.saleId === x.id));
     if (!s) return { skip: true };
     const fc = FINCASES.find(f => f.saleId === s.id), rg = REGS.find(r => r.saleId === s.id);
-    fc.status = 'รอผล'; delete fc.rejectReason;
+    fc.status = 'รอผลพิจารณา'; delete fc.rejectReason;
     rg.stage = 'ส่งไฟแนนซ์'; rg.hold = ''; rg.plate = ''; delete rg.deliveredAt; delete s.deliveredAt;
     CARE.length = 0;
     const snap = t => { const d = dealOf(s.custId);
       return { t, k: d.k, i: d.i, n: d.track.length, delivered: d.delivered,
         saleTicked: d.i > d.track.findIndex(x => x.k === 'sale'), stage: d.rg.stage }; };
     const out = [snap('รอผลไฟแนนซ์')];
-    finAdvance(fc.id);                                   /* รอผล → ติดตามต่อ */
-    finAdvance(fc.id);                                   /* → อนุมัติแล้ว */
+    finAdvance(fc.id);                                   /* รอผลพิจารณา → อนุมัติแล้ว (3 ขั้น v1.34) */
     out.push(snap('ไฟแนนซ์อนุมัติ'));
-    let g = 0;
-    while (rg.stage !== 'ส่งมอบแล้ว' && g++ < 8) { if (regAdvance(rg.id) === false) break; }
-    const stuck = rg.stage !== 'ส่งมอบแล้ว';
+    /* v1.34: ปุ่มส่งมอบเดียวกระโดดขั้นภายในให้เอง — เดินด้วย regDeliver ตัวจริง */
+    const delivered = regDeliver(rg.id, { place: 'หน้าร้าน QA', by: 'QA', note: '' });
+    const stuck = !delivered || rg.stage !== 'ส่งมอบแล้ว';
     out.push(snap('ส่งมอบแล้ว'));
     const careN = CARE.filter(c => c.saleId === s.id).length;
     regAdvance(rg.id);                                   /* ส่งมอบแล้ว → รอทะเบียน */
@@ -70,14 +67,14 @@ const WANT = ['คุยกับลูกค้า', 'ไฟแนนซ์', '
         fails.push('[2] ช่วง "' + t + '" ' + key + ' = ' + JSON.stringify(g[key]) + ' ควรเป็น ' + JSON.stringify(want[key])); };
     chk('รอผลไฟแนนซ์',  { k: 'fin',     i: 1, delivered: false, saleTicked: false });
     chk('ไฟแนนซ์อนุมัติ', { k: 'deliver', i: 3, delivered: false, saleTicked: true });
-    chk('ส่งมอบแล้ว',    { k: 'plate',   i: 4, delivered: true });
-    chk('ได้ทะเบียนแล้ว', { k: 'done',    i: 5, delivered: true });
+    chk('ส่งมอบแล้ว',    { k: 'done',    i: 4, delivered: true });
+    chk('ได้ทะเบียนแล้ว', { k: 'done',    i: 4, delivered: true });
     /* 3 · แก่นของคำสั่ง — ไฟแนนซ์ยังไม่ผ่าน ห้ามติ๊กขั้นเปิดการขาย */
     if (by['รอผลไฟแนนซ์'] && by['รอผลไฟแนนซ์'].saleTicked)
       fails.push('[3] ไฟแนนซ์ยังไม่ผ่านแต่ขั้น "เปิดการขาย" ถูกติ๊กแล้ว');
-    /* 4 · ส่งมอบ = จบงาน แต่แถบต้องยังไม่เต็ม (ป้ายจริงยังไม่มา) */
+    /* 4 · v1.34: ส่งมอบ = จบงานและแถบเต็ม — งานป้ายเป็น waitPlate ของฝ่ายทะเบียน ไม่ใช่ขั้นบนแถบ */
     const dl = by['ส่งมอบแล้ว'];
-    if (dl && dl.i >= dl.n) fails.push('[4] ส่งมอบแล้วแถบเต็มทันทีทั้งที่ยังไม่ได้ป้ายจริง');
+    if (dl && dl.i < dl.n) fails.push('[4] ส่งมอบแล้วแถบยังไม่เต็ม — ขั้นทะเบียนยังค้างบนแถบ');
     if (dl && !dl.delivered) fails.push('[4] ส่งมอบแล้วแต่ไม่ถูกนับว่าจบงาน');
     /* 5 · ด่านเลขทะเบียน */
     if (!walk.blocked) fails.push('[5] ปิดงานทะเบียนได้ทั้งที่ยังไม่มีเลขทะเบียน');
@@ -98,7 +95,9 @@ const WANT = ['คุยกับลูกค้า', 'ไฟแนนซ์', '
       sellFinFirst: idx(sell, 'ส่งเรื่องไฟแนนซ์') >= 0 && idx(sell, 'ส่งเรื่องไฟแนนซ์') < idx(sell, 'เปิดการขาย'),
       regDlvFirst: idx(reg, 'ส่งมอบ') < idx(reg, 'รับป้าย'),
       pubKeys: Object.keys(PUB_STEP).sort().join(','),
-      trackKeys: DEAL_TRACK.map(x => x.k).concat('done').sort().join(',')
+      trackKeys: DEAL_TRACK.map(x => x.k).sort().join(','),
+      pubWait: (function(){ const d={waitPlate:true}; return pubDoneText(d); })(),
+      pubDone: (function(){ const d={waitPlate:false}; return pubDoneText(d); })()
     };
   });
   if (!t7.dlvBeforePlate) fails.push('[7] ขั้นทะเบียน: ส่งมอบไม่ได้มาก่อนได้ป้าย — ' + t7.regOrder.join(' → '));
@@ -107,6 +106,8 @@ const WANT = ['คุยกับลูกค้า', 'ไฟแนนซ์', '
   if (!t7.regDlvFirst)    fails.push('[7] ผังกระบวนการ lane ทะเบียน: ส่งมอบไม่ได้มาก่อนรับป้าย');
   if (t7.pubKeys !== t7.trackKeys)
     fails.push('[7] หน้าสาธารณะมีขั้นไม่ตรงกับ DEAL_TRACK: ' + t7.pubKeys + ' ≠ ' + t7.trackKeys);
+  if (t7.pubWait.indexOf('รอทะเบียน') < 0 || t7.pubDone.indexOf('ได้ทะเบียน') < 0)
+    fails.push('[7] ข้อความหลังส่งมอบของหน้าสาธารณะไม่แยก รอทะเบียน/ได้ทะเบียน');
 
   /* 8 · กฎศักดิ์ศรีหน้าสาธารณะ — ห้ามหลุดตอนรื้อเส้นทาง */
   const t8 = await p.evaluate(() => {

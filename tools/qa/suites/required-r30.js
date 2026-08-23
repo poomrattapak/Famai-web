@@ -71,8 +71,7 @@ const CASES = [
   { id:'rjWhy',    open: seq(scr('deal'), OPEN.rj),   save:'#rjGo', want:'เลือกเหตุผลก่อน' },
   { id:'cdDetail', open: seq(scr('deal'), OPEN.drop), save:'#cdGo', want:'เขียนรายละเอียดก่อน' },
   { id:'fapWhy',   open: seq(scr('deal'), tap('#dlTable [data-deal]'), tap('#dlOne [data-fapno]')), save:'#fapGo', want:'บอกเหตุผลก่อน' },
-  { id:'dlPlate',  inline:1, open: seq(scr('deal'), js(`(()=>{ const d=dealAll().find(x=>x.rg && REG_STAGES.indexOf(x.rg.stage)>=REG_STAGES.indexOf('รอทะเบียน')); DEAL_SEL=d.c.id; rDeal(); })()`)),
-                   save:'[data-dlplate]', want:'กรอกเลขทะเบียนก่อน' },
+  /* v1.34: ช่องเลขทะเบียนย้ายไปหน้าฝ่ายทะเบียน (รอบถัดไป) — เคสจะกลับมาพร้อมช่องใหม่ */
 
   /* ---- เงินค้างรับ ---- */
   { id:'arAmt', open: seq(scr('ar'), tap('#arTable [data-ar]')), save:'#arGo', want:'กรอกจำนวนเงินก่อน' },

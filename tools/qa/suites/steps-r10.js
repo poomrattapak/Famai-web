@@ -1,11 +1,11 @@
 /* ด่านของ steps() — แถบความคืบหน้าแบบไอคอน (v1.11)
    ตรวจตัวคอมโพเนนต์เอง: จำนวนขั้น · ไอคอนที่ถูกต้องต่อสถานะ · วงแหวนของขั้นปัจจุบัน ·
-   เส้นไล่สีที่วิ่งเข้าขั้นปัจจุบัน · สถานะตกราง · และเส้นทาง 4 ขั้นของดีลเงินสด
+   เส้นไล่สีที่วิ่งเข้าขั้นปัจจุบัน · สถานะตกราง · และเส้นทาง 3 ขั้นของดีลเงินสด (v1.34 แถบเหลือ 4)
    (พฤติกรรมของหน้าดีลอยู่ที่ deal-r10 — ไฟล์นี้ดูแค่ว่าแถบวาดถูกไหม) */
 const { chromium, EXE, BASE } = require('./env');
 /* v1.28 — ลำดับตามงานจริง: ไฟแนนซ์ผ่านก่อนถึงเปิดการขาย · ส่งมอบก่อนได้ทะเบียนจริง */
 const TRACK = ['คุยกับลูกค้า', 'ไฟแนนซ์', 'เปิดการขาย', 'ส่งมอบ', 'ทะเบียนรถ'];
-const ICONS = ['user', 'bank', 'tag', 'bike', 'clipboard'];
+const ICONS = ['user', 'bank', 'tag', 'bike'];   /* v1.34: แถบเหลือ 4 ขั้น — clipboard ไปอยู่หน้าฝ่ายทะเบียน */
 
 const SHAPE = `el => {
   const pns = Array.from(el.querySelectorAll('.pn'));
@@ -53,8 +53,8 @@ const SHAPE = `el => {
     for (let k = 0; k < bars.length; k++) {
       const s = await bars[k].evaluate(eval(SHAPE));
       const at = tag + ' แถบที่ ' + (k + 1);
-      /* ดีลผ่อน 5 ขั้น · ดีลเงินสด 4 ขั้น (ตัดขั้นไฟแนนซ์ออกไปเลย) */
-      if (s.n !== 5 && s.n !== 4) bad(at + ': มี ' + s.n + ' ขั้น ควรเป็น 5 (ผ่อน) หรือ 4 (เงินสด)');
+      /* v1.34: ดีลผ่อน 4 ขั้น · ดีลเงินสด 3 ขั้น (ตัดขั้นไฟแนนซ์ออกไปเลย) */
+      if (s.n !== 4 && s.n !== 3) bad(at + ': มี ' + s.n + ' ขั้น ควรเป็น 4 (ผ่อน) หรือ 3 (เงินสด)');
       if (s.lines !== s.n - 1)    bad(at + ': เส้นเชื่อม ' + s.lines + ' เส้น ควรเป็น ' + (s.n - 1));
       /* v1.28: ดีลที่จบครบ (ได้ทะเบียนจริงแล้ว) ไม่มีขั้นปัจจุบัน — ทุกขั้นติ๊กหมด ไม่มีวงแหวน */
       const doneAll = s.nowN === 0 && s.done.length === s.n;
@@ -66,7 +66,7 @@ const SHAPE = `el => {
       if (s.linesOn !== Math.min(cur, s.n - 1))
         bad(at + ': เส้นทึบ ' + s.linesOn + ' เส้น แต่เดินมาถึงขั้นที่ ' + cur);
       /* ไอคอน: ขั้นที่ผ่านแล้ว = เครื่องหมายถูก · ที่เหลือ = ไอคอนประจำขั้น */
-      const want = (s.n === 5 ? ICONS : ICONS.filter(x => x !== 'bank')).map((n, ix) => ix < cur ? 'check' : n);
+      const want = (s.n === 4 ? ICONS : ICONS.filter(x => x !== 'bank')).map((n, ix) => ix < cur ? 'check' : n);
       if (s.icons.join(',') !== want.join(','))
         bad(at + ': ไอคอนเป็น [' + s.icons + '] ควรเป็น [' + want + ']');
       /* ขั้นปัจจุบันต้องมีวงแหวน และเส้นที่วิ่งเข้าต้องไล่สี — สองอย่างที่ทำให้ดีกว่าภาพอ้างอิง */
@@ -103,14 +103,14 @@ const SHAPE = `el => {
       if (!/255,\s*255,\s*255|rgb\(255/.test(hollow)) bad(tag + ': วงตกรางควรเป็นวงกลวง (พื้นขาว) ได้ ' + hollow);
     }
 
-    /* 4 · เส้นทาง 4 ขั้นของดีลเงินสด */
+    /* 4 · เส้นทาง 3 ขั้นของดีลเงินสด (v1.34) */
     const cashId = await p.evaluate(() => { const d = dealAll().find(x => x.cash); return d ? d.c.id : null; });
     if (!cashId) bad(tag + ': ไม่มีดีลเงินสดใน seed');
     else {
       await p.evaluate(id => { DEAL_SEL = id; rDeal(); }, cashId);
       await p.waitForTimeout(250);
       const c = await p.$eval('#dlOne .pstep', eval(SHAPE));
-      if (c.n !== 4) bad(tag + ': ดีลเงินสดมี ' + c.n + ' ขั้น ควรเป็น 4');
+      if (c.n !== 3) bad(tag + ': ดีลเงินสดมี ' + c.n + ' ขั้น ควรเป็น 3');
       if (c.labels.indexOf('ไฟแนนซ์') >= 0) bad(tag + ': ดีลเงินสดยังโชว์ขั้นไฟแนนซ์');
     }
 

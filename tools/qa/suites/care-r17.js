@@ -135,8 +135,8 @@ const { chromium, EXE, BASE } = require('./env');
     const r = {};
     if (done) { const dt = dealStepDates(done);
       r.doneDates = dt.slice(1).every(Boolean);          /* lead อาจไม่มี createdAt ในข้อมูลสาธิตเก่า */
-      /* v1.28: ขั้นสุดท้ายคือทะเบียนจริง — วันส่งมอบไปอยู่ขั้นรองสุดท้าย */
-      r.doneLast = dt[dt.length - 2] === done.rg.deliveredAt; }
+      /* v1.34: แถบจบที่ส่งมอบ — วันส่งมอบคือขั้นสุดท้ายบนแถบ */
+      r.doneLast = dt[dt.length - 1] === done.rg.deliveredAt; }
     if (finD) {
       const oldSla = CFG.slaFin;
       /* v1.22: อย่าพึ่งลำดับ seed — backdate ความเคลื่อนไหวล่าสุดของเคสนี้เอง 3 วันให้ชัวร์ว่า "เงียบ"

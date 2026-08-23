@@ -67,9 +67,10 @@ const INSTRUMENT = () => {
 
     /* ต้องเจาะจงเปิดดีลที่ "มีปุ่มนั้นจริง" ไม่ใช่แถวแรกที่บังเอิญขึ้นมา
        (แถวแรกคือดีลที่ตกราง ซึ่งไม่มีปุ่มเดินหน้า ถ้าใช้แถวแรกจะไม่ได้วัดอะไรเลย) */
+    /* v1.34: ขั้นส่งมอบเหลือปุ่มเดียว [data-dlv] (เปิดโมดัล ไม่ render ทันที) —
+       วัดลูปเฉพาะคู่ปุ่มไฟแนนซ์ที่ยังเดินหน้า-ถอยหลังบนหน้าเดิม */
     const pairs = [
       ['[data-dlfnext]', '[data-dlfback]', d => d.k === 'fin' && !d.off && d.fc],
-      ['[data-dlrnext]', '[data-dlrback]', d => (d.k === 'deliver' || d.k === 'plate') && d.rg],
     ];
     for (const [fwd, back, pick] of pairs) {
       const cid = await p.evaluate(fn => { const d = dealAll().find(eval(fn)); return d ? d.c.id : null; }, pick.toString());
