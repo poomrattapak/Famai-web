@@ -551,6 +551,8 @@ tfoot th.n{ text-align:right; }
 .p-good{ color:var(--pos); } .p-warn{ color:var(--attn); }
 .p-bad{ color:var(--accent); border-color:rgba(230,0,18,.24); }
 .p-info{ color:var(--ink-soft); } .p-mut{ color:var(--muted); }
+/* พิลล์ที่พกจุดสีของตัวเองมา (เช่นสีประจำสาขาในแกลเลอรี) ต้องปิดจุดอัตโนมัติ ไม่งั้นได้สองจุด */
+.pill.pdot::before{ display:none; }
 .p-brand{ color:var(--accent); border-color:rgba(230,0,18,.24); }
 
 /* -------------------- FORM -------------------- */
@@ -851,21 +853,38 @@ textarea.inp{ height:auto; padding:var(--s1) var(--s2); resize:vertical; line-he
 .farr{ color:var(--muted); align-self:center; }
 
 /* -------------------- GALLERY -------------------- */
-.gal{ display:grid; grid-template-columns:repeat(auto-fill,minmax(184px,1fr)); gap:var(--s3); }
-/* แกลเลอรี — ตัวรูปคือกล่องเดียวที่มี ตัวหนังสือใต้รูปไม่ต้องมีกรอบซ้อนอีกชั้น */
-.gcard{ background:none; box-shadow:none; border:0; border-radius:0; padding:0;
-  font:inherit; color:inherit; text-align:left; width:100%; display:block; }
-/* รูปรถเป็นสี่เหลี่ยมจัตุรัส — รูปถ่ายจริงจากร้านครอปพอดีกรอบ ไม่ต้องกะความสูงเอง */
-.gcard .ph{ aspect-ratio:1; background:var(--paper-2); border-radius:var(--r-card);
+.gal{ display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:var(--s3); }
+/* แกลเลอรี (v1.31 — ตามแบบที่เจ้าของส่งมา) หนึ่งใบ = หนึ่งรุ่น+สี รูปจึงตรงสีเสมอ
+   ตัวการ์ดมี "ขอบ" อย่างเดียว ไม่มีพื้นและไม่มีระยะขอบใน — ระยะอยู่ที่ .ph กับ .gb
+   ทำแบบนี้ตัวการ์ดจึงไม่นับเป็นชั้นกล่อง เหลือ .card + .gb = 2 ชั้นพอดี (กฎข้อ 1) */
+.gcard{ background:none; box-shadow:none; border:1px solid var(--hairline); border-radius:var(--r-card);
+  padding:0; overflow:hidden; font:inherit; color:inherit; text-align:left; width:100%;
+  display:flex; flex-direction:column; }
+/* กรอบรูปแนวนอน 4:3 — รูปถ่ายจริงจากร้านครอปพอดีกรอบ ไม่ต้องกะความสูงเอง */
+.gcard .ph{ aspect-ratio:4/3; margin:var(--s2); background:var(--paper-2); border-radius:var(--r-input);
   display:grid; place-items:center; overflow:hidden;
   color:var(--muted); position:relative; transition:box-shadow var(--dur-ui) var(--ease); }
 @media (hover:hover){ .gcard:hover .ph{ box-shadow:var(--sh-md); } }
-.gcard .ph .qty{ position:absolute; top:var(--s1); right:var(--s2);
-  font-family:var(--f-display); font-size:var(--t-lead); font-weight:600; color:var(--ink); }
-.gcard .gb{ padding:var(--s1) 0 0; }
+/* เส้นคั่นกินเต็มความกว้างการ์ด เพราะระยะขอบในอยู่ที่ .gb ไม่ใช่ที่การ์ด */
+/* .gb ยืดเต็มความสูงที่เหลือ แล้วดันแถบสาขาลงล่างสุด — ชื่อรุ่นยาวไม่เท่ากันจะได้ไม่ทำให้
+   แถบกับพิลล์ของการ์ดข้าง ๆ เหลื่อมกันทั้งแถว (ตากวาดหาข้อมูลเดียวกันในแนวเดียวได้) */
+.gcard .gb{ padding:var(--s2); border-top:1px solid var(--hairline); flex:1 1 auto;
+  display:flex; flex-direction:column; }
+.gcard .gbar{ margin-top:auto; }
+.gcard .gh{ display:flex; align-items:baseline; justify-content:space-between; gap:var(--s2); }
+.gcard .gbrand{ font-size:var(--t-label); color:var(--muted); letter-spacing:.04em; }
+.gcard .gqty{ font-family:var(--f-display); font-size:var(--t-h2); font-weight:600;
+  font-variant-numeric:tabular-nums; line-height:1; }
 .gcard .gb b{ font-size:var(--t-table); font-weight:600; display:block; }
+.gcard .gm{ font-size:var(--t-lead)!important; margin-top:2px; }
 .gcard .gb .c{ font-size:var(--t-label); color:var(--muted); }
+/* แถบสัดส่วนสต๊อกตามสาขา — ความกว้างแต่ละท่อนเท่ากับจำนวนคันจริง
+   ตัวแถบเป็นภาพประกอบเฉย ๆ ตัวเลขจริงอยู่ในพิลล์ข้างล่าง (สถานะห้ามสื่อด้วยสีอย่างเดียว กฎข้อ 3) */
+.gcard .gbar{ display:flex; gap:2px; padding-top:var(--s2); }
+.gcard .gbar i{ height:8px; border-radius:3px; min-width:10px; }
 .gcard .gb .cs{ display:flex; gap:var(--s-half); flex-wrap:wrap; margin-top:var(--s1); }
+/* ชื่อสาขายาวกว่าการ์ด (จอ 390 การ์ดกว้าง 163px) ต้องขึ้นบรรทัดในพิลล์ ไม่ใช่ถูกตัดหาย */
+.gcard .cs .pill{ max-width:100%; white-space:normal; }
 /* แถบสีของรุ่นในหน้าตั้งค่า — หนึ่งสีหนึ่งช่อง พร้อมรูปของสีนั้นเอง (v1.31)
    ไม่มีพื้น ไม่มีกรอบ ไม่มีระยะขอบข้าง จึงไม่เพิ่มชั้นกล่อง (กฎข้อ 1) */
 .vmcs{ display:flex; gap:var(--s2); flex-wrap:wrap; }
@@ -1497,7 +1516,9 @@ body.lock{ overflow:hidden; }
         </div>
         <div class="bd flush" id="stGrpWrap" style="display:none"><div class="tw"><table id="stGrp"></table></div></div>
         <div class="bd flush" id="stTableWrap" style="display:none"><div class="tw"><table id="stTable"></table></div></div>
-        <div class="bd" id="stGalWrap"><div class="gal" id="stGal"></div></div>
+        <!-- flush: การ์ดในแกลเลอรีเป็นกรอบของตัวเอง (v1.31) ถ้าตัวห่อยังมีระยะขอบในด้วย
+             จะกลายเป็นกล่องซ้อนสามชั้นทันที — ขอบจอ → .card → .gcard → ตัวหนังสือ คือ 2 ชั้นพอดี -->
+        <div class="bd flush" id="stGalWrap"><div class="gal" id="stGal"></div></div>
         </div>
       </section>
 
@@ -4644,20 +4665,38 @@ function rStock(){
         'ไม่พบรถตามเงื่อนไข');
     wireUnitRows();
   } else {
-    /* แกลเลอรีเคารพตัวกรองเหมือนอีกสองแท็บ — เดิมใช้ av ทำให้เลือกสถานะ "ขายแล้ว" แล้วหน้าว่าง */
+    /* แกลเลอรีเคารพตัวกรองเหมือนอีกสองแท็บ — เดิมใช้ av ทำให้เลือกสถานะ "ขายแล้ว" แล้วหน้าว่าง
+       v1.31: จัดกลุ่มด้วย "รุ่น + สี" ไม่ใช่รุ่นอย่างเดียว — รูปในการ์ดจึงเป็นรถสีนั้นจริงเสมอ
+       (รุ่นเดียวสี่สีเคยใช้รูปใบเดียวกันหมด ซึ่งเป็นเรื่องที่เจ้าของสั่งให้แก้)
+       แถบล่างเป็นสัดส่วนของ "สาขา" ตามแบบที่เจ้าของส่งมา — บอกว่าของกองอยู่ที่ไหน */
     const grp={};
-    list.forEach(u=>{ const k=u.variant+'|'+u.model; grp[k]=grp[k]||{u:u,n:0,colors:{},age:0,sold:0};
-      grp[k].n++; grp[k].age+=age(u); grp[k].colors[u.color]=(grp[k].colors[u.color]||0)+1;
+    list.forEach(u=>{ const k=u.variant+'|'+u.colorCode; grp[k]=grp[k]||{u:u,n:0,br:{},age:0,sold:0};
+      grp[k].n++; grp[k].age+=age(u); grp[k].br[u.branch]=(grp[k].br[u.branch]||0)+1;
       if(u.status==='sold') grp[k].sold++; });
+    /* สีของสาขาผูกกับลำดับใน BRANCHES ไม่ใช่ลำดับที่เจอในรายการ — สาขาเดิมจึงได้สีเดิมทุกการ์ด
+       ถ้าไล่สีตามลำดับที่เจอ สาขาเดียวกันจะเปลี่ยนสีไปมาระหว่างการ์ด อ่านแล้วสับสนกว่าไม่มีสี */
+    const brHue = code => 'var(--ch'+((Math.max(0, BRANCHES.findIndex(b=>b.code===code)) % 6) + 1)+')';
     $('#stGal').innerHTML = Object.keys(grp).length? Object.keys(grp).map(k=>{ const g=grp[k];
-      return '<button class="gcard" data-gmodel="'+esc(g.u.model)+'"><div class="ph">'+bikeArt(g.u.variant, g.u.color, g.u.colorCode)+'<span class="qty">'+g.n+'</span></div>'
-        +'<div class="gb"><b>'+esc(g.u.model)+'</b><div class="c">'+esc(g.u.variant)+' · '+esc(g.u.modelTh||'—')+'</div>'
-        +'<div class="c">'+(g.u.retail==null?'<span style="color:var(--attn)">รอกำหนดราคา</span>':baht(g.u.retail)+(g.u.clearance?' <span style="color:var(--attn)">· เคลียร์</span>':''))+'</div>'
-        +'<div class="cs">'+Object.keys(g.colors).map(c=>'<span class="pill p-mut"><span class="dot" style="background:'+(COLOR_HEX[c]||'#ccc')+'"></span>'+esc(c)+' '+g.colors[c]+'</span>').join('')+'</div>'
-        +'<div class="tsub" style="margin-top:var(--s1)">'+(g.sold===g.n? 'ขายแล้วทั้งหมด' : 'อายุเฉลี่ย '+Math.round(g.age/g.n)+' วัน')+'</div></div></button>';
+      const brs=Object.keys(g.br).sort((a,b)=>g.br[b]-g.br[a]);
+      return '<button class="gcard" data-gpick="'+esc(g.u.model)+'|'+esc(g.u.color)+'">'
+        +'<div class="ph">'+bikeArt(g.u.variant, g.u.color, g.u.colorCode)+'</div>'
+        +'<div class="gb">'
+        +'<div class="gh"><span class="gbrand">ยามาฮ่า</span><b class="gqty">'+g.n+'</b></div>'
+        +'<b class="gm">'+esc(g.u.model)+'</b>'
+        +'<div class="c"><span class="mono">'+esc(g.u.variant)+'</span> · '+esc(g.u.color)+'</div>'
+        +'<div class="c">'+esc(g.u.modelTh||'—')+(g.u.year?' · ปี '+g.u.year:'')+'</div>'
+        +'<div class="c">'+(g.u.retail==null?'<span style="color:var(--attn)">รอกำหนดราคา</span>'
+             :baht(g.u.retail)+(g.u.clearance?' <span style="color:var(--attn)">· เคลียร์</span>':''))+'</div>'
+        +'<div class="gbar">'+brs.map(b=>'<i style="flex:'+g.br[b]+' 0 0;background:'+brHue(b)+'"></i>').join('')+'</div>'
+        +'<div class="cs">'+brs.map(b=>'<span class="pill p-mut pdot"><span class="dot" style="background:'+brHue(b)+'"></span>'
+             +esc(bName(b))+' '+g.br[b]+'</span>').join('')+'</div>'
+        +'<div class="tsub" style="margin-top:var(--s1)">'+(g.sold===g.n? 'ขายแล้วทั้งหมด' : 'อายุเฉลี่ย '+Math.round(g.age/g.n)+' วัน')+'</div>'
+        +'</div></button>';
     }).join('') : '<div class="empty"><b>ไม่พบรถ</b>ลองปรับตัวกรอง</div>';
-    /* แตะรุ่นในแกลเลอรี → กรองเป็นรุ่นนั้นแล้วไปดูรายคันในแท็บตาราง */
-    $$('#stGal [data-gmodel]').forEach(c=> c.onclick=()=>{ $('#stModel').value=c.dataset.gmodel; stTab('table'); });
+    /* แตะการ์ด → กรองเป็นรุ่น+สีนั้นแล้วไปดูรายคันในแท็บตาราง (ตัวกรองสีเติมใหม่ให้เองใน rStock) */
+    $$('#stGal [data-gpick]').forEach(c=> c.onclick=()=>{
+      const [m,col]=c.dataset.gpick.split('|');
+      $('#stModel').value=m; stColorOpts(); $('#stColor').value=col; stTab('table'); });
   }
 }
 

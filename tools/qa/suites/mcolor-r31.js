@@ -196,7 +196,69 @@ const PNG = Buffer.from(
     if (JSON.stringify(pub.colors).indexOf('data:image') >= 0)
       bad(tag + ': dataURL ของรูปหลุดออกไปกับเพย์โหลดสาธารณะ');
 
+    /* ---------- 11 · แกลเลอรีสต๊อก: หนึ่งใบ = รุ่น + สี ---------- */
+    await p.evaluate(() => { closeModal(); go('stock'); }); await p.waitForTimeout(300);
+    await p.evaluate(() => stTab('gal')); await p.waitForTimeout(350);
+    const gal = await p.evaluate(() => {
+      const seen = new Set();
+      stList().forEach(u => seen.add(u.variant + '|' + u.colorCode));
+      const cards = [...document.querySelectorAll('#stGal .gcard')];
+      return { want: seen.size, got: cards.length,
+        /* ตัวเลขใหญ่บนการ์ดต้องเท่ากับผลรวมของพิลล์สาขาเสมอ — ถ้าไม่เท่า แปลว่านับคนละชุด */
+        mismatch: cards.filter(c => {
+          const n = +c.querySelector('.gqty').textContent;
+          const sum = [...c.querySelectorAll('.cs .pill')]
+            .reduce((t, x) => t + (+(x.textContent.trim().match(/(\d+)$/) || [0, 0])[1]), 0);
+          return n !== sum;
+        }).length,
+        /* ท่อนแถบต้องเท่ากับจำนวนพิลล์ ไม่งั้นแถบเล่าเรื่องคนละเรื่องกับตัวเลข */
+        barPill: cards.filter(c => c.querySelectorAll('.gbar i').length !== c.querySelectorAll('.cs .pill').length).length,
+        /* พิลล์ต้องมีจุดสีเดียว — .pill มีจุดของตัวเองอยู่แล้ว ถ้าใส่ .dot เพิ่มโดยไม่ปิดจะได้สองจุด */
+        twoDots: cards.filter(c => [...c.querySelectorAll('.cs .pill')]
+          .some(x => !x.classList.contains('pdot'))).length,
+        subs: cards.slice(0, 3).map(c => c.querySelector('.gb .c').textContent) };
+    });
+    if (gal.got !== gal.want) bad(tag + ': แกลเลอรีมี ' + gal.got + ' ใบ ควรเป็น ' + gal.want + ' (รุ่น+สีที่มีรถจริง)');
+    if (gal.mismatch)  bad(tag + ': ' + gal.mismatch + ' ใบที่ตัวเลขใหญ่ไม่เท่ากับผลรวมของพิลล์สาขา');
+    if (gal.barPill)   bad(tag + ': ' + gal.barPill + ' ใบที่จำนวนท่อนแถบไม่เท่ากับจำนวนพิลล์สาขา');
+    if (gal.twoDots)   bad(tag + ': พิลล์สาขาไม่ได้ปิดจุดอัตโนมัติ (.pdot) จะได้จุดสองจุดซ้อนกัน');
+    /* บรรทัดรองต้องบอก "รหัสรุ่น · ชื่อสี" — ถ้าไม่มีชื่อสี แปลว่ายังจัดกลุ่มด้วยรุ่นอย่างเดียว */
+    gal.subs.forEach((t, i) => { if (t.indexOf('·') < 0)
+      bad(tag + ': การ์ดที่ ' + (i + 1) + ' ไม่ได้บอกสีในบรรทัดรอง ("' + t.trim() + '")'); });
+
+    /* ---------- 12 · รูปในแกลเลอรีเป็นรูปของสีนั้นใบเดียว ---------- */
+    const galImg = await p.evaluate(() => {
+      const u = stList()[0]; if (!u) return { skip: true };
+      const e = PRICE[u.variant] && PRICE[u.variant].c[u.colorCode]; if (!e) return { skip: true };
+      const keep = e.img;
+      e.img = 'data:image/jpeg;base64,AAAA';
+      rStock();
+      const withImg = [...document.querySelectorAll('#stGal .gcard')].filter(c => c.querySelector('.ph img')).length;
+      if (keep) e.img = keep; else delete e.img;
+      rStock();
+      return { skip: false, withImg };
+    });
+    if (!galImg.skip && galImg.withImg !== 1)
+      bad(tag + ': ใส่รูปให้สีเดียว แต่การ์ดที่โชว์รูปมี ' + galImg.withImg + ' ใบ ควรมีใบเดียว');
+
+    /* ---------- 13 · กดการ์ดแล้วต้องได้ตารางที่กรองรุ่น+สีนั้นพอดี ---------- */
+    const jump = await p.evaluate(() => {
+      const c = document.querySelector('#stGal .gcard');
+      const n = +c.querySelector('.gqty').textContent;
+      c.click();
+      return { n, model: document.getElementById('stModel').value,
+               color: document.getElementById('stColor').value, rows: stList().length };
+    });
+    await p.waitForTimeout(250);
+    if (!jump.model || !jump.color)
+      bad(tag + ': กดการ์ดแล้วตัวกรองไม่ได้ตั้งทั้งรุ่นและสี (' + jump.model + '/' + jump.color + ')');
+    else if (jump.rows !== jump.n)
+      bad(tag + ': การ์ดบอก ' + jump.n + ' คัน แต่กดเข้าไปเจอ ' + jump.rows + ' คัน');
+    await p.evaluate(() => { document.getElementById('stModel').value = '';
+      document.getElementById('stColor').value = ''; rStock(); });
+
     /* ---------- 10 · ไม่ล้นออกข้าง ---------- */
+    await p.evaluate(() => { go('settings'); }); await p.waitForTimeout(250);
     await p.evaluate(() => modelModal('BJKD00')); await p.waitForTimeout(300);
     const over = await p.evaluate(() => {
       const mb = document.querySelector('#mdB');
