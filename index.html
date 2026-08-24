@@ -321,6 +321,12 @@ h6[data-grp].mg6{ color:var(--grp6); border-bottom-color:var(--grp6); }
 /* หน้าที่ navbar รับช่วงเวลาไปแล้ว ซ่อนแถบในหน้า — state/handler ยังอยู่ครบ (ด่านที่ยิงตรงใช้ต่อได้)
    #wsPer/#movePer ไม่ซ่อน: เป็นช่วงเวลาของแท็บย่อยในหน้า sell/parts ไม่ใช่ของทั้งหน้า */
 #dPer,#rpPer,#trPer,#quotePer,#expPer{ display:none; }
+/* v1.38 (บรีฟข้อ 20): หน้าลงเวลาบนจอคอม — สรุปเวลาทำงานขึ้นบนเต็มกว้าง ตารางลงเวลาเต็มกว้างต่อใต้
+   (เดิมสองการ์ดเบียดกันครึ่งจอ ตารางโดนบีบจนต้องปัดข้าง) · มือถือเรียงเดิมอยู่แล้ว ไม่แตะ */
+@media (min-width:901px){
+  #h1>.g2e{ display:flex; flex-direction:column; align-items:stretch; }
+  #h1>.g2e>.card:last-child{ order:-1; }
+}
 /* v1.29: ขอบเขตบริษัท-สาขาอยู่บน navbar ที่เดียว — ตัวกรองในหน้าซ่อน แต่ยังเป็นตัวเก็บค่าอยู่
    (คำสั่งเจ้าของ: ไม่ให้มีที่เลือกสาขาสองที่จนขัดกันเอง) */
 #dBranch,#stBranch,#dlBranch,#abBranch,#rpBranch{ display:none; }
@@ -3926,6 +3932,18 @@ function regQueue(){
     .sort((a,b)=>String(a.r.due).localeCompare(String(b.r.due)));
   return {all, wait, rc};
 }
+/* v1.38 (บรีฟข้อ 22): เคสที่ "ตัดสินแล้ว" ในช่วง/สาขาที่หน้าแรกเลือกอยู่ — อนุมัติ+ปฏิเสธเท่านั้น
+   เคสที่ยังรอไม่ถูกนับ (อัตราผ่านของเคสค้างยังไม่มีจริง) · วันตัดสินอ่านจาก log/rejectAt จริง */
+const canFinRate = () => ['admin','manager','acct'].indexOf(ME.role)>=0;
+function finDecidedDash(){
+  const out=[];
+  FINCASES.forEach(f=>{ if(!inScope(f.branch) || !brMatch(dBranch,f.branch)) return;
+    const st=finStageNorm(f);
+    if(st==='อนุมัติแล้ว'){ const lg=(f.log||[]).filter(l=>l.to==='อนุมัติแล้ว').pop();
+      const at=(lg&&lg.at)||f.at; if(inPer('dash',at)) out.push({f, ok:1, at}); }
+    else if(st==='ปฏิเสธ'){ const at=f.rejectAt||f.at; if(inPer('dash',at)) out.push({f, ok:0, at}); } });
+  return out;
+}
 function rDash(){
   rPunch();
   const sel=$('#dBranch');
@@ -3969,7 +3987,13 @@ function rDash(){
       s:noMoney()?'ซ่อนตามสิทธิ์':(rev?Math.round(gp/rev*100)+'% ของยอดขาย':'—'), pop:'gp'},
     {l:'ค้างเกิน '+CFG.aging+' วัน', v:stuck.length+' <small>คัน</small>',
       s:'ทุนจม '+money(stuck.reduce((s,u)=>s+u.cost,0)), pop:'stuck'}
-  ].map(k=>'<div class="kpi '+(k.cls||'')+' clk" data-pop="kpi|'+k.pop+'">'
+  ].concat((function(){
+    /* v1.38 (บรีฟข้อ 22): อัตราผ่านไฟแนนซ์ — เห็นเฉพาะบทบาทที่เห็นรายงานการเงิน */
+    if(!canFinRate()) return [];
+    const fd=finDecidedDash(), ok=fd.filter(x=>x.ok).length;
+    return [{l:'อัตราผ่านไฟแนนซ์', v: fd.length? Math.round(ok/fd.length*100)+' <small>%</small>' : '—',
+      s: fd.length? ok+' ผ่าน จาก '+fd.length+' เคสที่ตัดสิน' : 'ไม่มีเคสตัดสินในช่วงนี้', pop:'finrate'}];
+  })()).map(k=>'<div class="kpi '+(k.cls||'')+' clk" data-pop="kpi|'+k.pop+'">'
     +'<div class="l">'+k.l+'</div><div class="v">'+k.v+'</div><div class="s">'+k.s+'</div>'+(k.d||'')+'</div>').join('');
 
   /* ② อะไรค้างอยู่ (แบบ 3) — ทะเบียน · คิวงานตามวันครบกำหนด · เงินค้างรับ
@@ -4244,6 +4268,25 @@ function todoDrawer(kind){
    เหมือนตัวเลขบนการ์ด (สัญญา dash-r25 ข้อ 3) */
 function kpiDrawer(kind){
   if(kind==='stuck') return todoDrawer('stuck');
+  /* v1.38: ป๊อปอัพอัตราผ่านไฟแนนซ์ — ด่านจริงอยู่ที่นี่ การ์ดเป็นแค่ทางเข้า (§9b) */
+  if(kind==='finrate'){
+    if(!canFinRate()) return;
+    const list=finDecidedDash(), ok=list.filter(x=>x.ok).length;
+    const byFin={}; list.forEach(x=>{ const n=(finById(x.f.finId)||{}).name||'—';
+      (byFin[n]=byFin[n]||{ok:0,no:0})[x.ok?'ok':'no']++; });
+    const byWhy={}; list.filter(x=>!x.ok).forEach(x=>{ const r=x.f.rejectReason||'ไม่ระบุ'; byWhy[r]=(byWhy[r]||0)+1; });
+    openDrawer('อัตราผ่านไฟแนนซ์ — '+(list.length? Math.round(ok/list.length*100)+'%' : 'ไม่มีเคส'),
+      '<div class="tsub" style="margin-bottom:var(--s2)">'+esc(dPeriodText())+' · '+esc(scopeName(dBranch))
+      +' · นับเฉพาะเคสที่ตัดสินแล้ว (อนุมัติ/ปฏิเสธ)</div>'
+      +'<h4 class="sec">แยกรายเจ้า</h4>'
+      +(Object.keys(byFin).length? Object.keys(byFin).map(n=>{ const b2=byFin[n], t=b2.ok+b2.no;
+          return '<div class="kv2"><span>'+esc(n)+'</span><b>'+Math.round(b2.ok/t*100)+'% <span class="tsub">('+b2.ok+'/'+t+')</span></b></div>'; }).join('')
+        : '<p class="foot">ไม่มีเคสที่ตัดสินในช่วงนี้</p>')
+      +'<h4 class="sec">เหตุผลที่ไม่ผ่าน</h4>'
+      +(Object.keys(byWhy).length? Object.keys(byWhy).map(r=>'<div class="kv2"><span>'+esc(r)+'</span><b>'+byWhy[r]+'</b></div>').join('')
+        : '<p class="foot">ไม่มีเคสไม่ผ่านในช่วงนี้</p>'));
+    return;
+  }
   const su=dUnits(), ss=dSales();
   const scope='<div class="tsub" style="margin-bottom:var(--s2)">'+esc(dPeriodText())+' · '
     +esc(scopeName(dBranch))+'</div>';
@@ -6549,6 +6592,14 @@ function dealDetail(d){
         +(d.fc.rejectWith? ' · ติดกับ <b>'+esc(d.fc.rejectWith)+'</b>' : '')] : null,
       d.fc.rejectNote? ['หมายเหตุ', esc(d.fc.rejectNote)] : null
     ]);
+  /* v1.38: ประวัติไฟแนนซ์ของลูกค้าคนนี้ — อยู่นอก if(d.fc) เพราะต้องเห็นแม้เคสถูกลบไปแล้ว */
+  if((d.c.finHist||[]).length)
+    h+='<h4 class="sec">ประวัติไฟแนนซ์</h4>'+d.c.finHist.map(e=>'<div class="frow">'
+      +pill(e.event, e.event==='ปฏิเสธ'?'bad':(e.event==='ยื่นใหม่'?'info':'mut'))
+      +'<span>'+thDate(e.at)+' · '+esc(e.fin||'—')
+      +(e.reason?' · '+esc(e.reason):'')+(e.with?' (ติดกับ '+esc(e.with)+')':'')
+      +(e.status&&e.event==='ยกเลิกการขาย'?' · สถานะตอนยกเลิก: '+esc(e.status):'')
+      +(e.note?' · '+esc(e.note):'')+'</span></div>').join('');
   if(d.rg) h+='<h4 class="sec">งานทะเบียน</h4>'
     +(d.rg.hold?'<div class="note b">'+ic('alert','i i-sm')+'<span>'+esc(d.rg.hold)+' — ยื่นใหม่หรือยกเลิกการขายก่อนถึงจะเดินต่อได้</span></div>':'')
     +kv([
@@ -6865,6 +6916,8 @@ function saleDrawer(id){
     +'<dt>รถ</dt><dd><b>'+esc(u.model)+'</b> · '+esc(u.color)+'</dd>'
     +'<dt>เลขเครื่อง</dt><dd class="mono">'+esc(u.engine)+'</dd>'
     +'<dt>ลูกค้า</dt><dd>'+esc(c?c.name:'—')+(c&&c.phone?' · '+esc(c.phone):'')+'</dd>'
+    /* v1.38 (บรีฟข้อ 23): รายเคสจากรายงานเปิดมาที่นี่ — เลขบัตรปิดกลางเสมอ เว้นบทบาทที่ได้สิทธิ์ */
+    +(c&&c.idNo? '<dt>เลขบัตร</dt><dd class="mono">'+esc(idDisp(c.idNo))+'</dd>':'')
     +'<dt>ราคาสุทธิ</dt><dd><b>'+baht(s.net)+'</b></dd>'
     +'<dt>ชำระ</dt><dd>'+(s.pay==='cash'?'เงินสด':'ผ่อน'+(f?' · '+esc(f.name):'')+(s.term?' · '+s.term+' งวด · ดาวน์ '+fmt(s.down)+' ฿':''))+'</dd>'
     +'<dt>เซลล์</dt><dd>'+esc(s.sales)+'</dd>'
@@ -7022,6 +7075,12 @@ const finLog = (c,to) => { (c.log=c.log||[]).push({to, at:TODAY}); };
 /* v1.31 (B6): ด่านสิทธิ์ขั้นไฟแนนซ์ — อยู่ในฟังก์ชันเขียนทุกตัว ไม่ใช่ที่ปุ่ม (§9b) */
 const canFinStage = () => permW('act:finStage');
 const finStageDeny = () => { toast('บทบาทของคุณเดินขั้นไฟแนนซ์ไม่ได้','ตั้งสิทธิ์ได้ที่ ตั้งค่าระบบ > สิทธิ์การเข้าถึง',1); return false; };
+/* v1.38 (บรีฟข้อ 10): ประวัติไฟแนนซ์เก็บที่ตัวลูกค้า — เคสถูกลบตอนยกเลิกการขาย แต่ประวัติต้องรอด (§9i)
+   บันทึกทุกครั้งที่ ปฏิเสธ / ยื่นใหม่ / ยกเลิกการขาย — อ่านโชว์ในบล็อกเคสสินเชื่อของดีล */
+function finHistAdd(custId, e){
+  const c=CUSTOMERS.find(x=>x.id===custId);
+  if(c) (c.finHist=c.finHist||[]).push(e);
+}
 function finAdvance(id){
   const c=FINCASES.find(x=>x.id===id); if(!c) return false;
   if(!canFinStage()) return finStageDeny();
@@ -7056,6 +7115,8 @@ function finReject(id, reason, blocker, note){
   c.rejectReason = reason;
   c.rejectWith   = (reason==='ติดไฟแนนซ์เจ้าอื่น') ? String(blocker||'').trim() : '';
   c.rejectNote   = String(note||'').trim();
+  finHistAdd(c.custId, { at:TODAY, fin:(finById(c.finId)||{}).name||'', event:'ปฏิเสธ',
+    reason:c.rejectReason, with:c.rejectWith, note:c.rejectNote });
   finLog(c,'ปฏิเสธ · '+c.rejectReason+(c.rejectWith? ' ('+c.rejectWith+')' : ''));
   syncFinToReg(c); touchCust(c.custId);
   const cu=CUSTOMERS.find(x=>x.id===c.custId); if(cu) cu.stage='ไม่ผ่าน';
@@ -7104,6 +7165,7 @@ function finResubmit(id, after){
     c.finId=nf; c.status='ส่งเรื่อง'; c.at=TODAY;
     delete c.rejectReason; delete c.rejectWith; delete c.rejectNote; delete c.rejectAt;
     finLog(c,'ส่งเรื่อง (ยื่นใหม่)'); touchCust(c.custId);
+    finHistAdd(c.custId, { at:TODAY, fin:(finById(nf)||{}).name||'', event:'ยื่นใหม่' });
     if(s){ s.finId=nf; const a=AR.find(x=>x.saleId===s.id&&x.kind==='finance'); if(a) a.finId=nf; }
     if(cu && cu.stage!=='รับรถสำเร็จ') cu.stage='จอง';
     syncFinToReg(c);                         /* ล้าง hold + ดันทะเบียนกลับเข้าราง */
@@ -7235,6 +7297,9 @@ function voidSaleCore(s, drop){
   if(c) c.stage = (fc && fc.status==='ปฏิเสธ') ? 'ไม่ผ่าน' : 'สนใจ';
   /* เคสสินเชื่อของการขายที่ตายแล้วต้องตายด้วย — ไม่งั้น badge เมนูดีลนับงานผีที่เข้าไปหาไม่เจอ
      รายงาน finsum/ค่าคอมนับเคสเกินจริง และปิดบริษัทไฟแนนซ์ไม่ได้เพราะ finRefs ยังเห็นเคสนี้ */
+  /* v1.38: เคสที่ตายพร้อมการขาย — แช่สถานะสุดท้ายลงประวัติลูกค้าก่อนลบ */
+  if(fc) finHistAdd(s.custId, { at:TODAY, fin:(finById(fc.finId)||{}).name||'', event:'ยกเลิกการขาย',
+    reason: fc.status==='ปฏิเสธ'? (fc.rejectReason||'') : '', status: fc.status });
   const fi=FINCASES.findIndex(x=>x.saleId===s.id); if(fi>=0) FINCASES.splice(fi,1);
 }
 function cancelSale(saleId){
@@ -7968,9 +8033,13 @@ function attCalc(a){
      นับจาก max(เวลาเข้า, เวลาเลิกงาน) ไม่งั้นคนที่เข้างาน 20:00 ออก 20:15
      จะได้ OT 2.8 ชม. ทั้งที่อยู่แค่ 15 นาที */
   const otSec  = (inS&&outS&&outS>inS)? Math.max(0, outS-Math.max(inS,outRef)) : 0;
-  const lateSec= inS?  Math.max(0, inS-inRef-g) : 0;
+  const lateRaw= inS?  Math.max(0, inS-inRef-g) : 0;
+  /* v1.38 (บรีฟข้อ 21): คนตรวจยกเว้นการมาสายได้ (มีเหตุจำเป็น) — ตัดสินที่จุดเดียวนี้
+     มีผลทั้งสถิติ ธง และเงินเดือนพร้อมกัน (§9i) · waived เก็บไว้ให้จอโชว์ว่าเคยสายแต่ถูกยกเว้น */
+  const waived = lateRaw>0 && !!(a && a.review && a.review.waiveLate);
+  const lateSec= waived? 0 : lateRaw;
   return { inS, outS, workSec, otSec, lateSec, hrs:workSec/3600, otH:otSec/3600,
-    lateMin:lateSec/60, late:lateSec>0, openIn: !!inS && !outS };
+    lateMin:lateSec/60, late:lateSec>0, waived, openIn: !!inS && !outS };
 }
 /* วันก่อนหน้าที่ลืมลงเวลาออกของคนนี้ (v1.26 ข้อ 5) — เงื่อนไขเดียวกับธง open ใน attFlags
    มองย้อนแค่ 7 วัน: เก่ากว่านั้นอยู่ในคิวตรวจของผู้จัดการอยู่แล้ว ไม่ใช่เรื่องที่เจ้าตัวช่วยอะไรได้ */
@@ -8130,8 +8199,13 @@ function attMissing(ym){
     if(!a || !a.in) out.push({s, date}); }));
   return out;
 }
-function attReview(a, status, note){
-  a.review={ status, by:ME.name, at:new Date().toISOString(), note:note||'' };
+function attReview(a, status, note, waiveLate){
+  /* v1.38: ด่านในฟังก์ชันเขียน (§9b) — เดิมพึ่งการซ่อนปุ่มอย่างเดียว · ยกเว้นมาสายต้องมีเหตุผลเสมอ */
+  if(!permW('act:hrApprove')){ toast('เฉพาะผู้มีสิทธิ์ตรวจการลงเวลา','',1); return false; }
+  if(waiveLate && !String(note||'').trim()){
+    toast('ยกเว้นมาสายต้องมีหมายเหตุ','บอกเหตุจำเป็นไว้ให้คนดูย้อนหลัง',1); return false; }
+  a.review={ status, by:ME.name, at:new Date().toISOString(), note:note||'', waiveLate:!!waiveLate };
+  return true;
 }
 function attMonthText(m){
   return 'ทำงาน '+m.workDays+' วัน · '+hm1(m.hrs)+' ชม.'
@@ -8913,6 +8987,7 @@ async function psRender(){
         +'<dt>บัญชีที่กด</dt><dd>'+esc((a.inProof&&a.inProof.byName)||'—')+'</dd>'
         +(a.editLog? '<dt>ประวัติการแก้</dt><dd>'+a.editLog.map(e=>esc(e.by)+' — '+esc(e.why)).join('<br>')+'</dd>':'')
         +(a.review? '<dt>ตรวจแล้ว</dt><dd>'+esc(a.review.by)+' · '+(a.review.status==='ok'?'ยืนยัน':'ติดปัญหา')
+            +(a.review.waiveLate?' · <b>ยกเว้นมาสาย</b>':'')
             +(a.review.note?' · '+esc(a.review.note):'')+'</dd>':'')
         +'</dl>'
       : '<div class="note '+(st.k==='leave'?'b':'w')+'">'+ic(st.k==='leave'?'info':'alert','i i-sm')
@@ -8922,7 +8997,12 @@ async function psRender(){
       ? '<div class="note w" style="margin-top:var(--s2)">'+ic('alert','i i-sm')
         +'<span>นี่คือบันทึกของคุณเอง — ตรวจหรือแก้เองไม่ได้ ต้องให้คนอื่นที่มีสิทธิ์เป็นคนตรวจ</span></div>'
       : (canFixAtt()
-        ? '<div><label class="fl" style="margin-top:var(--s2)">หมายเหตุ (จำเป็นเมื่อติดปัญหา)</label>'
+        ? (a && (attCalc(a).late || attCalc(a).waived)
+            ? '<label style="display:flex;gap:var(--s1);align-items:center;margin-top:var(--s2);font-size:var(--t-label)">'
+              +'<input type="checkbox" id="psWaive"'+(a.review&&a.review.waiveLate?' checked':'')
+              +'> ยกเว้นการมาสาย (มีเหตุจำเป็น — ต้องกรอกหมายเหตุ)</label>'
+            : '')
+          +'<div><label class="fl" style="margin-top:var(--s2)">หมายเหตุ (จำเป็นเมื่อติดปัญหา)</label>'
           +'<input class="inp" id="psNote" value="'+esc(a&&a.review?a.review.note:'')+'" placeholder="เช่น มาสายเพราะไปส่งของก่อนเข้างาน"></div>'
           +'<div class="savebar">'
           +(a? '<button class="btn" id="psOk">ยืนยัน<svg class="i"><use href="#i-check"/></svg></button>'
@@ -8936,11 +9016,12 @@ async function psRender(){
   if(pv) pv.onclick=()=>{ PS_DAY=prevM+'-01'; psRender(); };
   if(pn) pn.onclick=()=>{ if(nextM<=curDate().slice(0,7)){ PS_DAY=nextM+'-01'; psRender(); } };
   const done=()=>{ psRender(); if(CUR==='attend') rAttend(); else rHr(); badges(); };
-  if($('#psOk'))   $('#psOk').onclick  =()=>{ attReview(a,'ok',$('#psNote').value.trim());
-    toast('ยืนยันแล้ว', s.nick+' · '+thDate(PS_DAY)); done(); };
+  const psWv=()=> !!($('#psWaive') && $('#psWaive').checked);
+  if($('#psOk'))   $('#psOk').onclick  =()=>{ if(!attReview(a,'ok',$('#psNote').value.trim(), psWv())) return;
+    toast('ยืนยันแล้ว', s.nick+' · '+thDate(PS_DAY)+(psWv()?' · ยกเว้นมาสาย':'')); done(); };
   if($('#psFlag')) $('#psFlag').onclick=()=>{ const nt=$('#psNote').value.trim();
     if(!nt){ toast('ต้องระบุเหตุผล','การติดปัญหาต้องบอกว่าติดตรงไหน',1); return; }
-    attReview(a,'flag',nt); toast('ติดปัญหาแล้ว', s.nick+' · '+nt); done(); };
+    if(!attReview(a,'flag',nt, psWv())) return; toast('ติดปัญหาแล้ว', s.nick+' · '+nt); done(); };
   if($('#psFix'))  $('#psFix').onclick =()=> attFixModal(s, PS_DAY, ()=>{ closeModal(); done(); });
 }
 let hrClockTimer=null;
@@ -10116,23 +10197,46 @@ function modelModal(code){
 
 /* ============================= 22. ผังกระบวนการ ============================= */
 /* v1.28: ทุก lane ต้องเล่าเรื่องเดียวกับ DEAL_TRACK — ไฟแนนซ์ก่อนเปิดการขาย · ส่งมอบก่อนได้ป้าย */
+/* v1.38 (บรีฟข้อ 23b): lane ตามเส้นทางใหม่ เซลล์→ทะเบียน→บริการ · g = หน้าที่กดแล้วพาไป (ถ้ามีสิทธิ์) */
 const LANES=[
-  {n:'เซลล์',  s:['รับลูกค้า / บันทึก lead','เสนอราคา + เทียบไฟแนนซ์','ส่งเรื่องไฟแนนซ์','เปิดการขายเมื่อไฟแนนซ์ผ่าน','ติดตามลูกค้า 7/30/90 วัน']},
-  {n:'สต๊อก',  s:['รับรถจากยามาฮ่า +','ตรวจเลขเครื่อง/เลขถัง +','ตัดสต๊อกตอนขาย +','โอนย้ายระหว่างสาขา','เช็ก aging stock +']},
-  {n:'บัญชี',  s:['ออกใบเสร็จ/ใบกำกับ +','ติดตามเงินไฟแนนซ์ !','ลงรับเงินสด','บันทึกค่าใช้จ่าย','ปิดงบรายเดือน']},
-  {n:'ทะเบียน',s:['ส่งมอบลูกค้า (ป้ายชั่วคราว)','ยื่นเรื่องทะเบียน','ติดตามสถานะ !','รับป้ายจริง','เก็บเอกสาร']},
-  {n:'ช่าง',   s:['รับรถเข้าศูนย์ (ดูแลหลังส่งมอบ)','ค้นประวัติจากเลขเครื่อง +','เบิกอะไหล่ +','ปิดงาน','ตั้งเตือนรอบถัดไป +']}
+  {n:'เซลล์',  s:['รับลูกค้า / บันทึก lead','เสนอราคา + เทียบไฟแนนซ์','ส่งเรื่องไฟแนนซ์','เปิดการขายเมื่อไฟแนนซ์ผ่าน','ส่งมอบรถ + ติดตามการขาย'],
+             g:['deal','quote','deal','sell','deal']},
+  {n:'สต๊อก',  s:['รับรถจากยามาฮ่า +','ตรวจเลขเครื่อง/เลขถัง +','ตัดสต๊อกตอนขาย +','โอนย้ายระหว่างสาขา','เช็ก aging stock +'],
+             g:['recv','stock','sell','transfer','stock']},
+  {n:'บัญชี',  s:['ออกใบเสร็จ/ใบกำกับ +','ติดตามเงินไฟแนนซ์ !','ลงรับเงินสด','บันทึกค่าใช้จ่าย','ปิดงบรายเดือน'],
+             g:['invoice','ar','ar','expense','report']},
+  {n:'ทะเบียน',s:['รับช่วงหลังส่งมอบ (ป้ายชั่วคราว)','ยื่นเรื่องทะเบียน','ติดตามสถานะ !','รับป้ายจริง + ปิดงาน','ส่งต่อฝ่ายบริการ +'],
+             g:['plate','plate','plate','plate','aftercare']},
+  {n:'บริการ', s:['รับช่วงหลังได้ป้ายทะเบียน +','โทรตามรอบ 7/30/60/90/120 วัน !','บันทึกผลการติดต่อ','ครบทุกรอบ = ปิดงาน +'],
+             g:['aftercare','aftercare','aftercare','aftercare']},
+  {n:'ช่าง',   s:['รับรถเข้าศูนย์','ค้นประวัติจากเลขเครื่อง +','เบิกอะไหล่ +','ปิดงาน','ตั้งเตือนรอบถัดไป +'],
+             g:['service','service','parts','service','service']}
 ];
 function rFlow(){
   $('#flowWrap').innerHTML=LANES.map(l=>'<div class="card"><div class="hd"><h3>'+esc(l.n)+'</h3></div><div class="bd">'
     +'<div class="flow">'+l.s.map((s,i)=>{ const auto=s.indexOf('+')>=0, risk=s.indexOf('!')>=0;
       const t=s.replace(/[+!]/g,'').trim();
-      return (i?'<span class="farr">'+ic('right','i i-sm')+'</span>':'')+'<div class="fstep'+(auto?' done':'')+'">'
+      const k=(l.g||[])[i], can=!!(k && canSee(k));
+      return (i?'<span class="farr">'+ic('right','i i-sm')+'</span>':'')
+        +'<div class="fstep'+(auto?' done':'')+'"'+(can? ' data-fgo="'+k+'" style="cursor:pointer"':'')+'>'
         +'<div class="t">'+esc(t)+'</div>'
         +(auto?'<div style="margin-top:var(--s-half)">'+pill('ระบบทำให้','good')+'</div>':'')
         +(risk?'<div style="margin-top:var(--s-half)">'+pill('จุดที่มักหลุด','bad')+'</div>':'')+'</div>'; }).join('')
     +'</div></div></div>').join('')
+    /* v1.38: ผังสิทธิ์สร้างสดจากเมนู + ตารางสิทธิ์จริง — แก้สิทธิ์ที่หน้าปรับแต่งแล้วผังนี้เปลี่ยนตามทันที
+       (generative — ไม่มีสำเนาที่ต้อง sync ตามกฎข้อ 8) */
+    +'<div class="card"><div class="hd"><h3>ใครเห็นหน้าไหน ทำอะไรได้</h3>'
+      +'<div class="d">สร้างสดจากเมนูและตารางสิทธิ์จริง — แตะชื่อหน้าเพื่อไปที่หน้านั้น</div></div><div class="bd">'
+    +MENU.filter(m=>m.k).map(m=>'<div class="kv2"><span>'
+        +(canSee(m.k)? '<button class="lnk" data-fgo="'+m.k+'">'+esc(m.t)+'</button>' : esc(m.t))
+        +'</span><b class="tsub">'+m.r.map(r=>ROLES[r]? ROLES[r].name : r).join(' · ')+'</b></div>').join('')
+    +'<h4 class="sec">การกระทำสำคัญ (ด่านจริงในระบบ)</h4>'
+    +PERM_ACTS.map(pa=>'<div class="kv2"><span>'+esc(pa[1])+'</span><b class="tsub">'
+        +Object.keys(PERMS).filter(r=>PERMS[r][pa[0]]==='write').map(r=>ROLES[r]? ROLES[r].name : r).join(' · ')
+        +'</b></div>').join('')
+    +'</div></div>'
     +'<p class="foot">“ระบบทำให้” = ขั้นตอนอัตโนมัติ · “จุดที่มักหลุด” = ขั้นตอนที่หลุดบ่อยถ้าไม่มีระบบเตือน</p>';
+  $$('#flowWrap [data-fgo]').forEach(el=> el.onclick=()=>go(el.dataset.fgo));
 }
 
 /* ============================= 23. รายงาน ============================= */
@@ -10189,16 +10293,25 @@ function rpBuild(tab){
       note:'เบิก/ขายออกช่วง'+perText('report')+' รวม '+mv+' ชิ้น' };
   }
   if(tab==='sales'){
+    /* v1.38 (บรีฟข้อ 23): ละเอียดขึ้น — ลูกค้า(เบอร์) รถ(รหัสรุ่น/เลขถัง) ไฟแนนซ์ สถานะส่งมอบ
+       และแตะแถวเปิดรายเคสได้ (ids ผูกแถวกับใบขายจริง) · ไฟล์ = จอโดยอัตโนมัติเพราะใช้ rows ชุดเดียว */
     const ss=SALES.filter(s=>!s.void&&sc.inB(s.branch)&&sc.inR(s.soldAt)).sort((a,b)=>a.soldAt.localeCompare(b.soldAt));
-    return { card:{title:1,right:8}, kpi:[['ขายได้',ss.length+' <small>คัน</small>',perText('report')],
+    return { card:{title:1,right:10}, kpi:[['ขายได้',ss.length+' <small>คัน</small>',perText('report')],
         ['ยอดขายรวม', money(ss.reduce((s,x)=>s+x.net,0)),''],
         ['กำไรขั้นต้นรวม', money(ss.reduce((s,x)=>s+x.gp,0)),'หลังหักของแถม']],
-      head:[{t:'วันที่'},{t:'ลูกค้า'},{t:'รุ่น'},{t:'สาขา'},{t:'เซลล์'},{t:'ชำระ'},{t:'ก่อน VAT',n:1},{t:'VAT',n:1},{t:'สุทธิ',n:1},{t:'ทุน',n:1,money:1},{t:'กำไร',n:1,money:1}],
+      head:[{t:'วันที่'},{t:'ลูกค้า'},{t:'รถ'},{t:'สาขา'},{t:'เซลล์'},{t:'ชำระ'},{t:'ไฟแนนซ์'},{t:'ส่งมอบ'},{t:'ก่อน VAT',n:1},{t:'VAT',n:1},{t:'สุทธิ',n:1},{t:'ทุน',n:1,money:1},{t:'กำไร',n:1,money:1}],
       rows: ss.map(s=>{ const u=UNITS.find(x=>x.id===s.unitId), c=CUSTOMERS.find(x=>x.id===s.custId);
+        const rg=REGS.find(r=>r.saleId===s.id), fc=FINCASES.find(f=>f.saleId===s.id);
         const base=Math.round(s.net/(1+CFG.vat/100));
-        return [thDate(s.soldAt), c?c.name:'—', u?u.model:'—', bName(s.branch), s.sales,
-          s.pay==='cash'?'สด':'ผ่อน', base, s.net-base, s.net, s.cost, s.gp]; }),
-      note:'' };
+        return [thDate(s.soldAt),
+          (c?c.name:'—')+(c&&c.phone?' ('+c.phone+')':''),
+          u? u.model+' '+(u.variant||'')+' · '+u.frame : '—',
+          bName(s.branch), s.sales, s.pay==='cash'?'สด':'ผ่อน',
+          s.pay==='finance'? ((finById(s.finId)||{}).name||'—')+(fc?' · '+finStageNorm(fc):'') : '—',
+          regDone(rg)? (regPlated(rg)?'ได้ป้ายแล้ว':'ส่งมอบแล้ว') : 'ยังไม่ส่งมอบ',
+          base, s.net-base, s.net, s.cost, s.gp]; }),
+      ids: ss.map(s=>s.id),
+      note:'แตะแถวเพื่อเปิดรายละเอียดรายเคส · เลขบัตรลูกค้าในรายเคสแสดงตามสิทธิ์' };
   }
   if(tab==='money'){
     const recv=[]; AR.filter(a=>sc.inB(a.branch)).forEach(a=>{ (a.pays||[]).filter(p=>sc.inR(p.at)).forEach(p=>{
@@ -10395,6 +10508,13 @@ function rReport(){
     'ไม่มีข้อมูลตามเงื่อนไข',
     rpCards(d, cell));
   $('#rpNote').innerHTML=d.note? '<p class="foot">'+d.note+'</p>' : '';
+  /* v1.38 (บรีฟข้อ 23): แถวที่ผูกระเบียนจริง แตะเปิดรายเคส — มือถือเป็นการ์ดก็แตะได้เท่ากัน */
+  if(d.ids){
+    const trs=$$('#rpTable tbody tr'), cards=$$('#rpTable .crow');
+    (trs.length? trs : cards).forEach((el,i)=>{ if(d.ids[i]){
+      el.classList.add('clk'); el.style.cursor='pointer';
+      el.onclick=()=>saleDrawer(d.ids[i]); } });
+  }
   fsSync('report');
 }
 /* รายงานบนมือถือ = การ์ด ไม่ใช่ตารางที่ต้องปัดข้าง
