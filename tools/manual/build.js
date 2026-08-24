@@ -26,7 +26,7 @@ const MASK = !argv.includes('--no-mask');
 const KEEP = argv.includes('--keep-html');
 const CHROME = '/opt/pw-browsers/chromium';
 
-const ROLE_STAFF = { admin: 'ST1', manager: 'ST2', sales: 'ST3', stock: 'ST6', acct: 'ST7', hr: 'ST8', tech: 'ST9', care: 'ST10' };
+const ROLE_STAFF = { admin: 'ST1', manager: 'ST2', sales: 'ST3', stock: 'ST6', acct: 'ST7', hr: 'ST8', tech: 'ST9', care: 'ST10', reg: 'ST11' };
 const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
 /* ---------- เสิร์ฟไฟล์คงที่เอง จะได้ไม่ต้องพึ่งเซิร์ฟเวอร์ที่เปิดค้างไว้ ---------- */
@@ -259,7 +259,8 @@ ${app.lanes.map(l => `<tr><td><b>${esc(l.n)}</b></td><td>${l.s.map(s => {
       await p.click('#lgGo');
       await p.waitForTimeout(500);
       const want = app.menu.filter(m => m.k && m.r.includes(role)).map(m => m.k)
-        .filter(k => ['dash', 'stock', 'sell', 'quote', 'deal', 'ar', 'service', 'parts',
+        .filter(k => ['dash', 'stock', 'sell', 'quote', 'deal', 'invoice', 'booking', 'plate',
+          'aftercare', 'ar', 'service', 'parts',
           'recv', 'transfer', 'attend', 'hr', 'payroll', 'report', 'expense', 'settings', 'users'].includes(k))
         .slice(0, 6);
       const shots = await shoot(p, want);
