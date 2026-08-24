@@ -2972,7 +2972,19 @@ const vatSplit = amt => { const r=CFG.vat/100, base=amt/(1+r); return { base, va
 
 /* ---------- สถานะผู้ใช้ปัจจุบัน ---------- */
 let ME = null;
-const rolePerm = () => ROLES[ME? ME.role : 'sales'];
+/* v1.39 (คำตอบเจ้าของข้อ 9): คนหนึ่งมีได้หลายตำแหน่ง — สิทธิ์รวมกันแบบมากสุดชนะทุกมิติ
+   s.role ยังเป็น "ตำแหน่งหลัก" (ป้าย/คู่มือ/แถบล่าง) · s.roles คือชุดที่ใช้คิดสิทธิ์
+   คนตำแหน่งเดียวไม่มี roles — เดินทางเดิมเป๊ะ (สัญญาของรอบนี้: ของเดิมห้ามเปลี่ยนแม้แต่บิตเดียว) */
+const myRoles = () => (ME && ME.roles && ME.roles.length? ME.roles : [ME? ME.role : 'sales'])
+  .filter(r=>ROLES[r]);
+const inRoles = list => myRoles().some(r=>list.indexOf(r)>=0);
+const rolePerm = () => {
+  const rs=myRoles().map(r=>ROLES[r]);
+  if(rs.length<2) return rs[0]||ROLES.sales;
+  return { name:rs[0].name,
+    money:rs.some(x=>x.money)?1:0, allBranch:rs.some(x=>x.allBranch)?1:0,
+    approve:rs.some(x=>x.approve)?1:0, admin:rs.some(x=>x.admin)?1:0 };
+};
 const noMoney  = () => !permR('data:money');   /* อ่านจากตารางสิทธิ์ (J3) — ค่าเริ่มต้นตามบิต money เดิม */
 const money    = v => noMoney() ? '—' : baht(v);
 const myBranches = () => rolePerm().allBranch ? BRANCHES.map(b=>b.code) : [ME.branch];
@@ -3063,7 +3075,12 @@ function permDefaults(){
   return P;
 }
 let PERMS=permDefaults();
-const perm  = k => ((PERMS[ME.role]||{})[k]) || 'none';
+const perm  = k => {
+  /* v1.39: อ่านสิทธิ์จากทุกตำแหน่งแล้วเอาระดับสูงสุด — write > read > none */
+  const lv={none:0, read:1, write:2}; let best='none';
+  myRoles().forEach(r=>{ const v=((PERMS[r]||{})[k])||'none'; if(lv[v]>lv[best]) best=v; });
+  return best;
+};
 const permW = k => perm(k)==='write';
 const permR = k => perm(k)!=='none';
 const canSee = k => { const m=menuOf(k); return m && perm('page:'+k)!=='none'; };
@@ -3354,13 +3371,20 @@ function renderLogin(){
       +'</button>').join('');
   $$('#lgUsers .lg-u').forEach(b=> b.onclick=()=>{ $$('#lgUsers .lg-u').forEach(x=>x.classList.remove('on')); b.classList.add('on'); });
 }
+/* ป้ายตำแหน่งข้างชื่อ — เรียกซ้ำได้ทั้งตอน login และตอนตำแหน่งถูกแก้ (v1.39) */
+function meLabel(){
+  if(!ME) return;
+  $('#meRole').textContent = ROLES[ME.role].name
+    +(myRoles().length>1? ' +'+(myRoles().length-1)+' ตำแหน่ง':'')
+    +' · '+(rolePerm().allBranch?'ทุกสาขา':bName(ME.branch));
+}
 function doLogin(){
   const sel=$('#lgUsers .lg-u.on'); const st=STAFF.find(s=>s.id===(sel?sel.dataset.id:'ST1'));
   ME = st;
   $('#login').classList.add('off'); $('#app').classList.remove('off');
   $('#meAv').textContent = st.nick.slice(0,2);
   $('#meName').textContent = st.name;
-  $('#meRole').textContent = ROLES[st.role].name+' · '+(rolePerm().allBranch?'ทุกสาขา':bName(st.branch));
+  meLabel();
   uiApply(uiLoad());          /* หน้าตาของคนนี้บนเครื่องนี้ (I6) — ก่อนวาดหน้าแรก */
   buildNav(); seedDemo(); go(firstScreen());
   /* เทียบนาฬิกากับเซิร์ฟเวอร์ตั้งแต่เข้าระบบ จะได้ไม่ต้องรอตอนกดลงเวลา */
@@ -3432,7 +3456,9 @@ function buildTabs(){
     +'<a class="nb" href="docs/manual/famai-flow.pdf" target="_blank" rel="noopener">'
       +ic('route')+'<span>คู่มือ flow การใช้งาน (PDF)</span></a>';
   mh+='<div class="sfoot"><div class="me"><div class="av">'+esc(ME.nick.slice(0,2))+'</div>'
-    +'<div style="min-width:0"><b>'+esc(ME.name)+'</b><span>'+esc((ROLES[ME.role]?.name||ME.role))+' · '+esc(rolePerm().allBranch?'ทุกสาขา':bName(ME.branch))+'</span></div></div>'
+    +'<div style="min-width:0"><b>'+esc(ME.name)+'</b><span>'+esc((ROLES[ME.role]?.name||ME.role))
+    +(myRoles().length>1? ' +'+(myRoles().length-1)+' ตำแหน่ง':'')
+    +' · '+esc(rolePerm().allBranch?'ทุกสาขา':bName(ME.branch))+'</span></div></div>'
     +'<button class="out" id="moreOut">'+ic('logout','i i-sm')+' ออกจากระบบ</button></div>';
   $('#moreB').innerHTML=mh;
   $$('#moreB h6').forEach(hh=>{ let n=hh.nextElementSibling, has=false;
@@ -3729,7 +3755,7 @@ function badges(){
 function promoBar(){
   const p = PROMOS.filter(p=>p.active && p.from<=TODAY && p.to>=TODAY);
   const e=$('#promo');
-  if(!p.length || ['sales','stock','manager','admin'].indexOf(ME.role)<0){ e.style.display='none'; return; }
+  if(!p.length || !inRoles(['sales','stock','manager','admin'])){ e.style.display='none'; return; }
   e.style.display='flex';
   e.innerHTML='<span class="tag">โปรสัปดาห์นี้</span><b>'+esc(p.map(x=>x.title).join('  ·  '))+'</b>'
     +'<span style="font-size:var(--t-label);opacity:.85">ถึง '+thDate(p[0].to)+'</span>'
@@ -3934,7 +3960,7 @@ function regQueue(){
 }
 /* v1.38 (บรีฟข้อ 22): เคสที่ "ตัดสินแล้ว" ในช่วง/สาขาที่หน้าแรกเลือกอยู่ — อนุมัติ+ปฏิเสธเท่านั้น
    เคสที่ยังรอไม่ถูกนับ (อัตราผ่านของเคสค้างยังไม่มีจริง) · วันตัดสินอ่านจาก log/rejectAt จริง */
-const canFinRate = () => ['admin','manager','acct'].indexOf(ME.role)>=0;
+const canFinRate = () => inRoles(['admin','manager','acct']);
 function finDecidedDash(){
   const out=[];
   FINCASES.forEach(f=>{ if(!inScope(f.branch) || !brMatch(dBranch,f.branch)) return;
@@ -7739,14 +7765,14 @@ const PT_TABS=[
 ];
 let PT_SEL='';
 function ptTab(pane){
-  const ok=PT_TABS.filter(t=>t.r.indexOf(ME.role)>=0);
+  const ok=PT_TABS.filter(t=>inRoles(t.r));
   if(!ok.some(t=>t.p===pane)) pane=(ok[0]||{}).p||'pt1';
   PT_SEL=pane;
   $$('#ptTabs button').forEach(b=>b.classList.toggle('on', b.dataset.p===pane));
   $$('#s-parts .pane').forEach(x=>x.classList.toggle('on', x.id===pane));
 }
 function rParts(){
-  const ok=PT_TABS.filter(t=>t.r.indexOf(ME.role)>=0);
+  const ok=PT_TABS.filter(t=>inRoles(t.r));
   $('#ptTabs').innerHTML = ok.length>1
     ? ok.map(t=>'<button data-p="'+t.p+'">'+esc(t.n)+'</button>').join('') : '';
   $$('#ptTabs button').forEach(b=> b.onclick=()=>ptTab(b.dataset.p));
@@ -9505,6 +9531,31 @@ function prSlip(){
 }
 
 /* ============================= 19. ผู้ใช้ ============================= */
+/* v1.39: แก้ชุดตำแหน่งของพนักงาน — ด่านในฟังก์ชันเขียน (§9b) ปุ่มเป็นแค่ทางเข้า
+   primary ถูกบังคับให้อยู่ในชุดเสมอ (ตำแหน่งหลักถอดไม่ได้ — เปลี่ยนหลักคืองานอนาคตถ้าเจ้าของขอ) */
+function staffSetRoles(staffId, roles){
+  if(!rolePerm().admin){ toast('เฉพาะผู้ดูแลระบบ','',1); return false; }
+  const s=STAFF.find(x=>x.id===staffId); if(!s) return false;
+  const rs=[...new Set([s.role].concat(roles||[]))].filter(r=>ROLES[r]);
+  s.roles=rs.length>1? rs : undefined;
+  if(s.roles===undefined) delete s.roles;
+  toast('อัปเดตตำแหน่งแล้ว', s.nick+' · '+rs.map(r=>ROLES[r].name).join(' + '));
+  meLabel(); refreshAll(); return true;
+}
+function staffRolesModal(staffId){
+  const s=STAFF.find(x=>x.id===staffId); if(!s) return;
+  const cur=(s.roles&&s.roles.length? s.roles:[s.role]);
+  openModal('ตำแหน่งของ '+esc(s.name),
+    '<p class="tsub" style="margin:0 0 var(--s2)">สิทธิ์รวมกันแบบมากสุดชนะ (เมนู/สาขา/ตัวเงิน/อนุมัติ) — ตำแหน่งหลักถอดไม่ได้</p>'
+    +'<div class="f">'+Object.keys(ROLES).map(r=>'<label style="display:flex;gap:var(--s1);align-items:center">'
+      +'<input type="checkbox" data-urchk="'+r+'"'+(cur.indexOf(r)>=0?' checked':'')+(r===s.role?' disabled':'')+'>'
+      +esc(ROLES[r].name)+(r===s.role?' <span class="tsub">(ตำแหน่งหลัก)</span>':'')+'</label>').join('')
+    +'</div><div class="savebar"><button class="btn" id="urGo">บันทึกตำแหน่ง</button></div>');
+  $('#urGo').onclick=()=>{
+    const rs=[...document.querySelectorAll('#modal [data-urchk]')].filter(x=>x.checked).map(x=>x.dataset.urchk);
+    if(staffSetRoles(staffId, rs)) closeModal();
+  };
+}
 function rUsers(){
   $('#expStaff').onclick=expStaffList;
   /* v1.31 (B12): หน้านี้เคยอ่านบิตจาก ROLES (ค่าเริ่มต้น) — แอดมินแก้ตารางสิทธิ์ (J3) แล้ว
@@ -9512,20 +9563,30 @@ function rUsers(){
      (allBranch/approve เป็นบิตประจำบทบาท ไม่อยู่ในตารางสิทธิ์ — อ่านจาก ROLES ตามเดิมถูกแล้ว) */
   const roleMoney = r => ((PERMS[r]||{})['data:money']||'none')!=='none';
   const roleMenus = r => MENU.filter(m=>m.k && ((PERMS[r]||{})['page:'+m.k]||'none')!=='none');
-  tbl($('#uTable'), ['ชื่อ','ชื่อเล่น','บทบาท','สาขา','เห็นทุกสาขา','เห็นตัวเงิน','อนุมัติได้'],
-    STAFF.map(s=>{ const p=ROLES[s.role];
-      return '<tr><td><b>'+esc(s.name)+'</b></td><td>'+esc(s.nick)+'</td><td>'+pill(p.name,'info')+'</td>'
+  /* v1.39: สิทธิ์ที่โชว์ต้องเป็นสิทธิ์รวมของทุกตำแหน่งจริง ไม่ใช่ของตำแหน่งหลักอย่างเดียว */
+  const effOf = s => { const rs=(s.roles&&s.roles.length? s.roles:[s.role]).filter(r=>ROLES[r]);
+    return { rs, allBranch:rs.some(r=>ROLES[r].allBranch), approve:rs.some(r=>ROLES[r].approve),
+      money:rs.some(r=>roleMoney(r)) }; };
+  const mayEdit = rolePerm().admin;
+  const rolesCell = s => { const e=effOf(s);
+    return pill(ROLES[s.role].name,'info')
+      +e.rs.filter(r=>r!==s.role).map(r=>' '+pill(ROLES[r].name,'mut')).join('')
+      +(mayEdit? ' <button class="lnk noprint" data-uroles="'+s.id+'">แก้ตำแหน่ง</button>':''); };
+  tbl($('#uTable'), ['ชื่อ','ชื่อเล่น','ตำแหน่ง','สาขา','เห็นทุกสาขา','เห็นตัวเงิน','อนุมัติได้'],
+    STAFF.map(s=>{ const e=effOf(s);
+      return '<tr><td><b>'+esc(s.name)+'</b></td><td>'+esc(s.nick)+'</td><td>'+rolesCell(s)+'</td>'
         +'<td>'+esc(bName(s.branch))+'</td>'
-        +'<td>'+(p.allBranch?pill('ใช่','good'):pill('เฉพาะสาขาตัวเอง','mut'))+'</td>'
-        +'<td>'+(roleMoney(s.role)?pill('เห็น','good'):pill('ซ่อน','mut'))+'</td>'
-        +'<td>'+(p.approve?pill('ได้','good'):pill('ไม่ได้','mut'))+'</td></tr>'; }),
+        +'<td>'+(e.allBranch?pill('ใช่','good'):pill('เฉพาะสาขาตัวเอง','mut'))+'</td>'
+        +'<td>'+(e.money?pill('เห็น','good'):pill('ซ่อน','mut'))+'</td>'
+        +'<td>'+(e.approve?pill('ได้','good'):pill('ไม่ได้','mut'))+'</td></tr>'; }),
     'ไม่มีผู้ใช้',
-    STAFF.map(s=>{ const p=ROLES[s.role];
-      return crow('', esc(s.name), pill(p.name,'info'),
+    STAFF.map(s=>{ const e=effOf(s);
+      return crow('', esc(s.name), rolesCell(s),
         esc(s.nick)+' · '+esc(bName(s.branch)),
-        (p.allBranch?pill('ทุกสาขา','good'):pill('เฉพาะสาขาตัวเอง','mut'))+' '
-        +(roleMoney(s.role)?pill('เห็นตัวเงิน','good'):pill('ซ่อนตัวเงิน','mut'))+' '
-        +(p.approve?pill('อนุมัติได้','good'):'')); }));
+        (e.allBranch?pill('ทุกสาขา','good'):pill('เฉพาะสาขาตัวเอง','mut'))+' '
+        +(e.money?pill('เห็นตัวเงิน','good'):pill('ซ่อนตัวเงิน','mut'))+' '
+        +(e.approve?pill('อนุมัติได้','good'):'')); }));
+  $$('#s-users [data-uroles]').forEach(el=> el.onclick=e2=>{ e2.stopPropagation(); staffRolesModal(el.dataset.uroles); });
   const keys=Object.keys(ROLES);
   tbl($('#roleTable'), ['บทบาท','เห็นตัวเงิน','เห็นทุกสาขา','อนุมัติ','จัดการระบบ','เมนูที่เข้าถึงได้ (สิทธิ์ที่ตั้งไว้จริง)'],
     keys.map(k=>{ const p=ROLES[k]; const menus=roleMenus(k);
@@ -9687,7 +9748,7 @@ function notifOpen(){
   const nt=ntfLoad(), items=notifItems();
   const byCat={}; items.forEach(x=>{ (byCat[x.k]=byCat[x.k]||[]).push(x); });
   /* สรุปประจำวันของผู้บริหาร (J2) — ตัวเลขคิดสด ไม่เก็บซ้ำ */
-  const digest = (['admin','manager'].indexOf(ME.role)>=0)
+  const digest = inRoles(['admin','manager'])
     ? (function(){ const t=curDate();
         const sold=SALES.filter(s=>!s.void && s.soldAt===t && inScope(s.branch));
         const net=sold.reduce((n,s)=>n+s.net,0);
@@ -10470,7 +10531,7 @@ function rpBuild(tab){
   }
 }
 function rReport(){
-  const tabs=RP_TABS.filter(t=>t.r.indexOf(ME.role)>=0);
+  const tabs=RP_TABS.filter(t=>inRoles(t.r));
   if(!tabs.length){ return; }
   if(!RP_SEL || !tabs.some(t=>t.k===RP_SEL)) RP_SEL=tabs[0].k;
   $('#rpTabs').innerHTML=tabs.map(t=>'<button class="'+(t.k===RP_SEL?'on':'')+'" data-rp="'+t.k+'">'+esc(t.n)+'</button>').join('');
@@ -10546,8 +10607,8 @@ function gsIndex(){
     out.push({ik:m.ic||'right', t:m.t, s:m.s||'', kind:'page', go:()=>{ closeGs(); go(m.k); }}); });
   const tab=(page,t,run)=>{ if(canSee(page))
     out.push({ik:'right', t, s:'แท็บในหน้า '+menuOf(page).t, kind:'tab', go:()=>{ closeGs(); run(); }}); };
-  RP_TABS.filter(x=>x.r.indexOf(ME.role)>=0).forEach(x=> tab('report','รายงาน'+x.n, ()=>go('report',x.k)));
-  PT_TABS.filter(x=>x.r.indexOf(ME.role)>=0).forEach(x=> tab('parts', x.n, ()=>go('parts',x.p)));
+  RP_TABS.filter(x=>inRoles(x.r)).forEach(x=> tab('report','รายงาน'+x.n, ()=>go('report',x.k)));
+  PT_TABS.filter(x=>inRoles(x.r)).forEach(x=> tab('parts', x.n, ()=>go('parts',x.p)));
   [['gal','สต๊อกรถ — แกลเลอรี'],['table','สต๊อกรถ — ตาราง'],['grp','สต๊อกรถ — คงเหลือรายรุ่น']]
     .forEach(([v,t])=> tab('stock', t, ()=>go('stock',v)));
   [['p1','เปิดการขาย'],['p2','คำนวณค่างวด'],['p3','ขายส่ง (B2B)']]
