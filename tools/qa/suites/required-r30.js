@@ -118,7 +118,11 @@ const CASES = [
   { id:'wpName',   open: seq(scr('settings'), cfTab(6)), save:'#wpSave', want:'กรอกชื่อบริษัท' },
   { id:'vmCode',   open: seq(scr('settings'), cfTab(2), OPEN.model), fill:{ vmName:'NMAX' }, save:'#vmGo', want:'รหัสรุ่นต้องเป็นตัวอักษร' },
   { id:'vmName',   open: seq(scr('settings'), cfTab(2), OPEN.model), fill:{ vmCode:'BTF400' }, save:'#vmGo', want:'กรอกชื่อโมเดล' },
-  { id:'vmColors', open: seq(scr('settings'), cfTab(2), OPEN.model), fill:{ vmCode:'BTF400', vmName:'NMAX' }, save:'#vmGo', want:'ต้องมีอย่างน้อย 1 สี' }
+  /* v1.31: ช่องสีกลายเป็น "การ์ดสีละใบ" ไม่ใช่ textarea — ทำให้ว่างคือเคลียร์ทุกการ์ด ไม่ใช่ล้าง .value */
+  { id:'vmColorList', open: seq(scr('settings'), cfTab(2), OPEN.model), fill:{ vmCode:'BTF400', vmName:'NMAX' },
+    clear:`document.querySelectorAll('#vmColorList [data-vcc],#vmColorList [data-vcn]').forEach(el=>{
+             el.value=''; el.dispatchEvent(new Event('input',{bubbles:true})); })`,
+    save:'#vmGo', want:'ต้องมีอย่างน้อย 1 สี' }
 ];
 
 /* ---------- ตัวตรวจในหน้า ---------- */
@@ -143,12 +147,18 @@ const STRAY = `EXTRA => {
   document.querySelectorAll('.rq').forEach(m => {
     const lab = m.closest('label.fl');
     let f = null;
-    if (lab) { for (let s = lab.nextElementSibling; s; s = s.nextElementSibling)
-                 if (s.matches('input,select,textarea')) { f = s; break; } }
-    else     { for (let s = m.nextElementSibling; s; s = s.nextElementSibling)
-                 if (s.matches('input,select,textarea')) { f = s; break; } }
+    let box = null;
+    const scan = start => { for (let s = start; s; s = s.nextElementSibling) {
+      if (s.matches('input,select,textarea')) return s;
+      if (s.id && !box) box = s;                      /* กล่องที่มี id = เจ้าของดอกจันตัวจริง */
+      const inner = s.querySelector && s.querySelector('input,select,textarea');
+      if (inner) return inner;
+    } return null; };
+    f = scan(lab ? lab.nextElementSibling : m.nextElementSibling);
     if (!f) { out.push('ดอกจันลอย ไม่มีช่องตามหลัง: ' + (lab ? lab.textContent.trim() : m.parentElement.className)); return; }
-    const key = f.id || (f.dataset.wci != null ? 'data-wci' : '?');
+    /* v1.31: ป้ายบางอันคุม "กล่อง" ทั้งกล่อง (การ์ดสีของรุ่น) ไม่ใช่ช่องกรอกเดี่ยว
+       ถ้ามีกล่องที่มี id คั่นอยู่ก่อนถึงช่องกรอก ให้ถือ id ของกล่องเป็นเจ้าของดอกจัน */
+    const key = (box && box.id) || f.id || (f.dataset.wci != null ? 'data-wci' : '?');
     if (REQ.indexOf(key) < 0 && EXTRA.indexOf(key) < 0) out.push('ดอกจันเกินที่ช่อง ' + key);
   });
   return out;
@@ -232,7 +242,7 @@ const LASTTOAST = `() => {
           el.dispatchEvent(new Event('input',  { bubbles:true }));
           el.dispatchEvent(new Event('change', { bubbles:true }));
         }, [k, v, today]);
-      await p.evaluate(eval(CLEAR), c.id);
+      if (c.clear) await p.evaluate(c.clear); else await p.evaluate(eval(CLEAR), c.id);
       await wait(p, 120);
       await p.evaluate(() => { document.querySelectorAll('#toasts .toast').forEach(t => t.remove()); });
 

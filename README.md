@@ -76,7 +76,7 @@ docs/                รายงานวิเคราะห์และเ�
 docs/manual/         ★ คู่มือการใช้งาน PDF 8 เล่ม (7 บทบาท + 1 เล่ม flow)
 
 tools/manual/        ตัวสร้างคู่มือ — build.js (โค้ด) · content.js (ถ้อยคำ) · fonts/
-tools/qa/            ★ ด่านตรวจ 70 ชุด — `node tools/qa/run.js` รันทั้งหมด
+tools/qa/            ★ ด่านตรวจ 71 ชุด — `node tools/qa/run.js` รันทั้งหมด
 ```
 
 ### 📘 คู่มือการใช้งาน

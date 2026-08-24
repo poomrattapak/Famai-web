@@ -4,6 +4,7 @@
    ล็อก:
    [1] สต๊อกมีตัวกรอง #stVariant กรองจริง และผูกกับรุ่นที่เลือก (เลือกรุ่นแล้วเหลือเฉพาะรหัสของรุ่นนั้น)
    [2] B1 · กดการ์ดแกลเลอรีแล้วตารางกรองด้วย "รหัสรุ่นของการ์ด" ไม่ใช่ทั้งชื่อรุ่น
+       (v1.31.1 การ์ดเป็นราย รุ่น+สี — จึงต้องได้ทั้งรหัสรุ่นและสีของการ์ด ตรงกับเลขบนการ์ด)
    [3] B2 · ตัวกรองรุ่นสร้างใหม่ทุกครั้ง + inScope — รับรถรุ่นใหม่แล้วโผล่ทันที · คนสาขาเดียวไม่เห็นรุ่นสาขาอื่น
    [4] หน้าขาย: เลือกรุ่น→รหัส→สี แล้ว #sUnit เหลือเฉพาะคันที่ตรง
    [5] หน้าขาย: พิมพ์เลขถังในช่องค้นหา → รุ่น/รหัส/สี เติมเอง และ #sUnit ชี้คันนั้น
@@ -50,18 +51,23 @@ const { chromium, EXE, BASE } = require('./env');
       .find(c => { const v = c.dataset.gvariant;                 /* หาการ์ดของรุ่นที่มีหลายรหัส */
         return UNITS.some(u => inScope(u.branch) && u.model === c.dataset.gmodel && u.variant !== v); });
     if (!card) return { skip: true };
-    const cv = card.dataset.gvariant, cm = card.dataset.gmodel;
+    const cv = card.dataset.gvariant, cm = card.dataset.gmodel, ccol = card.dataset.gcolor;
+    const n = +card.querySelector('.gqty').textContent;
     card.click();
-    const shown = stList().length;
-    const wantV = UNITS.filter(u => inScope(u.branch) && u.variant === cv).length;
+    const shown = stList().length, selV = $('#stVariant').value;
+    const wantVC = UNITS.filter(u => inScope(u.branch) && u.variant === cv && u.color === ccol).length;
     const wantM = UNITS.filter(u => inScope(u.branch) && u.model === cm).length;
-    $('#stModel').value = ''; $('#stVariant').value = ''; rStock();
-    return { skip: false, shown, wantV, wantM, selV: cv };
+    $('#stModel').value = ''; $('#stVariant').value = ''; $('#stColor').value = ''; rStock();
+    return { skip: false, shown, n, wantVC, wantM, cv, selV };
   });
   if (g2.skip) bad('[2] ไม่มีการ์ดของรุ่นหลายรหัสให้ทดสอบ');
   else {
-    if (g2.shown !== g2.wantV) bad('[2] กดการ์ด ' + g2.selV + ' แล้วได้ ' + g2.shown + ' คัน ควรเป็น ' + g2.wantV + ' (ทั้งรุ่น=' + g2.wantM + ')');
-    if (g2.wantV === g2.wantM) bad('[2] เคสทดสอบแยกไม่ออก (รหัสเดียว=ทั้งรุ่น) — เลือกการ์ดใหม่');
+    /* แก่นของ B1: ตัวกรอง "รหัสรุ่น" ต้องถูกตั้งตามการ์ดจริง ๆ ไม่ใช่แค่ชื่อรุ่น —
+       เช็คค่าในช่องตรง ๆ เพราะบางสี mutation ที่ถอดการตั้ง variant อาจบังเอิญได้จำนวนเท่ากัน */
+    if (g2.selV !== g2.cv) bad('[2] กดการ์ด ' + g2.cv + ' แล้ว #stVariant เป็น "' + g2.selV + '" — ไม่ได้ตั้งรหัสรุ่นตามการ์ด');
+    if (g2.shown !== g2.wantVC) bad('[2] กดการ์ด ' + g2.cv + ' แล้วได้ ' + g2.shown + ' คัน ควรเป็น ' + g2.wantVC + ' (รุ่น+สีของการ์ด · ทั้งรุ่น=' + g2.wantM + ')');
+    if (g2.shown !== g2.n) bad('[2] เลขบนการ์ดบอก ' + g2.n + ' คัน แต่กดเข้าไปเจอ ' + g2.shown + ' คัน');
+    if (g2.wantVC === g2.wantM) bad('[2] เคสทดสอบแยกไม่ออก (รุ่น+สีเดียว=ทั้งรุ่น) — เลือกการ์ดใหม่');
   }
 
   /* ---------- [3] B2 · ตัวกรองรุ่น rebuild + inScope ---------- */

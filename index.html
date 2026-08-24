@@ -557,6 +557,8 @@ tfoot th.n{ text-align:right; }
 .p-good{ color:var(--pos); } .p-warn{ color:var(--attn); }
 .p-bad{ color:var(--accent); border-color:rgba(230,0,18,.24); }
 .p-info{ color:var(--ink-soft); } .p-mut{ color:var(--muted); }
+/* พิลล์ที่พกจุดสีของตัวเองมา (เช่นสีประจำสาขาในแกลเลอรี) ต้องปิดจุดอัตโนมัติ ไม่งั้นได้สองจุด */
+.pill.pdot::before{ display:none; }
 .p-brand{ color:var(--accent); border-color:rgba(230,0,18,.24); }
 
 /* -------------------- FORM -------------------- */
@@ -878,21 +880,53 @@ textarea.inp{ height:auto; padding:var(--s1) var(--s2); resize:vertical; line-he
 .farr{ color:var(--muted); align-self:center; }
 
 /* -------------------- GALLERY -------------------- */
-.gal{ display:grid; grid-template-columns:repeat(auto-fill,minmax(184px,1fr)); gap:var(--s3); }
-/* แกลเลอรี — ตัวรูปคือกล่องเดียวที่มี ตัวหนังสือใต้รูปไม่ต้องมีกรอบซ้อนอีกชั้น */
-.gcard{ background:none; box-shadow:none; border:0; border-radius:0; padding:0;
-  font:inherit; color:inherit; text-align:left; width:100%; display:block; }
-/* รูปรถเป็นสี่เหลี่ยมจัตุรัส — รูปถ่ายจริงจากร้านครอปพอดีกรอบ ไม่ต้องกะความสูงเอง */
-.gcard .ph{ aspect-ratio:1; background:var(--paper-2); border-radius:var(--r-card);
+.gal{ display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:var(--s3); }
+/* แกลเลอรี (v1.31 — ตามแบบที่เจ้าของส่งมา) หนึ่งใบ = หนึ่งรุ่น+สี รูปจึงตรงสีเสมอ
+   ตัวการ์ดมี "ขอบ" อย่างเดียว ไม่มีพื้นและไม่มีระยะขอบใน — ระยะอยู่ที่ .ph กับ .gb
+   ทำแบบนี้ตัวการ์ดจึงไม่นับเป็นชั้นกล่อง เหลือ .card + .gb = 2 ชั้นพอดี (กฎข้อ 1) */
+.gcard{ background:none; box-shadow:none; border:1px solid var(--hairline); border-radius:var(--r-card);
+  padding:0; overflow:hidden; font:inherit; color:inherit; text-align:left; width:100%;
+  display:flex; flex-direction:column; }
+/* กรอบรูปแนวนอน 4:3 — รูปถ่ายจริงจากร้านครอปพอดีกรอบ ไม่ต้องกะความสูงเอง */
+.gcard .ph{ aspect-ratio:4/3; margin:var(--s2); background:var(--paper-2); border-radius:var(--r-input);
   display:grid; place-items:center; overflow:hidden;
   color:var(--muted); position:relative; transition:box-shadow var(--dur-ui) var(--ease); }
 @media (hover:hover){ .gcard:hover .ph{ box-shadow:var(--sh-md); } }
-.gcard .ph .qty{ position:absolute; top:var(--s1); right:var(--s2);
-  font-family:var(--f-display); font-size:var(--t-lead); font-weight:600; color:var(--ink); }
-.gcard .gb{ padding:var(--s1) 0 0; }
+/* เส้นคั่นกินเต็มความกว้างการ์ด เพราะระยะขอบในอยู่ที่ .gb ไม่ใช่ที่การ์ด */
+/* .gb ยืดเต็มความสูงที่เหลือ แล้วดันแถบสาขาลงล่างสุด — ชื่อรุ่นยาวไม่เท่ากันจะได้ไม่ทำให้
+   แถบกับพิลล์ของการ์ดข้าง ๆ เหลื่อมกันทั้งแถว (ตากวาดหาข้อมูลเดียวกันในแนวเดียวได้) */
+.gcard .gb{ padding:var(--s2); border-top:1px solid var(--hairline); flex:1 1 auto;
+  display:flex; flex-direction:column; }
+.gcard .gbar{ margin-top:auto; }
+.gcard .gh{ display:flex; align-items:baseline; justify-content:space-between; gap:var(--s2); }
+.gcard .gbrand{ font-size:var(--t-label); color:var(--muted); letter-spacing:.04em; }
+.gcard .gqty{ font-family:var(--f-display); font-size:var(--t-h2); font-weight:600;
+  font-variant-numeric:tabular-nums; line-height:1; }
 .gcard .gb b{ font-size:var(--t-table); font-weight:600; display:block; }
+.gcard .gm{ font-size:var(--t-lead)!important; margin-top:2px; }
 .gcard .gb .c{ font-size:var(--t-label); color:var(--muted); }
+/* แถบสัดส่วนสต๊อกตามสาขา — ความกว้างแต่ละท่อนเท่ากับจำนวนคันจริง
+   ตัวแถบเป็นภาพประกอบเฉย ๆ ตัวเลขจริงอยู่ในพิลล์ข้างล่าง (สถานะห้ามสื่อด้วยสีอย่างเดียว กฎข้อ 3) */
+.gcard .gbar{ display:flex; gap:2px; padding-top:var(--s2); }
+.gcard .gbar i{ height:8px; border-radius:3px; min-width:10px; }
 .gcard .gb .cs{ display:flex; gap:var(--s-half); flex-wrap:wrap; margin-top:var(--s1); }
+/* ชื่อสาขายาวกว่าการ์ด (จอ 390 การ์ดกว้าง 163px) ต้องขึ้นบรรทัดในพิลล์ ไม่ใช่ถูกตัดหาย */
+.gcard .cs .pill{ max-width:100%; white-space:normal; }
+/* แถบสีของรุ่นในหน้าตั้งค่า — หนึ่งสีหนึ่งช่อง พร้อมรูปของสีนั้นเอง (v1.31)
+   ไม่มีพื้น ไม่มีกรอบ ไม่มีระยะขอบข้าง จึงไม่เพิ่มชั้นกล่อง (กฎข้อ 1) */
+.vmcs{ display:flex; gap:var(--s2); flex-wrap:wrap; }
+.vmc{ display:flex; flex-direction:column; gap:2px; width:74px; }
+.vmc .vmcn{ display:flex; align-items:center; gap:4px; font-size:var(--t-label); }
+.vmc .vmck{ font-size:var(--t-label); color:var(--muted); }
+/* การ์ดสีในแผ่นเพิ่ม/แก้รุ่น — หนึ่งสีหนึ่งการ์ด แยกด้วยเส้นคั่นอย่างเดียว
+   ไม่มีพื้น ไม่มีมุมโค้ง ไม่มีระยะขอบข้าง จึงไม่บวกชั้นกล่องให้แผ่น (กฎข้อ 1) */
+.vmrow{ display:flex; gap:var(--s2); align-items:flex-start; flex-wrap:wrap;
+  padding:var(--s2) 0; border-bottom:1px solid var(--hairline-2); }
+.vmrow:last-child{ border-bottom:0; }
+.vmrow .vmf{ display:flex; gap:var(--s2); flex:1 1 190px; min-width:0; }
+.vmrow .vmf>div{ flex:1 1 0; min-width:0; }
+.vmrow .vmb{ display:flex; gap:var(--s2); align-items:center; flex:0 0 auto; }
+.vmrow .vmst{ flex:1 1 100%; }
 .dot{ width:8px; height:8px; border-radius:var(--r-pill); display:inline-block;
   box-shadow:inset 0 0 0 1px var(--hairline); }
 
@@ -1510,7 +1544,9 @@ body.lock{ overflow:hidden; }
         </div>
         <div class="bd flush" id="stGrpWrap" style="display:none"><div class="tw"><table id="stGrp"></table></div></div>
         <div class="bd flush" id="stTableWrap" style="display:none"><div class="tw"><table id="stTable"></table></div></div>
-        <div class="bd" id="stGalWrap"><div class="gal" id="stGal"></div></div>
+        <!-- flush: การ์ดในแกลเลอรีเป็นกรอบของตัวเอง (v1.31) ถ้าตัวห่อยังมีระยะขอบในด้วย
+             จะกลายเป็นกล่องซ้อนสามชั้นทันที — ขอบจอ → .card → .gcard → ตัวหนังสือ คือ 2 ชั้นพอดี -->
+        <div class="bd flush" id="stGalWrap"><div class="gal" id="stGal"></div></div>
         </div>
       </section>
 
@@ -2349,18 +2385,22 @@ function pick(a,i){ return a[i%a.length]; }
 
 /* ---------- ตารางราคายามาฮ่า 5 มี.ค. 2569 (reference/deck/yamaha-price-list…) ---------- */
 /* แก้ไข/เพิ่มรุ่นได้ที่ ตั้งค่าระบบ → แท็บรุ่นรถและสี — จึงเป็น let ไม่ใช่ const */
+/* c = สีของรุ่นนั้น · คีย์คือรหัสสีของยามาฮ่า (ตรงกับ model_color.color_code ในฐานข้อมูล)
+   ค่าเป็นออบเจกต์ ไม่ใช่สตริง เพราะ "สีหนึ่งสี" มีทั้งชื่อและรูปรถของสีนั้นเอง (v1.31)
+     { name:'ดำ', img?:dataURL ในเซสชัน, imgUrl?:รูป card บน Storage, imgFullUrl?:รูปเต็ม }
+   รูปผูกกับสี ไม่ใช่กับรุ่น — รุ่นเดียวมี 4 สี ต้องมี 4 รูป ไม่งั้นลูกค้าเห็นรถผิดสี */
 let PRICE = {
- B6FS00:{m:'FINN',th:'ฟินน์ ล้อซี่ลวดดรัมเบรก',cat:'Moped',cc:114,yr:2567,cost:36000,vat:2520,retail:41200,c:{'010A':'ดำ'}},
- B6FT00:{m:'FINN',th:'ฟินน์ ล้อซี่ลวด',cat:'Moped',cc:114,yr:2567,cost:39000,vat:2730,retail:44900,c:{'010A':'ดำ','010B':'แดง'}},
- B6FU00:{m:'FINN',th:'ฟินน์ ล้อแม็ก',cat:'Moped',cc:114,yr:2567,cost:40800,vat:2856,retail:46900,c:{'010A':'น้ำเงิน','010B':'เขียว','010C':'ฟ้า'}},
- B6FV00:{m:'FINN',th:'ฟินน์ ยูบีเอส',cat:'Moped',cc:114,yr:2567,cost:42400,vat:2968,retail:48700,c:{'010A':'ดำ','010B':'เขียว','010C':'เทา'}},
- BJKC00:{m:'Grand Filano Hybrid',th:'แกรนด์ ฟีลาโน่ ไฮบริด',cat:'Automatic',cc:124.96,yr:2569,cost:56600,vat:3962,retail:64700,c:{'010A':'เขียว','010B':'ดำ','010C':'น้ำเงิน','010D':'เทา'}},
- BJKD00:{m:'Grand Filano Hybrid',th:'แกรนด์ ฟีลาโน่ ไฮบริด (ABS)',cat:'Automatic',cc:124.96,yr:2569,cost:60500,vat:4235,retail:69200,c:{'010A':'ฟ้า','010B':'ฟ้า/ดำ','010C':'ม่วง','010F':'น้ำเงิน'}},
- BTF200:{m:'NMAX',th:'เอ็นแม็กซ์ สแตนดาร์ด',cat:'Automatic',cc:155.09,yr:2569,cost:85000,vat:5950,retail:98500,c:{'010C':'ขาว','010D':'ดำ','010E':'แดง','010F':'น้ำเงิน'}},
- BTF300:{m:'NMAX',th:'เอ็นแม็กซ์ สแตนดาร์ด',cat:'Automatic',cc:155.09,yr:2569,cost:92800,vat:6496,retail:107500,c:{'010A':'ดำ/เทา'}},
- D18100:{m:'PG-1',th:'พีจี 1',cat:'Moped',cc:114,yr:2568,cost:50500,vat:3535,retail:57500,c:{'010A':'ฟ้า','010B':'แดง','010C':'เทา','010D':'น้ำตาล'}},
- DR9200:{m:'XMAX 300',th:'เอ็กซ์แม็กซ์ คอนเน็คเต็ด',cat:'Automatic',cc:292.26,yr:2569,cost:153100,vat:10717,retail:176100,c:{'010A':'ดำ/เทา','010B':'เทา','010C':'น้ำเงิน','010D':'แดง'}},
- DR9400:{m:'XMAX 300',th:'เอ็กซ์แม็กซ์ คอนเน็คเต็ด',cat:'Automatic',cc:292.26,yr:2569,cost:167700,vat:11739,retail:193000,c:{'010A':'ดำ'}}
+ B6FS00:{m:'FINN',th:'ฟินน์ ล้อซี่ลวดดรัมเบรก',cat:'Moped',cc:114,yr:2567,cost:36000,vat:2520,retail:41200,c:{'010A':{name:'ดำ'}}},
+ B6FT00:{m:'FINN',th:'ฟินน์ ล้อซี่ลวด',cat:'Moped',cc:114,yr:2567,cost:39000,vat:2730,retail:44900,c:{'010A':{name:'ดำ'},'010B':{name:'แดง'}}},
+ B6FU00:{m:'FINN',th:'ฟินน์ ล้อแม็ก',cat:'Moped',cc:114,yr:2567,cost:40800,vat:2856,retail:46900,c:{'010A':{name:'น้ำเงิน'},'010B':{name:'เขียว'},'010C':{name:'ฟ้า'}}},
+ B6FV00:{m:'FINN',th:'ฟินน์ ยูบีเอส',cat:'Moped',cc:114,yr:2567,cost:42400,vat:2968,retail:48700,c:{'010A':{name:'ดำ'},'010B':{name:'เขียว'},'010C':{name:'เทา'}}},
+ BJKC00:{m:'Grand Filano Hybrid',th:'แกรนด์ ฟีลาโน่ ไฮบริด',cat:'Automatic',cc:124.96,yr:2569,cost:56600,vat:3962,retail:64700,c:{'010A':{name:'เขียว'},'010B':{name:'ดำ'},'010C':{name:'น้ำเงิน'},'010D':{name:'เทา'}}},
+ BJKD00:{m:'Grand Filano Hybrid',th:'แกรนด์ ฟีลาโน่ ไฮบริด (ABS)',cat:'Automatic',cc:124.96,yr:2569,cost:60500,vat:4235,retail:69200,c:{'010A':{name:'ฟ้า'},'010B':{name:'ฟ้า/ดำ'},'010C':{name:'ม่วง'},'010F':{name:'น้ำเงิน'}}},
+ BTF200:{m:'NMAX',th:'เอ็นแม็กซ์ สแตนดาร์ด',cat:'Automatic',cc:155.09,yr:2569,cost:85000,vat:5950,retail:98500,c:{'010C':{name:'ขาว'},'010D':{name:'ดำ'},'010E':{name:'แดง'},'010F':{name:'น้ำเงิน'}}},
+ BTF300:{m:'NMAX',th:'เอ็นแม็กซ์ สแตนดาร์ด',cat:'Automatic',cc:155.09,yr:2569,cost:92800,vat:6496,retail:107500,c:{'010A':{name:'ดำ/เทา'}}},
+ D18100:{m:'PG-1',th:'พีจี 1',cat:'Moped',cc:114,yr:2568,cost:50500,vat:3535,retail:57500,c:{'010A':{name:'ฟ้า'},'010B':{name:'แดง'},'010C':{name:'เทา'},'010D':{name:'น้ำตาล'}}},
+ DR9200:{m:'XMAX 300',th:'เอ็กซ์แม็กซ์ คอนเน็คเต็ด',cat:'Automatic',cc:292.26,yr:2569,cost:153100,vat:10717,retail:176100,c:{'010A':{name:'ดำ/เทา'},'010B':{name:'เทา'},'010C':{name:'น้ำเงิน'},'010D':{name:'แดง'}}},
+ DR9400:{m:'XMAX 300',th:'เอ็กซ์แม็กซ์ คอนเน็คเต็ด',cat:'Automatic',cc:292.26,yr:2569,cost:167700,vat:11739,retail:193000,c:{'010A':{name:'ดำ'}}}
 };
 /* แบบรถที่ไม่มีในตารางราคา 5 มี.ค. 2569 - หาราคาขายไม่ได้ 8 คัน (ดู docs/00) */
 const NO_PRICE = ['DA6200','BJKE00','D13100'];
@@ -2395,11 +2435,18 @@ function bikeSVG(cat, cc, hex){
   return '<svg class="bike" viewBox="0 0 120 62" aria-hidden="true">'+body+seat+bar+wheels+'</svg>';
 }
 /* รูปของรุ่น — รูปจริงที่อัปโหลดมาก่อน ไม่มีก็วาดเงา */
-function bikeArt(variant, colorName){
-  const p=PRICE[variant];
+/* รูปผูกกับ "สี" ไม่ใช่ "รุ่น" (v1.31 — คำสั่งเจ้าของ: ใส่รูปต้องตรงสี)
+   หาสีจากรหัสก่อนเสมอ เพราะรุ่นเดียวมีชื่อสีซ้ำกันได้ (BJKD00 มีทั้ง 'ฟ้า' และ 'ฟ้า/ดำ')
+   ผู้เรียกที่มีแต่ชื่อสีในมือ (เช่นหน้ารายการรุ่น) ค่อยตกมาเทียบด้วยชื่อ */
+function colorOf(variant, colorName, colorCode){
+  const p=PRICE[variant]; if(!p || !p.c) return null;
+  return p.c[colorCode] || Object.values(p.c).find(x=>x && x.name===colorName) || null;
+}
+function bikeArt(variant, colorName, colorCode){
+  const p=PRICE[variant], e=colorOf(variant, colorName, colorCode);
   /* ลำดับ: รูปที่เก็บถาวรบน Storage → รูปที่เพิ่งเลือกในเซสชันนี้ (โหมดสาธิต) → เงารถที่วาดเอง */
-  if(p && p.imgUrl) return '<img class="bike" src="'+esc(p.imgUrl)+'" alt="" loading="lazy">';
-  if(p && p.img) return '<img class="bike" src="'+p.img+'" alt="">';
+  if(e && e.imgUrl) return '<img class="bike" src="'+esc(e.imgUrl)+'" alt="" loading="lazy">';
+  if(e && e.img) return '<img class="bike" src="'+e.img+'" alt="">';
   return bikeSVG(p?p.cat:'Automatic', p?p.cc:0, COLOR_HEX[colorName]||'#8A8F94');
 }
 
@@ -3126,7 +3173,8 @@ const REQ = [
   'hoDate','hoName','evTitle',                         /* ปฏิทิน */
   'fcName','feName','siName',                          /* ไฟแนนซ์ · จุดลงเวลา */
   'ocName','obName','obCode','oeName','beName','wpName',     /* บริษัท · สาขา · คู่ค้าขายส่ง */
-  'vmCode','vmName','vmColors'                         /* รุ่นรถและสี */
+  'vmCode','vmName','vmColorList'                      /* รุ่นรถและสี — vmColorList เป็นกล่องการ์ดสี ไม่ใช่ช่องกรอก
+                                                          แต่ป้ายของมันคือที่ที่ดอกจันควรอยู่ (ต้องมีอย่างน้อย 1 สี) */
 ];
 /* แปะดอกจันเข้า label ของช่อง — ป้ายคือ label.fl ตัวที่อยู่ก่อนหน้าช่องในกล่องเดียวกัน
    เรียกซ้ำได้ ไม่ซ้อน · ช่องที่ถูกล็อกไว้ (disabled) ไม่ต้องแปะ จะได้ไม่สั่งให้คนกรอกของที่แตะไม่ได้ */
@@ -4675,7 +4723,7 @@ function rRecv(){
   window._rSync=()=>syncVariant();
   function syncVariant(){
     const v=$('#rVariant').value, p=PRICE[v];
-    $('#rColor').innerHTML = p? Object.keys(p.c).map(c=>'<option value="'+c+'">'+c+' — '+esc(p.c[c])+'</option>').join('')
+    $('#rColor').innerHTML = p? Object.keys(p.c).map(c=>'<option value="'+c+'">'+c+' — '+esc(p.c[c].name)+'</option>').join('')
       : '<option value="010A">010A — (ต้องกำหนดเอง)</option>';
     $('#rCost').value = p? fmt(p.cost):''; $('#rVat').value = p? fmt(p.vat):'';
     $('#rRetail').value = p? fmt(p.retail):'';
@@ -4721,14 +4769,14 @@ function saveRecv(){
   if(UNITS.some(u=>u.frame===frm)){ toast('เลขถังซ้ำ','มีคันนี้ในระบบแล้ว',1); return; }
   /* ยืนยันก่อนบันทึก (L1+L2) — รับรถผิดคัน/ผิดสาขาแก้ทีหลังยุ่งมาก อ่านทวนก่อน */
   confirmSave('ยืนยันรับรถเข้าสต๊อก', [
-    ['รุ่น', (p?p.m:v)+' · '+(p&&p.c[cc]?p.c[cc]:cc)],
+    ['รุ่น', (p?p.m:v)+' · '+(p&&p.c[cc]?p.c[cc].name:cc)],
     ['เลขเครื่อง', eng], ['เลขถัง', frm],
     ['สาขา', bName($('#rBranch').value)],
     ['วันที่รับ', thDate($('#rDate').value||TODAY)],
     ['ราคาขายแนะนำ', p&&p.retail!=null? fmt(p.retail)+' ฿' : 'รอกำหนดราคา']
   ], ()=>{
     const nu={ id: dbId()||nid('UN'), branch:$('#rBranch').value, variant:v, colorCode:cc, yColor:'',
-      color:p?p.c[cc]:'—', model:p?p.m:v, modelTh:p?p.th:'', cat:p?p.cat:'—', cc:p?p.cc:null, year:p?p.yr:null,
+      color:(p&&p.c[cc])?p.c[cc].name:'—', model:p?p.m:v, modelTh:p?p.th:'', cat:p?p.cat:'—', cc:p?p.cc:null, year:p?p.yr:null,
       sku:v+cc, engine:eng, frame:frm, received:$('#rDate').value||TODAY,
       cost:p?p.cost:0, vat:p?p.vat:0, retail:p?p.retail:null, status:'available', clearance:false, priceNote:'',
       src:'บันทึกเอง', recvNo:'—', poNo:'—', poDate:'', invNo:'—', files:rFilesArr.slice() };
@@ -4831,7 +4879,7 @@ function rStock(){
     const head=['รุ่น / สี',{t:'คงเหลือ',n:1}].concat(brs.map(b=>({t:bOf(b.code).prefix,n:1}))).concat([{t:'ราคาขาย',n:1},'']);
     tbl($('#stGrp'), head, keys.map(k=>{ const g=grp[k], u=g.u, open=!!stOpen[k];
       let rows='<tr class="clk" data-grp="'+esc(k)+'">'
-        +'<td><div style="display:flex;gap:var(--s2);align-items:center"><span class="bph">'+bikeArt(u.variant,u.color)+'</span>'
+        +'<td><div style="display:flex;gap:var(--s2);align-items:center"><span class="bph">'+bikeArt(u.variant,u.color,u.colorCode)+'</span>'
         +'<div><b>'+esc(u.model)+'</b><div class="tsub"><span class="dot" style="background:'+(COLOR_HEX[u.color]||'#ccc')+'"></span> '
         +esc(u.color)+' · '+esc(u.variant)+'</div></div></div></td>'
         +'<td class="n"><b>'+g.n+'</b></td>'
@@ -4897,23 +4945,40 @@ function rStock(){
         'ไม่พบรถตามเงื่อนไข');
     wireUnitRows();
   } else {
-    /* แกลเลอรีเคารพตัวกรองเหมือนอีกสองแท็บ — เดิมใช้ av ทำให้เลือกสถานะ "ขายแล้ว" แล้วหน้าว่าง */
+    /* แกลเลอรีเคารพตัวกรองเหมือนอีกสองแท็บ — เดิมใช้ av ทำให้เลือกสถานะ "ขายแล้ว" แล้วหน้าว่าง
+       v1.31: จัดกลุ่มด้วย "รุ่น + สี" ไม่ใช่รุ่นอย่างเดียว — รูปในการ์ดจึงเป็นรถสีนั้นจริงเสมอ
+       (รุ่นเดียวสี่สีเคยใช้รูปใบเดียวกันหมด ซึ่งเป็นเรื่องที่เจ้าของสั่งให้แก้)
+       แถบล่างเป็นสัดส่วนของ "สาขา" ตามแบบที่เจ้าของส่งมา — บอกว่าของกองอยู่ที่ไหน */
     const grp={};
-    list.forEach(u=>{ const k=u.variant+'|'+u.model; grp[k]=grp[k]||{u:u,n:0,colors:{},age:0,sold:0};
-      grp[k].n++; grp[k].age+=age(u); grp[k].colors[u.color]=(grp[k].colors[u.color]||0)+1;
+    list.forEach(u=>{ const k=u.variant+'|'+u.colorCode; grp[k]=grp[k]||{u:u,n:0,br:{},age:0,sold:0};
+      grp[k].n++; grp[k].age+=age(u); grp[k].br[u.branch]=(grp[k].br[u.branch]||0)+1;
       if(u.status==='sold') grp[k].sold++; });
+    /* สีของสาขาผูกกับลำดับใน BRANCHES ไม่ใช่ลำดับที่เจอในรายการ — สาขาเดิมจึงได้สีเดิมทุกการ์ด
+       ถ้าไล่สีตามลำดับที่เจอ สาขาเดียวกันจะเปลี่ยนสีไปมาระหว่างการ์ด อ่านแล้วสับสนกว่าไม่มีสี */
+    const brHue = code => 'var(--ch'+((Math.max(0, BRANCHES.findIndex(b=>b.code===code)) % 6) + 1)+')';
     $('#stGal').innerHTML = Object.keys(grp).length? Object.keys(grp).map(k=>{ const g=grp[k];
-      return '<button class="gcard" data-gmodel="'+esc(g.u.model)+'" data-gvariant="'+esc(g.u.variant)+'"><div class="ph">'+bikeArt(g.u.variant, g.u.color)+'<span class="qty">'+g.n+'</span></div>'
-        +'<div class="gb"><b>'+esc(g.u.model)+'</b><div class="c">'+esc(g.u.variant)+' · '+esc(g.u.modelTh||'—')+'</div>'
-        +'<div class="c">'+(g.u.retail==null?'<span style="color:var(--attn)">รอกำหนดราคา</span>':baht(g.u.retail)+(g.u.clearance?' <span style="color:var(--attn)">· เคลียร์</span>':''))+'</div>'
-        +'<div class="cs">'+Object.keys(g.colors).map(c=>'<span class="pill p-mut"><span class="dot" style="background:'+(COLOR_HEX[c]||'#ccc')+'"></span>'+esc(c)+' '+g.colors[c]+'</span>').join('')+'</div>'
-        +'<div class="tsub" style="margin-top:var(--s1)">'+(g.sold===g.n? 'ขายแล้วทั้งหมด' : 'อายุเฉลี่ย '+Math.round(g.age/g.n)+' วัน')+'</div></div></button>';
+      const brs=Object.keys(g.br).sort((a,b)=>g.br[b]-g.br[a]);
+      return '<button class="gcard" data-gmodel="'+esc(g.u.model)+'" data-gvariant="'+esc(g.u.variant)+'" data-gcolor="'+esc(g.u.color)+'">'
+        +'<div class="ph">'+bikeArt(g.u.variant, g.u.color, g.u.colorCode)+'</div>'
+        +'<div class="gb">'
+        +'<div class="gh"><span class="gbrand">ยามาฮ่า</span><b class="gqty">'+g.n+'</b></div>'
+        +'<b class="gm">'+esc(g.u.model)+'</b>'
+        +'<div class="c"><span class="mono">'+esc(g.u.variant)+'</span> · '+esc(g.u.color)+'</div>'
+        +'<div class="c">'+esc(g.u.modelTh||'—')+(g.u.year?' · ปี '+g.u.year:'')+'</div>'
+        +'<div class="c">'+(g.u.retail==null?'<span style="color:var(--attn)">รอกำหนดราคา</span>'
+             :baht(g.u.retail)+(g.u.clearance?' <span style="color:var(--attn)">· เคลียร์</span>':''))+'</div>'
+        +'<div class="gbar">'+brs.map(b=>'<i style="flex:'+g.br[b]+' 0 0;background:'+brHue(b)+'"></i>').join('')+'</div>'
+        +'<div class="cs">'+brs.map(b=>'<span class="pill p-mut pdot"><span class="dot" style="background:'+brHue(b)+'"></span>'
+             +esc(bName(b))+' '+g.br[b]+'</span>').join('')+'</div>'
+        +'<div class="tsub" style="margin-top:var(--s1)">'+(g.sold===g.n? 'ขายแล้วทั้งหมด' : 'อายุเฉลี่ย '+Math.round(g.age/g.n)+' วัน')+'</div>'
+        +'</div></button>';
     }).join('') : '<div class="empty"><b>ไม่พบรถ</b>ลองปรับตัวกรอง</div>';
-    /* แตะรุ่นในแกลเลอรี → กรองเป็นรุ่นนั้นแล้วไปดูรายคันในแท็บตาราง */
-    /* v1.33 (B1): การ์ดเป็นรายรหัสรุ่น (จัดกลุ่มด้วย variant) แต่เดิมกดแล้วตั้งแค่ชื่อรุ่น —
-       กด "Grand Filano BJKD00 ABS" ได้ทั้ง 3 รหัสที่ราคาต่าง 56,600–64,600 · ตั้งรหัสรุ่นให้ตรงการ์ด */
-    $$('#stGal [data-gmodel]').forEach(c=> c.onclick=()=>{ $('#stModel').value=c.dataset.gmodel;
-      stVariantOpts(); $('#stVariant').value=c.dataset.gvariant; stTab('table'); });
+    /* แตะการ์ด → กรองเป็น รุ่น+รหัสรุ่น+สี ของการ์ดนั้นแล้วไปดูรายคันในแท็บตาราง
+       v1.33 (B1): ต้องตั้ง "รหัสรุ่น" ด้วย ไม่ใช่แค่ชื่อรุ่น — รุ่นเดียวมีหลายรหัสที่ราคาต่างกัน
+       v1.31 (แกลเลอรีต่อสี): การ์ดเป็นราย รุ่น+สี จึงตั้งสีให้ตรงการ์ดด้วย ตารางจะได้ตรงกับเลขบนการ์ด */
+    $$('#stGal [data-gvariant]').forEach(c=> c.onclick=()=>{ $('#stModel').value=c.dataset.gmodel;
+      stVariantOpts(); $('#stVariant').value=c.dataset.gvariant;
+      stColorOpts(); $('#stColor').value=c.dataset.gcolor; stTab('table'); });
   }
 }
 
@@ -5155,7 +5220,7 @@ function calcSell(){
   ]).filter(r=>show(r[0]));
   /* รูปรุ่นบนสรุปดีล (K2) — เห็นคันที่กำลังขายทันที ไม่ต้องเดาจากชื่อรุ่น */
   $('#sSummary').innerHTML='<div style="display:flex;justify-content:center;margin-bottom:var(--s1)">'
-    +'<span class="bph" style="width:120px;height:70px">'+bikeArt(u.variant,u.color)+'</span></div>'
+    +'<span class="bph" style="width:120px;height:70px">'+bikeArt(u.variant,u.color,u.colorCode)+'</span></div>'
     +(promo?'<div class="note g">'+ic('check','i i-sm')+'<span>'+esc(promo.title)+'</span></div>':'')
     +'<dl class="kv">'+rows.map(r=>'<dt>'+r[1]+'</dt><dd>'+r[2]+'</dd>').join('')+'</dl>';
   const cad=String(CFG.cadence).split(',').length;
@@ -6572,7 +6637,7 @@ function dealDetail(d){
   let h='';
   /* รูปรุ่นหัวดีล (K2) — คันจริงของดีลนี้ */
   if(d.u) h+='<div style="display:flex;align-items:center;gap:var(--s2);margin-bottom:var(--s1)">'
-    +'<span class="bph">'+bikeArt(d.u.variant,d.u.color)+'</span>'
+    +'<span class="bph">'+bikeArt(d.u.variant,d.u.color,d.u.colorCode)+'</span>'
     +'<span><b>'+esc(d.u.model)+'</b><div class="tsub">'+esc(d.u.color)
     +' · <span class="mono">'+esc(d.u.engine)+'</span></div></span></div>';
   /* v1.34 (บรีฟข้อ 14): กล่องข้อมูลส่งมอบ — คนขับรถไปส่งเปิดหน้าดีลแล้วเห็นครบในกล่องเดียว */
@@ -7510,7 +7575,7 @@ function svLookup(){
     +esc(u.model)+' '+esc(u.color)+(c?(' · ซื้อ '+thDate(s.soldAt)):'')+'</span></div>';
   const sv=SERVICE.filter(x=>x.unitId===u.id);
   let h='<div style="display:flex;justify-content:center;margin-bottom:var(--s1)">'
-    +'<span class="bph" style="width:120px;height:70px">'+bikeArt(u.variant,u.color)+'</span></div>'
+    +'<span class="bph" style="width:120px;height:70px">'+bikeArt(u.variant,u.color,u.colorCode)+'</span></div>'
     +'<dl class="kv"><dt>รุ่น</dt><dd><b>'+esc(u.model)+'</b> · '+esc(u.color)+'</dd>'
     +'<dt>เลขเครื่อง</dt><dd class="mono">'+esc(u.engine)+'</dd>'
     +'<dt>เลขถัง</dt><dd class="mono">'+esc(u.frame)+'</dd>'
@@ -10176,13 +10241,24 @@ function rSites(){
 }
 /* ---------- ตั้งค่ารุ่นรถและสี — ป้อนหน้ารับรถเข้า ใบเสนอราคา และคำนวณค่างวด ---------- */
 function vmRefs(code){ return UNITS.filter(u=>u.variant===code).length; }
+/* แถบสีของรุ่น — หนึ่งสีหนึ่งช่อง โชว์รูปของสีนั้นเอง (v1.31 · คำสั่งเจ้าของ)
+   สีที่ยังไม่มีรูปได้เงารถที่ระบายด้วยสีจริงของมัน + เขียนกำกับว่า "ยังไม่มีรูป"
+   จึงบอกได้ด้วยตาเปล่าว่าขาดรูปสีไหน โดยไม่ต้องเปิดเข้าไปดู (สถานะ = ข้อความ+จุดสี ไม่ใช่สีล้วน) */
+function colorStrip(v){
+  const p=PRICE[v]; if(!p || !p.c) return '';
+  return '<div class="vmcs">'+Object.keys(p.c).sort().map(cc=>{ const e=p.c[cc];
+    return '<span class="vmc">'
+      +'<span class="bph">'+bikeArt(v, e.name, cc)+'</span>'
+      +'<span class="vmcn"><span class="dot" style="background:'+(COLOR_HEX[e.name]||'#ccc')+'"></span>'+esc(e.name)+'</span>'
+      +'<span class="vmck mono">'+esc(cc)+'</span>'
+      +((e.imgUrl||e.img)? '' : '<span class="vmck">ยังไม่มีรูป</span>')+'</span>'; }).join('')+'</div>';
+}
 function rModels(){
-  tbl($('#vmTable'), ['รูป','โมเดล','รหัสรุ่น','สี',{t:'ทุน',n:1},{t:'ราคาขาย',n:1},{t:'ในสต๊อก',n:1},''],
+  tbl($('#vmTable'), ['โมเดล','รหัสรุ่น','สีและรูป',{t:'ทุน',n:1},{t:'ราคาขาย',n:1},{t:'ในสต๊อก',n:1},''],
     Object.keys(PRICE).map(v=>{ const p=PRICE[v]; const n=vmRefs(v);
-      return '<tr><td><span class="bph">'+bikeArt(v, Object.values(p.c)[0])+'</span></td>'
-        +'<td><b>'+esc(p.m)+'</b><div class="tsub">'+esc(p.th||'')+' · '+esc(p.cat||'—')+' · '+(p.cc||'—')+' cc · ปี '+(p.yr||'—')+'</div></td>'
+      return '<tr><td><b>'+esc(p.m)+'</b><div class="tsub">'+esc(p.th||'')+' · '+esc(p.cat||'—')+' · '+(p.cc||'—')+' cc · ปี '+(p.yr||'—')+'</div></td>'
         +'<td class="mono">'+esc(v)+'</td>'
-        +'<td><div class="cs" style="display:flex;gap:4px;flex-wrap:wrap">'+Object.keys(p.c).map(cc=>'<span class="pill p-mut" title="'+esc(cc)+'"><span class="dot" style="background:'+(COLOR_HEX[p.c[cc]]||'#ccc')+'"></span>'+esc(p.c[cc])+'</span>').join('')+'</div></td>'
+        +'<td>'+colorStrip(v)+'</td>'
         +'<td class="n">'+money(p.cost)+'</td><td class="n">'+fmt(p.retail)+'</td>'
         +'<td class="n">'+(n||'—')+'</td>'
         +'<td style="white-space:nowrap"><button class="lnk" data-vme="'+esc(v)+'">แก้ไข</button>'
@@ -10192,8 +10268,7 @@ function rModels(){
       return crow('', esc(p.m), fmt(p.retail)+' ฿',
         '<span class="mono">'+esc(v)+'</span> · '+esc(p.th||'')+' · '+(p.cc||'—')+' cc · ปี '+(p.yr||'—')
           +' · ทุน '+money(p.cost)+(n?' · ในสต๊อก '+n+' คัน':'')
-          +'<div class="cs" style="display:flex;gap:4px;flex-wrap:wrap;margin-top:4px">'
-          +Object.keys(p.c).map(cc=>'<span class="pill p-mut"><span class="dot" style="background:'+(COLOR_HEX[p.c[cc]]||'#ccc')+'"></span>'+esc(p.c[cc])+'</span>').join('')+'</div>',
+          +'<div style="margin-top:var(--s1)">'+colorStrip(v)+'</div>',
         '<button class="lnk" data-vme="'+esc(v)+'">แก้ไข</button>'
         +'<button class="lnk q" data-vmd="'+esc(v)+'">ลบ</button>'); }));
   $$('#vmTable [data-vme]').forEach(b=> b.onclick=()=>modelModal(b.dataset.vme));
@@ -10203,7 +10278,6 @@ function rModels(){
 }
 function modelModal(code){
   const p=code? PRICE[code] : null;
-  const colorRows = p? Object.keys(p.c).map(cc=>cc+' = '+p.c[cc]).join('\n') : '010A = ดำ\n010B = แดง';
   openModal(p? 'แก้ไขรุ่น '+code : 'เพิ่มรุ่นรถ',
     '<div class="f"><div class="f3">'
     +'<div><label class="fl">รหัสรุ่น (6 ตัว)</label><input class="inp mono" id="vmCode" value="'+esc(code||'')+'" '+(p?'disabled':'placeholder="BTF400"')+'></div>'
@@ -10217,42 +10291,93 @@ function modelModal(code){
     +'<div><label class="fl">ต้นทุน (฿)</label><input class="inp num" id="vmCost" value="'+(p?p.cost:'')+'"></div>'
     +'<div><label class="fl">VAT 7% (คิดให้เอง)</label><input class="inp num" id="vmVat" value="'+(p?p.vat:'')+'" readonly></div>'
     +'<div><label class="fl">ราคาขาย (฿)</label><input class="inp num" id="vmRetail" value="'+(p?p.retail:'')+'"></div></div>'
-    +'<div><label class="fl">สี — บรรทัดละสี รูปแบบ รหัส = ชื่อสี</label>'
-    +'<textarea class="inp mono" id="vmColors" rows="4">'+esc(colorRows)+'</textarea></div>'
-    +'<div><label class="fl">รูปรุ่น (ไม่บังคับ — ไม่มีรูประบบจะวาดเงารถให้)</label>'
-    +'<label class="drop" for="vmImg">'+ic('clip','i i-sm')+' เลือกรูป</label><input type="file" id="vmImg" accept="image/*" style="display:none">'
-    +'<span id="vmImgName" class="tsub" style="margin-left:var(--s1)">'+(p&&p.img?'มีรูปอยู่แล้ว — เลือกใหม่เพื่อแทนที่':'')+'</span></div></div>'
+    +'<div><label class="fl">สีและรูป — สีละหนึ่งการ์ด รูปต้องเป็นรถสีนั้นจริง · สีที่ยังไม่มีรูป ระบบวาดเงารถให้</label>'
+    +'<div id="vmColorList"></div>'
+    +'<button type="button" class="chip" id="vmColorAdd" style="margin-top:var(--s2)">+ เพิ่มสี</button></div></div>'
+    /* ช่องเลือกไฟล์ตัวเดียวใช้ร่วมทุกการ์ด — ถ้าทำ input ต่อการ์ด id จะซ้ำกันทันทีที่มี 2 สี */
+    +'<input type="file" id="vmImg" accept="image/*" style="display:none">'
     +'<div class="savebar"><button class="btn" id="vmGo">'+(p?'บันทึก':'เพิ่มรุ่น')+'<svg class="i"><use href="#i-check"/></svg></button></div>');
-  let imgData = p? p.img : null, imgPack = null;
   $('#vmCost').oninput=()=>{ $('#vmVat').value=Math.round(num($('#vmCost').value)*0.07); };
   if(!p) $('#vmVat').value='';
+
+  /* ---------- รายการสีในแผ่นนี้ ----------
+     สีหนึ่งสี = การ์ดหนึ่งใบ ถือทั้งรหัส ชื่อ และรูปของตัวเอง (คำสั่งเจ้าของ 23 ส.ค. 2569:
+     "แยก 1 สีในแต่ละรุ่นเป็น 1 card เพราะตอนใส่รูป ต้องใส่รูปรถให้ตรงสี")
+     บันทึกทีเดียวเขียนชื่อกับรูปพร้อมกัน สีกับรูปจึงไม่มีทางหลุดจากกัน */
+  let rows = p? Object.keys(p.c).sort().map(cc=>({ code:cc, name:p.c[cc].name,
+        img:p.c[cc].img, imgUrl:p.c[cc].imgUrl, imgFullUrl:p.c[cc].imgFullUrl, pack:null, note:'' }))
+    : [{ code:'010A', name:'ดำ', pack:null, note:'' }];
+  let pick = -1;   /* การ์ดที่กำลังรอไฟล์จากช่องเลือกรูปตัวเดียวที่ใช้ร่วมกัน */
+
+  function vmPrev(r){
+    if(r.imgUrl) return '<img class="bike" src="'+esc(r.imgUrl)+'" alt="">';
+    if(r.img)    return '<img class="bike" src="'+r.img+'" alt="">';
+    /* ยังไม่มีรูป → เงารถที่ระบายด้วยสีที่พิมพ์ไว้ เห็นทันทีว่าการ์ดนี้คือสีอะไร */
+    return bikeSVG($('#vmCat').value, num($('#vmCc').value), COLOR_HEX[r.name]||'#8A8F94');
+  }
+  /* วาดใหม่ทั้งรายการเฉพาะตอนเพิ่ม/ลบ/เปลี่ยนรูป — ไม่วาดตอนพิมพ์ ไม่งั้นเคอร์เซอร์หลุดทุกตัวอักษร
+     ค่าที่พิมพ์ถูกเก็บเข้า rows ทาง oninput อยู่แล้ว วาดใหม่จึงไม่ทำให้ของหาย */
+  function vmDraw(){
+    $('#vmColorList').innerHTML = rows.map((r,i)=>
+      '<div class="vmrow">'
+      +'<span class="bph">'+vmPrev(r)+'</span>'
+      +'<div class="vmf">'
+        +'<div><label class="fl">รหัสสี</label><input class="inp mono" data-vcc="'+i+'" value="'+esc(r.code||'')+'" placeholder="010A"></div>'
+        +'<div><label class="fl">ชื่อสี</label><input class="inp" data-vcn="'+i+'" value="'+esc(r.name||'')+'" placeholder="ดำ"></div>'
+      +'</div>'
+      +'<div class="vmb"><button type="button" class="btn sec sm" data-vcp="'+i+'">'
+        +ic('clip','i i-sm')+' '+((r.img||r.imgUrl)?'เปลี่ยนรูป':'เลือกรูป')+'</button>'
+      +(rows.length>1? '<button type="button" class="lnk q" data-vcx="'+i+'">เอาออก</button>':'')+'</div>'
+      +'<div class="vmst tsub">'+esc(r.note || ((r.img||r.imgUrl)? 'มีรูปแล้ว' : 'ยังไม่มีรูป'))+'</div>'
+      +'</div>').join('');
+    $$('#vmColorList [data-vcc]').forEach(el=> el.oninput=()=>{ rows[+el.dataset.vcc].code=el.value.trim().toUpperCase(); });
+    $$('#vmColorList [data-vcn]').forEach(el=> el.oninput=()=>{ rows[+el.dataset.vcn].name=el.value.trim(); });
+    $$('#vmColorList [data-vcp]').forEach(b=> b.onclick=()=>{
+      pick=+b.dataset.vcp; $('#vmImg').value=''; $('#vmImg').click(); });
+    $$('#vmColorList [data-vcx]').forEach(b=> b.onclick=()=>{ rows.splice(+b.dataset.vcx,1); vmDraw(); });
+  }
+  vmDraw();
+  $('#vmColorAdd').onclick=()=>{ rows.push({ code:'', name:'', pack:null, note:'' }); vmDraw(); };
+
   /* ย่อทันทีที่เลือกไฟล์ ไม่ยัดรูปดิบขนาด 3-12 MB เข้าหน่วยความจำหรือขึ้น Storage
      บอกขนาดที่ประหยัดได้ให้เห็นด้วย จะได้รู้ว่าระบบทำอะไรให้ */
-  $('#vmImg').onchange=async e=>{ const f=e.target.files[0]; if(!f) return;
-    $('#vmImgName').textContent='กำลังย่อรูป…';
+  $('#vmImg').onchange=async e=>{ const f=e.target.files[0]; if(!f || pick<0) return;
+    const r=rows[pick]; if(!r) return;
+    r.note='กำลังย่อรูป…'; vmDraw();
     const pk=await imgPrepare(f);
-    if(!pk){ $('#vmImgName').textContent='อ่านไฟล์รูปไม่ได้'; return; }
-    imgPack=pk; imgData=pk.src;
+    if(!pk){ r.note='อ่านไฟล์รูปไม่ได้'; vmDraw(); return; }
     const kb=n=>Math.round(n/1024).toLocaleString('en-US')+' KB';
-    $('#vmImgName').textContent=f.name+' · '+kb(pk.orig)+' → '+kb(pk.bytes)
-      +' ('+pk.tiers.card.ext.toUpperCase()+' สองขนาด)'; };
+    r.pack=pk; r.img=pk.src; r.imgUrl=null; r.imgFullUrl=null;
+    r.note=f.name+' · '+kb(pk.orig)+' → '+kb(pk.bytes)+' ('+pk.tiers.card.ext.toUpperCase()+' สองขนาด)';
+    vmDraw(); };
   $('#vmGo').onclick=()=>{
     const v=(code||$('#vmCode').value.trim().toUpperCase());
     if(!/^[A-Z0-9]{6}$/.test(v)){ toast('รหัสรุ่นต้องเป็นตัวอักษร/ตัวเลข 6 ตัว','เช่น BTF300',1); return; }
     if(!code && PRICE[v]){ toast('รหัสรุ่นนี้มีอยู่แล้ว',v,1); return; }
     const m=$('#vmName').value.trim(); if(!m){ toast('กรอกชื่อโมเดล','',1); return; }
-    const c={};
-    $('#vmColors').value.split('\n').map(x=>x.trim()).filter(Boolean).forEach(line=>{
-      const mm=line.split('=').map(x=>x.trim()); if(mm.length===2 && mm[0] && mm[1]) c[mm[0]]=mm[1]; });
-    if(!Object.keys(c).length){ toast('ต้องมีอย่างน้อย 1 สี','รูปแบบ: 010A = ดำ',1); return; }
+    /* ประกอบสีจากการ์ดทุกใบ — แถวที่ว่างทั้งรหัสและชื่อถือว่าผู้ใช้ยังไม่ได้กรอก ข้ามไปเงียบ ๆ
+       แต่แถวที่กรอกมาครึ่งเดียวต้องเด้ง ไม่งั้นสีจะหายไปโดยที่คนกรอกไม่รู้ตัว */
+    const c={}, seen={};
+    for(const r of rows){
+      const cc=(r.code||'').trim().toUpperCase(), nm=(r.name||'').trim();
+      if(!cc && !nm) continue;
+      if(!cc || !nm){ toast('กรอกรหัสสีและชื่อสีให้ครบ','การ์ดที่ยังไม่ครบ: '+(cc||nm),1); return; }
+      if(seen[cc]){ toast('รหัสสีซ้ำ',cc+' มีสองการ์ดในรุ่นเดียวกัน',1); return; }
+      seen[cc]=1;
+      c[cc]={ name:nm };
+      if(r.img)        c[cc].img=r.img;
+      if(r.imgUrl)     c[cc].imgUrl=r.imgUrl;
+      if(r.imgFullUrl) c[cc].imgFullUrl=r.imgFullUrl;
+    }
+    if(!Object.keys(c).length){ toast('ต้องมีอย่างน้อย 1 สี','กด "+ เพิ่มสี" แล้วกรอกรหัสกับชื่อสี',1); return; }
     const cost=num($('#vmCost').value);
     PRICE[v]={ m, th:$('#vmTh').value.trim(), cat:$('#vmCat').value, cc:num($('#vmCc').value)||null,
-      yr:num($('#vmYr').value)||null, cost, vat:Math.round(cost*0.07), retail:num($('#vmRetail').value)||null,
-      c, img:imgData||undefined, imgUrl:(p&&p.imgUrl)||undefined, imgFullUrl:(p&&p.imgFullUrl)||undefined };
+      yr:num($('#vmYr').value)||null, cost, vat:Math.round(cost*0.07), retail:num($('#vmRetail').value)||null, c };
     closeModal(); toast(code?'บันทึกรุ่นแล้ว':'เพิ่มรุ่นแล้ว', m+' ('+v+') · ใช้ได้ทันทีในหน้ารับรถเข้า');
     /* โหมดข้อมูลจริงเท่านั้นที่อัปขึ้น Storage — โหมดสาธิตถือ dataURL ไว้ในเซสชันเหมือนเดิม
-       อัปหลังปิดแผ่นแล้ว ผู้ใช้จึงไม่ต้องนั่งรอเน็ต */
-    if(imgPack && LIVE) modelPhotoUpload(v, imgPack);
+       อัปหลังปิดแผ่นแล้ว ผู้ใช้จึงไม่ต้องนั่งรอเน็ต · อัปทีละสี รูปจึงผูกกับสีตั้งแต่ต้นทาง */
+    if(LIVE) rows.forEach(r=>{ const cc=(r.code||'').trim().toUpperCase();
+      if(r.pack && cc && c[cc]) modelPhotoUpload(v, cc, r.pack); });
     refreshAll(); };
 }
 
@@ -10686,9 +10811,13 @@ const pubAvail = n => n===0? 'order' : (n<=(+CFG.lowStock||2)? 'low' : 'ready');
 function pubModel(code){
   const p=PRICE[code]; if(!p) return null;
   const n=UNITS.filter(u=>u.variant===code && u.status==='available').length;
+  /* รูปปกของรุ่น = รูปของสีแรก (เรียงตามรหัสสี) ที่อัปไว้แล้ว — คีย์ photo/photoFull ต้องคงอยู่
+     เพราะเว็บขายรถรุ่นเก่ายังอ่านคีย์นี้ · รูปรายสีอยู่ใน colors[] ให้เว็บใหม่เลือกใช้ */
+  const cover=Object.keys(p.c||{}).sort().map(cc=>p.c[cc]).find(x=>x && x.imgUrl);
   return { code, model:p.m, modelTh:p.th||'', cat:p.cat||'', cc:p.cc||null, year:p.yr||null,
-    retail:p.retail||null, photo:p.imgUrl||null, photoFull:p.imgFullUrl||null,
-    colors:Object.keys(p.c||{}).sort().map(cc=>({ code:cc, name:p.c[cc] })),
+    retail:p.retail||null, photo:(cover||{}).imgUrl||null, photoFull:(cover||{}).imgFullUrl||null,
+    colors:Object.keys(p.c||{}).sort().map(cc=>({ code:cc, name:p.c[cc].name,
+      photo:p.c[cc].imgUrl||null, photoFull:p.c[cc].imgFullUrl||null })),
     availability:pubAvail(n) };
 }
 const pubModels = () => Object.keys(PRICE).sort().map(pubModel).filter(Boolean);
@@ -10870,16 +10999,25 @@ async function blobHash(blob){
     return [...new Uint8Array(d)].slice(0,6).map(b=>b.toString(16).padStart(2,'0')).join('');
   }catch(_){ return String(blob.size); }
 }
-async function modelPhotoUpload(variant, pack){
+/* อัปรูปของ "สีหนึ่งสี" (v1.31) — รหัสสีอยู่ในเส้นทางไฟล์ด้วย เปิด bucket ดูก็รู้ว่าไฟล์ไหนของสีไหน
+   และ **เขียนแถวลง model_photo จริง** ของเดิมอัปขึ้น Storage แล้วจบ ไม่เคยเขียนแถวเลย
+   รูปจึงหายทุกครั้งที่รีเฟรชหน้า (เจอตอนรอบนี้ เจ้าของสั่งให้แก้ไปพร้อมกัน) */
+async function modelPhotoUpload(variant, colorCode, pack){
   try{
-    const urls={};
+    const paths={};
     for(const t of IMG_TIERS){
       const r=pack.tiers[t.k];
-      const path='model/'+variant+'/'+t.k+'-'+(await blobHash(r.blob))+'.'+r.ext;
-      urls[t.k]=await sbUpload('model-photo', path, r.blob, r.type);
+      paths[t.k]='model/'+variant+'/'+colorCode+'/'+t.k+'-'+(await blobHash(r.blob))+'.'+r.ext;
+      await sbUpload('model-photo', paths[t.k], r.blob, r.type);
     }
-    const p=PRICE[variant]; if(p){ p.imgUrl=urls.card; p.imgFullUrl=urls.full; }
-    toast('อัปรูปรุ่นแล้ว', variant+' · '+Math.round(pack.bytes/1024)+' KB');
+    const e=(PRICE[variant]||{}).c && PRICE[variant].c[colorCode];
+    if(e){ e.imgUrl=sbPublicUrl('model-photo', paths.card); e.imgFullUrl=sbPublicUrl('model-photo', paths.full); }
+    /* เก็บ "path" ไม่ใช่ URL เต็ม ตามชื่อคอลัมน์ — ย้ายโปรเจกต์แล้วรูปยังหาเจอ */
+    if(VARIANT_IDS[variant])
+      dbUp('model_photo', { variant_id:VARIANT_IDS[variant], color_code:colorCode,
+        path_card:paths.card, path_full:paths.full, bytes:pack.bytes, sort:0 },
+        'variant_id,color_code,sort');
+    toast('อัปรูปแล้ว', variant+' · '+colorCode+' · '+Math.round(pack.bytes/1024)+' KB');
     refreshAll();
   }catch(e){ toast('อัปรูปไม่สำเร็จ', (e&&e.message)||'ลองใหม่อีกครั้ง', 1); }
 }
@@ -10898,7 +11036,9 @@ async function liveLogin(){
   /* QA A9: ล็อกอินพังกลางทางต้องคืนสภาพเดโมได้ครบ — เดิม global ชุดองค์กรถูกทับก่อนจุดที่พังบ่อยสุด
      แล้ว catch คืนแค่ LIVE/SB_TOKEN ทำให้เดโมอ้างสาขาที่หายไป เลขเอกสารออก prefix ผิดทั้งเซสชัน */
   const snap={ COMPANIES, BRANCHES, WS_PARTNERS, WS_PRICES, HOLIDAYS, EXEC_EVENTS, PERMS,
-    BR_IDS, VARIANT_IDS, LEAVES, OFFS, ATT, FIN_DBID: FIN_CO.map(f=>f.dbId) };
+    BR_IDS, VARIANT_IDS, LEAVES, OFFS, ATT, FIN_DBID: FIN_CO.map(f=>f.dbId),
+    /* v1.31: PRICE ถูกแก้ "ในที่" ตอนโหลดสีกับรูปจากฐาน เก็บอ้างอิงเฉย ๆ กู้ไม่ได้ ต้องคัดลอกจริง */
+    PRICE: JSON.parse(JSON.stringify(PRICE)) };
   try{
     SB_TOKEN = null;
     const auth = await sbFetch('/auth/v1/token?grant_type=password',
@@ -10981,6 +11121,20 @@ async function liveLogin(){
       order:'received_at', limit:'2000' });
     const cols = await sbSelect('model_color', { select:'color_code,color_name,model_variant(code)', limit:'2000' });
     const cmap={}; (cols||[]).forEach(c=>{ cmap[c.model_variant.code+'|'+c.color_code]=c.color_name; });
+    /* v1.31: สีของรุ่นและรูปของแต่ละสีต้องมาจากฐานจริง ไม่ใช่ตารางในไฟล์
+       เติมทับเฉพาะรุ่นที่มีอยู่ในตารางราคาของแอป — รุ่นที่ฐานมีแต่แอปไม่รู้จักข้ามไป
+       (ราคายังมาจากไฟล์เหมือนเดิม การย้ายราคาไปฐานเป็นงานคนละก้อน) */
+    (cols||[]).forEach(c=>{ const v=c.model_variant && c.model_variant.code, pr=v && PRICE[v];
+      if(!pr) return; pr.c=pr.c||{};
+      pr.c[c.color_code]=Object.assign({}, pr.c[c.color_code], { name:c.color_name }); });
+    const mph = await sbSelect('model_photo',
+      { select:'color_code,path_card,path_full,sort,model_variant(code)', order:'sort', limit:'2000' }).catch(()=>null);
+    /* sort 0 = รูปปกของสีนั้น · มุมอื่น (sort 1-3) ยังไม่มีที่แสดงในแอป จึงยังไม่หยิบมาใช้ */
+    (mph||[]).forEach(r=>{ const v=r.model_variant && r.model_variant.code, pr=v && PRICE[v];
+      const e=pr && pr.c && pr.c[r.color_code];
+      if(!e || r.sort!==0) return;
+      e.imgUrl=sbPublicUrl('model-photo', r.path_card);
+      e.imgFullUrl=sbPublicUrl('model-photo', r.path_full); });
 
     UNITS = rows.map(r=>({
       id:r.id, branch:r.branch.code, variant:r.model_variant.code, colorCode:r.color_code, yColor:'',
@@ -11015,6 +11169,7 @@ async function liveLogin(){
     COMPANIES=snap.COMPANIES; BRANCHES=snap.BRANCHES; WS_PARTNERS=snap.WS_PARTNERS;
     WS_PRICES=snap.WS_PRICES; HOLIDAYS=snap.HOLIDAYS; EXEC_EVENTS=snap.EXEC_EVENTS; PERMS=snap.PERMS;
     BR_IDS=snap.BR_IDS; VARIANT_IDS=snap.VARIANT_IDS; LEAVES=snap.LEAVES; OFFS=snap.OFFS; ATT=snap.ATT;
+    PRICE=snap.PRICE;
     FIN_CO.forEach((f,i)=>{ f.dbId=snap.FIN_DBID[i]; });
     console.error('liveLogin ล้มเหลว', err);
     toast('เชื่อมฐานข้อมูลไม่สำเร็จ', String(err.message||err).slice(0,80)+' — ใช้โหมดสาธิตต่อได้', 1);
