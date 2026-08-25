@@ -1559,7 +1559,8 @@ body.lock{ overflow:hidden; }
               <div class="fsh">รถ</div>
               <!-- v1.33 (บรีฟข้อ 11): เลือกรถแบบไล่ระดับ รุ่น → รหัสรุ่น → สี → คันจริง
                    บนสุดมีช่องค้นหา พิมพ์เลขเครื่อง/เลขถัง/รหัสรุ่นแล้วช่องล่างเติมให้เอง -->
-              <div><label class="fl">ค้นหารถเร็ว</label><input class="inp mono" id="svQ" placeholder="พิมพ์ เลขเครื่อง / เลขถัง / รหัสรุ่น แล้วช่องล่างเติมให้" autocomplete="off"></div>
+              <!-- v1.40: แผง .sug ต้องมีพ่อ position:relative ไม่งั้นไปเกาะ .card (แบบเดียวกับ #sCust) -->
+              <div style="position:relative"><label class="fl">ค้นหารถเร็ว</label><input class="inp mono" id="svQ" placeholder="แตะเพื่อเลือกรุ่น หรือพิมพ์ เลขเครื่อง / เลขถัง / รหัสรุ่น" autocomplete="off"><div class="sug" id="svQSug" style="display:none"></div></div>
               <div class="f3">
                 <div><label class="fl">รุ่นรถ</label><select class="inp" id="svModel"></select></div>
                 <div><label class="fl">รหัสรุ่น</label><select class="inp" id="svVariant"></select></div>
@@ -1783,7 +1784,7 @@ body.lock{ overflow:hidden; }
                 <div><label class="fl">ชื่อลูกค้า</label><input class="inp" id="bkName" placeholder="คุณสมชาย ใจดี"></div>
                 <div><label class="fl">เบอร์โทร</label><input class="inp" id="bkPhone" placeholder="081-234-5678"></div>
               </div>
-              <div><label class="fl">ค้นหารถเร็ว</label><input class="inp mono" id="bkQ" placeholder="พิมพ์ เลขเครื่อง / เลขถัง / รหัสรุ่น แล้วช่องล่างเติมให้" autocomplete="off"></div>
+              <div style="position:relative"><label class="fl">ค้นหารถเร็ว</label><input class="inp mono" id="bkQ" placeholder="แตะเพื่อเลือกรุ่น หรือพิมพ์ เลขเครื่อง / เลขถัง / รหัสรุ่น" autocomplete="off"><div class="sug" id="bkQSug" style="display:none"></div></div>
               <div class="f3">
                 <div><label class="fl">รุ่นรถ</label><select class="inp" id="bkModel"></select></div>
                 <div><label class="fl">รหัสรุ่น</label><select class="inp" id="bkVariant"></select></div>
@@ -4998,6 +4999,9 @@ function setPay(mode){
    ช่องค้นหา: เจอคันแรกที่ตรง → ตั้งรุ่น/รหัส/สีให้ แล้วเลือกคันนั้นเลย (back-fill ตามบรีฟ) */
 function vehCascadeFill(ids, pool){
   const g=k=>ids[k]? $('#'+ids[k]) : null;
+  /* v1.40: วาดหน้าใหม่ = แผงรายชื่อรุ่นปิดเสมอ — แผงไม่มี state แยก (กฎข้อ 8)
+     เปิดได้ทางเดียวคือ focus/พิมพ์ ใน vehCascadeWire จุดปิดเลยรวมศูนย์ที่นี่จุดเดียว */
+  const sug=ids.q? $('#'+ids.q+'Sug') : null; if(sug) sug.style.display='none';
   const q=(g('q')&&g('q').value.trim().toLowerCase())||'';
   const all=pool();
   const fill=(el,vals,label)=>{ if(!el) return; const want=el.value;
@@ -5016,16 +5020,38 @@ function vehCascadeWire(ids, pool, redraw){
   const g=k=>ids[k]? $('#'+ids[k]) : null;
   ['model','variant','color'].forEach(k=>{ const el=g(k); if(el) el.onchange=redraw; });
   const qEl=g('q');
-  if(qEl) qEl.oninput=()=>{
+  if(!qEl) return;
+  /* v1.40 (คำสั่งเจ้าของ): แตะช่องค้นหาแล้วมีรายชื่อรุ่นให้จิ้มเลย ไม่ต้องรู้เลขเครื่อง
+     แผงใช้ .sug/.si เดิมของ autocomplete ลูกค้า — derive จาก pool สดทุกครั้ง ไม่เก็บ state
+     แถวใช้ onmousedown+preventDefault กัน blur ปิดแผงก่อนคลิกติด (บทเรียนเดียวกับ #sCust) */
+  const sugDraw=()=>{
+    const box=$('#'+ids.q+'Sug'); if(!box) return;
+    const q=qEl.value.trim().toLowerCase(), cnt={};
+    pool().forEach(u=>{ if(u.model) cnt[u.model]=(cnt[u.model]||0)+1; });
+    const models=Object.keys(cnt).filter(m=>!q||m.toLowerCase().indexOf(q)>=0)
+      .sort((a,b)=>a.localeCompare(b,'th'));
+    if(!models.length){ box.style.display='none'; return; }   /* ไม่มีของ = ไม่โชว์กล่องเปล่า */
+    box.innerHTML=models.map(m=>'<button class="si" data-m="'+esc(m)+'"><b>'+esc(m)
+      +'</b><span class="sp2">'+cnt[m]+' คัน</span></button>').join('');
+    box.style.display='';
+    box.querySelectorAll('.si').forEach(bn=> bn.onmousedown=e=>{ e.preventDefault();
+      qEl.value='';                     /* เลือกจากลิสต์แล้ว คำค้นหมดหน้าที่ */
+      if(g('model')) g('model').value=bn.dataset.m;
+      redraw(); });                     /* redraw → vehCascadeFill คงค่ารุ่น + ปิดแผงให้เอง */
+  };
+  qEl.oninput=()=>{
     const q=qEl.value.trim().toLowerCase();
     if(q.length>=3){
       const hit=pool().find(u=>(u.engine+' '+u.frame+' '+u.variant).toLowerCase().indexOf(q)>=0);
       if(hit){ if(g('model'))g('model').value=hit.model; if(g('variant'))g('variant').value=hit.variant;
         if(g('color'))g('color').value=hit.color;
-        redraw(hit.id); return; }
+        redraw(hit.id); return; }       /* back-fill เจอคันชนะเสมอ — fill ปิดแผงไปแล้ว */
     }
     redraw();
+    sugDraw();                          /* ต้องวาดหลัง redraw — ไม่งั้น fill ปิดแผงทับที่เพิ่งวาด */
   };
+  qEl.onfocus=qEl.onclick=sugDraw;
+  qEl.onblur=()=>setTimeout(()=>{ const box=$('#'+ids.q+'Sug'); if(box) box.style.display='none'; },150);
 }
 /* กติการถที่ขายได้ + ผังช่องของหน้าขาย — ใช้ซ้ำใน sUnitSet/ปุ่มภายนอกที่จะเลือกคันให้ */
 const SELL_CAS={q:'svQ', model:'svModel', variant:'svVariant', color:'svColor', unit:'sUnit'};
