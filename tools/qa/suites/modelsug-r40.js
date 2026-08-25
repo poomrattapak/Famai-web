@@ -9,7 +9,9 @@
    [4] back-fill เดิมชนะเสมอ: เปิดแผงอยู่แล้วพิมพ์เลขถังเต็ม → ช่องบนเติม + #sUnit ชี้คัน + แผงปิด
    [5] blur ช่องค้นหา → แผงปิดเอง
    [6] หน้าจอง: คลิก #bkQ → #bkQSug โชว์จาก bookPool · เลือกแล้ว #bkModel ตั้ง + แผงปิด
-   [7] ข้อความในแผงห้ามมีราคา (เจตนาเดียวกับ K12 ของ money-r16 — คนไม่มีสิทธิ์ money ก็เห็นแผงนี้) */
+   [7] ข้อความในแผงห้ามมีราคา (เจตนาเดียวกับ K12 ของ money-r16 — คนไม่มีสิทธิ์ money ก็เห็นแผงนี้)
+   [8] v1.40.1 (เจ้าของ: "พอพิมพ์ ข้อมูลไม่ขึ้น"): พิมพ์เลขที่แมตช์หลายคัน → แผงโชว์แถวคัน [data-u]
+       ครบทุกคันที่แมตช์ · ไม่เดาเติมคันแรกลง select · แตะแถวคันแล้วเลือกคันนั้นทั้งกระบวน + แผงปิด */
 const { chromium, EXE, BASE } = require('./env');
 
 (async () => {
@@ -30,7 +32,7 @@ const { chromium, EXE, BASE } = require('./env');
     await p.click('#svQ'); await p.waitForTimeout(150);
     const g1 = await p.evaluate(() => {
       const box = document.getElementById('svQSug');
-      const rows = [...box.querySelectorAll('.si')];
+      const rows = [...box.querySelectorAll('.si[data-m]')];   /* v1.40.1: แถวคัน [data-u] แยกนับ */
       const cnt = {};
       sellPool().forEach(u => { if (u.model) cnt[u.model] = (cnt[u.model] || 0) + 1; });
       const want = Object.keys(cnt).sort((a, b2) => a.localeCompare(b2, 'th'));
@@ -96,7 +98,7 @@ const { chromium, EXE, BASE } = require('./env');
       q.value = sub.toUpperCase();                            /* สลับ case — ต้องยังกรองเจอ */
       q.oninput();
       const box = document.getElementById('svQSug');
-      const got = [...box.querySelectorAll('.si b')].map(x => x.textContent).sort();
+      const got = [...box.querySelectorAll('.si[data-m] b')].map(x => x.textContent).sort();
       const r = { skip: false, sub, open: box.style.display !== 'none',
         got: got.join(','), want: hitM.join(',') };
       q.value = ''; rSell();
@@ -145,6 +147,53 @@ const { chromium, EXE, BASE } = require('./env');
     await p.waitForTimeout(300);
     const g5 = await p.evaluate(() => document.getElementById('svQSug').style.display === 'none');
     if (!g5) bad('[5] blur แล้วแผงไม่ปิด');
+
+    /* ---------- [8] v1.40.1 · พิมพ์เลขที่แมตช์หลายคัน → แถวคันขึ้นในแผง แตะแล้วเลือกได้ ---------- */
+    await p.click('#svQ'); await p.waitForTimeout(150);
+    const g8 = await p.evaluate(() => {
+      const pool = sellPool();
+      let frag = null, hits = [];                    /* หา fragment ≥3 ตัวที่แมตช์ ≥2 คันจากข้อมูลจริง */
+      outer: for (const u of pool) {
+        for (const len of [3, 4, 5]) {
+          const s = u.frame.slice(0, len).toLowerCase();
+          const h = pool.filter(x => (x.engine + ' ' + x.frame + ' ' + x.variant).toLowerCase().indexOf(s) >= 0);
+          if (h.length >= 2) { frag = s; hits = h; break outer; }
+        }
+      }
+      if (!frag) return { skip: true };
+      const q = $('#svQ'); q.value = frag.toUpperCase(); q.oninput();
+      const box = document.getElementById('svQSug');
+      const rows = [...box.querySelectorAll('.si[data-u]')];
+      const before = { open: box.style.display !== 'none', n: rows.length, want: hits.length,
+        modelSel: $('#svModel').value, variantSel: $('#svVariant').value };
+      let after = null;
+      if (rows.length) {
+        const id = rows[0].dataset.u;
+        const u = pool.find(x => x.id === id);
+        rows[0].dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+        after = { id, m: $('#svModel').value, v: $('#svVariant').value, c: $('#svColor').value,
+          unit: $('#sUnit').value, wm: u.model, wv: u.variant, wc: u.color,
+          closed: box.style.display === 'none', q: $('#svQ').value };
+      }
+      $('#svQ').value = ''; ['svModel', 'svVariant', 'svColor'].forEach(k => $('#' + k).value = ''); rSell();
+      return { skip: false, frag, before, after };
+    });
+    if (g8.skip) bad('[8] หา fragment ที่แมตช์หลายคันไม่ได้จาก seed — เคสทดสอบไม่ทำงาน');
+    else {
+      if (!g8.before.open || !g8.before.n)
+        bad('[8] พิมพ์ "' + g8.frag + '" (แมตช์ ' + g8.before.want + ' คัน) แล้วแผงไม่โชว์แถวคัน — ข้อมูลไม่ขึ้น');
+      else {
+        if (g8.before.n !== g8.before.want)
+          bad('[8] พิมพ์ "' + g8.frag + '" ได้แถวคัน ' + g8.before.n + ' แถว ควรเป็น ' + g8.before.want);
+        if (g8.before.modelSel || g8.before.variantSel)
+          bad('[8] แมตช์หลายคันแต่ select โดนเติม (' + g8.before.modelSel + '/' + g8.before.variantSel + ') — ห้ามเดาหยิบคันแรก');
+        if (g8.after.m !== g8.after.wm || g8.after.v !== g8.after.wv || g8.after.c !== g8.after.wc)
+          bad('[8] แตะแถวคันแล้วตัวกรองไม่ตั้งตามคัน (ได้ ' + g8.after.m + '/' + g8.after.v + '/' + g8.after.c + ')');
+        if (g8.after.unit !== g8.after.id) bad('[8] แตะแถวคันแล้ว #sUnit ไม่ชี้คันนั้น');
+        if (!g8.after.closed) bad('[8] แตะแถวคันแล้วแผงไม่ปิด');
+        if (g8.after.q !== '') bad('[8] แตะแถวคันแล้ว #svQ ไม่ถูกล้าง');
+      }
+    }
   }
 
   /* ---------- [6] หน้าจองได้แผงเดียวกันจากโค้ดกลาง ---------- */
@@ -182,5 +231,5 @@ const { chromium, EXE, BASE } = require('./env');
   await b.close();
   if (errors.length) fails.push(...errors);
   if (fails.length) { console.log('FAILS:'); fails.forEach(f => console.log(f)); process.exit(1); }
-  console.log('ALL_CHECKS_PASS (modelsug-r40: 8 ข้อ)');
+  console.log('ALL_CHECKS_PASS (modelsug-r40: 9 ข้อ)');
 })().catch(e => { console.error('SUITE_CRASH', e); process.exit(2); });

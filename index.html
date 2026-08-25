@@ -1560,7 +1560,7 @@ body.lock{ overflow:hidden; }
               <!-- v1.33 (บรีฟข้อ 11): เลือกรถแบบไล่ระดับ รุ่น → รหัสรุ่น → สี → คันจริง
                    บนสุดมีช่องค้นหา พิมพ์เลขเครื่อง/เลขถัง/รหัสรุ่นแล้วช่องล่างเติมให้เอง -->
               <!-- v1.40: แผง .sug ต้องมีพ่อ position:relative ไม่งั้นไปเกาะ .card (แบบเดียวกับ #sCust) -->
-              <div style="position:relative"><label class="fl">ค้นหารถเร็ว</label><input class="inp mono" id="svQ" placeholder="แตะเพื่อเลือกรุ่น หรือพิมพ์ เลขเครื่อง / เลขถัง / รหัสรุ่น" autocomplete="off"><div class="sug" id="svQSug" style="display:none"></div></div>
+              <div style="position:relative"><label class="fl">ค้นหา</label><input class="inp mono" id="svQ" placeholder="แตะเพื่อเลือกรุ่น หรือพิมพ์ เลขเครื่อง / เลขถัง / รหัสรุ่น" autocomplete="off"><div class="sug" id="svQSug" style="display:none"></div></div>
               <div class="f3">
                 <div><label class="fl">รุ่นรถ</label><select class="inp" id="svModel"></select></div>
                 <div><label class="fl">รหัสรุ่น</label><select class="inp" id="svVariant"></select></div>
@@ -1784,7 +1784,7 @@ body.lock{ overflow:hidden; }
                 <div><label class="fl">ชื่อลูกค้า</label><input class="inp" id="bkName" placeholder="คุณสมชาย ใจดี"></div>
                 <div><label class="fl">เบอร์โทร</label><input class="inp" id="bkPhone" placeholder="081-234-5678"></div>
               </div>
-              <div style="position:relative"><label class="fl">ค้นหารถเร็ว</label><input class="inp mono" id="bkQ" placeholder="แตะเพื่อเลือกรุ่น หรือพิมพ์ เลขเครื่อง / เลขถัง / รหัสรุ่น" autocomplete="off"><div class="sug" id="bkQSug" style="display:none"></div></div>
+              <div style="position:relative"><label class="fl">ค้นหา</label><input class="inp mono" id="bkQ" placeholder="แตะเพื่อเลือกรุ่น หรือพิมพ์ เลขเครื่อง / เลขถัง / รหัสรุ่น" autocomplete="off"><div class="sug" id="bkQSug" style="display:none"></div></div>
               <div class="f3">
                 <div><label class="fl">รุ่นรถ</label><select class="inp" id="bkModel"></select></div>
                 <div><label class="fl">รหัสรุ่น</label><select class="inp" id="bkVariant"></select></div>
@@ -5027,25 +5027,41 @@ function vehCascadeWire(ids, pool, redraw){
   const sugDraw=()=>{
     const box=$('#'+ids.q+'Sug'); if(!box) return;
     const q=qEl.value.trim().toLowerCase(), cnt={};
-    pool().forEach(u=>{ if(u.model) cnt[u.model]=(cnt[u.model]||0)+1; });
+    const all=pool();
+    all.forEach(u=>{ if(u.model) cnt[u.model]=(cnt[u.model]||0)+1; });
     const models=Object.keys(cnt).filter(m=>!q||m.toLowerCase().indexOf(q)>=0)
       .sort((a,b)=>a.localeCompare(b,'th'));
-    if(!models.length){ box.style.display='none'; return; }   /* ไม่มีของ = ไม่โชว์กล่องเปล่า */
+    /* v1.40.1 (เจ้าของ: "พอพิมพ์ ข้อมูลไม่ขึ้น"): พิมพ์ ≥2 ตัว → โชว์คันที่เลขเครื่อง/เลขถัง/
+       รหัสรุ่นแมตช์ด้วย — ฟิลด์ค้นชุดเดียวกับ auto-fill จะได้ไม่มีเคสที่ระบบเจอแต่แผงเงียบ */
+    const units=q.length>=2? all.filter(u=>(u.engine+' '+u.frame+' '+u.variant).toLowerCase().indexOf(q)>=0) : [];
+    if(!models.length && !units.length){ box.style.display='none'; return; }   /* ไม่มีของ = ไม่โชว์กล่องเปล่า */
     box.innerHTML=models.map(m=>'<button class="si" data-m="'+esc(m)+'"><b>'+esc(m)
-      +'</b><span class="sp2">'+cnt[m]+' คัน</span></button>').join('');
+        +'</b><span class="sp2">'+cnt[m]+' คัน</span></button>').join('')
+      +units.map(u=>'<button class="si" data-u="'+esc(u.id)+'"><b class="mono">'+esc(u.frame)
+        +'</b><span class="sp2">'+esc(u.model)+' · '+esc(u.color)+'</span></button>').join('');
     box.style.display='';
-    box.querySelectorAll('.si').forEach(bn=> bn.onmousedown=e=>{ e.preventDefault();
+    box.querySelectorAll('.si[data-m]').forEach(bn=> bn.onmousedown=e=>{ e.preventDefault();
       qEl.value='';                     /* เลือกจากลิสต์แล้ว คำค้นหมดหน้าที่ */
       if(g('model')) g('model').value=bn.dataset.m;
       redraw(); });                     /* redraw → vehCascadeFill คงค่ารุ่น + ปิดแผงให้เอง */
+    box.querySelectorAll('.si[data-u]').forEach(bn=> bn.onmousedown=e=>{ e.preventDefault();
+      const u=all.find(x=>x.id===bn.dataset.u); if(!u) return;
+      qEl.value='';
+      if(g('model'))g('model').value=u.model; if(g('variant'))g('variant').value=u.variant;
+      if(g('color'))g('color').value=u.color;
+      redraw(u.id); });                 /* เส้นทางเดียวกับ auto-fill — #sUnit ชี้คันนั้น */
   };
   qEl.oninput=()=>{
     const q=qEl.value.trim().toLowerCase();
     if(q.length>=3){
-      const hit=pool().find(u=>(u.engine+' '+u.frame+' '+u.variant).toLowerCase().indexOf(q)>=0);
-      if(hit){ if(g('model'))g('model').value=hit.model; if(g('variant'))g('variant').value=hit.variant;
+      /* v1.40.1: เติมเงียบเฉพาะตอนชี้ชัดคันเดียว (เช่นพิมพ์เลขถังเต็ม) — ของเดิม .find()
+         หยิบคันแรกทั้งที่แมตช์เป็นสิบคัน ผู้ใช้ไม่เห็นว่าเกิดอะไรและได้คันผิดบ่อย
+         แมตช์หลายคันปล่อยให้แผง (sugDraw) โชว์ให้เลือกเอง */
+      const hits=pool().filter(u=>(u.engine+' '+u.frame+' '+u.variant).toLowerCase().indexOf(q)>=0);
+      if(hits.length===1){ const hit=hits[0];
+        if(g('model'))g('model').value=hit.model; if(g('variant'))g('variant').value=hit.variant;
         if(g('color'))g('color').value=hit.color;
-        redraw(hit.id); return; }       /* back-fill เจอคันชนะเสมอ — fill ปิดแผงไปแล้ว */
+        redraw(hit.id); return; }       /* ชี้ชัดแล้วแผงปิดผ่าน fill — จบงานค้นหา */
     }
     redraw();
     sugDraw();                          /* ต้องวาดหลัง redraw — ไม่งั้น fill ปิดแผงทับที่เพิ่งวาด */
