@@ -5069,6 +5069,24 @@ function vehCascadeWire(ids, pool, redraw){
   qEl.onfocus=qEl.onclick=sugDraw;
   qEl.onblur=()=>setTimeout(()=>{ const box=$('#'+ids.q+'Sug'); if(box) box.style.display='none'; },150);
 }
+/* v1.41 (คำสั่งเจ้าของ): เลือกลูกค้าเดิมแล้วช่องที่มีข้อมูลถูกเติมให้หมด — กรอกเฉพาะที่ยังว่าง
+   เลขบัตรเติมตามสิทธิ์ data:idNo: ไม่มีสิทธิ์เห็นเป็น placeholder ปิดกลาง ไม่ลง value
+   — placeholder ไม่ถูก saveSale อ่าน (อ่านแต่ .value) จึงไม่มีทางเอาเลขมาสก์ไปทับเลขจริง */
+function sIdPhReset(){ const el=$('#sIdNo');
+  if(el.dataset.ph==null) el.dataset.ph=el.placeholder;   /* จำตัวอย่างจาก HTML ครั้งแรกครั้งเดียว */
+  el.placeholder=el.dataset.ph; }
+function sCustExtras(c){                                  /* c=null ได้ = ล้างช่องเสริม กันข้อมูลคนก่อนติดไป */
+  c=c||{};
+  $('#sBirth').value=c.birth||''; $('#sAddr').value=c.addr||'';
+  const el=$('#sIdNo'); sIdPhReset();
+  if(!c.idNo) el.value='';
+  else if(canSeeId()) el.value=c.idNo;                    /* ค่าดิบตามที่เก็บ — save กลับก็ได้สตริงเดิม */
+  else { el.value=''; el.placeholder=idMask(c.idNo); }    /* เห็นว่ามีเลขอยู่แล้ว แต่ไม่เห็นเลขจริง */
+}
+function sCustFill(c){
+  sCustSel=c.id; $('#sCust').value=c.name; $('#sPhone').value=c.phone||'';
+  sCustExtras(c);
+}
 /* กติการถที่ขายได้ + ผังช่องของหน้าขาย — ใช้ซ้ำใน sUnitSet/ปุ่มภายนอกที่จะเลือกคันให้ */
 const SELL_CAS={q:'svQ', model:'svModel', variant:'svVariant', color:'svColor', unit:'sUnit'};
 /* v1.37: คันติดจองยังโผล่ในตัวเลือกขาย (ติดป้าย "ติดจอง") เพราะลูกค้าที่จองต้องเปิดการขายได้
@@ -5087,7 +5105,7 @@ function rSell(){
     vehCascadeWire(SELL_CAS, sellPool, hit=>{ rSell(); if(hit){ $('#sUnit').value=hit; calcSell(); } });
     /* v1.32 (บรีฟข้อ 3): เพิ่มลูกค้าใหม่ได้จากหน้าขายเลย — บันทึกแล้วเติมชื่อ/เบอร์ให้ทันที */
     $('#sNewCust').onclick=()=> custModal(null, c=>{
-      sCustSel=c.id; $('#sCust').value=c.name; $('#sPhone').value=c.phone||'';
+      sCustFill(c);                                     /* v1.41: วันเกิด/เลขบัตร/ที่อยู่ที่กรอกในโมดัลตามมาด้วย */
       if(c.intent==='เงินผ่อน'||c.intent==='เงินสด') setPay(c.intent==='เงินผ่อน'?'finance':'cash'); });
     ['sUnit','sDisc','sDown'].forEach(k=> $('#'+k).oninput=calcSell);
     ['sUnit','sTerm','sFinCo'].forEach(k=> $('#'+k).onchange=calcSell);
@@ -5097,28 +5115,35 @@ function rSell(){
     $('#sBranch').onchange=calcSell;
     $('#sSave').onclick=()=>saveSale(false);
     $('#sReset').onclick=()=>{ ['sCust','sPhone','sBirth','sIdNo','sAddr','sNote'].forEach(k=>$('#'+k).value='');
-      $('#sDisc').value=0; sFree={}; sFreeX=[]; sCustSel=''; rSell(); };
-    /* autocomplete ลูกค้า — พิมพ์ชื่อหรือเบอร์แล้วเลือกคนเดิม กันสร้างซ้ำ */
+      $('#sDisc').value=0; sFree={}; sFreeX=[]; sCustSel=''; sIdPhReset(); rSell(); };
+    /* autocomplete ลูกค้า (v1.41): แตะช่องว่างก็เห็นลูกค้าล่าสุดให้เลือกเลย ไม่ต้องจำชื่อ ·
+       พิมพ์ ≥2 ตัวค่อยกรองชื่อ/เบอร์ (เกณฑ์เดิม) · derive สดทุกครั้ง ไม่เก็บ state (กฎข้อ 8)
+       ล้าง sCustSel เฉพาะตอนแก้ข้อความจริง — focus/click เฉย ๆ ไม่ถือว่าเปลี่ยนตัวตน */
     const sugHide=()=>{ $('#sSugN').style.display='none'; $('#sSugP').style.display='none'; };
-    const sugShow=(inp,box)=>{
+    const custSugDraw=(inp,box)=>{
       const q=inp.value.trim().toLowerCase(), qd=q.replace(/\D/g,'');
-      sCustSel='';                                      /* แก้ข้อความเมื่อไหร่ ถือว่ายังไม่ยืนยันตัวตน */
-      if(q.length<2){ box.style.display='none'; return; }
-      const hit=CUSTOMERS.filter(c=>inScope(c.branch)).filter(c=>{
-        const pd=(c.phone||'').replace(/\D/g,'');
-        return (qd.length>=3 && pd && pd.indexOf(qd)>=0) || c.name.toLowerCase().indexOf(q)>=0;
-      }).slice(0,6);
+      const all=CUSTOMERS.filter(c=>inScope(c.branch));
+      const hit = q.length<2
+        ? all.slice().sort((a,b)=>String(b.upAt||b.createdAt||'').localeCompare(String(a.upAt||a.createdAt||''))).slice(0,8)
+        : all.filter(c=>{ const pd=(c.phone||'').replace(/\D/g,'');
+            return (qd.length>=3 && pd && pd.indexOf(qd)>=0) || c.name.toLowerCase().indexOf(q)>=0; }).slice(0,6);
       if(!hit.length){ box.style.display='none'; return; }
       box.innerHTML=hit.map(c=>'<button class="si" data-c="'+c.id+'"><b>'+esc(c.name)+'</b> '
         +pill(c.stage,'info')+'<span class="sp2">'+esc(c.phone||'—')+'</span></button>').join('');
       box.style.display='';
       box.querySelectorAll('.si').forEach(b=> b.onmousedown=e=>{ e.preventDefault();
         const c=CUSTOMERS.find(x=>x.id===b.dataset.c);
-        $('#sCust').value=c.name; $('#sPhone').value=c.phone||''; sCustSel=c.id; sugHide(); });
+        if(c) sCustFill(c);                             /* เติมทุกช่องที่มีข้อมูล — ไม่ใช่แค่ชื่อ/เบอร์ */
+        sugHide(); });
     };
-    $('#sCust').oninput=()=>sugShow($('#sCust'),$('#sSugN'));
-    $('#sPhone').oninput=()=>sugShow($('#sPhone'),$('#sSugP'));
-    $('#sCust').onblur=$('#sPhone').onblur=()=>setTimeout(sugHide,150);
+    $('#sCust').oninput =()=>{ sCustSel=''; custSugDraw($('#sCust'),$('#sSugN')); };   /* แก้ข้อความ = ยังไม่ยืนยันตัวตน */
+    $('#sPhone').oninput=()=>{ sCustSel=''; custSugDraw($('#sPhone'),$('#sSugP')); };
+    $('#sCust').onfocus =$('#sCust').onclick =()=>custSugDraw($('#sCust'),$('#sSugN'));
+    $('#sPhone').onfocus=$('#sPhone').onclick=()=>custSugDraw($('#sPhone'),$('#sSugP'));
+    /* blur ปิดเฉพาะแผงของช่องตัวเอง — ถ้าปิดทั้งคู่ การคลิกย้ายจากช่องชื่อไปช่องเบอร์
+       จะทำให้แผงเบอร์ที่เพิ่งเปิดโดนตัวหน่วง blur ของช่องชื่อปิดทิ้งใน 150ms (เจอตอนเขียนด่าน [2]) */
+    $('#sCust').onblur =()=>setTimeout(()=>{ $('#sSugN').style.display='none'; },150);
+    $('#sPhone').onblur=()=>setTimeout(()=>{ $('#sSugP').style.display='none'; },150);
     $$('#sellTabs button').forEach(b=> b.onclick=()=>{ $$('#sellTabs button').forEach(x=>x.classList.remove('on'));
       b.classList.add('on'); $$('#s-sell .pane').forEach(p=>p.classList.toggle('on',p.id===b.dataset.p));
       if(b.dataset.p==='p2') finCompare(); });
@@ -5399,7 +5424,7 @@ function saveSale(force, confirmed){
   toast('บันทึกการขายแล้ว', s.docNo+' · '+u.model+' · '+name);
   sFree={}; sFreeX=[]; sCustSel='';
   ['sCust','sPhone','sBirth','sIdNo','sAddr','sNote'].forEach(k=>$('#'+k).value='');
-  $('#sDisc').value=0;
+  $('#sDisc').value=0; sIdPhReset();
   refreshAll();
   /* ขายเสร็จไม่ใช่ทางตัน — ต่อยอดไปเคสสินเชื่อ / ทะเบียน / เอกสาร ได้จากตรงนี้เลย */
   openModal('ขายแล้ว 🎉',
@@ -6115,6 +6140,7 @@ function bookOpenSale(id){
   go('sell'); sellTab('p1');
   sCustSel=b.custId||'';
   $('#sCust').value=b.name; $('#sPhone').value=b.phone||'';
+  sCustExtras(CUSTOMERS.find(x=>x.id===b.custId)||null);  /* v1.41: ช่องเสริมจากระเบียน (ชื่อคงตามใบจอง) */
   sUnitSet(b.unitId);
   toast('เปิดการขายจากการจอง', b.name+(b.deposit>0? ' · มีมัดจำ '+fmt(b.deposit)+' ฿ — หักจากยอดชำระเอง':''));
 }
@@ -6363,6 +6389,7 @@ function quoteToSale(qid){
     const pd=(q.phone||'').replace(/\D/g,'');
     const c=pd? CUSTOMERS.find(x=>(x.phone||'').replace(/\D/g,'')===pd) : null;
     sCustSel = c? c.id : '';
+    sCustExtras(c);                       /* v1.41: ช่องเสริมจากระเบียนลูกค้า (ชื่อ/เบอร์คงตามใบเสนอ) */
     setPay('finance');
     if(q.f1 && finActive().some(f=>f.id===q.f1)) $('#sFinCo').value=q.f1;
     $('#sDown').value=q.down;
@@ -6861,7 +6888,7 @@ function dealSell(id){
   const c=CUSTOMERS.find(x=>x.id===id); if(!c) return;
   if(!canSee('sell')){ toast('ไม่มีสิทธิ์เปิดการขาย','บทบาท '+ROLES[ME.role].name+' ทำรายการนี้ไม่ได้',1); return; }
   go('sell'); sellTab('p1');
-  sCustSel=c.id; $('#sCust').value=c.name; $('#sPhone').value=c.phone||'';
+  sCustFill(c);
   /* v1.32: วิธีชำระตามที่ลูกค้าบอกไว้ — เงินผ่อนเปิดช่องไฟแนนซ์ให้เลย (ปิดบั๊กข้อ 27 ฝั่งหน้าดีล) */
   setPay(c.intent==='เงินผ่อน'? 'finance' : 'cash');
   toast(c.intent==='เงินผ่อน'? 'ยื่นไฟแนนซ์' : 'เปิดการขาย',
