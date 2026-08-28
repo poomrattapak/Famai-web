@@ -912,6 +912,13 @@ textarea.inp{ height:auto; padding:var(--s1) var(--s2); resize:vertical; line-he
 .gcard .gb .cs{ display:flex; gap:var(--s-half); flex-wrap:wrap; margin-top:var(--s1); }
 /* ชื่อสาขายาวกว่าการ์ด (จอ 390 การ์ดกว้าง 163px) ต้องขึ้นบรรทัดในพิลล์ ไม่ใช่ถูกตัดหาย */
 .gcard .cs .pill{ max-width:100%; white-space:normal; }
+/* ชิปสี (v1.43) — จิ้มสลับรูป/ดูจำนวนของสีนั้นในการ์ดเดียว · เป็น span เพราะอยู่ใต้ปุ่มการ์ด
+   (button ซ้อน button ไม่ได้) แยกทางกันใน onclick เดียวของการ์ด · ชิปที่เลือกมีพื้น+ขอบ+ตัวหนา
+   ไม่ใช่สีล้วน (กฎข้อ 3) และรูปในการ์ดสลับทันทีเป็นผลของการเลือก */
+.gcard .gsw{ display:flex; gap:var(--s1); flex-wrap:wrap; margin-top:var(--s1); }
+.gcard .gsw .pill{ min-height:32px; align-items:center; max-width:100%; white-space:normal; cursor:pointer; }
+.gcard .gsw .pill.on{ background:var(--paper-2); border-color:var(--ink-soft); color:var(--ink); font-weight:600; }
+@media (max-width:900px){ .gcard .gsw .pill{ min-height:40px; } }
 /* แถบสีของรุ่นในหน้าตั้งค่า — หนึ่งสีหนึ่งช่อง พร้อมรูปของสีนั้นเอง (v1.31)
    ไม่มีพื้น ไม่มีกรอบ ไม่มีระยะขอบข้าง จึงไม่เพิ่มชั้นกล่อง (กฎข้อ 1) */
 .vmcs{ display:flex; gap:var(--s2); flex-wrap:wrap; }
@@ -4950,36 +4957,51 @@ function rStock(){
        v1.31: จัดกลุ่มด้วย "รุ่น + สี" ไม่ใช่รุ่นอย่างเดียว — รูปในการ์ดจึงเป็นรถสีนั้นจริงเสมอ
        (รุ่นเดียวสี่สีเคยใช้รูปใบเดียวกันหมด ซึ่งเป็นเรื่องที่เจ้าของสั่งให้แก้)
        แถบล่างเป็นสัดส่วนของ "สาขา" ตามแบบที่เจ้าของส่งมา — บอกว่าของกองอยู่ที่ไหน */
+    /* v1.43 (คำสั่งเจ้าของ): รหัสรุ่นเดียวกันเคยแตกหลายใบตามสี การ์ดเยอะเกิน — ยุบเหลือ
+       ใบละรหัสรุ่น สีทั้งหมดเป็น "ชิปสี" ในการ์ด จิ้มแล้วรูปสลับตามสีนั้นทันที (รูปยังผูกกับสี
+       เสมอตาม §9s) · ราคา/ปี/ชื่อย่อยถูกต้องต่อการ์ดเพราะเป็นของระดับรหัสรุ่น · แถบ+พิลล์
+       สาขาคงเดิมตามคำสั่ง v1.42.1 */
     const grp={};
-    list.forEach(u=>{ const k=u.variant+'|'+u.colorCode; grp[k]=grp[k]||{u:u,n:0,br:{},age:0,sold:0};
-      grp[k].n++; grp[k].age+=age(u); grp[k].br[u.branch]=(grp[k].br[u.branch]||0)+1;
-      if(u.status==='sold') grp[k].sold++; });
+    list.forEach(u=>{ const g=grp[u.variant]=grp[u.variant]||{u:u,n:0,br:{},cols:{},age:0,sold:0};
+      g.n++; g.age+=age(u); g.br[u.branch]=(g.br[u.branch]||0)+1;
+      const cl=g.cols[u.colorCode]=g.cols[u.colorCode]||{name:u.color,n:0}; cl.n++;
+      if(u.status==='sold') g.sold++; });
     /* สีของสาขาผูกกับลำดับใน BRANCHES ไม่ใช่ลำดับที่เจอในรายการ — สาขาเดิมจึงได้สีเดิมทุกการ์ด
        ถ้าไล่สีตามลำดับที่เจอ สาขาเดียวกันจะเปลี่ยนสีไปมาระหว่างการ์ด อ่านแล้วสับสนกว่าไม่มีสี */
     const brHue = code => 'var(--ch'+((Math.max(0, BRANCHES.findIndex(b=>b.code===code)) % 6) + 1)+')';
-    $('#stGal').innerHTML = Object.keys(grp).length? Object.keys(grp).map(k=>{ const g=grp[k];
+    $('#stGal').innerHTML = Object.keys(grp).length? Object.keys(grp).map(v=>{ const g=grp[v];
       const brs=Object.keys(g.br).sort((a,b)=>g.br[b]-g.br[a]);
-      return '<button class="gcard" data-gmodel="'+esc(g.u.model)+'" data-gvariant="'+esc(g.u.variant)+'" data-gcolor="'+esc(g.u.color)+'">'
-        +'<div class="ph">'+bikeArt(g.u.variant, g.u.color, g.u.colorCode)+'</div>'
+      const ccs=Object.keys(g.cols).sort((a,b)=>g.cols[b].n-g.cols[a].n);   /* สีที่มีของมากสุด = ค่าเริ่มต้น */
+      return '<button class="gcard" data-gmodel="'+esc(g.u.model)+'" data-gvariant="'+esc(v)+'">'
+        +'<div class="ph">'+bikeArt(v, g.cols[ccs[0]].name, ccs[0])+'</div>'
         +'<div class="gb">'
         +'<div class="gh"><span class="gbrand">ยามาฮ่า</span><b class="gqty">'+g.n+'</b></div>'
         +'<b class="gm">'+esc(g.u.model)+'</b>'
-        +'<div class="c"><span class="mono">'+esc(g.u.variant)+'</span> · '+esc(g.u.color)+'</div>'
-        +'<div class="c">'+esc(g.u.modelTh||'—')+(g.u.year?' · ปี '+g.u.year:'')+'</div>'
+        +'<div class="c"><span class="mono">'+esc(v)+'</span> · '+esc(g.u.modelTh||'—')+(g.u.year?' · ปี '+g.u.year:'')+'</div>'
         +'<div class="c">'+(g.u.retail==null?'<span style="color:var(--attn)">รอกำหนดราคา</span>'
              :baht(g.u.retail)+(g.u.clearance?' <span style="color:var(--attn)">· เคลียร์</span>':''))+'</div>'
+        +'<div class="gsw">'+ccs.map((cc,i)=>'<span class="pill p-mut pdot'+(i===0?' on':'')+'" data-cc="'+esc(cc)+'" data-cn="'+esc(g.cols[cc].name)+'">'
+             +'<span class="dot" style="background:'+(COLOR_HEX[g.cols[cc].name]||'#ccc')+'"></span>'
+             +esc(g.cols[cc].name)+' '+g.cols[cc].n+'</span>').join('')+'</div>'
         +'<div class="gbar">'+brs.map(b=>'<i style="flex:'+g.br[b]+' 0 0;background:'+brHue(b)+'"></i>').join('')+'</div>'
         +'<div class="cs">'+brs.map(b=>'<span class="pill p-mut pdot"><span class="dot" style="background:'+brHue(b)+'"></span>'
              +esc(bName(b))+' '+g.br[b]+'</span>').join('')+'</div>'
         +'<div class="tsub" style="margin-top:var(--s1)">'+(g.sold===g.n? 'ขายแล้วทั้งหมด' : 'อายุเฉลี่ย '+Math.round(g.age/g.n)+' วัน')+'</div>'
         +'</div></button>';
     }).join('') : '<div class="empty"><b>ไม่พบรถ</b>ลองปรับตัวกรอง</div>';
-    /* แตะการ์ด → กรองเป็น รุ่น+รหัสรุ่น+สี ของการ์ดนั้นแล้วไปดูรายคันในแท็บตาราง
-       v1.33 (B1): ต้องตั้ง "รหัสรุ่น" ด้วย ไม่ใช่แค่ชื่อรุ่น — รุ่นเดียวมีหลายรหัสที่ราคาต่างกัน
-       v1.31 (แกลเลอรีต่อสี): การ์ดเป็นราย รุ่น+สี จึงตั้งสีให้ตรงการ์ดด้วย ตารางจะได้ตรงกับเลขบนการ์ด */
-    $$('#stGal [data-gvariant]').forEach(c=> c.onclick=()=>{ $('#stModel').value=c.dataset.gmodel;
-      stVariantOpts(); $('#stVariant').value=c.dataset.gvariant;
-      stColorOpts(); $('#stColor').value=c.dataset.gcolor; stTab('table'); });
+    /* จิ้มชิปสี = สลับรูป/ชิปเลือกในการ์ด (ไม่นำทาง ไม่ re-render — สถานะชั่วคราวใน DOM
+       รีเซ็ตเองเป็นสีหลักทุกครั้งที่วาดใหม่ ไม่มีตัวแปรชุดที่สอง) · กดที่อื่นของการ์ด →
+       ตั้งตัวกรอง รุ่น+รหัสรุ่น (v1.33 B1 — รหัสเดียวราคาเดียว) แล้วไปดูรายคันในแท็บตาราง */
+    $$('#stGal [data-gvariant]').forEach(c=> c.onclick=e=>{
+      const sw=e.target.closest('[data-cc]');
+      if(sw){
+        c.querySelector('.ph').innerHTML=bikeArt(c.dataset.gvariant, sw.dataset.cn, sw.dataset.cc);
+        c.querySelectorAll('.gsw .pill').forEach(x=>x.classList.toggle('on', x===sw));
+        return;
+      }
+      $('#stModel').value=c.dataset.gmodel;
+      stVariantOpts(); $('#stVariant').value=c.dataset.gvariant; stTab('table');
+    });
   }
 }
 
@@ -6704,11 +6726,26 @@ function dealActions(d){
 function dealDetail(d){
   const kv=rows=>'<dl class="kv">'+rows.filter(Boolean).map(([a,b])=>'<dt>'+esc(a)+'</dt><dd>'+b+'</dd>').join('')+'</dl>';
   let h='';
-  /* รูปรุ่นหัวดีล (K2) — คันจริงของดีลนี้ */
-  if(d.u) h+='<div style="display:flex;align-items:center;gap:var(--s2);margin-bottom:var(--s1)">'
-    +'<span class="bph">'+bikeArt(d.u.variant,d.u.color,d.u.colorCode)+'</span>'
-    +'<span><b>'+esc(d.u.model)+'</b><div class="tsub">'+esc(d.u.color)
-    +' · <span class="mono">'+esc(d.u.engine)+'</span></div></span></div>';
+  /* v1.43 (คำสั่งเจ้าของ): ภาพรวมแบบง่ายเมื่อกดรายคน — รูปรถใหญ่ + ชิปสถานะ + รุ่น/สี/วันซื้อ
+     + จำนวนรถที่ผูกกับลูกค้า (สไตล์แอปลูกค้าที่เจ้าของส่งตัวอย่างมา) · ทุกค่า derive จาก
+     ระเบียนจริง (§9g) · โครงเป็น flex/ข้อความล้วน ไม่มี wrapper มีพื้นหรือระยะข้าง —
+     งบชั้นกล่องของ #dlOne (.card + .bd) เต็มแล้ว ห้ามเพิ่มชั้น (§9c) */
+  if(d.u){
+    const nCars=SALES.filter(x=>x.custId===d.c.id && !x.void).length;
+    h+='<div style="display:flex;justify-content:center;margin-bottom:var(--s1)">'
+      +'<span class="bph" style="width:min(220px,100%);height:130px">'+bikeArt(d.u.variant,d.u.color,d.u.colorCode)+'</span></div>'
+      +'<div style="display:flex;gap:var(--s1);flex-wrap:wrap;justify-content:center;margin-bottom:var(--s1)">'
+      +dealPayPill(d)
+      +pill(dealStageName(d), d.off?'bad':(d.track[d.i]?'info':'good'))
+      +(d.rg? pill(d.rg.stage, regPlated(d.rg)?'good':'info') : '')
+      +'</div>'
+      +'<div style="text-align:center;margin-bottom:var(--s1)">'
+      +'<b><span class="mono">'+esc(d.u.variant)+'</span> '+esc(d.u.model)+' · สี '+esc(d.u.color)+'</b>'
+      +'<div class="tsub">ยามาฮ่า · เลขเครื่อง <span class="mono">'+esc(d.u.engine)+'</span>'
+      +(d.s && !d.s.void? ' · ซื้อ '+thDate(d.s.soldAt):'')+'</div>'
+      +'<div class="tsub">รถที่ผูกกับลูกค้า '+nCars+' คัน</div>'
+      +'</div>';
+  }
   /* v1.34 (บรีฟข้อ 14): กล่องข้อมูลส่งมอบ — คนขับรถไปส่งเปิดหน้าดีลแล้วเห็นครบในกล่องเดียว */
   if(d.rg && regDone(d.rg))
     h+='<h4 class="sec">การส่งมอบ</h4>'+kv([

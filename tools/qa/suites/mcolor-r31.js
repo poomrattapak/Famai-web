@@ -196,12 +196,14 @@ const PNG = Buffer.from(
     if (JSON.stringify(pub.colors).indexOf('data:image') >= 0)
       bad(tag + ': dataURL ของรูปหลุดออกไปกับเพย์โหลดสาธารณะ');
 
-    /* ---------- 11 · แกลเลอรีสต๊อก: หนึ่งใบ = รุ่น + สี ---------- */
+    /* ---------- 11 · แกลเลอรีสต๊อก: หนึ่งใบ = หนึ่งรหัสรุ่น + ชิปสีในการ์ด (v1.43) ----------
+       เจ้าของ: "รหัสรุ่นเดียวกันหลายการ์ดเพราะหลายสี ... ให้การ์ดไม่เยอะไปและดูโอเค"
+       → ยุบเป็นการ์ดละรหัสรุ่น สีทั้งหมดเป็นชิปให้จิ้มสลับรูป/ดูจำนวนในการ์ดเดียว */
     await p.evaluate(() => { closeModal(); go('stock'); }); await p.waitForTimeout(300);
     await p.evaluate(() => stTab('gal')); await p.waitForTimeout(350);
     const gal = await p.evaluate(() => {
       const seen = new Set();
-      stList().forEach(u => seen.add(u.variant + '|' + u.colorCode));
+      stList().forEach(u => seen.add(u.variant));
       const cards = [...document.querySelectorAll('#stGal .gcard')];
       return { want: seen.size, got: cards.length,
         /* v1.42.1 (เจ้าของ: "เช็คว่า...ไม่มีรถเบิ้ล"): ทุกคันต้องถูกนับครั้งเดียวพอดี —
@@ -215,6 +217,21 @@ const PNG = Buffer.from(
             .reduce((t, x) => t + (+(x.textContent.trim().match(/(\d+)$/) || [0, 0])[1]), 0);
           return n !== sum;
         }).length,
+        /* ชิปสีต่อการ์ด: ชื่อ+จำนวนตรงรายสีของรหัสรุ่นนั้น · ผลรวม = เลขการ์ด · เลือกอยู่ 1 ชิปเสมอ */
+        swBad: cards.filter(c => {
+          const v = c.dataset.gvariant, want = {};
+          stList().forEach(u => { if (u.variant === v) want[u.color] = (want[u.color] || 0) + 1; });
+          const chips = [...c.querySelectorAll('.gsw .pill')];
+          if (chips.length !== Object.keys(want).length) return true;
+          let sum = 0;
+          const wrong = chips.some(x => {
+            const mm = x.textContent.trim().match(/^(.+?)\s+(\d+)$/); if (!mm) return true;
+            sum += +mm[2];
+            return want[mm[1]] !== +mm[2] || !x.classList.contains('pdot');
+          });
+          return wrong || sum !== (+c.querySelector('.gqty').textContent);
+        }).length,
+        swOn: cards.filter(c => c.querySelectorAll('.gsw .pill.on').length !== 1).length,
         /* ท่อนแถบต้องเท่ากับจำนวนพิลล์ ไม่งั้นแถบเล่าเรื่องคนละเรื่องกับตัวเลข */
         barPill: cards.filter(c => c.querySelectorAll('.gbar i').length !== c.querySelectorAll('.cs .pill').length).length,
         /* พิลล์ต้องมีจุดสีเดียว — .pill มีจุดของตัวเองอยู่แล้ว ถ้าใส่ .dot เพิ่มโดยไม่ปิดจะได้สองจุด */
@@ -222,46 +239,73 @@ const PNG = Buffer.from(
           .some(x => !x.classList.contains('pdot'))).length,
         subs: cards.slice(0, 3).map(c => c.querySelector('.gb .c').textContent) };
     });
-    if (gal.got !== gal.want) bad(tag + ': แกลเลอรีมี ' + gal.got + ' ใบ ควรเป็น ' + gal.want + ' (รุ่น+สีที่มีรถจริง)');
+    if (gal.got !== gal.want) bad(tag + ': แกลเลอรีมี ' + gal.got + ' ใบ ควรเป็น ' + gal.want + ' (หนึ่งใบต่อรหัสรุ่นที่มีรถจริง)');
     if (gal.totCards !== gal.totList)
       bad(tag + ': ผลรวมเลขทุกใบได้ ' + gal.totCards + ' คัน แต่รถจริงมี ' + gal.totList + ' คัน — ' +
         (gal.totCards > gal.totList ? 'มีรถนับเบิ้ล' : 'มีรถตกหล่น'));
     if (gal.mismatch)  bad(tag + ': ' + gal.mismatch + ' ใบที่ตัวเลขใหญ่ไม่เท่ากับผลรวมของพิลล์สาขา');
+    if (gal.swBad)     bad(tag + ': ' + gal.swBad + ' ใบที่ชิปสีไม่ตรงรายสีของรหัสรุ่น (ชื่อ/จำนวน/pdot/ผลรวม)');
+    if (gal.swOn)      bad(tag + ': ' + gal.swOn + ' ใบที่ไม่มีชิปสีถูกเลือกอยู่พอดีหนึ่งชิป');
     if (gal.barPill)   bad(tag + ': ' + gal.barPill + ' ใบที่จำนวนท่อนแถบไม่เท่ากับจำนวนพิลล์สาขา');
     if (gal.twoDots)   bad(tag + ': พิลล์สาขาไม่ได้ปิดจุดอัตโนมัติ (.pdot) จะได้จุดสองจุดซ้อนกัน');
-    /* บรรทัดรองต้องบอก "รหัสรุ่น · ชื่อสี" — ถ้าไม่มีชื่อสี แปลว่ายังจัดกลุ่มด้วยรุ่นอย่างเดียว */
+    /* บรรทัดรองต้องมีรายละเอียดคั่นด้วย · (รหัสรุ่น · ชื่อไทย) */
     gal.subs.forEach((t, i) => { if (t.indexOf('·') < 0)
-      bad(tag + ': การ์ดที่ ' + (i + 1) + ' ไม่ได้บอกสีในบรรทัดรอง ("' + t.trim() + '")'); });
+      bad(tag + ': การ์ดที่ ' + (i + 1) + ' บรรทัดรองไม่บอกรายละเอียด ("' + t.trim() + '")'); });
 
-    /* ---------- 12 · รูปในแกลเลอรีเป็นรูปของสีนั้นใบเดียว ---------- */
+    /* ---------- 12 · จิ้มชิปสีแล้วรูปสลับตามสีนั้น (รูปยังผูกกับสีเสมอ) ---------- */
     const galImg = await p.evaluate(() => {
-      const u = stList()[0]; if (!u) return { skip: true };
-      const e = PRICE[u.variant] && PRICE[u.variant].c[u.colorCode]; if (!e) return { skip: true };
+      const by = {};
+      stList().forEach(u => { (by[u.variant] = by[u.variant] || new Set()).add(u.colorCode); });
+      const v = Object.keys(by).find(k => by[k].size >= 2 && PRICE[k]);
+      if (!v) return { skip: true };
+      const ccs = [...by[v]].sort();
+      const e = PRICE[v].c[ccs[0]]; if (!e) return { skip: true };
       const keep = e.img;
       e.img = 'data:image/jpeg;base64,AAAA';
       rStock();
-      const withImg = [...document.querySelectorAll('#stGal .gcard')].filter(c => c.querySelector('.ph img')).length;
+      const card = document.querySelector('#stGal .gcard[data-gvariant="' + v + '"]');
+      if (!card) { if (keep) e.img = keep; else delete e.img; rStock(); return { noCard: v }; }
+      const sw = cc => card.querySelector('.gsw [data-cc="' + cc + '"]');
+      if (!sw(ccs[0]) || !sw(ccs[1])) { if (keep) e.img = keep; else delete e.img; rStock(); return { noSw: v }; }
+      sw(ccs[0]).click();
+      const aImg = !!card.querySelector('.ph img');
+      const aOn = sw(ccs[0]).classList.contains('on');
+      sw(ccs[1]).click();
+      const bSvg = !!card.querySelector('.ph svg');
+      const others = [...document.querySelectorAll('#stGal .gcard')]
+        .filter(x => x !== card && x.querySelector('.ph img')).length;
       if (keep) e.img = keep; else delete e.img;
       rStock();
-      return { skip: false, withImg };
+      return { skip: false, v, aImg, aOn, bSvg, others };
     });
-    if (!galImg.skip && galImg.withImg !== 1)
-      bad(tag + ': ใส่รูปให้สีเดียว แต่การ์ดที่โชว์รูปมี ' + galImg.withImg + ' ใบ ควรมีใบเดียว');
+    if (galImg.noCard) bad(tag + ': ไม่เจอการ์ดของรหัสรุ่น ' + galImg.noCard);
+    else if (galImg.noSw) bad(tag + ': การ์ด ' + galImg.noSw + ' ไม่มีชิปสี [data-cc] ให้จิ้ม');
+    else if (!galImg.skip) {
+      if (!galImg.aImg) bad(tag + ' ' + galImg.v + ': จิ้มชิปสีที่มีรูปแล้วรูปไม่ขึ้น');
+      if (!galImg.aOn) bad(tag + ' ' + galImg.v + ': จิ้มชิปแล้วชิปนั้นไม่ถูกทำเครื่องหมายว่าเลือกอยู่');
+      if (!galImg.bSvg) bad(tag + ' ' + galImg.v + ': จิ้มชิปสีที่ไม่มีรูป แต่ได้รูปของสีอื่นค้างอยู่');
+      if (galImg.others) bad(tag + ': รูปที่ใส่ให้สีเดียวไปโผล่การ์ดรหัสรุ่นอื่น ' + galImg.others + ' ใบ');
+    }
 
-    /* ---------- 13 · กดการ์ดแล้วต้องได้ตารางที่กรองรุ่น+สีนั้นพอดี ---------- */
+    /* ---------- 13 · กดการ์ด (นอกชิป) → ตารางกรองตามรหัสรุ่น = เลขบนการ์ดพอดี ---------- */
     const jump = await p.evaluate(() => {
       const c = document.querySelector('#stGal .gcard');
       const n = +c.querySelector('.gqty').textContent;
       c.click();
       return { n, model: document.getElementById('stModel').value,
+               variant: document.getElementById('stVariant').value,
                color: document.getElementById('stColor').value, rows: stList().length };
     });
     await p.waitForTimeout(250);
-    if (!jump.model || !jump.color)
-      bad(tag + ': กดการ์ดแล้วตัวกรองไม่ได้ตั้งทั้งรุ่นและสี (' + jump.model + '/' + jump.color + ')');
-    else if (jump.rows !== jump.n)
-      bad(tag + ': การ์ดบอก ' + jump.n + ' คัน แต่กดเข้าไปเจอ ' + jump.rows + ' คัน');
+    if (!jump.model || !jump.variant)
+      bad(tag + ': กดการ์ดแล้วตัวกรองไม่ได้ตั้งรุ่น+รหัสรุ่น (' + jump.model + '/' + jump.variant + ')');
+    else {
+      if (jump.color) bad(tag + ': กดการ์ด (ไม่ได้จิ้มชิป) ไม่ควรตั้งตัวกรองสี (ได้ "' + jump.color + '")');
+      if (jump.rows !== jump.n)
+        bad(tag + ': การ์ดบอก ' + jump.n + ' คัน แต่กดเข้าไปเจอ ' + jump.rows + ' คัน');
+    }
     await p.evaluate(() => { document.getElementById('stModel').value = '';
+      document.getElementById('stVariant').value = '';
       document.getElementById('stColor').value = ''; rStock(); });
 
     /* ---------- 10 · ไม่ล้นออกข้าง ---------- */
