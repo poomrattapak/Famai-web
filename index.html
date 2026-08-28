@@ -4951,17 +4951,14 @@ function rStock(){
        (รุ่นเดียวสี่สีเคยใช้รูปใบเดียวกันหมด ซึ่งเป็นเรื่องที่เจ้าของสั่งให้แก้)
        แถบล่างเป็นสัดส่วนของ "สาขา" ตามแบบที่เจ้าของส่งมา — บอกว่าของกองอยู่ที่ไหน */
     const grp={};
-    list.forEach(u=>{ const k=u.variant+'|'+u.colorCode; grp[k]=grp[k]||{u:u,n:0,age:0,sold:0};
-      grp[k].n++; grp[k].age+=age(u);
+    list.forEach(u=>{ const k=u.variant+'|'+u.colorCode; grp[k]=grp[k]||{u:u,n:0,br:{},age:0,sold:0};
+      grp[k].n++; grp[k].age+=age(u); grp[k].br[u.branch]=(grp[k].br[u.branch]||0)+1;
       if(u.status==='sold') grp[k].sold++; });
-    /* v1.42 (คำสั่งเจ้าของ): แถบ+พิลล์บอก "จำนวนของแต่ละสีของรุ่นนั้น" ไม่ใช่สาขา —
-       สาขาเลือกจากขอบเขตบน navbar อยู่แล้ว · นับจาก list เดียวกับการ์ด ตัวกรองไหนก็ตรงกัน
-       จุดสี/ท่อนแถบใช้สีจริงของสีนั้น (COLOR_HEX) มองปราดเดียวรู้ว่ารุ่นนี้เหลือสีอะไรบ้าง */
-    const mCol={};
-    list.forEach(u=>{ (mCol[u.model]=mCol[u.model]||{})[u.color]=(mCol[u.model][u.color]||0)+1; });
+    /* สีของสาขาผูกกับลำดับใน BRANCHES ไม่ใช่ลำดับที่เจอในรายการ — สาขาเดิมจึงได้สีเดิมทุกการ์ด
+       ถ้าไล่สีตามลำดับที่เจอ สาขาเดียวกันจะเปลี่ยนสีไปมาระหว่างการ์ด อ่านแล้วสับสนกว่าไม่มีสี */
+    const brHue = code => 'var(--ch'+((Math.max(0, BRANCHES.findIndex(b=>b.code===code)) % 6) + 1)+')';
     $('#stGal').innerHTML = Object.keys(grp).length? Object.keys(grp).map(k=>{ const g=grp[k];
-      const mc=mCol[g.u.model]||{};
-      const cols=Object.keys(mc).sort((a,b)=>mc[b]-mc[a]);
+      const brs=Object.keys(g.br).sort((a,b)=>g.br[b]-g.br[a]);
       return '<button class="gcard" data-gmodel="'+esc(g.u.model)+'" data-gvariant="'+esc(g.u.variant)+'" data-gcolor="'+esc(g.u.color)+'">'
         +'<div class="ph">'+bikeArt(g.u.variant, g.u.color, g.u.colorCode)+'</div>'
         +'<div class="gb">'
@@ -4971,9 +4968,9 @@ function rStock(){
         +'<div class="c">'+esc(g.u.modelTh||'—')+(g.u.year?' · ปี '+g.u.year:'')+'</div>'
         +'<div class="c">'+(g.u.retail==null?'<span style="color:var(--attn)">รอกำหนดราคา</span>'
              :baht(g.u.retail)+(g.u.clearance?' <span style="color:var(--attn)">· เคลียร์</span>':''))+'</div>'
-        +'<div class="gbar">'+cols.map(c=>'<i style="flex:'+mc[c]+' 0 0;background:'+(COLOR_HEX[c]||'#ccc')+'"></i>').join('')+'</div>'
-        +'<div class="cs">'+cols.map(c=>'<span class="pill p-mut pdot"><span class="dot" style="background:'+(COLOR_HEX[c]||'#ccc')+'"></span>'
-             +esc(c)+' '+mc[c]+'</span>').join('')+'</div>'
+        +'<div class="gbar">'+brs.map(b=>'<i style="flex:'+g.br[b]+' 0 0;background:'+brHue(b)+'"></i>').join('')+'</div>'
+        +'<div class="cs">'+brs.map(b=>'<span class="pill p-mut pdot"><span class="dot" style="background:'+brHue(b)+'"></span>'
+             +esc(bName(b))+' '+g.br[b]+'</span>').join('')+'</div>'
         +'<div class="tsub" style="margin-top:var(--s1)">'+(g.sold===g.n? 'ขายแล้วทั้งหมด' : 'อายุเฉลี่ย '+Math.round(g.age/g.n)+' วัน')+'</div>'
         +'</div></button>';
     }).join('') : '<div class="empty"><b>ไม่พบรถ</b>ลองปรับตัวกรอง</div>';

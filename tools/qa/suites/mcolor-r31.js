@@ -203,33 +203,17 @@ const PNG = Buffer.from(
       const seen = new Set();
       stList().forEach(u => seen.add(u.variant + '|' + u.colorCode));
       const cards = [...document.querySelectorAll('#stGal .gcard')];
-      /* v1.42 (คำสั่งเจ้าของ): แถบ+พิลล์บนการ์ดบอก "จำนวนของแต่ละสีของรุ่นนั้น" ไม่ใช่สาขา
-         (สาขาเลือกจากขอบเขตบน navbar) — ผลรวมพิลล์จึงต้องเท่ากับจำนวนรถทั้งรุ่นใน stList
-         และจุดสีของพิลล์ต้องเป็นสีจริงของสีนั้น (COLOR_HEX) ไม่ใช่สีประจำสาขา */
-      const mTot = {}, mCol = {};
-      stList().forEach(u => { mTot[u.model] = (mTot[u.model] || 0) + 1;
-        (mCol[u.model] = mCol[u.model] || {})[u.color] = (mCol[u.model][u.color] || 0) + 1; });
       return { want: seen.size, got: cards.length,
+        /* v1.42.1 (เจ้าของ: "เช็คว่า...ไม่มีรถเบิ้ล"): ทุกคันต้องถูกนับครั้งเดียวพอดี —
+           ผลรวมเลขใหญ่ของทุกใบ = จำนวนรถทั้งหมดใน stList เป๊ะ (เกิน=นับเบิ้ล ขาด=ตกหล่น) */
+        totCards: cards.reduce((t, c) => t + (+c.querySelector('.gqty').textContent), 0),
+        totList: stList().length,
+        /* ตัวเลขใหญ่บนการ์ดต้องเท่ากับผลรวมของพิลล์สาขาเสมอ — ถ้าไม่เท่า แปลว่านับคนละชุด */
         mismatch: cards.filter(c => {
-          const m = c.dataset.gmodel;
+          const n = +c.querySelector('.gqty').textContent;
           const sum = [...c.querySelectorAll('.cs .pill')]
             .reduce((t, x) => t + (+(x.textContent.trim().match(/(\d+)$/) || [0, 0])[1]), 0);
-          return sum !== mTot[m];
-        }).length,
-        /* พิลล์ต้องเป็นรายสีของรุ่น: ชื่อสี+จำนวนตรง mCol และจุดสีเป็น COLOR_HEX ของสีนั้น */
-        wrongColor: cards.filter(c => {
-          const m = c.dataset.gmodel, want = mCol[m] || {};
-          const pills = [...c.querySelectorAll('.cs .pill')];
-          if (pills.length !== Object.keys(want).length) return true;
-          return pills.some(x => {
-            const mm = x.textContent.trim().match(/^(.+?)\s+(\d+)$/); if (!mm) return true;
-            if (want[mm[1]] !== +mm[2]) return true;
-            const dot = x.querySelector('.dot');
-            /* เทียบผ่าน probe — เบราว์เซอร์ normalize hex เป็น rgb() ตอนอ่านกลับ */
-            const probe = document.createElement('i');
-            probe.style.background = COLOR_HEX[mm[1]] || '#ccc';
-            return !dot || dot.style.background !== probe.style.background;
-          });
+          return n !== sum;
         }).length,
         /* ท่อนแถบต้องเท่ากับจำนวนพิลล์ ไม่งั้นแถบเล่าเรื่องคนละเรื่องกับตัวเลข */
         barPill: cards.filter(c => c.querySelectorAll('.gbar i').length !== c.querySelectorAll('.cs .pill').length).length,
@@ -239,10 +223,12 @@ const PNG = Buffer.from(
         subs: cards.slice(0, 3).map(c => c.querySelector('.gb .c').textContent) };
     });
     if (gal.got !== gal.want) bad(tag + ': แกลเลอรีมี ' + gal.got + ' ใบ ควรเป็น ' + gal.want + ' (รุ่น+สีที่มีรถจริง)');
-    if (gal.mismatch)  bad(tag + ': ' + gal.mismatch + ' ใบที่ผลรวมพิลล์ไม่เท่ากับจำนวนรถทั้งรุ่น');
-    if (gal.wrongColor) bad(tag + ': ' + gal.wrongColor + ' ใบที่พิลล์ไม่ใช่รายสีของรุ่น (ชื่อ/จำนวน/จุดสีไม่ตรง)');
-    if (gal.barPill)   bad(tag + ': ' + gal.barPill + ' ใบที่จำนวนท่อนแถบไม่เท่ากับจำนวนพิลล์');
-    if (gal.twoDots)   bad(tag + ': พิลล์ไม่ได้ปิดจุดอัตโนมัติ (.pdot) จะได้จุดสองจุดซ้อนกัน');
+    if (gal.totCards !== gal.totList)
+      bad(tag + ': ผลรวมเลขทุกใบได้ ' + gal.totCards + ' คัน แต่รถจริงมี ' + gal.totList + ' คัน — ' +
+        (gal.totCards > gal.totList ? 'มีรถนับเบิ้ล' : 'มีรถตกหล่น'));
+    if (gal.mismatch)  bad(tag + ': ' + gal.mismatch + ' ใบที่ตัวเลขใหญ่ไม่เท่ากับผลรวมของพิลล์สาขา');
+    if (gal.barPill)   bad(tag + ': ' + gal.barPill + ' ใบที่จำนวนท่อนแถบไม่เท่ากับจำนวนพิลล์สาขา');
+    if (gal.twoDots)   bad(tag + ': พิลล์สาขาไม่ได้ปิดจุดอัตโนมัติ (.pdot) จะได้จุดสองจุดซ้อนกัน');
     /* บรรทัดรองต้องบอก "รหัสรุ่น · ชื่อสี" — ถ้าไม่มีชื่อสี แปลว่ายังจัดกลุ่มด้วยรุ่นอย่างเดียว */
     gal.subs.forEach((t, i) => { if (t.indexOf('·') < 0)
       bad(tag + ': การ์ดที่ ' + (i + 1) + ' ไม่ได้บอกสีในบรรทัดรอง ("' + t.trim() + '")'); });
