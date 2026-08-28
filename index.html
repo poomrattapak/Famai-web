@@ -887,8 +887,9 @@ textarea.inp{ height:auto; padding:var(--s1) var(--s2); resize:vertical; line-he
 .gcard{ background:none; box-shadow:none; border:1px solid var(--hairline); border-radius:var(--r-card);
   padding:0; overflow:hidden; font:inherit; color:inherit; text-align:left; width:100%;
   display:flex; flex-direction:column; }
-/* กรอบรูปแนวนอน 4:3 — รูปถ่ายจริงจากร้านครอปพอดีกรอบ ไม่ต้องกะความสูงเอง */
-.gcard .ph{ aspect-ratio:4/3; margin:var(--s2); background:var(--paper-2); border-radius:var(--r-input);
+/* กรอบรูปจัตุรัส (v1.44 คำสั่งเจ้าของ) — ไฟล์ที่ imgResize เก็บเป็นจัตุรัสอยู่แล้ว
+   กรอบ 4:3 เดิมจึงครอปรูปซ้ำอีกชั้น เสียหัว-ท้ายรถไปฟรี ๆ */
+.gcard .ph{ aspect-ratio:1; margin:var(--s2); background:var(--paper-2); border-radius:var(--r-input);
   display:grid; place-items:center; overflow:hidden;
   color:var(--muted); position:relative; transition:box-shadow var(--dur-ui) var(--ease); }
 @media (hover:hover){ .gcard:hover .ph{ box-shadow:var(--sh-md); } }
@@ -985,6 +986,37 @@ textarea.inp{ height:auto; padding:var(--s1) var(--s2); resize:vertical; line-he
   width:min(720px,100%); max-height:86vh; max-height:86dvh; overflow-y:auto; }
 .mbox .mh{ padding:var(--s3); border-bottom:1px solid var(--hairline); display:flex; align-items:center; }
 .mbox .mb{ padding:var(--s3); }
+/* -------------------- ตัวครอปรูป (v1.44) --------------------
+   เวทีเป็นจัตุรัส = กรอบครอบพอดี ๆ รูปเลื่อน/ซูมอยู่ข้างใต้แล้วถูกตัดที่ขอบเวที
+   (แบบเดียวกับตัวครอปรูปโปรไฟล์ของแอปทั่วโลก — คนไทยที่ใช้มือถือเคยเห็นมาแล้วทุกคน)
+   touch-action:none บังคับ ไม่ใช่ของแถม — ถ้าไม่มี เบราว์เซอร์มือถือจะกินท่าลากไปเลื่อนหน้าแทน
+   แล้วผู้ใช้จะลากรูปไม่ได้เลย ทั้งที่ Playwright ยังเขียว (เทสต์ยิง PointerEvent ตรง ไม่ผ่านตัวเลื่อนจริง) */
+#crop{ position:fixed; z-index:63; inset:0; display:none; align-items:center;
+  justify-content:center; padding:var(--s3); background:rgba(14,15,18,.36); }
+#crop.on{ display:flex; }
+#crop .cbox{ background:var(--card); border-radius:var(--r-lg); box-shadow:var(--sh-lg);
+  width:min(420px,100%); max-height:92vh; max-height:92dvh; overflow-y:auto;
+  animation:popin var(--dur-ui) var(--ease); }
+#crop .ch{ padding:var(--s3); border-bottom:1px solid var(--hairline); display:flex; align-items:center; }
+#crop .ch .x{ margin-left:auto; color:var(--muted); }
+#crop .cb{ padding:var(--s3); }
+.cstage{ position:relative; width:100%; aspect-ratio:1; overflow:hidden;
+  border-radius:var(--r-input); background:var(--paper-2); touch-action:none; }
+#crSt{ display:block; width:100%; height:100%; touch-action:none; cursor:grab; }
+/* เส้นสามส่วน — ช่วยจัดรถให้อยู่กลางกรอบ ต้องไม่กินการแตะ ไม่งั้นลากรูปไม่ได้ */
+.cgrid{ position:absolute; inset:0; pointer-events:none;
+  background:
+    linear-gradient(to right, transparent calc(33.33% - .5px), rgba(255,255,255,.45) calc(33.33% - .5px),
+      rgba(255,255,255,.45) calc(33.33% + .5px), transparent calc(33.33% + .5px)),
+    linear-gradient(to right, transparent calc(66.66% - .5px), rgba(255,255,255,.45) calc(66.66% - .5px),
+      rgba(255,255,255,.45) calc(66.66% + .5px), transparent calc(66.66% + .5px)),
+    linear-gradient(to bottom, transparent calc(33.33% - .5px), rgba(255,255,255,.45) calc(33.33% - .5px),
+      rgba(255,255,255,.45) calc(33.33% + .5px), transparent calc(33.33% + .5px)),
+    linear-gradient(to bottom, transparent calc(66.66% - .5px), rgba(255,255,255,.45) calc(66.66% - .5px),
+      rgba(255,255,255,.45) calc(66.66% + .5px), transparent calc(66.66% + .5px)); }
+#crop .crow{ display:flex; align-items:center; gap:var(--s2); margin-top:var(--s2); }
+#crop .crow .fl{ margin:0; flex:0 0 auto; }
+#crop .crow input[type=range]{ flex:1 1 auto; min-width:0; accent-color:var(--accent); }
 #toasts{ position:fixed; right:var(--s3); bottom:var(--s3); z-index:200;
   display:grid; gap:var(--s1); max-width:360px; }
 /* toast แบบใหม่ (บรีฟรอบ 1): การ์ดขาว + แถบสีซ้าย + ไอคอนวงกลม — เขียว=สำเร็จ แดง=ผิดพลาด เหลือง=เตือน
@@ -1094,8 +1126,9 @@ textarea.inp{ height:auto; padding:var(--s1) var(--s2); resize:vertical; line-he
 .cal .ev.e-recv{ color:var(--pos); } .cal .ev.e-sale{ color:var(--ink); }
 .cal .ev.e-exec{ color:var(--accent); }
 .cal .ev.e-hol{ color:var(--attn); font-weight:600; }
-/* รูปรถ — เงา SVG หรือรูปจริงที่อัปโหลด */
-.bph{ width:74px; height:44px; flex:0 0 auto; display:grid; place-items:center;
+/* รูปรถ — เงา SVG หรือรูปจริงที่อัปโหลด · จัตุรัสเสมอ (v1.44) กำหนดแค่ความกว้าง
+   ความสูงมาจาก aspect-ratio จุดที่กว้างต่างกันจึงยังจัตุรัสเหมือนกันหมด */
+.bph{ width:74px; aspect-ratio:1; flex:0 0 auto; display:grid; place-items:center;
   background:var(--paper-2); border-radius:var(--r-input); overflow:hidden; }
 .bph svg{ width:100%; height:100%; } .bph img{ width:100%; height:100%; object-fit:cover; }
 .gcard .ph svg.bike{ width:82%; height:82%; }
@@ -2319,6 +2352,19 @@ body.lock{ overflow:hidden; }
 <div class="ov" id="ov"></div>
 <aside class="drw" id="drw"><div class="dh"><h3 id="drwT">รายละเอียด</h3><button class="x" id="drwX"><svg class="i i-sm"><use href="#i-x"/></svg></button></div><div class="db" id="drwB"></div></aside>
 <div class="modal" id="modal"><div class="mbox"><div class="mh"><h3 id="mdT">—</h3><button class="x" id="mdX"><svg class="i i-sm"><use href="#i-x"/></svg></button></div><div class="mb" id="mdB"></div></div></div>
+<!-- ตัวครอปรูป (v1.44) — โฮสต์ของตัวเอง ไม่ใช่ #mdB ของ openModal
+     เพราะแผ่นแก้รุ่นที่เรียกใช้อยู่ข้างใต้ก็ใช้ #mdB ตัวเดียวกัน ถ้าใช้ร่วมกันการ์ดสีจะถูกเขียนทับหายทั้งใบ
+     z-index 63 = เหนือ modal (62) แต่ยังต่ำกว่า #brPick/#perCal (64) และ #tip (65) -->
+<div id="crop" role="dialog" aria-label="ครอปรูป" aria-modal="true"><div class="cbox">
+  <div class="ch"><h3 id="crT">ครอปรูป</h3><button class="x" id="crX"><svg class="i i-sm"><use href="#i-x"/></svg></button></div>
+  <div class="cb">
+    <div class="cstage"><canvas id="crSt"></canvas><div class="cgrid" aria-hidden="true"></div></div>
+    <div class="crow"><label class="fl" for="crZ">ซูม</label><input type="range" id="crZ" min="100" max="400" step="1" value="100"></div>
+    <div class="tsub">ลากรูปเพื่อเลื่อน · บีบสองนิ้วหรือเลื่อนแถบซูม · กรอบที่เห็นคือรูปที่จะได้ (จัตุรัส 1:1)</div>
+    <div class="savebar"><button type="button" class="btn" id="crGo">ใช้รูปนี้<svg class="i"><use href="#i-check"/></svg></button>
+      <button type="button" class="btn sec" id="crBack">ยกเลิก</button></div>
+  </div>
+</div></div>
 <div id="gs"><div class="gsbox"><input id="gsQ" placeholder="ค้นหาหน้า แท็บ ลูกค้า เลขเครื่อง รุ่น อะไหล่"><div class="gsres" id="gsR"></div></div></div>
 <div id="toasts"></div>
 <div id="tip" role="status"></div>
@@ -3204,7 +3250,7 @@ function closeModal(){ camStop(); geoStop(); if(psClock){ clearInterval(psClock)
   $('#modal').classList.remove('on'); syncLock(); }
 /* ล็อก scroll พื้นหลังเมื่อมี overlay ใดเปิดอยู่ — จำเป็นบนมือถือ */
 function syncLock(){ document.body.classList.toggle('lock',
-  ['#drw','#modal','#gs','#more','#fsheet'].some(s=>{ const e=$(s); return e && e.classList.contains('on'); })); }
+  ['#drw','#modal','#gs','#more','#fsheet','#crop'].some(s=>{ const e=$(s); return e && e.classList.contains('on'); })); }
 /* ป้ายลอยของกราฟ (v1.26 ข้อ 1) — ตัวเดียวทั้งแอป โชว์เมื่อกด ปิดเมื่อกดที่อื่นหรือเลื่อนจอ
    วางเหนือจุดกดเสมอ (นิ้วไม่บัง) และหนีบไม่ให้ล้นขอบจอ — จอ 390 จึงไม่มีทางเลื่อนข้าง */
 function tipShow(html, x, y){
@@ -5309,7 +5355,7 @@ function calcSell(){
   ]).filter(r=>show(r[0]));
   /* รูปรุ่นบนสรุปดีล (K2) — เห็นคันที่กำลังขายทันที ไม่ต้องเดาจากชื่อรุ่น */
   $('#sSummary').innerHTML='<div style="display:flex;justify-content:center;margin-bottom:var(--s1)">'
-    +'<span class="bph" style="width:120px;height:70px">'+bikeArt(u.variant,u.color,u.colorCode)+'</span></div>'
+    +'<span class="bph" style="width:120px">'+bikeArt(u.variant,u.color,u.colorCode)+'</span></div>'
     +(promo?'<div class="note g">'+ic('check','i i-sm')+'<span>'+esc(promo.title)+'</span></div>':'')
     +'<dl class="kv">'+rows.map(r=>'<dt>'+r[1]+'</dt><dd>'+r[2]+'</dd>').join('')+'</dl>';
   const cad=String(CFG.cadence).split(',').length;
@@ -6733,7 +6779,7 @@ function dealDetail(d){
   if(d.u){
     const nCars=SALES.filter(x=>x.custId===d.c.id && !x.void).length;
     h+='<div style="display:flex;justify-content:center;margin-bottom:var(--s1)">'
-      +'<span class="bph" style="width:min(220px,100%);height:130px">'+bikeArt(d.u.variant,d.u.color,d.u.colorCode)+'</span></div>'
+      +'<span class="bph" style="width:min(220px,100%)">'+bikeArt(d.u.variant,d.u.color,d.u.colorCode)+'</span></div>'
       +'<div style="display:flex;gap:var(--s1);flex-wrap:wrap;justify-content:center;margin-bottom:var(--s1)">'
       +dealPayPill(d)
       +pill(dealStageName(d), d.off?'bad':(d.track[d.i]?'info':'good'))
@@ -7681,7 +7727,7 @@ function svLookup(){
     +esc(u.model)+' '+esc(u.color)+(c?(' · ซื้อ '+thDate(s.soldAt)):'')+'</span></div>';
   const sv=SERVICE.filter(x=>x.unitId===u.id);
   let h='<div style="display:flex;justify-content:center;margin-bottom:var(--s1)">'
-    +'<span class="bph" style="width:120px;height:70px">'+bikeArt(u.variant,u.color,u.colorCode)+'</span></div>'
+    +'<span class="bph" style="width:120px">'+bikeArt(u.variant,u.color,u.colorCode)+'</span></div>'
     +'<dl class="kv"><dt>รุ่น</dt><dd><b>'+esc(u.model)+'</b> · '+esc(u.color)+'</dd>'
     +'<dt>เลขเครื่อง</dt><dd class="mono">'+esc(u.engine)+'</dd>'
     +'<dt>เลขถัง</dt><dd class="mono">'+esc(u.frame)+'</dd>'
@@ -8629,6 +8675,109 @@ async function imgPrepare(file){
     rd.onload=()=>res(rd.result); rd.readAsDataURL(out.tiers.card.blob); });
   out.orig=file.size;
   return out;
+}
+/* ---------- ตัวครอปรูป (v1.44) ----------
+   คำสั่งเจ้าของ 28 ส.ค. 2569: "เมื่ออัปโหลดรูป จะให้สามารถ crop รูปได้ รูปแบบของส่วน crop
+   ทำให้ดูเป็นสากลและเหมาะสำหรับ mobile ด้วย"
+
+   สถานะเก็บเป็น "พิกัดในรูปต้นฉบับ" ไม่ใช่พิกัดบนจอ — จอหมุน/เปลี่ยนขนาดแล้วกรอบยังอยู่ที่เดิม
+   และที่สำคัญกว่านั้น cropDraw() กับ cropFile() ใช้ผลของ cropRect() ตัวเดียวกันด้วยสูตร drawImage
+   ชุดเดียวกัน ⇒ สิ่งที่เห็นบนเวทีคือไฟล์ที่จะได้จริง ถ้าแยกสูตรกันเมื่อไหร่ พรีวิวจะเริ่มโกหกเงียบ ๆ */
+let CROP={img:null, url:null, z:1, cx:0, cy:0, res:null, ptr:new Map(), pin:0};
+/* กรอบครอบ ณ ตอนนี้ หน่วยเป็นพิกเซลของรูปต้นฉบับ — และ**หนีบกลับเข้า CROP เลย**
+   ไม่ใช่หนีบเฉพาะค่าที่คืน ไม่งั้นลากเลยขอบไปไกลแล้วลากกลับ จะมีช่วงที่ลากแล้วภาพไม่ขยับ
+   เท่ากับระยะที่เลยไป (ผู้ใช้อ่านว่า "ค้าง") · หนีบที่นี่ที่เดียวทั้งไฟล์ */
+function cropRect(){
+  const im=CROP.img; if(!im) return {x:0,y:0,w:0,iw:0,ih:0};
+  const iw=im.naturalWidth, ih=im.naturalHeight, w=Math.min(iw,ih)/CROP.z;
+  CROP.cx=Math.min(Math.max(w/2, CROP.cx), iw-w/2);
+  CROP.cy=Math.min(Math.max(w/2, CROP.cy), ih-w/2);
+  return {x:CROP.cx-w/2, y:CROP.cy-w/2, w:w, iw:iw, ih:ih};
+}
+/* พิกเซลบนจอ ต่อ พิกเซลในรูป — ใช้แปลงระยะที่นิ้วลากให้เป็นระยะในรูป */
+function cropScale(){ const r=cropRect(), S=$('#crSt').clientWidth||1; return r.w? S/r.w : 1; }
+function cropZoom(z){ CROP.z=Math.min(4, Math.max(1, z||1)); $('#crZ').value=Math.round(CROP.z*100); }
+/* คูณ devicePixelRatio ไม่งั้นบนมือถือจอละเอียด พรีวิวจะเบลอกว่าไฟล์ที่ได้จริง
+   หนีบที่ 3 พอ — สูงกว่านั้นแคนวาสใหญ่จนเครื่องรุ่นเก่าวาดไม่ทันตอนลาก */
+function cropDraw(){
+  const cv=$('#crSt'), im=CROP.img; if(!cv || !im) return;
+  const r=cropRect(), S=cv.clientWidth||300, dpr=Math.min(3, window.devicePixelRatio||1);
+  const n=Math.max(1, Math.round(S*dpr));
+  if(cv.width!==n){ cv.width=n; cv.height=n; }
+  const g=cv.getContext('2d');
+  g.fillStyle='#fff'; g.fillRect(0,0,n,n);
+  g.drawImage(im, r.x,r.y,r.w,r.w, 0,0,n,n);
+}
+/* ออกเป็น JPEG เสมอ — ไฟล์นี้ยังต้องผ่าน imgPrepare ต่ออีกชั้น (ย่อ 640/1600 + ลบ EXIF)
+   ที่นี่จึงไม่ต้องบีบให้เล็ก แค่ต้องไม่บิดสัดส่วนและไม่ใหญ่เกิน 1600 */
+function cropFile(){
+  const im=CROP.img; if(!im) return Promise.resolve(null);
+  const r=cropRect(), n=Math.min(1600, Math.max(1, Math.round(r.w)));
+  const cv=document.createElement('canvas'); cv.width=n; cv.height=n;
+  const g=cv.getContext('2d');
+  g.fillStyle='#fff'; g.fillRect(0,0,n,n);
+  g.drawImage(im, r.x,r.y,r.w,r.w, 0,0,n,n);
+  const nm=(CROP.name||'photo').replace(/\.[A-Za-z0-9]+$/,'')+'.jpg';
+  return new Promise(res=> cv.toBlob(bl=> res(bl? new File([bl], nm, {type:'image/jpeg'}) : null),
+    'image/jpeg', 0.92));
+}
+/* ทางออกทางเดียวของตัวครอป — คืนคำตอบให้ผู้เรียก คืนหน่วยความจำของ objectURL และปลดล็อกจอ
+   ถ้าไล่ปิดทีละทาง (ปุ่มยกเลิก · X · Escape · เลือกเสร็จ) จะมีทางที่ลืมคืน res เสมอ แล้ว await ค้างตลอดไป */
+function cropClose(val){
+  const r=CROP.res; CROP.res=null;
+  if(CROP.url){ URL.revokeObjectURL(CROP.url); CROP.url=null; }
+  CROP.img=null; CROP.ptr.clear(); CROP.pin=0;
+  $('#crop').classList.remove('on'); syncLock();
+  if(r) r(val||null);
+}
+/* เปิดตัวครอปแล้วรอคำตอบ — ได้ File จัตุรัส หรือ null ถ้าผู้ใช้ยกเลิก
+   ผู้เรียกจึงเขียนเป็น "ได้อะไรมาค่อยทำต่อ" บรรทัดเดียว ไม่ต้องมี callback กระจาย */
+function cropOpen(file, label){
+  return new Promise(res=>{
+    cropClose(null);                    /* เปิดซ้อนไม่ได้ — ของเดิมต้องได้คำตอบ null ไปก่อน */
+    CROP.res=res; CROP.name=file.name||'photo';
+    $('#crT').textContent='ครอปรูป'+(label? ' — '+label : '');
+    CROP.url=URL.createObjectURL(file);
+    const im=new Image();
+    im.onload=()=>{ CROP.img=im; cropZoom(1);
+      CROP.cx=im.naturalWidth/2; CROP.cy=im.naturalHeight/2;
+      $('#crop').classList.add('on'); syncLock(); cropDraw(); };
+    im.onerror=()=>{ toast('อ่านไฟล์รูปไม่ได้', file.name||'', 1); cropClose(null); };
+    im.src=CROP.url;
+  });
+}
+function cropPinDist(){
+  const a=[...CROP.ptr.values()]; if(a.length<2) return 0;
+  return Math.hypot(a[0].x-a[1].x, a[0].y-a[1].y);
+}
+/* Pointer Events ตัวเดียวจบทั้งเมาส์ นิ้ว และปากกา — ไม่ต้องเขียน touch/mouse สองชุดให้หลุดกัน
+   setPointerCapture ห่อ try ไว้ เพราะเทสต์ยิง PointerEvent ที่ไม่มี pointer จริงอยู่เบื้องหลัง */
+function cropWire(){
+  const cv=$('#crSt');
+  cv.onpointerdown=e=>{ if(!CROP.img) return;
+    CROP.ptr.set(e.pointerId,{x:e.clientX,y:e.clientY});
+    try{ cv.setPointerCapture(e.pointerId); }catch(_){}
+    if(CROP.ptr.size>=2) CROP.pin=cropPinDist();
+    e.preventDefault(); };
+  cv.onpointermove=e=>{ if(!CROP.img || !CROP.ptr.has(e.pointerId)) return;
+    const prev=CROP.ptr.get(e.pointerId);
+    CROP.ptr.set(e.pointerId,{x:e.clientX,y:e.clientY});
+    if(CROP.ptr.size>=2){                        /* บีบสองนิ้ว = ซูม */
+      const d=cropPinDist();
+      if(CROP.pin>0 && d>0) cropZoom(CROP.z*(d/CROP.pin));
+      CROP.pin=d;
+    }else{                                       /* นิ้วเดียว = เลื่อนรูป ไม่ใช่เลื่อนกรอบ */
+      const sc=cropScale();
+      CROP.cx-=(e.clientX-prev.x)/sc; CROP.cy-=(e.clientY-prev.y)/sc;
+    }
+    cropDraw(); e.preventDefault(); };
+  const up=e=>{ CROP.ptr.delete(e.pointerId); CROP.pin=0;
+    try{ cv.releasePointerCapture(e.pointerId); }catch(_){} };
+  cv.onpointerup=up; cv.onpointercancel=up;
+  $('#crZ').oninput=()=>{ cropZoom(num($('#crZ').value)/100); cropDraw(); };
+  $('#crX').onclick=()=>cropClose(null);
+  $('#crBack').onclick=()=>cropClose(null);
+  $('#crGo').onclick=async()=>{ const f=await cropFile(); cropClose(f); };
 }
 async function agePhotos(now, limit){
   const t0=now? new Date(now) : new Date();
@@ -10445,17 +10594,26 @@ function modelModal(code){
   vmDraw();
   $('#vmColorAdd').onclick=()=>{ rows.push({ code:'', name:'', pack:null, note:'' }); vmDraw(); };
 
-  /* ย่อทันทีที่เลือกไฟล์ ไม่ยัดรูปดิบขนาด 3-12 MB เข้าหน่วยความจำหรือขึ้น Storage
-     บอกขนาดที่ประหยัดได้ให้เห็นด้วย จะได้รู้ว่าระบบทำอะไรให้ */
-  $('#vmImg').onchange=async e=>{ const f=e.target.files[0]; if(!f || pick<0) return;
-    const r=rows[pick]; if(!r) return;
+  /* เลือกไฟล์ → เข้าตัวครอปก่อนเสมอ (คำสั่งเจ้าของ 28 ส.ค. 2569) แล้วจึงย่อสองชั้น
+     ไม่ยัดรูปดิบขนาด 3-12 MB เข้าหน่วยความจำหรือขึ้น Storage · บอกขนาดที่ประหยัดได้ให้เห็นด้วย
+     ตรรกะอยู่ในฟังก์ชันของตัวเอง ไม่ใช่ในตัวรับเหตุการณ์ — จะได้เรียกซ้ำได้และอ่านรู้เรื่อง */
+  async function vmPhotoTake(i, f){
+    const r=rows[i]; if(!r) return;
+    const cut=await cropOpen(f, r.name || r.code || 'สีนี้');
+    if(!cut) return;                       /* ยกเลิกครอป = ไม่แตะการ์ดใบนี้เลยแม้แต่ข้อความสถานะ */
     r.note='กำลังย่อรูป…'; vmDraw();
-    const pk=await imgPrepare(f);
+    const pk=await imgPrepare(cut);
     if(!pk){ r.note='อ่านไฟล์รูปไม่ได้'; vmDraw(); return; }
     const kb=n=>Math.round(n/1024).toLocaleString('en-US')+' KB';
     r.pack=pk; r.img=pk.src; r.imgUrl=null; r.imgFullUrl=null;
-    r.note=f.name+' · '+kb(pk.orig)+' → '+kb(pk.bytes)+' ('+pk.tiers.card.ext.toUpperCase()+' สองขนาด)';
-    vmDraw(); };
+    r.note=f.name+' · '+kb(f.size)+' → '+kb(pk.bytes)+' ('+pk.tiers.card.ext.toUpperCase()+' สองขนาด · ครอป 1:1)';
+    vmDraw();
+  }
+  /* ล้างช่องทันทีที่รับไฟล์มาแล้ว ไม่ใช่ตอนจบ — ยกเลิกครอปแล้วเลือก "ไฟล์เดิม" ซ้ำต้องได้
+     ถ้าค่ายังค้างอยู่ เบราว์เซอร์จะไม่ยิง change รอบสอง ผู้ใช้จะเจอปุ่มที่กดแล้วไม่เกิดอะไร */
+  $('#vmImg').onchange=e=>{ const f=e.target.files[0], i=pick;
+    e.target.value='';
+    if(f && i>=0) vmPhotoTake(i, f); };
   $('#vmGo').onclick=()=>{
     const v=(code||$('#vmCode').value.trim().toUpperCase());
     if(!/^[A-Z0-9]{6}$/.test(v)){ toast('รหัสรุ่นต้องเป็นตัวอักษร/ตัวเลข 6 ตัว','เช่น BTF300',1); return; }
@@ -11304,6 +11462,7 @@ $('#burger').onclick=()=> $('#side').classList.toggle('open');
 $('#drwX').onclick=closeDrawer; $('#ov').onclick=()=>{ closeDrawer(); closeMore(); closeFilters(); };
 $('#fsX').onclick=closeFilters; $('#fsDone').onclick=closeFilters;
 $('#mdX').onclick=closeModal;
+cropWire();
 $('#gsInput').onclick=gsOpen; $('#gsBtn').onclick=gsOpen; $('#gsQ').oninput=gsSearch;
 /* คีย์บอร์ด: ↑↓ เลือก Enter เปิด (v1.26 ข้อ 4) — Escape มี handler รวมอยู่แล้ว */
 $('#gsQ').onkeydown=e=>{
@@ -11313,6 +11472,9 @@ $('#gsQ').onkeydown=e=>{
 };
 $('#gs').onclick=e=>{ if(e.target.id==='gs') closeGs(); };
 document.addEventListener('keydown', e=>{
+  /* ตัวครอปเปิดซ้อนบนแผ่นแก้รุ่น — Escape ครั้งแรกต้องปิดแค่ตัวครอปแล้วจบ
+     ไม่งั้นแผ่นที่อยู่ข้างใต้ปิดตามไปด้วย งานที่กรอกค้างไว้หายทั้งใบเพราะกดยกเลิกครอป */
+  if(e.key==='Escape' && $('#crop').classList.contains('on')){ cropClose(null); return; }
   if(e.key==='Escape'){ closeDrawer(); closeModal(); closeGs(); closeMore(); closeFilters();
     navCtlClose(); perCalClose(); brPickClose(); }
   if(e.key==='/' && ME && ['INPUT','TEXTAREA','SELECT'].indexOf(document.activeElement.tagName)<0){ e.preventDefault(); gsOpen(); }

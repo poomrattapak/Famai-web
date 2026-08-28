@@ -73,6 +73,14 @@ const PNG = Buffer.from(
       p.click('#vmColorList [data-vcp="0"]')
     ]);
     await chooser.setFiles({ name: 'c0.png', mimeType: 'image/png', buffer: PNG });
+    /* v1.44: เลือกไฟล์แล้วต้องเข้าตัวครอปก่อน (คำสั่งเจ้าของ 28 ส.ค. 2569) — และตัวครอปต้องใช้
+       โฮสต์ของตัวเอง ไม่ใช่ #mdB ของ openModal ไม่งั้นแผ่นแก้รุ่นที่อยู่ข้างใต้จะถูกเขียนทับทั้งใบ */
+    const cropUp = await p.waitForSelector('#crop.on', { timeout: 5000 })
+      .then(() => true).catch(() => false);
+    if (!cropUp) bad(tag + ': เลือกไฟล์แล้วตัวครอปไม่เปิด');
+    const keep = await p.evaluate(() => document.querySelectorAll('#vmColorList .vmrow').length);
+    if (!keep) bad(tag + ': เปิดตัวครอปแล้วการ์ดสีในแผ่นแก้รุ่นหายไป — ตัวครอปไปใช้โฮสต์เดียวกับ modal');
+    if (cropUp) await p.click('#crGo');
     await p.waitForTimeout(900);          /* imgPrepare ย่อสองชั้นบนแคนวาสก่อน */
 
     const inSheet = await p.evaluate(() => {
