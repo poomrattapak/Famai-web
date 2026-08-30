@@ -230,7 +230,9 @@ const LASTTOAST = `() => {
       }
 
       /* ③ ไม่มีดอกจันเกิน (ตรวจทุกจอที่เปิดผ่าน) */
-      (await p.evaluate(eval(STRAY), ['dlPlate', 'data-wci'])).forEach(s => bad(at + ' [จอนี้]: ' + s));
+      /* wsvWhy (v1.45) — ช่องเหตุผลยกเลิกบิลขายส่ง บังคับกรอกจริงใน wsVoid() แต่จงใจไม่เข้า REQ
+   (เกิดในโมดัลที่เปิดตามบิล ไม่ใช่ฟอร์มถาวร) ⇒ ฝังดอกจันในมาร์กอัป · ด่านของมันคือ wsvoid-r45 [5b] */
+      (await p.evaluate(eval(STRAY), ['dlPlate', 'data-wci', 'wsvWhy'])).forEach(s => bad(at + ' [จอนี้]: ' + s));
 
       /* ② เคลียร์แล้วบันทึกต้องไม่ผ่าน */
       if (!c.save) { seenOnly.push(c.id); continue; }

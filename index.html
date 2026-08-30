@@ -2592,7 +2592,8 @@ let WS_PARTNERS=[
   {id:'WP2', name:'ห้างหุ้นส่วน รุ่งเรืองยนต์',    taxId:'', addr:'จ.สุพรรณบุรี', phone:'', own:'', active:true}
 ];
 let WS_PRICES={};                 /* variant → ราคาขายส่ง/คัน (ตั้งได้ที่ตั้งค่า > ขายส่ง) */
-let WSALES=[];                    /* {id,partnerId,branch,items:[{unitId,price}],at,total,docNo,note,finApproval,demo} */
+let WSALES=[];                    /* {id,partnerId,branch,dest,items:[{unitId,price}],at,total,docNo,note,finApproval
+                                     · งอกทีหลัง: taxNo billNo · ยกเลิกแล้ว: voidedAt voidReason voidedBy} */
 let ODOCS=[];                     /* v1.36 ใบกำกับภาษีอื่นๆ (นอกระบบสต๊อกรถ) {id,no,branch,name,taxId,addr,item,amt,at,note,by} */
 /* v1.37 การจอง (บรีฟรอบ 2 ข้อ 2 + คำตอบเจ้าของข้อ 1-2): พักรถเป็น "จองแล้ว" กันขายทับ
    ยังไม่ตัดสต๊อกเป็นขายแล้ว · มัดจำเลือกได้ · ยกเลิกรถคืน available · ไม่มีวันหมดอายุอัตโนมัติ */
@@ -3311,10 +3312,13 @@ const expDeny = why => { toast('ไม่มีสิทธิ์ส่งออ
 function expWholesale(){
   const rows=WSALES.filter(w=>inScope(w.branch)&&inPer('ws',w.at))
     .sort((a,b)=>String(a.at).localeCompare(String(b.at)));
+  /* ไม่กรองบิลที่ยกเลิก — จอก็ไม่กรอง (audit) ไฟล์จึงต้องเล่าเรื่องเดียวกัน แต่ต้องบอกให้ชัดว่าใบไหนตายแล้ว
+     คอลัมน์เงินยังเป็น index 5 เพราะแทรกช่องใหม่ไว้หลังคอลัมน์ยอดรวม */
   csvMoney('บิลขายส่ง_'+perFile('ws'),
-    ['วันที่','เลขที่บิล','คู่ค้า','สาขา','จำนวนคัน','ยอดรวม','สถานะการเงิน','หมายเหตุ'],
+    ['วันที่','เลขที่บิล','คู่ค้า','สาขา','จำนวนคัน','ยอดรวม','สถานะการเงิน','สถานะบิล','หมายเหตุ'],
     rows.map(w=>[w.at, w.docNo||'', (WS_PARTNERS.find(x=>x.id===w.partnerId)||{}).name||'—',
-      bName(w.branch), (w.items||[]).length, w.total, finApStatus(w), w.note||'']), [5]);
+      bName(w.branch), (w.items||[]).length, w.total, finApStatus(w),
+      wsVoided(w)? 'ยกเลิก · '+(w.voidReason||'') : 'ใช้งาน', w.note||'']), [5]);
 }
 function expQuotes(){
   const rows=QUOTES.filter(q=>inScope(q.branch)&&inPer('quote',q.at))
@@ -5678,25 +5682,30 @@ function rWsSale(){
   perBar('wsPer','ws', rWsSale);
   $('#expWs').onclick=expWholesale;
   const list=WSALES.filter(w=>inScope(w.branch)&&inPer('ws',w.at)).slice().sort((a,b)=>b.at.localeCompare(a.at));
+  /* v1.45: บิลที่ยกเลิกยังอยู่ในรายการเสมอ (audit + เลขเอกสารต้องอ่านเห็นตลอดไป) แต่ไม่มีปุ่มสักตัว
+     ปุ่มที่กดแล้วไม่ทำงานห้ามมี (กฎข้อ 3) — และถ้ารถถูกใช้ต่อไปแล้ว บอกเหตุผลแทนที่จะโชว์ปุ่มหลอก */
   $('#wsList').innerHTML = list.length? list.map(w=>{
-      const pt=wsPartnerById(w.partnerId), st=finApStatus(w);
-      return '<div class="acblk"><b>'+esc(pt?pt.name:'—')+'</b> '+pill(st, st==='ผ่าน'?'good':(st==='ไม่ผ่าน'?'bad':'warn'))
+      const pt=wsPartnerById(w.partnerId), st=finApStatus(w), vd=wsVoided(w);
+      const busy = vd? '' : ((w.items||[]).map(x=>wsUnitBusy(w,x.unitId)).find(Boolean)||'');
+      return '<div class="acblk"><b>'+esc(pt?pt.name:'—')+'</b> '
+        +(vd? pill('ยกเลิกแล้ว','bad') : pill(st, st==='ผ่าน'?'good':(st==='ไม่ผ่าน'?'bad':'warn')))
         +'<div class="tsub">'+thDate(w.at)+' · '+w.items.length+' คัน · รวม '+fmt(w.total)+' ฿ · '
         +(w.docNo? '<span class="mono">'+esc(w.docNo)+'</span>' : 'ยังไม่ออกเลขเอกสาร')
         +(w.note? ' · '+esc(w.note):'')+'</div>'
-        +'<div class="psAct">'
-        +(canPrintDoc()? '<button class="lnk" data-wsp2="'+w.id+'">พิมพ์ใบส่งของ/ใบเสร็จ</button>'
-          +' <button class="lnk" data-wsptx="'+w.id+'">พิมพ์ใบกำกับภาษี</button>'
-          +' <button class="lnk" data-wsbill="'+w.id+'">ใบวางบิล</button>':'')
-        +(canFinApprove()&&st!=='ผ่าน'? ' <button class="lnk" data-wsap="'+w.id+'">การเงินตรวจ: ผ่าน</button>':'')
-        +'</div></div>'; }).join('')
+        +(vd? '<div class="tsub">ยกเลิก '+thDate(w.voidedAt)+' · โดย '+esc(w.voidedBy||'—')
+              +' · '+esc(w.voidReason||'')+'</div>'
+            : '<div class="psAct">'
+              +(canPrintDoc()? '<button class="lnk" data-wsp2="'+w.id+'">พิมพ์ใบส่งของ/ใบเสร็จ</button>'
+                +' <button class="lnk" data-wsptx="'+w.id+'">พิมพ์ใบกำกับภาษี</button>'
+                +' <button class="lnk" data-wsbill="'+w.id+'">ใบวางบิล</button>':'')
+              +(canFinApprove()&&st!=='ผ่าน'? ' <button class="lnk" data-wsap="'+w.id+'">การเงินตรวจ: ผ่าน</button>':'')
+              +(canVoidSale()&&st!=='ผ่าน'&&!busy? ' <button class="lnk q" data-wsv="'+w.id+'">ยกเลิกบิล</button>':'')
+              +'</div>'
+              +(canVoidSale()&&st!=='ผ่าน'&&busy? '<div class="tsub">ยกเลิกบิลไม่ได้ — '+esc(busy)+'</div>':''))
+        +'</div>'; }).join('')
     : '<div class="empty"><b>ยังไม่มีบิลขายส่ง</b>บิลแรกจะขึ้นที่นี่</div>';
-  $$('#wsList [data-wsap]').forEach(b=> b.onclick=()=>{ const w=WSALES.find(x=>x.id===b.dataset.wsap);
-    if(!w) return;
-    if(!canFinApprove()){ toast('ต้องเป็นการเงินหรือแอดมิน','',1); return; }
-    w.finApproval={status:'ผ่าน', by:ME.nick, at:TODAY, note:''};
-    dbPatch('wholesale_sale', w.id, { fin_approval:w.finApproval });
-    toast('การเงินตรวจแล้ว — ผ่าน', w.docNo||''); rWsSale(); });
+  $$('#wsList [data-wsap]').forEach(b=> b.onclick=()=>wsFinPass(b.dataset.wsap));
+  $$('#wsList [data-wsv]').forEach(b=> b.onclick=()=>wsVoidModal(b.dataset.wsv));
   $$('#wsList [data-wsp2]').forEach(b=> b.onclick=()=>wsPrint(b.dataset.wsp2, false));
   $$('#wsList [data-wsptx]').forEach(b=> b.onclick=()=>wsPrint(b.dataset.wsptx, true));
   $$('#wsList [data-wsbill]').forEach(b=> b.onclick=()=>wsBilling(b.dataset.wsbill));
@@ -5704,6 +5713,7 @@ function rWsSale(){
 /* ใบวางบิล (บรีฟข้อ 30) — 1 ใบต่อ 1 บิลขายส่ง เลขออกครั้งแรกครั้งเดียว พิมพ์ซ้ำใช้เลขเดิม */
 function wsBilling(wsId){
   const w=WSALES.find(x=>x.id===wsId); if(!w) return false;
+  if(wsVoided(w)){ toast('บิลนี้ยกเลิกแล้ว','ออกใบวางบิลไม่ได้',1); return false; }
   if(!canPrintDoc()){ toast('พิมพ์เอกสารไม่ได้','เฉพาะการเงินและผู้บริหารเท่านั้น',1); return false; }
   if(!w.billNo){ w.billNo=nextDocNo(w.branch,'BILLING'); if(LIVE) dbPatch('wholesale_sale', w.id, { bill_no:w.billNo }); }
   const p=wsPartnerById(w.partnerId)||{}, co=coOf(w.branch);
@@ -5757,7 +5767,9 @@ function wsSave(){
    วิ่งมาที่นี่ทั้งคู่ กติกามีชุดเดียว (§9g) · ด่านสิทธิ์/ความถูกต้องต้องผ่านก่อนเรียก */
 function wsCommit(p, br, dest, items, note){
   const total=items.reduce((s,x)=>s+num(x.price),0);
-  const w={ id: LIVE? dbId() : nid('WS'), partnerId:p.id, branch:br, at:TODAY,
+  /* dest เก็บลงระเบียนด้วย (v1.45) — เดิมรู้แค่ตอนเขียนแล้วทิ้ง บิลจึงจำไม่ได้ว่าส่งของไปสาขาไหน
+     ⇒ ยกเลิกบิลในเครือแล้วตรวจไม่ได้ว่ารถยังอยู่ที่เดิมหรือถูกย้ายต่อไปแล้ว (§9i แช่ผลการตัดสินลงหลักฐาน) */
+  const w={ id: LIVE? dbId() : nid('WS'), partnerId:p.id, branch:br, dest: p.own? String(dest||'') : '', at:TODAY,
     items:items.map(x=>({unitId:x.unitId, price:num(x.price)})), total,
     note:String(note||'').trim(), docNo:nextDocNo(br,'WSALE'),
     finApproval:{status:'รอตรวจ', by:'', at:'', note:''} };
@@ -5769,6 +5781,7 @@ function wsCommit(p, br, dest, items, note){
   if(LIVE){
     /* โหมดจริง p.id เป็น uuid จากตาราง wholesale_partner (โหลดตอน login) — อ้าง FK ได้ตรง */
     dbUp('wholesale_sale', { id:w.id, branch_id:BR_IDS[br], partner_id:p.id,
+      dest_branch_id: p.own? (BR_IDS[dest]||null) : null,
       sold_at:w.at, doc_no:w.docNo, total:w.total, note:w.note||null, fin_approval:w.finApproval });
     w.items.forEach(x=> dbUp('wholesale_sale_item',
       { id:dbId(), ws_id:w.id, unit_id:x.unitId, price:x.price }, 'ws_id,unit_id'));
@@ -5778,9 +5791,113 @@ function wsCommit(p, br, dest, items, note){
   }
   return w;
 }
+/* ---------- ยกเลิกบิลขายส่ง (v1.45) ----------
+   เจ้าของสั่ง 28 ส.ค. 2569: "ถ้าเกิดไม่มีให้ยกเลิก ทำยกเลิกบิลด้วย" + "ยกเลิกได้ก่อนการเงินตรวจผ่านเท่านั้น"
+
+   สถานะยกเลิกอ่านจาก voidedAt ช่องเดียว ไม่มีฟิลด์ w.void แยก (กฎข้อ 8 §9g) — ฝั่งขายปลีกมีทั้ง
+   s.void และ s.voidedAt ซึ่งคือ sync ที่รอพัง ฝั่งนี้เป็นของใหม่จึงทำให้ถูกตั้งแต่ต้น และตรงกับ
+   คอลัมน์ wholesale_sale.voided_at เป๊ะ (ตารางไม่มี DELETE policy — soft void เป็นทางเดียวที่ทำได้) */
+const wsVoided = w => !!(w && w.voidedAt);
+/* รถคันนี้ถูกใช้ต่อไปแล้วหรือยัง — คืน '' = ว่าง คืนข้อความไทยที่เอาไปโชว์บนจอได้เลย
+   คิดที่เดียวใช้สองที่: ด่านใน wsVoid กับข้อความบอกเหตุผลบนการ์ดใน #wsList
+   ต้องดู SALES ตรง ๆ ไม่ใช่เชื่อ u.status — saveSale ไม่มีด่านสถานะรถ กันด้วยรายการดรอปดาวน์เท่านั้น */
+function wsUnitBusy(w, unitId){
+  const u=UNITS.find(z=>z.id===unitId);
+  if(!u) return 'ไม่พบรถคันนี้ในสต๊อกแล้ว';
+  if(SALES.some(s=>!s.void && s.unitId===unitId))                        return 'ถูกขายปลีกไปแล้ว';
+  if(BOOKINGS.some(b=>b.unitId===unitId && b.status==='จองอยู่'))         return 'มีลูกค้าจองคันนี้ไว้';
+  if(TRANSFERS.some(t=>t.unitId===unitId && t.status==='กำลังโอนย้าย'))   return 'อยู่ระหว่างโอนย้ายสาขา';
+  if(WSALES.some(o=>o.id!==w.id && !wsVoided(o) && (o.items||[]).some(i=>i.unitId===unitId)))
+                                                                          return 'ถูกใส่ในบิลขายส่งใบอื่นแล้ว';
+  const pt=wsPartnerById(w.partnerId), own=!!(pt&&pt.own)||!!w.dest;
+  if(own){
+    if(u.status!=='available') return 'สถานะรถเปลี่ยนไปแล้ว';
+    /* บิลเก่าที่ไม่มี dest (เกิดก่อน v1.45) ยังยกเลิกได้ — เทียบระดับบริษัทแทนสาขา
+       การคืนของไม่ได้ใช้ dest อยู่แล้ว (คืนไปที่ w.branch) จึงไม่มีทางตัน */
+    if(w.dest){ if(u.branch!==w.dest) return 'ถูกย้ายจาก '+bName(w.dest)+' ไป '+bName(u.branch)+' แล้ว'; }
+    else if(pt && pt.own && coOf(u.branch).id!==pt.own) return 'ไม่ได้อยู่ในบริษัทผู้ซื้อแล้ว';
+    return '';
+  }
+  if(u.status!=='sold')   return 'สถานะรถเปลี่ยนไปแล้ว';
+  if(u.branch!==w.branch) return 'ถูกย้ายออกจากสาขาผู้ขายแล้ว';
+  return '';
+}
+/* แกนเดียวของการยกเลิก — ด่านทุกชั้นอยู่ในนี้ ไม่ใช่ที่ปุ่ม (§9b)
+   ลำดับ: ตัวตน → กดซ้ำ → คนที่กด → กติกาธุรกิจ → อินพุต → สภาพโลกจริง
+   ⚠ ตรวจรถให้ครบทุกคันด้วย .find ก่อน .forEach — ห้ามคืนรถไปคันหนึ่งแล้วค่อยพบว่าคันที่สองติด
+     บิลจะค้างในสถานะย้อนครึ่งใบที่กู้ไม่ได้ทั้งสองทาง */
+function wsVoid(id, reason){
+  const w=WSALES.find(x=>x.id===id); if(!w) return false;
+  if(wsVoided(w)){ toast('บิลนี้ยกเลิกไปแล้ว', w.docNo||'', 1); return false; }
+  if(!canVoidSale()){ toast('บทบาทของคุณยกเลิกบิลขายส่งไม่ได้','ต้องเป็นแอดมินหรือผู้บริหาร',1); return false; }
+  if(!inScope(w.branch)){ toast('บิลนี้อยู่นอกขอบเขตสาขาของคุณ', bName(w.branch), 1); return false; }
+  if(finApStatus(w)==='ผ่าน'){ toast('การเงินตรวจผ่านแล้ว — ยกเลิกไม่ได้',
+    'ต้องออกใบลดหนี้แทน ('+(w.docNo||'')+')',1); return false; }
+  const rv=String(reason==null?'':reason).trim();
+  if(!rv){ toast('กรอกเหตุผลที่ยกเลิกก่อน','ประวัติต้องตอบได้ว่าทำไมบิลถูกยกเลิก',1); return false; }
+  const busy=w.items.map(x=>({x:x, why:wsUnitBusy(w, x.unitId)})).find(r=>r.why);
+  if(busy){ const u=UNITS.find(z=>z.id===busy.x.unitId)||{};
+    toast('ยกเลิกไม่ได้ — รถถูกใช้ต่อไปแล้ว',
+      (u.model||'')+' '+(u.frame||'')+' · '+busy.why, 1); return false; }
+
+  const pt=wsPartnerById(w.partnerId), own=!!(pt&&pt.own)||!!w.dest;
+  /* ชื่อผู้กด ณ เวลาทำรายการ — แช่ลงหลักฐาน (§9i) ห้ามเก็บเป็น staffId แล้ว join ใหม่ตอนวาดจอ
+     ไม่งั้นวันที่พนักงานเปลี่ยนชื่อเล่น ประวัติที่ตรวจไปแล้วจะเปลี่ยนตาม */
+  w.voidedAt=TODAY; w.voidReason=rv; w.voidedBy=ME.nick;
+  w.items.forEach(x=>{ const u=UNITS.find(z=>z.id===x.unitId); if(!u) return;
+    if(own) u.branch=w.branch;          /* ในเครือ: รถกลับสาขาผู้ขาย สถานะยังว่างอยู่แล้ว */
+    else    u.status='available';       /* ภายนอก: คืนเข้าสต๊อกพร้อมขายที่สาขาเดิม */
+  });
+  /* เลขเอกสารคงไว้เสมอ ไม่คืนเข้าตัวนับ (กฎสรรพากร — เอกสารออกแล้วบันทึกยกเลิก ไม่ใช่ทำหาย) */
+  if(LIVE){
+    dbPatch('wholesale_sale', w.id,
+      { voided_at:new Date().toISOString(), voided_reason:rv, voided_by:w.voidedBy });
+    w.items.forEach(x=> dbUp('motorcycle_unit', own
+      ? { id:x.unitId, branch_id:BR_IDS[w.branch] }
+      : { id:x.unitId, status:'available' }));
+  }
+  toast('ยกเลิกบิลขายส่งแล้ว', (w.docNo||'')+' · คืนรถ '+w.items.length+' คัน'
+    +(own? ' เข้า '+bName(w.branch) : ' เข้าสต๊อกพร้อมขาย'));
+  refreshAll(); return true;
+}
+/* แผ่นยืนยัน — คำเตือนต้องตรงความจริง: บิลที่ยกเลิกได้จะไม่มีวันมี taxNo (ใบกำกับออกได้เฉพาะเมื่อ
+   การเงินผ่าน ซึ่งเป็นตอนที่ยกเลิกไม่ได้แล้ว) จึงห้ามพูดถึงใบลดหนี้ · แต่ billNo มีได้จริง
+   เพราะ wsBilling ออกใบวางบิลได้ตั้งแต่ก่อนการเงินตรวจ — เตือนเฉพาะเมื่อมีเลขจริง ไม่ขู่ลอย ๆ */
+function wsVoidModal(id){
+  const w=WSALES.find(x=>x.id===id); if(!w) return;
+  const p=wsPartnerById(w.partnerId)||{}, own=!!p.own||!!w.dest;
+  openModal('ยกเลิกบิลขายส่ง — '+(w.docNo||'ยังไม่ออกเลข'),
+    '<p style="margin:0 0 var(--s2)">คืนรถ <b>'+w.items.length+' คัน</b> ('+fmt(w.total)+' ฿) '
+    +(own? 'จาก '+esc(bName(w.dest||'—'))+' กลับเข้าสต๊อก '+esc(bName(w.branch))
+         : 'กลับเป็นรถพร้อมขายที่ '+esc(bName(w.branch)))
+    +'<br><span class="tsub">ขายให้ '+esc(p.name||'—')+' เมื่อ '+thDate(w.at)+'</span></p>'
+    +'<div class="f"><div>'
+    +'<label class="fl">เหตุผลที่ยกเลิก<span class="rq" title="จำเป็นต้องกรอก">*</span></label>'
+    +'<input class="inp" id="wsvWhy" placeholder="เช่น คู่ค้ายกเลิกคำสั่งซื้อ · เปิดบิลผิดคัน"></div></div>'
+    +'<div class="note b">'+ic('info','i i-sm')+'<span>เลขที่บิล <b class="mono">'+esc(w.docNo||'—')+'</b>'
+    +(w.billNo? ' และเลขใบวางบิล <b class="mono">'+esc(w.billNo)+'</b>':'')
+    +' จะคงอยู่ในประวัติ ไม่ถูกนำกลับมาใช้ใหม่ (กฎสรรพากร)'
+    +(w.billNo? ' — ใบวางบิลที่ส่งให้คู่ค้าไปแล้ว ต้องแจ้งยกเลิกกับคู่ค้าเอง':'')
+    +'</span></div>'
+    +'<div class="savebar"><button class="btn dgr" id="wsvGo">ยืนยันยกเลิกบิล</button></div>');
+  $('#wsvGo').onclick=()=>{ if(wsVoid(id, $('#wsvWhy').value)) closeModal(); };
+}
+/* การเงินตรวจผ่าน — ยกออกจาก onclick อินไลน์มาเป็นฟังก์ชันชื่อจริง (v1.45)
+   โค้ดที่ฝังใน handler เรียกตรงไม่ได้ ⇒ พิสูจน์ตามกฎ §9b ไม่ได้ · บิลที่ยกเลิกแล้วห้ามฟื้นด้วยการตรวจผ่าน
+   ไม่งั้นจะได้บิลที่ยกเลิกแล้วแต่ออกใบกำกับภาษีได้ */
+function wsFinPass(id){
+  const w=WSALES.find(x=>x.id===id); if(!w) return false;
+  if(wsVoided(w)){ toast('บิลนี้ยกเลิกแล้ว','ตรวจผ่านไม่ได้',1); return false; }
+  if(!canFinApprove()){ toast('ต้องเป็นการเงินหรือแอดมิน','',1); return false; }
+  w.finApproval={status:'ผ่าน', by:ME.nick, at:TODAY, note:''};
+  dbPatch('wholesale_sale', w.id, { fin_approval:w.finApproval });
+  toast('การเงินตรวจแล้ว — ผ่าน', w.docNo||''); refreshAll(); return true;
+}
 /* เอกสารขายส่งหลายรายการ — tax=true คือใบกำกับภาษี (ติดด่านการเงินตรวจแบบเดียวกับขายปลีก) */
 function wsPrint(wsId, tax){
   const w=WSALES.find(x=>x.id===wsId); if(!w) return;
+  /* บิลที่ยกเลิกแล้วเป็นเอกสารตาย — ด่านนี้อยู่ก่อนด่านสิทธิ์เพราะเป็นคุณสมบัติของเอกสาร ไม่ใช่ของคน */
+  if(wsVoided(w)){ toast('บิลนี้ยกเลิกแล้ว','พิมพ์เอกสารไม่ได้',1); return; }
   if(!canPrintDoc()){ toast('พิมพ์เอกสารไม่ได้','เฉพาะการเงินและผู้บริหารเท่านั้น',1); return; }
   if(tax && finApStatus(w)!=='ผ่าน'){
     toast('ยังออกใบกำกับภาษีไม่ได้','การเงินยังไม่ตรวจ ('+finApStatus(w)+') — ใบส่งของพิมพ์ได้',1); return; }
@@ -8131,7 +8248,8 @@ function bookkeeperPack(){
     pm.map(x=>{ const p=PARTS.find(y=>y.id===x.partId);
       return [x.at,bName(x.branch),p?p.code:'',p?p.name:'',-x.qty,p?p.price:0,p?p.price*-x.qty:0]; }));
   /* v1.31 (B11): บิลขายส่งเคยหายจากชุดส่งบัญชีทั้งหมด — บัญชีที่รับไฟล์ไปลงจะขาดยอดขายก้อนใหญ่ */
-  const wsB=WSALES.filter(w=>inScope(w.branch)&&inM(w.at));
+  /* v1.45: บิลที่ยกเลิกไม่ใช่รายได้ — ฝั่งขายปลีกกรอง !s.void ผ่าน sScoped() อยู่แล้ว ต้องสมมาตร */
+  const wsB=WSALES.filter(w=>!wsVoided(w)&&inScope(w.branch)&&inM(w.at));
   csv(label+'_ขายส่ง',['วันที่','สาขา','ผู้ซื้อ','เลขที่บิล','จำนวนคัน','ก่อน VAT','VAT '+CFG.vat+'%','รวม'],
     wsB.map(w=>{ const p=wsPartnerById(w.partnerId), base=Math.round(w.total/(1+CFG.vat/100));
       return [w.at,bName(w.branch),p?p.name:'',w.docNo,w.items.length,base,w.total-base,w.total]; }));
@@ -10237,7 +10355,10 @@ const canEditOrg = () => permW('act:org');
 /* สาขาลบ/ปิดไม่ได้ถ้ามีข้อมูลอ้างอยู่ — กติกาเดียวกับรุ่นรถและไฟแนนซ์ */
 const brRefs = code => UNITS.filter(u=>u.branch===code).length + STAFF.filter(s=>s.branch===code).length
   + SALES.filter(s=>s.branch===code).length + SITES.filter(s=>s.branch===code).length
-  /* QA รอบส่งมอบ: ระเบียนรุ่นหลังต้องกันสาขาถูกปิดด้วย — เดิมสาขาที่มีแต่บิลขายส่ง/ใบงานซ่อมปิดได้เฉย ๆ */
+  /* QA รอบส่งมอบ: ระเบียนรุ่นหลังต้องกันสาขาถูกปิดด้วย — เดิมสาขาที่มีแต่บิลขายส่ง/ใบงานซ่อมปิดได้เฉย ๆ
+     v1.45: **จงใจไม่กรองบิล/ใบขายที่ยกเลิก** (ตรงข้ามกับด่านปิดคู่ค้าข้างล่าง) — ที่นี่ถามว่า
+     "สาขานี้มีประวัติอ้างถึงไหม" ระเบียนที่ยกเลิกก็ยังเป็นประวัติ ปิดสาขาแล้วมันจะกำพร้า
+     ฝั่ง SALES ก็ไม่กรองด้วยเหตุผลเดียวกัน — อย่ามาทำให้ "สม่ำเสมอ" กับด่านปิดคู่ค้า */
   + WSALES.filter(w=>w.branch===code).length + SERVICE.filter(s=>s.branch===code).length
   + AR.filter(a=>a.branch===code).length + EXPENSES.filter(e=>e.branch===code).length
   + REGS.filter(r=>r.branch===code).length + PARTS.filter(p=>p.branch===code).length
@@ -10378,7 +10499,10 @@ function rWs(){
     if(!canEditOrg()){ toast('ไม่มีสิทธิ์','',1); return; }
     /* ปิดคู่ค้าที่ยังมีบิลรอการเงินตรวจไม่ได้ — ปิดชื่อไม่ได้ปิดหนี้ (QA A12 — กติกาเดียวกับ finRefs) */
     if(p.active){
-      const open=WSALES.filter(w=>w.partnerId===p.id && finApStatus(w)!=='ผ่าน').length;
+      /* v1.45 ต้องกรองบิลที่ยกเลิกออก (ต่างจาก brRefs ที่จงใจไม่กรอง — ดูคอมเมนต์ตรงนั้น):
+         ที่นี่ถามว่า "ยังค้างชำระอยู่ไหม" ซึ่งบิลที่ตายแล้วไม่มี · ถ้าไม่กรอง บิลที่ยกเลิกจะค้าง
+         สถานะ 'รอตรวจ' ถาวร (ตรวจผ่านก็ไม่ได้แล้ว) แล้วบล็อกการปิดคู่ค้าไปตลอดกาล */
+      const open=WSALES.filter(w=>w.partnerId===p.id && !wsVoided(w) && finApStatus(w)!=='ผ่าน').length;
       if(open){ toast('ปิดไม่ได้ — มีบิลค้างการเงินตรวจ', open+' ใบ ให้การเงินตรวจให้จบก่อน', 1); return; }
     }
     p.active=!p.active; dbUp('wholesale_partner', { id:p.id, is_active:p.active });
@@ -10876,7 +11000,8 @@ function rpBuild(tab){
         u?u.model:'—', base, s.net-base, s.net]; });
     /* v1.31 (B11): บิลขายส่งเป็นยอดขายมี VAT เหมือนกัน แต่ไม่เคยถูกนับในรายงานภาษีเลย —
        ร้านที่ยื่นภาษีจากหน้านี้จะยื่นขาดเท่ายอดขายส่งทั้งช่วง · ราคาขายส่งรวม VAT แล้ว (สูตรเดียวกับ wsPrint) */
-    const ws=WSALES.filter(w=>sc.inB(w.branch)&&sc.inR(w.at)).sort((a,b)=>String(a.at).localeCompare(String(b.at)));
+    /* v1.45 กรองบิลที่ยกเลิก — ฝั่งปลีกบรรทัดบนกรอง !s.void อยู่แล้ว ความไม่สมมาตรเดิมทำให้ยื่นภาษีเกิน */
+    const ws=WSALES.filter(w=>!wsVoided(w)&&sc.inB(w.branch)&&sc.inR(w.at)).sort((a,b)=>String(a.at).localeCompare(String(b.at)));
     ws.forEach(w=>{ const p=wsPartnerById(w.partnerId);
       const base=Math.round(w.total/(1+CFG.vat/100));
       rows.push([thDate(w.at), w.docNo, (p?p.name:'—')+' (ขายส่ง)',
