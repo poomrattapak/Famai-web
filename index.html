@@ -863,6 +863,9 @@ textarea.inp{ height:auto; padding:var(--s1) var(--s2); resize:vertical; line-he
 .dlwho b{ display:block; font-family:var(--f-display); font-size:var(--t-h2);
   font-weight:600; letter-spacing:-.01em; line-height:1.25; }
 .dlwho span{ display:block; font-size:var(--t-label); color:var(--muted); margin-top:2px; }
+/* ป้ายในบล็อกนี้ต้องคงรูปเม็ดยา — .dlwho span ข้างบนจับ span.pill ด้วย แล้วป้ายจะยืดเต็มบรรทัด
+   (บั๊กชนิดเดียวกับที่เคยเจอใน .txt span ตอนทำ PDF) */
+.dlwho span.pill{ display:inline-block; width:auto; margin-top:0; }
 .dlact{ display:flex; gap:var(--s1); flex-wrap:wrap; align-items:center; }
 .dlplate{ display:flex; gap:var(--s1); align-items:center; flex:1 1 210px; min-width:0; }
 .dlplate .inp{ min-width:0; max-width:170px; }
@@ -1741,6 +1744,7 @@ body.lock{ overflow:hidden; }
           <div class="card"><div class="hd"><h3>ลูกค้าและดีล</h3><div class="d">แตะแถวเพื่อจัดการทั้งดีลในหน้าเดียว</div><div class="sp"></div>
             <select class="inp ct" id="dlStage"></select>
             <select class="inp ct" id="dlPay"></select>
+            <select class="inp ct" id="dlBook"></select>
             <select class="inp ct" id="dlSales"></select>
             <select class="inp ct" id="dlBranch"></select>
             <input class="inp ct" id="dlQ" placeholder="ค้นหา ชื่อ / เบอร์ / เลขเครื่อง">
@@ -3586,7 +3590,8 @@ const FILTERS = {
     f:[['stModel','รุ่น'],['stVariant','รหัสรุ่น'],['stColor','สี'],['stStatus','สถานะ'],
        ['stQ','ค้นหา เลขเครื่อง / เลขถัง / รุ่น / สี']] },
   deal  :{ t:'ตัวกรองลูกค้าและดีล', sum:'dlFsum',
-    f:[['dlStage','ขั้นตอน'],['dlPay','เงินสด/ผ่อน'],['dlSales','เซลล์'],['dlQ','ค้นหา ชื่อ / เบอร์ / เลขเครื่อง']] }
+    f:[['dlStage','ขั้นตอน'],['dlPay','เงินสด/ผ่อน'],['dlBook','การจอง'],['dlSales','เซลล์'],
+       ['dlQ','ค้นหา ชื่อ / เบอร์ / เลขเครื่อง']] }
 };
 let FS_OPEN=null, FS_HOME=[];
 function fsSummary(key){
@@ -5164,6 +5169,9 @@ const SELL_CAS={q:'svQ', model:'svModel', variant:'svVariant', color:'svColor', 
 /* v1.37: คันติดจองยังโผล่ในตัวเลือกขาย (ติดป้าย "ติดจอง") เพราะลูกค้าที่จองต้องเปิดการขายได้
    — ใครซื้อได้จริงเป็นด่านใน saveSale ไม่ใช่การซ่อนตัวเลือก (§9b) */
 const bookOf = unitId => BOOKINGS.find(b=>b.status==='จองอยู่' && b.unitId===unitId);
+/* ชื่อรถของการจองหนึ่งใบ — หน้าจองกับหน้าดีลต้องพูดถึงคันเดียวกันด้วยคำเดียวกัน */
+const bkUnitText = b => { const u=UNITS.find(x=>x.id===b.unitId)||{};
+  return (u.model||'—')+(u.color? ' · '+u.color : '')+(u.frame? ' · '+u.frame : ''); };
 const sellPool=()=>uAvail().filter(u=>(u.status==='available'||(u.status==='reserved'&&bookOf(u.id)))&&u.retail!=null);
 function rSell(){
   if(!$('#sUnit').dataset.init){ $('#sUnit').dataset.init=1;
@@ -6758,7 +6766,11 @@ function dealOf(id){
      delivered = ลูกค้าได้รถแล้ว → นับเป็นสำเร็จทันที (หน้าแรก · หน้าสาธารณะ · ส่งต่อฝ่ายบริการ)
      i = ตำแหน่งบนแถบ → ขั้นทะเบียนยังเดินอยู่จนกว่าป้ายจริงจะมา แถบจึงยังไม่เต็ม
      ติ๊กขั้นที่ยังไม่เกิดขึ้นจริงคือโกหกบนจอ (กฎข้อ 9) */
-  return {c,s,u,fc,rg,fin,ars,owe,tasks,cash,track,k,off,offWhy,slow,
+  /* v1.46 (คำสั่งเจ้าของ): ลูกค้าที่จองรถอยู่ต้องติดตามต่อได้จากหน้านี้ ไม่ใช่เห็นแค่ในหน้าจอง
+     derive จาก BOOKINGS สดทุกครั้ง **ห้ามแช่เป็นฟิลด์ที่สามใน c** (กฎข้อ 8 §9g) —
+     ยกเลิกจองหรือเปิดขายเมื่อไหร่ ป้ายหายเองทันที ไม่มี sync ให้เป็นบ้านของบั๊ก */
+  const bk=BOOKINGS.find(b=>b.status==='จองอยู่' && b.custId===id);
+  return {c,s,u,fc,rg,fin,ars,owe,tasks,cash,track,k,off,offWhy,slow,bk,
           delivered: regDone(rg),
           waitPlate: regDone(rg) && !regPlated(rg),
           i: k==='done'? track.length : track.findIndex(x=>x.k===k),
@@ -6848,8 +6860,9 @@ function dealActions(d){
       +(it==='เงินสด'? ic('tag')+' เปิดการขาย (เงินสด)'
       : it==='เงินผ่อน'? ic('bank')+' ยื่นไฟแนนซ์ให้ลูกค้าคนนี้'
       : ic('arrow')+' ไปต่อ — เลือกเงินสด/ผ่อนก่อน')+'</button>');
-    /* v1.37: ลูกค้าที่มีจองค้าง — บอกบนแถบเลย จะได้ไม่เปิดการขายผิดคัน (ข้อความ+จุดสี ไม่ใช่ปุ่ม) */
-    const bkc=BOOKINGS.find(x=>x.status==='จองอยู่' && x.custId===d.c.id);
+    /* v1.37: ลูกค้าที่มีจองค้าง — บอกบนแถบเลย จะได้ไม่เปิดการขายผิดคัน (ข้อความ+จุดสี ไม่ใช่ปุ่ม)
+       v1.46: อ่านจาก d.bk ที่ dealOf คำนวณให้แล้ว ไม่หาซ้ำคนละที่ (คำถามเดียวกันต้องมีคำตอบเดียว) */
+    const bkc=d.bk;
     if(bkc){ const bu=UNITS.find(x=>x.id===bkc.unitId);
       b.push('<span class="pill p-info">จองคันนี้อยู่ · '+esc(bu? bu.model+' '+(bu.variant||''):'')+'</span>'); }
     if(d.c.stage!=='สนใจ') b.push('<button class="btn sec" data-dlwarm="'+d.c.id+'">ทำเครื่องหมายว่าสนใจ</button>');
@@ -7016,12 +7029,23 @@ function rDealOne(id){
       +(d.u? '<span>'+esc(d.u.model)+' · '+esc(d.u.color)+' <span class="mono">'+esc(d.u.engine)+'</span></span>'
            : '<span>สนใจ '+esc(PRICE[d.c.variant]?PRICE[d.c.variant].m:d.c.variant||'—')
              +(d.c.intent && d.c.intent!=='ยังไม่ระบุ'? ' · '+esc(d.c.intent):'')+'</span>')
+      /* v1.46: คนที่จองอยู่ต้องเห็นตรงนี้ว่าจองคันไหน มัดจำเท่าไหร่ ตั้งแต่เมื่อไหร่ —
+         ถ้าไปแปะในบล็อกรูปด้านล่างจะไม่ขึ้นเลย เพราะบล็อกนั้นวาดเฉพาะคนที่มีใบขายแล้ว
+         ซึ่งคือคนที่จองเสร็จไปแล้วพอดี (บล็อกนั้นจึงไม่มีวันเจอคนที่ยัง "จองอยู่") */
+      +(d.bk? '<span>'+pill('จองอยู่','warn')+' '+esc(bkUnitText(d.bk))
+             +(d.bk.deposit>0? ' · มัดจำ '+fmt(d.bk.deposit)+' ฿':' · ไม่วางมัดจำ')
+             +' · จองเมื่อ '+thDate(d.bk.at)+'</span>' : '')
       +'</div>'
     +stepHead(h.head, esc(h.sub), d.off)
     +steps(d.track, d.i, {off:d.off, lab:1, dates:dealStepDates(d), slow:d.slow})
     +dealSubsteps(d)
     /* คำอธิบายสั้นของขั้นปัจจุบัน + สัญญาณช้า (บรีฟ) */
-    +('<p class="foot" style="margin-top:var(--s1)">'+esc((d.track[d.i]&&d.track[d.i].d)||'')
+    /* v1.46: คำอธิบายขั้น "คุยกับลูกค้า" เขียนไว้ว่า "ยังไม่ได้จอง" — พอมีป้ายจองอยู่บนหัวเรื่อง
+       สองบรรทัดนี้จะขัดกันเองบนจอเดียวกัน (กฎข้อ 9 ห้ามโกหกบนจอ) · แก้ที่การวาด ไม่แก้ DEAL_TRACK
+       เพราะข้อความนั้นถูกต้องสำหรับคนที่ยังไม่จองจริง ๆ ซึ่งเป็นคนส่วนใหญ่ */
+    +('<p class="foot" style="margin-top:var(--s1)">'
+      +esc(d.bk && d.track[d.i] && d.track[d.i].k==='lead'
+        ? 'จองรถไว้แล้ว รอปิดการขาย' : ((d.track[d.i]&&d.track[d.i].d)||''))
       +(d.slow? ' · <b style="color:var(--attn)">ค้างเกินเกณฑ์ ต้องแจ้งแล้ว</b>':'')+'</p>')
     +(acts? '<h4 class="sec">ต้องทำต่อ</h4><div class="dlact">'+acts+'</div>' : '')
     +'</div></div>'
@@ -7143,6 +7167,10 @@ const dealPay = d => d.s? (d.s.pay==='cash'?'เงินสด':'เงิน�
   : (d.c.intent==='เงินสด'||d.c.intent==='เงินผ่อน'? d.c.intent : 'ยังไม่ระบุ');
 const dealPayPill = d => { const v=dealPay(d);
   return pill(v, v==='เงินสด'?'good': v==='เงินผ่อน'?'info':'mut'); };
+/* ป้าย "จองอยู่" (v1.46) — ต่อท้ายป้ายวิธีชำระในแถวเดิม ไม่เพิ่มบรรทัดและไม่เพิ่ม <tr>
+   (deal-r10 ล็อกว่าจำนวนแถบความคืบหน้าต้องเท่ากับจำนวนแถวเป๊ะ)
+   คำว่า "จองอยู่" จงใจไม่ชนคำที่ intent-r32 นับ (เงินสด · เงินผ่อน · ยังไม่ระบุ) */
+const dealBookPill = d => d.bk? ' '+pill('จองอยู่','warn') : '';
 /* v1.34 (บรีฟข้อ 8 + คำตอบข้อ 5): เวลาอัปเดตล่าสุดของดีล เก็บเป็น ISO มีชั่วโมง:นาที
    ประทับทุกครั้งที่ฟังก์ชันเขียนแตะดีล (แบบเดียวกับ a.review.at ของงานลงเวลา) */
 const touchCust = id => { const c=CUSTOMERS.find(x=>x.id===id); if(c) c.upAt=new Date().toISOString(); };
@@ -7154,9 +7182,11 @@ const thDT = iso => { if(!iso) return '';
 function dealRows(){
   const g=id=>{ const el=$('#'+id); return el? el.value : ''; };
   const q=g('dlQ').trim().toLowerCase(), st=g('dlStage'), sp=g('dlSales'), br=g('dlBranch'), py=g('dlPay');
+  const bkf=g('dlBook');
   return dealAll().filter(d=>
       (!st || dealStageName(d)===st)
    && (!py || dealPay(d)===py)
+   && (!bkf || (bkf==='จองอยู่' ? !!d.bk : !d.bk))
    && brMatch(br, d.c.branch)
    && (!sp || ((d.s?d.s.sales:d.c.owner)||'')===sp)
    && (!q  || (d.c.name+(d.c.phone||'')+(d.u?d.u.engine:'')).toLowerCase().indexOf(q)>=0))
@@ -7174,19 +7204,20 @@ function rDealList(){
   const all=dealAll();
   fill($('#dlStage'), DEAL_TRACK_N.concat(['ไม่ผ่าน']), 'ทุกขั้นตอน');
   fill($('#dlPay'), ['เงินสด','เงินผ่อน','ยังไม่ระบุ'], 'เงินสด+ผ่อน');
+  fill($('#dlBook'), ['จองอยู่','ไม่มีการจอง'], 'ทุกการจอง');
   fill($('#dlSales'), [...new Set(all.map(d=>(d.s?d.s.sales:d.c.owner)||'').filter(Boolean))].sort(), 'ทุกเซลล์');
   (function(){ const el=$('#dlBranch'), want=el.value;
     el.innerHTML=brFilterHTML('ทุกสาขาที่ดูแล');
     if(want) el.value=want; })();
   if(!$('#dlStage').dataset.init){ $('#dlStage').dataset.init=1;
-    ['dlStage','dlPay','dlSales','dlBranch'].forEach(k=> $('#'+k).onchange=rDeal);
+    ['dlStage','dlPay','dlBook','dlSales','dlBranch'].forEach(k=> $('#'+k).onchange=rDeal);
     $('#dlQ').oninput=rDeal;
     $('#dlFilt').onclick=()=>openFilters('deal');
     $('#dlAdd').onclick=()=>custModal();
     $('#expDeal').onclick=()=> csv('ลูกค้าและดีล',
-      ['ลูกค้า','เบอร์','เงินสด/ผ่อน','สาขา','เซลล์','รถ','เลขเครื่อง','ขั้นตอน','สิ่งที่ต้องทำต่อ',
+      ['ลูกค้า','เบอร์','เงินสด/ผ่อน','การจอง','สาขา','เซลล์','รถ','เลขเครื่อง','ขั้นตอน','สิ่งที่ต้องทำต่อ',
        'เหตุผลที่ไม่ผ่าน','ติดไฟแนนซ์เจ้าไหน','ครบกำหนดทะเบียน','ทะเบียน','อัพเดทล่าสุด'],
-      dealRows().map(d=>[d.c.name,d.c.phone||'',dealPay(d),bName(d.c.branch),(d.s?d.s.sales:d.c.owner)||'',
+      dealRows().map(d=>[d.c.name,d.c.phone||'',dealPay(d),d.bk?'จองอยู่':'',bName(d.c.branch),(d.s?d.s.sales:d.c.owner)||'',
         d.u?d.u.model:'', d.u?d.u.engine:'', dealStageName(d), dealHead(d).head,
         d.fc&&d.fc.rejectReason||'', d.fc&&d.fc.rejectWith||'',
         d.rg?d.rg.due:'', d.rg?d.rg.plate:'', d.c.upAt? thDT(d.c.upAt):'']));
@@ -7209,14 +7240,14 @@ function rDealList(){
   const veh = d => d.u? esc(d.u.model)+' · '+esc(d.u.color)+' <span class="tsub mono">'+esc(d.u.engine)+'</span>'
                       : '<span class="tsub">สนใจ '+esc(PRICE[d.c.variant]?PRICE[d.c.variant].m:d.c.variant||'—')+'</span>';
   tbl($('#dlTable'), ['ลูกค้า','รถ','เซลล์','ความคืบหน้า','ต้องทำต่อ','อัพเดท'],
-    rows.map(d=>'<tr class="clk" data-deal="'+d.c.id+'"><td><b>'+esc(d.c.name)+'</b><div class="tsub">'+esc(d.c.phone||'')+' '+dealPayPill(d)+'</div></td>'
+    rows.map(d=>'<tr class="clk" data-deal="'+d.c.id+'"><td><b>'+esc(d.c.name)+'</b><div class="tsub">'+esc(d.c.phone||'')+' '+dealPayPill(d)+dealBookPill(d)+'</div></td>'
       +'<td>'+veh(d)+'</td><td>'+esc((d.s?d.s.sales:d.c.owner)||'—')+'</td>'
       +'<td style="min-width:170px">'+bar(d)+'</td>'
       +'<td>'+esc(dealHead(d).head)+(d.late>0? ' '+pill('เลย '+d.late+' วัน','bad'):'')+'</td>'
       +'<td class="tsub" style="white-space:nowrap">'+ (d.c.upAt? esc(thDT(d.c.upAt))
           : esc(thShort((d.s&&d.s.soldAt)||d.c.createdAt||TODAY))) +'</td></tr>'),
     'ไม่พบลูกค้าตามเงื่อนไข',
-    rows.map(d=>crow('data-deal="'+d.c.id+'"', esc(d.c.name), dealPayPill(d)+badge(d),
+    rows.map(d=>crow('data-deal="'+d.c.id+'"', esc(d.c.name), dealPayPill(d)+dealBookPill(d)+badge(d),
       veh(d)+' · '+esc((d.s?d.s.sales:d.c.owner)||'—'),
       bar(d)+'<span class="pslab'+(d.off?' off':'')+'">'+esc(dealHead(d).head)+'</span>')));
   $$('#dlTable [data-deal]').forEach(r=> r.onclick=()=>{ DEAL_SEL=r.dataset.deal; rDeal(); window.scrollTo(0,0); });
