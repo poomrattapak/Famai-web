@@ -209,6 +209,10 @@ const PNG = Buffer.from(
        → ยุบเป็นการ์ดละรหัสรุ่น สีทั้งหมดเป็นชิปให้จิ้มสลับรูป/ดูจำนวนในการ์ดเดียว */
     await p.evaluate(() => { closeModal(); go('stock'); }); await p.waitForTimeout(300);
     await p.evaluate(() => stTab('gal')); await p.waitForTimeout(350);
+    /* v1.47: แกลเลอรีถูกตัดที่การวาด 6 ใบแรก (คำสั่งเจ้าของเรื่องหน้ายาวเกินไป) — ต้องกางก่อนนับ
+       สัญญาของข้อนี้คือ "รถต้องไม่นับเบิ้ลและไม่ตกหล่น" ไม่ใช่ "ต้องวาดครบทุกใบพร้อมกัน" */
+    await p.evaluate(() => { CAP_OPEN['stGal'] = true; refreshAll(); });
+    await p.waitForTimeout(300);
     const gal = await p.evaluate(() => {
       const seen = new Set();
       stList().forEach(u => seen.add(u.variant));

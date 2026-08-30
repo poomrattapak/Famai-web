@@ -129,7 +129,10 @@ const CASES = [
 const MARK = `id => {
   const el = document.getElementById(id);
   if (!el) return { st:'NOFIELD' };
-  const px = el.previousElementSibling;
+  /* v1.47: ช่องที่ถูกห่อด้วยหน้ากาก .upick ต้องไต่จากตัวห่อ ตรงกับที่ markReq ทำ
+     (ไม่งั้นด่านจะหาป้ายไม่เจอ ทั้งที่ดอกจันแปะถูกที่แล้ว) */
+  const host = el.closest('.upick') || el;
+  const px = host.previousElementSibling;
   if (px && px.classList.contains('rq'))
     return { st:'inline', txt:px.textContent.trim(), color:getComputedStyle(px).color, w:px.offsetWidth };
   for (let s = px; s; s = s.previousElementSibling) if (s.matches('label.fl')) {

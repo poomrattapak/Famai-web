@@ -588,6 +588,33 @@ textarea.inp{ height:auto; padding:var(--s1) var(--s2); resize:vertical; line-he
 .sug .si:not(:last-child){ border-bottom:1px solid var(--hairline-2); }
 .sug .si b{ font-weight:600; }
 .sug .si .sp2{ color:var(--muted); font-size:var(--t-label); margin-left:auto; flex:0 0 auto; }
+/* -------------------- หน้ากากเลือกคันรถ (v1.47) --------------------
+   คำสั่งเจ้าของ: "ส่วนเลื่อนเลือกรถ ยาวจนผมเลื่อนไม่ไหว" — รายการรถมี 30-35 คัน
+   <select> ตัวจริงยังอยู่ครบทุก option และยังเป็นค่าที่ฟังก์ชันบันทึกอ่าน เราแค่บังมันไว้
+   **ห้ามใช้ display:none** — วัดขนาดไม่ได้ ตั้งค่าจากภายนอก (sUnitSet) พัง และด่านหลายชุด
+   ยิง .value/.options เข้าไปตรง ๆ · ใช้ opacity+pointer-events แทน ของยังอยู่ครบทุกอย่าง */
+/* **ทั้ง select และปุ่มต้องลอยออกนอกโฟลว์** แล้วให้ .upick ถือความสูงไว้เอง —
+   ถ้าปล่อยปุ่มอยู่ในโฟลว์ min-content ของ .upick จะเท่ากับความยาวข้อความในปุ่ม (nowrap)
+   ช่องกริดของฟอร์ม (.f2/.f3) มี min-width ปริยายเป็น min-content จึงกว้างเกินจอ
+   แล้วทั้งหน้าเลื่อนซ้าย-ขวาได้ (กฎข้อ 2) — min-width:0 ที่ตัวปุ่มแก้ไม่ได้ เพราะมันแก้ที่ "ยอมหด"
+   ไม่ได้แก้ที่ "ขนาดที่ตัวเองบอกพ่อ" */
+.upick{ position:relative; min-width:0; min-height:44px; }
+.upick select{ position:absolute; inset:0; width:100%; opacity:0; pointer-events:none; }
+.upbtn{ position:absolute; inset:0; width:100%; min-width:0; min-height:44px; display:flex; align-items:center;
+  gap:var(--s2); text-align:left; padding:0 var(--s2); border:1px solid var(--hairline);
+  border-radius:var(--r-input); background:var(--card); font-size:var(--t-table); color:inherit;
+  transition:border-color var(--dur-ui) var(--ease); }
+@media (hover:hover){ .upbtn:hover{ border-color:var(--ink); } }
+.upbtn:disabled{ color:var(--muted); }
+.upbtn .upn{ flex:1 1 auto; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.upbtn .upc{ flex:0 0 auto; }
+.uplist{ margin-top:var(--s2); max-height:60dvh; overflow-y:auto; }
+.uplist .si{ display:flex; align-items:center; gap:var(--s1); width:100%; text-align:left;
+  min-height:44px; padding:var(--s1) 0; font-size:var(--t-table); }
+.uplist .si:not(:last-child){ border-bottom:1px solid var(--hairline-2); }
+.uplist .si.on{ font-weight:600; }
+/* ท้ายรายการที่ถูกตัด — ระยะแนวตั้งอย่างเดียว ไม่มีพื้นและไม่กินระยะข้าง จึงไม่นับเป็นชั้นกล่อง */
+.capmore{ padding:var(--s2) 0 0; text-align:center; }
 .hint{ font-size:var(--t-label); color:var(--muted); margin-top:var(--s-half); }
 
 .btn{ height:40px; padding:0 var(--s3); border-radius:var(--r-btn);
@@ -1609,7 +1636,7 @@ body.lock{ overflow:hidden; }
                 <div><label class="fl">รหัสรุ่น</label><select class="inp" id="svVariant"></select></div>
                 <div><label class="fl">สี</label><select class="inp" id="svColor"></select></div>
               </div>
-              <div><label class="fl">เลือกคันรถ (เลขตัวถัง)</label><select class="inp" id="sUnit"></select></div>
+              <div><label class="fl">เลือกคันรถ (เลขตัวถัง)</label><div class="upick"><select class="inp" id="sUnit"></select><button type="button" class="upbtn"></button></div></div>
               <!-- บรีฟรอบ 1: เลือกบริษัทและสาขาที่ขาย — เลือกไม่ตรงกับที่รถอยู่ = เตือนให้ย้ายรถก่อน -->
               <div class="f2">
                 <div><label class="fl">ขายในนามบริษัท</label><select class="inp" id="sCo"></select></div>
@@ -1685,7 +1712,7 @@ body.lock{ overflow:hidden; }
         <div class="g2">
           <div class="card"><div class="hd"><h3>ขอโอนย้ายรถ</h3></div><div class="bd">
             <div class="f">
-              <div><label class="fl">เลือกคันรถ</label><select class="inp" id="tUnit"></select></div>
+              <div><label class="fl">เลือกคันรถ</label><div class="upick"><select class="inp" id="tUnit"></select><button type="button" class="upbtn"></button></div></div>
               <div class="f2">
                 <div><label class="fl">จากสาขา</label><input class="inp" id="tFrom" readonly></div>
                 <div><label class="fl">ไปสาขา</label><select class="inp" id="tTo"></select></div>
@@ -1783,7 +1810,7 @@ body.lock{ overflow:hidden; }
               <div id="wsDestBox" style="display:none"><label class="fl">รถเข้าสต๊อกสาขาไหนของบริษัทผู้ซื้อ</label><select class="inp" id="wsDest"></select></div>
               <div><label class="fl">เพิ่มรถเข้าบิล (เลขเครื่อง · เลขถัง จากสต๊อก)</label>
                 <div style="display:grid;grid-template-columns:1fr auto;gap:var(--s1)">
-                  <select class="inp" id="wsUnit"></select>
+                  <div class="upick"><select class="inp" id="wsUnit"></select><button type="button" class="upbtn"></button></div>
                   <button class="btn sec" id="wsAdd">+ เพิ่ม</button>
                 </div></div>
               <div id="wsCart"></div>
@@ -1834,7 +1861,7 @@ body.lock{ overflow:hidden; }
                 <div><label class="fl">รหัสรุ่น</label><select class="inp" id="bkVariant"></select></div>
                 <div><label class="fl">สี</label><select class="inp" id="bkColor"></select></div>
               </div>
-              <div><label class="fl">คันที่จอง (เลขถัง · จากสต๊อก)</label><select class="inp" id="bkUnit"></select></div>
+              <div><label class="fl">คันที่จอง (เลขถัง · จากสต๊อก)</label><div class="upick"><select class="inp" id="bkUnit"></select><button type="button" class="upbtn"></button></div></div>
               <div class="f2">
                 <div><label class="fl">มัดจำ (฿ — เว้นว่าง = ไม่วางมัดจำ)</label><input class="inp num" id="bkDeposit" placeholder="0"></div>
                 <div><label class="fl">หมายเหตุ</label><input class="inp" id="bkNote" placeholder="เช่น รอเงินเดือนออก · ตัดสินใจเสาร์นี้"></div>
@@ -3240,7 +3267,10 @@ const REQ = [
 function markReq(){
   REQ.forEach(id=>{
     const el=document.getElementById(id); if(!el || el.disabled) return;
-    for(let s=el.previousElementSibling; s; s=s.previousElementSibling)
+    /* v1.47: ช่องที่ถูกห่อด้วยหน้ากาก .upick ต้องไต่จากตัวห่อ ไม่ใช่จากตัว select
+       (select เป็นลูกคนแรกใน .upick แล้ว previousElementSibling เป็น null ดอกจันจะหายเงียบ) */
+    const from=el.closest('.upick')||el;
+    for(let s=from.previousElementSibling; s; s=s.previousElementSibling)
       if(s.matches('label.fl')){
         if(!s.querySelector('.rq')) s.insertAdjacentHTML('beforeend','<span class="rq" title="จำเป็นต้องกรอก">*</span>');
         return;
@@ -3409,19 +3439,88 @@ const MQ_KAN = matchMedia('(max-width:900px)');
 MQ_KAN.addEventListener('change', ()=>{ if(ME) refreshAll(); });
 /* คัมบังบนมือถือ: ชิปเลือกขั้นตอน (บอกจำนวนงาน) + รายการเต็มความกว้าง แทนการปัดข้าง
    card(item) คืน .kcard ที่มี data-* เดิม → โค้ดผูกคลิกที่มีอยู่จับได้ทันที */
-function tbl(el, head, rows, empty, cards){
+/* ---------- หน้ากากเลือกคันรถ (v1.47) ----------
+   เจ้าของ: "ส่วนเลื่อนเลือกรถ ยาวจนผมเลื่อนไม่ไหว" — 30-35 คันในดรอปดาวน์เดียว
+   ทางแก้: บัง <select> ไว้ แล้วให้ปุ่มเปิดแผงที่พิมพ์ค้นหาได้แทน
+   **<select> ยังเป็นแหล่งความจริงเดียว** — option ครบทุกตัว ค่าจริงอยู่ที่ .value เหมือนเดิม
+   ไม่มีตัวแปรสถานะชุดที่สอง (กฎข้อ 8) ด่านเดิมที่ยิง .value/.options ตรง ๆ จึงไม่ต้องแก้สักชุด */
+function upickFace(sel){
+  const btn=sel.parentNode.querySelector('.upbtn'); if(!btn) return;
+  const opts=[...sel.options].filter(o=>o.value);
+  const cur=opts.find(o=>o.value===sel.value);
+  /* บอกทั้ง "คันที่เลือกอยู่" และ "มีให้เลือกกี่คัน" เป็นข้อความ ไม่ใช่สีล้วน (กฎข้อ 3) */
+  btn.innerHTML='<span class="upn">'+esc(cur? cur.text : (opts.length?'ยังไม่ได้เลือกคัน':'ไม่มีรถตรงตามที่กรอง'))+'</span>'
+    +'<span class="upc tsub">'+(opts.length? opts.length+' คันให้เลือก' : 'ลองปรับตัวกรอง')+'</span>';
+  btn.disabled=!opts.length;
+}
+const upickSync = () => $$('.upick select').forEach(upickFace);
+function upickOpen(sel){
+  const opts=[...sel.options].filter(o=>o.value);
+  const draw=q=>{
+    const qq=String(q||'').trim().toLowerCase();
+    const hit=opts.filter(o=>!qq || o.text.toLowerCase().indexOf(qq)>=0);
+    $('#upList').innerHTML = hit.length
+      ? hit.map(o=>'<button type="button" class="si'+(o.value===sel.value?' on':'')+'" data-uv="'+esc(o.value)+'">'
+          +esc(o.text)+'</button>').join('')
+      : '<div class="empty"><b>ไม่พบคันที่ตรงกับที่พิมพ์</b>ลองพิมพ์เลขถัง รุ่น หรือสี</div>';
+    $$('#upList [data-uv]').forEach(b=> b.onclick=()=>{
+      sel.value=b.dataset.uv;
+      /* ยิงเป็น event จริง ไม่ใช่เรียก .onchange() — ตัวจัดการของแอปทำงานเหมือนผู้ใช้เลือกเอง
+         และตัวฟังของหน้ากากก็ได้รับด้วย หน้าปุ่มจึงอัปเดตเองโดยไม่ต้องสั่งซ้ำ */
+      sel.dispatchEvent(new Event('change'));
+      upickFace(sel); closeDrawer(); });
+  };
+  openDrawer('เลือกคันรถ · '+opts.length+' คัน',
+    '<input class="inp" id="upQ" placeholder="พิมพ์เลขถัง เลขเครื่อง รุ่น หรือสี" autocomplete="off">'
+    +'<div class="uplist" id="upList"></div>');
+  $('#upQ').oninput=()=>draw($('#upQ').value);
+  draw('');
+}
+function upickWire(){
+  $$('.upick').forEach(w=>{ const sel=w.querySelector('select'), btn=w.querySelector('.upbtn');
+    if(!sel || !btn || btn.dataset.init) return; btn.dataset.init=1;
+    btn.onclick=()=>upickOpen(sel);
+    /* addEventListener ไม่ทับ .onchange ที่แอปตั้งไว้ — สองฝ่ายทำงานร่วมกันได้ */
+    sel.addEventListener('change', ()=>upickFace(sel));
+  });
+  upickSync();
+}
+/* ---------- ตัดรายการยาว (v1.47) ----------
+   เจ้าของ: "ส่วนการ์ดในแต่ละหน้าที่มีหลายการ์ดจนทำให้หน้ายาวขึ้นเยอะ"
+   ตัดที่ **การวาด** เท่านั้น — ข้อมูล ตัวกรอง และไฟล์ส่งออกยังครบทุกแถวเสมอ
+   สถานะ "กางแล้ว" อยู่ใน CAP_OPEN ตัวเดียว คีย์ด้วย id ของตาราง ไม่มี state ซ้ำที่อื่น */
+const CAP_OPEN={};
+const capSlice = (id, arr, n) => (n && !CAP_OPEN[id] && arr.length>n)? arr.slice(0,n) : arr;
+function capFoot(el, total, shown){
+  if(!el) return;
+  const host=el.closest('.tw')||el, box=host.parentNode;
+  let f=[...box.children].find(x=>x.classList&&x.classList.contains('capmore')&&x.dataset.cap===el.id);
+  const hidden=total-shown;
+  if(hidden<=0 && !CAP_OPEN[el.id]){ if(f) f.remove(); return; }
+  if(!f){ f=document.createElement('div'); f.className='capmore'; f.dataset.cap=el.id;
+    host.insertAdjacentElement('afterend', f); }
+  f.innerHTML='<button class="lnk" type="button">'+(CAP_OPEN[el.id]
+    ? 'ย่อรายการ — กลับไปแสดง '+shown+' จาก '+total+' รายการ'
+    : 'ดูทั้งหมด '+total+' รายการ (ซ่อนอยู่ '+hidden+')')+'</button>';
+  f.firstChild.onclick=()=>{ CAP_OPEN[el.id]=!CAP_OPEN[el.id]; refreshAll(); };
+}
+function tbl(el, head, rows, empty, cards, cap){
+  const total=rows.length;
+  if(cap && !CAP_OPEN[el.id] && total>cap){ rows=rows.slice(0,cap); if(cards) cards=cards.slice(0,cap); }
+  const foot=()=>{ if(cap) capFoot(el, total, rows.length); };
   if(cards && MQ_CARD.matches){
     /* การ์ดอยู่ใน <td> เดียว — selector เดิมที่ยิงเข้า element ตารางยังใช้ได้ */
     el.classList.add('cards');
     el.innerHTML='<tbody><tr><td class="cwrap">'
       +(rows.length? cards.join('') : '<div class="empty"><b>'+esc(empty||'ไม่มีข้อมูล')+'</b>ลองปรับตัวกรอง หรือเพิ่มรายการใหม่</div>')
       +'</td></tr></tbody>';
-    return;
+    foot(); return;
   }
   el.classList.remove('cards');
-  if(!rows.length){ el.innerHTML='<tbody><tr><td><div class="empty"><b>'+esc(empty||'ไม่มีข้อมูล')+'</b>ลองปรับตัวกรอง หรือเพิ่มรายการใหม่</div></td></tr></tbody>'; return; }
+  if(!rows.length){ el.innerHTML='<tbody><tr><td><div class="empty"><b>'+esc(empty||'ไม่มีข้อมูล')+'</b>ลองปรับตัวกรอง หรือเพิ่มรายการใหม่</div></td></tr></tbody>'; foot(); return; }
   el.innerHTML='<thead><tr>'+head.map(h=>'<th'+(h.n?' class="n"':'')+'>'+esc(h.t||h)+'</th>').join('')+'</tr></thead>'
     +'<tbody>'+rows.join('')+'</tbody>';
+  foot();
 }
 /* การ์ดหนึ่งใบ: หัวเรื่อง + ตัวเลขขวา + บรรทัดรอง + แถวปุ่มล่าง — attrs ใส่ data-* ให้ wiring เดิมจับได้ */
 function crow(attrs, title, right, sub, foot){
@@ -3679,6 +3778,7 @@ function render(){
   notifSync();   /* กระดิ่งเดินคู่กับ badge เสมอ — คิดสดจากระเบียนชุดเดียวกัน */
   navPer();      /* ตัวกรองบนแถบบนตามหน้าปัจจุบัน (v1.26 ข้อ 3) */
   markReq();     /* ดอกจันแดงหน้าช่องที่จำเป็น — วาดหน้าใหม่แล้วต้องยังอยู่ */
+  upickWire();   /* หน้ากากเลือกคันรถ — ต่อสายครั้งเดียวต่อปุ่ม แล้วซิงก์หน้าปุ่มให้ตรง option ล่าสุด */
 }
 /* ---------- ช่วงเวลา+สาขาบนแถบบน (v1.26 ข้อ 3) ----------
    ช่วงเวลา: perBar ผูกกับ host ของตัวเอง (#navPerBox) ใช้ perSt(key) ร่วมกับแถบในหน้า
@@ -4972,7 +5072,7 @@ function rStock(){
           '<span class="mono">'+esc(x.frame)+'</span> · '+esc(bName(x.branch))+(noMoney()?'':' · ทุน '+fmt(x.cost)),
           (x.status==='available'&&canSee('sell')
             ? '<button class="lnk" data-sell="'+x.id+'">ขายคันนี้</button>' : statusPill(x.status)))).join('');
-        return h; }));
+        return h; }), 10);
     $$('#stGrp [data-grp]').forEach(r=> r.onclick=()=>{ const k=r.dataset.grp;
       stOpen[k]=!stOpen[k]; rStock(); });
     wireUnitRows();
@@ -4985,6 +5085,7 @@ function rStock(){
     const narrow=MQ_CARD.matches;
     $('#stTable').className = narrow? 'stbl' : '';
     if(narrow)
+      /* v1.47: ตัดที่การวาด 15 แถว — สต๊อกจริง 50 คัน หน้าเดียวยาว 6 จอที่ 390 */
       tbl($('#stTable'), ['รุ่น / สี','เลขเครื่อง',{t:'ราคา',n:1},'สถานะ'],
         stL.map(u=>'<tr class="clk" data-unit="'+u.id+'">'
           +'<td><b>'+esc(u.model)+'</b><div class="tsub"><span class="dot" style="background:'+(COLOR_HEX[u.color]||'#ccc')+'"></span> '
@@ -4994,7 +5095,7 @@ function rStock(){
             +'<div class="tsub">'+(u.clearance?'เคลียร์':age(u)+' ว.')+'</div></td>'
           /* ช่องแคบ ใช้จุดสี + ตัวหนังสือแทนป้าย — ป้ายมีขอบและห้ามตัดคำ จะดันตารางล้นจอ */
           +'<td><span class="dot" style="background:'+STATUS_DOT[u.status]+'"></span> '+esc(statusText(u.status))+'</td></tr>'),
-        'ไม่พบรถตามเงื่อนไข');
+        'ไม่พบรถตามเงื่อนไข', null, 12);
     else
       tbl($('#stTable'), ['รุ่น / สี','รหัสรุ่น','เลขเครื่อง','สาขา',{t:'ต้นทุน',n:1},{t:'ราคาขาย',n:1},{t:'อายุ',n:1},'สถานะ'],
         stL.map(u=>'<tr class="clk" data-unit="'+u.id+'">'
@@ -5005,7 +5106,7 @@ function rStock(){
           /* บรีฟรอบ 1 (K11): เอาปุ่ม "ขายคันนี้" ออกจากแท็บตารางเท่านั้น
              หน้าคงเหลือ การ์ดมือถือ และลิ้นชักรายคันยังมีปุ่มตามเดิม */
           +'<td class="n">'+ageTag(age(u))+'</td><td>'+statusPill(u.status)+'</td></tr>'),
-        'ไม่พบรถตามเงื่อนไข');
+        'ไม่พบรถตามเงื่อนไข', null, 12);
     wireUnitRows();
   } else {
     /* แกลเลอรีเคารพตัวกรองเหมือนอีกสองแท็บ — เดิมใช้ av ทำให้เลือกสถานะ "ขายแล้ว" แล้วหน้าว่าง
@@ -5024,7 +5125,11 @@ function rStock(){
     /* สีของสาขาผูกกับลำดับใน BRANCHES ไม่ใช่ลำดับที่เจอในรายการ — สาขาเดิมจึงได้สีเดิมทุกการ์ด
        ถ้าไล่สีตามลำดับที่เจอ สาขาเดียวกันจะเปลี่ยนสีไปมาระหว่างการ์ด อ่านแล้วสับสนกว่าไม่มีสี */
     const brHue = code => 'var(--ch'+((Math.max(0, BRANCHES.findIndex(b=>b.code===code)) % 6) + 1)+')';
-    $('#stGal').innerHTML = Object.keys(grp).length? Object.keys(grp).map(v=>{ const g=grp[v];
+    /* v1.47: แกลเลอรีคือหน้าที่ยาวที่สุด (5.3 จอที่ 390) — ตัดที่ "การวาด" 8 ใบแรก แล้วกางเอง
+       ผลรวมจำนวนรถของทุกใบยังเท่ากับ stList() เป๊ะเหมือนเดิมเมื่อกางครบ (สัญญา mcolor-r31 ข้อ 11
+       ที่เจ้าของสั่งเอง — ด่านนั้นกางก่อนนับ เพราะสัญญาคือ "ห้ามนับเบิ้ล" ไม่ใช่ "ห้ามซ่อน") */
+    const gKeys = capSlice('stGal', Object.keys(grp), 6);
+    $('#stGal').innerHTML = Object.keys(grp).length? gKeys.map(v=>{ const g=grp[v];
       const brs=Object.keys(g.br).sort((a,b)=>g.br[b]-g.br[a]);
       const ccs=Object.keys(g.cols).sort((a,b)=>g.cols[b].n-g.cols[a].n);   /* สีที่มีของมากสุด = ค่าเริ่มต้น */
       return '<button class="gcard" data-gmodel="'+esc(g.u.model)+'" data-gvariant="'+esc(v)+'">'
@@ -5044,6 +5149,7 @@ function rStock(){
         +'<div class="tsub" style="margin-top:var(--s1)">'+(g.sold===g.n? 'ขายแล้วทั้งหมด' : 'อายุเฉลี่ย '+Math.round(g.age/g.n)+' วัน')+'</div>'
         +'</div></button>';
     }).join('') : '<div class="empty"><b>ไม่พบรถ</b>ลองปรับตัวกรอง</div>';
+    capFoot($('#stGal'), Object.keys(grp).length, gKeys.length);
     /* จิ้มชิปสี = สลับรูป/ชิปเลือกในการ์ด (ไม่นำทาง ไม่ re-render — สถานะชั่วคราวใน DOM
        รีเซ็ตเองเป็นสีหลักทุกครั้งที่วาดใหม่ ไม่มีตัวแปรชุดที่สอง) · กดที่อื่นของการ์ด →
        ตั้งตัวกรอง รุ่น+รหัสรุ่น (v1.33 B1 — รหัสเดียวราคาเดียว) แล้วไปดูรายคันในแท็บตาราง */
@@ -5182,7 +5288,7 @@ function rSell(){
       $('#sFinBox').style.display=fin?'grid':'none'; $('#sFinPay').style.display=fin?'grid':'none'; calcSell(); };
     /* สรุปดีลต้องขยับตามทุกช่องที่กระทบเงิน (บรีฟ: "auto adjust ตลอด") — เดิมขาด
        เงินดาวน์/งวด/ไฟแนนซ์ ทำให้เปลี่ยนสามช่องนี้แล้วสรุปนิ่งเฉย */
-    vehCascadeWire(SELL_CAS, sellPool, hit=>{ rSell(); if(hit){ $('#sUnit').value=hit; calcSell(); } });
+    vehCascadeWire(SELL_CAS, sellPool, hit=>{ rSell(); if(hit){ $('#sUnit').value=hit; calcSell(); } upickSync(); });
     /* v1.32 (บรีฟข้อ 3): เพิ่มลูกค้าใหม่ได้จากหน้าขายเลย — บันทึกแล้วเติมชื่อ/เบอร์ให้ทันที */
     $('#sNewCust').onclick=()=> custModal(null, c=>{
       sCustFill(c);                                     /* v1.41: วันเกิด/เลขบัตร/ที่อยู่ที่กรอกในโมดัลตามมาด้วย */
@@ -5248,7 +5354,7 @@ function rSell(){
 /* เลือกคันจากภายนอก (ดีล/ใบเสนอ/สต๊อก) — ล้างตัวกรองก่อน ไม่งั้นคันที่ส่งมาอาจโดนกรองหาย */
 function sUnitSet(id){
   ['svQ','svModel','svVariant','svColor'].forEach(k=>{ const el=$('#'+k); if(el) el.value=''; });
-  rSell(); $('#sUnit').value=id; calcSell();
+  rSell(); $('#sUnit').value=id; calcSell(); upickSync();
 }
 /* ---------- ชิปของแถม: กดเลือก · เพิ่ม-ลดจำนวนในชิป · เพิ่มของนอกคลังได้ (B7=ค) ----------
    ของนอกคลังไม่ตัดสต๊อกและไม่มีทุน — เป็นแค่รายการมูลค่าบนใบเสร็จ */
@@ -6361,7 +6467,7 @@ function bookDepositPrint(id){
 function rBooking(){
   if(!$('#bkSave').dataset.init){ $('#bkSave').dataset.init=1;
     $('#bkSave').onclick=bookSave;
-    vehCascadeWire(BK_CAS, bookPool, hit=>{ rBooking(); if(hit) $('#bkUnit').value=hit; });
+    vehCascadeWire(BK_CAS, bookPool, hit=>{ rBooking(); if(hit) $('#bkUnit').value=hit; upickSync(); });
   }
   const av=vehCascadeFill(BK_CAS, bookPool);
   const cur=$('#bkUnit').value;
@@ -7249,11 +7355,13 @@ function rDealList(){
     'ไม่พบลูกค้าตามเงื่อนไข',
     rows.map(d=>crow('data-deal="'+d.c.id+'"', esc(d.c.name), dealPayPill(d)+dealBookPill(d)+badge(d),
       veh(d)+' · '+esc((d.s?d.s.sales:d.c.owner)||'—'),
-      bar(d)+'<span class="pslab'+(d.off?' off':'')+'">'+esc(dealHead(d).head)+'</span>')));
+      bar(d)+'<span class="pslab'+(d.off?' off':'')+'">'+esc(dealHead(d).head)+'</span>')), 8);
   $$('#dlTable [data-deal]').forEach(r=> r.onclick=()=>{ DEAL_SEL=r.dataset.deal; rDeal(); window.scrollTo(0,0); });
 
   /* งานติดตามที่ถึงกำหนด — กดชื่อแล้วเข้าดีลของคนนั้นเลย */
-  const due=TASKS.filter(t=>!t.done&&inScope(t.branch)).sort((a,b)=>a.due.localeCompare(b.due)).slice(0,20);
+  /* v1.47: เลิกตัดข้อมูลที่ 20 ตรงนี้ — ให้ cap ของ tbl คุมการ "วาด" แทน
+     ปุ่มดูทั้งหมดจะได้เห็นครบจริง ไม่ใช่เห็นครบแค่ 20 รายการแรก */
+  const due=TASKS.filter(t=>!t.done&&inScope(t.branch)).sort((a,b)=>a.due.localeCompare(b.due));
   $('#dlTaskCnt').textContent=TASKS.filter(t=>!t.done&&inScope(t.branch)&&t.due<=TODAY).length+' ถึงกำหนดแล้ว';
   const tRow=t=>{ const c=CUSTOMERS.find(x=>x.id===t.custId), dd=days(t.due,TODAY);
     const tag=dd>0?pill('เลย '+dd+' วัน','bad'):(dd===0?pill('วันนี้','warn'):pill('อีก '+(-dd)+' วัน','mut'));
@@ -7265,7 +7373,7 @@ function rDealList(){
     'ไม่มีงานติดตามค้าง',
     due.map(t=>{ const {c,tag}=tRow(t);
       return crow('data-deal="'+(c?c.id:'')+'"', esc(c?c.name:'—'), tag,
-        esc(c&&c.phone?c.phone+' · ':'')+esc(t.kind)+' · '+thDate(t.due)); }));
+        esc(c&&c.phone?c.phone+' · ':'')+esc(t.kind)+' · '+thDate(t.due)); }), 6);
   $$('#dlTasks [data-deal]').forEach(r=> r.onclick=()=>{ if(!r.dataset.deal) return;
     DEAL_SEL=r.dataset.deal; rDeal(); window.scrollTo(0,0); });
 
@@ -9707,7 +9815,7 @@ function rHr(){
         +' ออก <span class="mono">'+esc(a.out||'—')+'</span> '+attBadges(a,'out')
         +(c.hrs?' · '+hm1(c.hrs)+' ชม.':'')+(c.otH?' · OT '+hm1(c.otH):'')
         +'<br><span class="tsub">เดือนนี้ '+esc(attMonthText(m))+'</span>',
-      actOf(s,a,self))));
+      actOf(s,a,self))), 8);
   /* บันทึกเวลา ณ วินาทีที่กด — ปุ่มไม่รอกล้อง รูปตามมาแนบเอง */
   $$('[data-in]').forEach(b=> b.onclick=()=> punchSheet(b.dataset.in,'in'));
   $$('[data-out]').forEach(b=> b.onclick=()=> punchSheet(b.dataset.out,'out'));
@@ -9939,7 +10047,7 @@ function rPayroll(){
       esc(ROLES[r.s.role].name)+' · '+esc(bName(r.s.branch))
         +' · เงินเดือน '+money(r.base)+' · OT '+money(r.ot)+' · คอม '+money(r.comm)
         +(r.lateD?' · หักสาย -'+fmt(r.lateD):'')+' · ปกส. -'+fmt(r.ssn)
-        +'<br><span class="tsub">'+esc(attMonthText(r.att))+'</span>')));
+        +'<br><span class="tsub">'+esc(attMonthText(r.att))+'</span>')), 6);
   $('#prNote').innerHTML = warn
     ? '<div class="note w">'+ic('alert','i i-sm')+'<span>มีวันที่<b>ไม่มีบันทึกลงเวลารวม '+warn+' วัน</b>ในงวดนี้ — ระบบ<b>ไม่หักเงินอัตโนมัติ</b> '
       +'จ่ายตามเวลาที่บันทึกไว้ ผู้จัดการควรตามแก้ที่หน้าลงเวลาก่อนปิดงวด</span></div>'

@@ -110,8 +110,12 @@ const { chromium, EXE, BASE } = require('./env');
     const el = document.querySelector('#dlPay');
     if (!el) return { noSel: true };
     el.value = 'เงินสด'; el.onchange();
+    /* v1.47: ตารางถูกตัดที่การวาด — กางก่อนนับ ไม่งั้นข้อนี้เขียวเพราะบังเอิญเงินสดน้อยกว่า cap
+       แล้ววันที่ลูกค้าเงินสดเกิน cap ตัวกรองจะพังโดยไม่มีใครรู้ */
+    CAP_OPEN['dlTable'] = true; refreshAll();
     const rows = [...document.querySelectorAll('#dlTable tbody tr')].filter(tr => !tr.querySelector('.empty')).length;
     const want = dealAll().filter(d => dealPay(d) === 'เงินสด').length;
+    CAP_OPEN['dlTable'] = false;
     el.value = ''; el.onchange();
     return { noSel: false, pills: pills.length, rows, want };
   });

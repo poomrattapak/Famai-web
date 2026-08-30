@@ -26,7 +26,10 @@ const { chromium, EXE, BASE } = require('./env');
   p.on('pageerror', e => errors.push('PAGEERROR ' + e.message));
   await p.goto(BASE + '/index.html', { waitUntil: 'domcontentloaded' });
   await p.click('#lgUsers [data-id="ST1"]'); await p.click('#lgGo'); await p.waitForTimeout(400);
-  await p.evaluate(() => { window.__F = []; csv = (n, h, r) => window.__F.push({ n: n, h: h, rows: r }); });
+  await p.evaluate(() => { window.__F = []; csv = (n, h, r) => window.__F.push({ n: n, h: h, rows: r });
+    /* v1.47: ตารางดีลถูกตัดที่การวาด 8 แถว — ด่านนี้นับ "ใครมีป้ายบ้าง" จึงต้องกางให้ครบก่อน
+       ไม่งั้นคนที่จองอยู่อาจตกอยู่นอก 8 แถวแรกแล้วด่านแดงทั้งที่โค้ดถูก */
+    CAP_OPEN['dlTable'] = true; });
 
   const has = await p.evaluate(() => !!document.getElementById('dlBook'));
   if (!has) bad('[3] ไม่มีตัวกรอง #dlBook ในหน้าลูกค้าและดีล');
