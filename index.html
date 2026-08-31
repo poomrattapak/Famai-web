@@ -4925,6 +4925,9 @@ function rRecent(){
   wireUnitRows();
 }
 function saveRecv(){
+  /* v1.48 (§9b ให้ครบ — ยืมวินัย grape): ด่านสิทธิ์เปิดหัวฟังก์ชันเขียน มาก่อน validation
+     คีย์กับสิทธิ์หน้าเดียวกับเมนู — วันแรกไม่มีใครได้/เสียสิทธิ์ แอดมินแก้ได้ในตารางสิทธิ์ */
+  if(!permW('page:recv')){ toast('บทบาทของคุณรับรถเข้าสต๊อกไม่ได้','ต้องมีสิทธิ์เขียนของหน้า "รับรถเข้าสต๊อก"',1); return; }
   const v=$('#rVariant').value, p=PRICE[v], cc=$('#rColor').value;
   const eng=$('#rEngine').value.trim(), frm=$('#rFrame').value.trim();
   if(!eng||!frm){ toast('กรอกเลขเครื่องและเลขถังก่อน','ทั้งสองช่องจำเป็น',1); return; }
@@ -5487,6 +5490,8 @@ function calcSell(){
     +'• ตัดสต๊อกของแถม <b>'+gl.filter(g=>g.id).reduce((s,g)=>s+g.qty,0)+'</b> ชิ้น</div>';
 }
 function saveSale(force, confirmed){
+  /* v1.48 (§9b ให้ครบ): ด่านสิทธิ์มาก่อนทุกอย่าง — การซ่อนเมนูไม่ใช่การกัน */
+  if(!permW('page:sell')){ toast('บทบาทของคุณเปิดการขายไม่ได้','ต้องมีสิทธิ์เขียนของหน้า "ขายรถ"',1); return; }
   const u=curUnit(); if(!u){ toast('ไม่มีรถให้ขาย','',1); return; }
   /* ด่านสาขา (บรีฟ): ขายในนามสาขาที่รถไม่ได้อยู่ = สต๊อกกับบัญชีไม่ตรงกันทันที */
   if(sBrMismatch()){ toast('เลือกตัวเลือกไม่ตรงกับสาขาที่อยู่ ให้ย้ายรถก่อน',
@@ -6641,6 +6646,8 @@ function rQuote(){
 }
 let qSavedNo=null;   /* เลขที่ของฟอร์มปัจจุบัน — ล้างเมื่อแก้ฟอร์ม กันบันทึกซ้ำเปลืองเลข */
 function saveQuote(){
+  /* v1.48 (§9b ให้ครบ): ด่านมาก่อน nextDocNo — เลขใบเสนอห้ามถูกเผาโดยคนไม่มีสิทธิ์ */
+  if(!permW('page:quote')){ toast('บทบาทของคุณบันทึกใบเสนอราคาไม่ได้','ต้องมีสิทธิ์เขียนของหน้า "ใบเสนอราคา"',1); return null; }
   if(qSavedNo){ toast('บันทึกแล้ว', qSavedNo); return QUOTES.find(q=>q.no===qSavedNo)||null; }
   if(!$('#qV1').value){ toast('เลือกรุ่นรถก่อน','',1); return null; }
   const q={id:nid('QT'), no:nextDocNo(ME.branch,'QUOTE'), at:TODAY, branch:ME.branch,
@@ -7780,6 +7787,9 @@ function regPlateClose(id, plate){
    เลขเอกสารคงไว้ในประวัติเสมอ (กฎสรรพากร: เอกสารออกแล้วบันทึกยกเลิก ไม่ใช่ทำหาย)
    ที่เดียวที่เขียนการยกเลิก — ปุ่มทั้งสองทาง (ยกเลิก/เท) วิ่งมาที่นี่ */
 function voidSaleCore(s, drop){
+  /* v1.48 (ปิด issue #5 — §9b): ด่านสิทธิ์อยู่ที่แกนเขียน ไม่ใช่แค่ปุ่ม/โมดัลที่เรียกมัน
+     คืน boolean ให้ผู้เรียกรู้ว่าเกิดจริงไหม (แบบเดียวกับ wsVoid ฝั่งขายส่ง) */
+  if(!canVoidSale()){ toast('บทบาทของคุณยกเลิกการขายไม่ได้','ต้องเป็นแอดมินหรือผู้บริหาร',1); return false; }
   const u=UNITS.find(x=>x.id===s.unitId), c=CUSTOMERS.find(x=>x.id===s.custId);
   const fc=FINCASES.find(x=>x.saleId===s.id);
   u.status='available';
@@ -7800,6 +7810,12 @@ function voidSaleCore(s, drop){
   if(fc) finHistAdd(s.custId, { at:TODAY, fin:(finById(fc.finId)||{}).name||'', event:'ยกเลิกการขาย',
     reason: fc.status==='ปฏิเสธ'? (fc.rejectReason||'') : '', status: fc.status });
   const fi=FINCASES.findIndex(x=>x.saleId===s.id); if(fi>=0) FINCASES.splice(fi,1);
+  /* v1.48: แช่การยกเลิกลงฐานข้อมูลด้วย — จำเป็นต่อ index กันขายซ้ำ (migration 28:
+     unique on sale(unit_id) where voided_at is null) ไม่งั้นโหมดจริงยกเลิกแล้วขายคันเดิมใหม่ไม่ได้ */
+  dbPatch('sale', s.id, { voided_at:TODAY,
+    voided_reason: drop? ('ลูกค้าเท: '+(drop.reason||'')+(drop.detail? ' — '+drop.detail:'')) : 'ยกเลิกการขาย' });
+  dbUp('motorcycle_unit', { id:u.id, status:'available' });
+  return true;
 }
 function cancelSale(saleId){
   const s=SALES.find(x=>x.id===saleId); if(!s || s.void) return;
@@ -7814,7 +7830,7 @@ function cancelSale(saleId){
     +'<button class="btn sec" id="cvNo">ไม่ยกเลิก</button></div>');
   $('#cvNo').onclick=closeModal;
   $('#cvGo').onclick=()=>{
-    voidSaleCore(s);
+    if(!voidSaleCore(s)){ closeModal(); return; }      /* โดนด่านสิทธิ์ — toast จากแกนแล้ว */
     toast('ยกเลิกการขายแล้ว', u.model+' กลับเข้าสต๊อกพร้อมขาย');
     closeModal(); closeDrawer(); refreshAll(); };
 }
@@ -7852,7 +7868,7 @@ function custDropModal(saleId){
       s.down>0? ['เงินดาวน์', drop.downBack? 'คืนลูกค้า '+fmt(s.down)+' ฿' : 'ไม่คืน'] : null,
       ['ของแถม', 'คืนเข้าคลัง'], ['เอกสาร', (s.docNo||'')+' บันทึกยกเลิก']
     ].filter(Boolean), ()=>{
-      voidSaleCore(s, drop);
+      if(!voidSaleCore(s, drop)) return;               /* โดนด่านสิทธิ์ — toast จากแกนแล้ว */
       toast('บันทึกลูกค้าเทแล้ว', u.model+' กลับเข้าสต๊อก · '+drop.reason);
       closeDrawer(); refreshAll();
     });
@@ -8002,6 +8018,8 @@ function svLookup(){
   toast('พบข้อมูลรถ', u.model+(c?(' · ลูกค้าเก่า: '+c.name):''));
 }
 function svSave(){
+  /* v1.48 (§9b ให้ครบ): ด่านต้องมาก่อน nextDocNo — โดนกันแล้วเลขเอกสารห้ามถูกเผา */
+  if(!permW('page:service')){ toast('บทบาทของคุณเปิดใบงานซ่อมไม่ได้','ต้องมีสิทธิ์เขียนของหน้า "ศูนย์ซ่อม"',1); return; }
   const name=$('#svName').value.trim(); if(!name){ toast('กรอกชื่อลูกค้าก่อน','',1); return; }
   const p=PARTS.find(x=>x.id===$('#svPart').value);
   if(p && p.qty<1){ toast('อะไหล่ไม่พอ',p.name+' เหลือ '+p.qty,1); return; }
@@ -8236,6 +8254,9 @@ const PT_TABS=[
   {p:'pt2', n:'เบิก / ขายอะไหล่', r:['admin','manager','stock','tech']},
   {p:'pt3', n:'ของแถม',        r:['admin','manager','stock','sales']}
 ];
+/* v1.48 (§9b+§9h): สิทธิ์ของหน้านี้แยกรายแท็บ — ด่านของตัวบันทึกจึงคีย์กับแท็บ ไม่ใช่สิทธิ์หน้า
+   (สิทธิ์หน้า parts เปิดกว้างถึงเซลล์/บัญชี แต่แต่ละคนเขียนได้เฉพาะแท็บของตัว) */
+const ptCanW = pane => inRoles((PT_TABS.find(t=>t.p===pane)||{r:[]}).r);
 let PT_SEL='';
 function ptTab(pane){
   const ok=PT_TABS.filter(t=>inRoles(t.r));
@@ -8254,14 +8275,19 @@ function rParts(){
   if(ok.some(t=>t.p==='pt2')) rPartSale();
   if(ok.some(t=>t.p==='pt3')) rGift();
 }
+/* v1.48 (§9b): ตัวบันทึกเป็นฟังก์ชันชื่อจริง เรียกตรงเพื่อพิสูจน์ด่านได้ (แบบเดียวกับ wsFinPass v1.45) */
+function partSave(){
+  if(!ptCanW('pt1')){ toast('บทบาทของคุณเพิ่มอะไหล่ไม่ได้','สิทธิ์อยู่กับแท็บ "สต๊อกอะไหล่"',1); return; }
+  const code=$('#pCode').value.trim(), name=$('#pName').value.trim();
+  if(!code||!name){ toast('กรอกรหัสและชื่ออะไหล่','',1); return; }
+  if(PARTS.some(p=>p.code===code)){ toast('รหัสอะไหล่ซ้ำ','',1); return; }
+  PARTS.push({id:nid('PT'),code,name,cost:num($('#pCost').value),price:num($('#pPrice').value),
+    qty:num($('#pQty').value),min:num($('#pMin').value),branch:ME.branch});
+  toast('เพิ่มอะไหล่แล้ว',name); $('#pCode').value=''; $('#pName').value=''; refreshAll();
+}
 function rPartsStock(){
   if(!$('#pSave').dataset.init){ $('#pSave').dataset.init=1;
-    $('#pSave').onclick=()=>{ const code=$('#pCode').value.trim(), name=$('#pName').value.trim();
-      if(!code||!name){ toast('กรอกรหัสและชื่ออะไหล่','',1); return; }
-      if(PARTS.some(p=>p.code===code)){ toast('รหัสอะไหล่ซ้ำ','',1); return; }
-      PARTS.push({id:nid('PT'),code,name,cost:num($('#pCost').value),price:num($('#pPrice').value),
-        qty:num($('#pQty').value),min:num($('#pMin').value),branch:ME.branch});
-      toast('เพิ่มอะไหล่แล้ว',name); $('#pCode').value=''; $('#pName').value=''; refreshAll(); };
+    $('#pSave').onclick=partSave;
     $('#expParts').onclick=()=> csvMoney('อะไหล่',['รหัส','ชื่อ','สาขา','คงเหลือ','จุดสั่งซื้อ','ต้นทุน','ราคาขาย'],
       PARTS.filter(p=>inScope(p.branch)).map(p=>[p.code,p.name,bName(p.branch),p.qty,p.min,p.cost,p.price]), [5,6]);
   }
@@ -8283,15 +8309,20 @@ function rPartsStock(){
       (p.qty===0?pill('หมด','bad'):(p.qty<p.min?pill('ใกล้หมด','warn'):pill('ปกติ','good')))
         +' <span class="tsub">จุดสั่งซื้อ '+p.min+'</span>')));
 }
+function partMove(){
+  /* v1.48 (§9b): แท็บเบิก/ขายคือด่านจริงของการตัดสต๊อก — บัญชี/เซลล์เห็นหน้า parts แต่เขียนแท็บนี้ไม่ได้ */
+  if(!ptCanW('pt2')){ toast('บทบาทของคุณเบิก/ขายอะไหล่ไม่ได้','สิทธิ์อยู่กับแท็บ "เบิก / ขายอะไหล่"',1); return; }
+  const p=PARTS.find(x=>x.id===$('#msPart').value); const q=num($('#msQty').value);
+  if(!p||q<1){ toast('เลือกอะไหล่และจำนวน','',1); return; }
+  if(p.qty<q){ toast('ของไม่พอ',p.name+' เหลือ '+p.qty,1); return; }
+  p.qty-=q; PMOVES.push({id:nid('MV'),partId:p.id,qty:-q,type:$('#msType').value,at:TODAY,branch:$('#msBranch').value});
+  toast('ตัดสต๊อกแล้ว',p.name+' × '+q); refreshAll();
+}
 function rPartSale(){
   if(!$('#msSave').dataset.init){ $('#msSave').dataset.init=1;
     $('#msBranch').innerHTML=BRANCHES.filter(b=>inScope(b.code)).map(b=>'<option value="'+b.code+'">'+esc(b.name)+'</option>').join('');
     $('#msQty').oninput=msPrev; $('#msPart').onchange=msPrev;
-    $('#msSave').onclick=()=>{ const p=PARTS.find(x=>x.id===$('#msPart').value); const q=num($('#msQty').value);
-      if(!p||q<1){ toast('เลือกอะไหล่และจำนวน','',1); return; }
-      if(p.qty<q){ toast('ของไม่พอ',p.name+' เหลือ '+p.qty,1); return; }
-      p.qty-=q; PMOVES.push({id:nid('MV'),partId:p.id,qty:-q,type:$('#msType').value,at:TODAY,branch:$('#msBranch').value});
-      toast('ตัดสต๊อกแล้ว',p.name+' × '+q); refreshAll(); };
+    $('#msSave').onclick=partMove;
   }
   $('#msPart').innerHTML=PARTS.filter(p=>inScope(p.branch)).map(p=>'<option value="'+p.id+'">'+esc(p.name)+' (เหลือ '+p.qty+')</option>').join('');
   msPrev();
@@ -8315,16 +8346,21 @@ function msPrev(){ const p=PARTS.find(x=>x.id===$('#msPart').value); const q=num
       : 'ตัดแล้วเหลือ <b>'+(p.qty-q)+'</b>'+(noMoney()?'':' · กำไร '+baht((p.price-p.cost)*q)))+'</span></div>'; }
 
 /* ============================= 15. ของแถม ============================= */
+function giftSave(){
+  /* v1.48 (§9b): ของแถมเป็นแท็บของ เซลล์/สต๊อก — ช่าง/บัญชีเห็นหน้า parts แต่เขียนแท็บนี้ไม่ได้ */
+  if(!ptCanW('pt3')){ toast('บทบาทของคุณเพิ่มของแถมไม่ได้','สิทธิ์อยู่กับแท็บ "ของแถม"',1); return; }
+  const n=$('#gName').value.trim(); if(!n){ toast('กรอกชื่อของแถม','',1); return; }
+  const ex=GIFTS.find(g=>g.name===n&&g.branch===$('#gBranch').value);
+  if(ex){ ex.qty+=num($('#gQty').value); toast('เพิ่มจำนวนแล้ว',n+' รวม '+ex.qty); }
+  else { GIFTS.push({id:nid('G'),name:n,cost:num($('#gCost').value),price:num($('#gPrice').value),
+    qty:num($('#gQty').value),min:num($('#gMin').value),branch:$('#gBranch').value}); toast('เพิ่มของแถมแล้ว',n); }
+  $('#gName').value=''; refreshAll();
+}
 function rGift(){
   if(!$('#gSave').dataset.init){ $('#gSave').dataset.init=1;
     $('#expGift').onclick=expGifts;
     $('#gBranch').innerHTML=BRANCHES.filter(b=>inScope(b.code)).map(b=>'<option value="'+b.code+'">'+esc(b.name)+'</option>').join('');
-    $('#gSave').onclick=()=>{ const n=$('#gName').value.trim(); if(!n){ toast('กรอกชื่อของแถม','',1); return; }
-      const ex=GIFTS.find(g=>g.name===n&&g.branch===$('#gBranch').value);
-      if(ex){ ex.qty+=num($('#gQty').value); toast('เพิ่มจำนวนแล้ว',n+' รวม '+ex.qty); }
-      else { GIFTS.push({id:nid('G'),name:n,cost:num($('#gCost').value),price:num($('#gPrice').value),
-        qty:num($('#gQty').value),min:num($('#gMin').value),branch:$('#gBranch').value}); toast('เพิ่มของแถมแล้ว',n); }
-      $('#gName').value=''; refreshAll(); };
+    $('#gSave').onclick=giftSave;
   }
   const gL=GIFTS.filter(g=>inScope(g.branch));
   const act=g=>'<button class="lnk" data-ge="'+g.id+'">แก้ไข</button> <button class="lnk" data-gd="'+g.id+'">ลบ</button>';
@@ -8394,37 +8430,41 @@ function bookkeeperPack(){
       return [w.at,bName(w.branch),p?p.name:'',w.docNo,w.items.length,base,w.total-base,w.total]; }));
   toast('ส่งออกชุดส่งบัญชีแล้ว','6 ไฟล์ · '+perText('expense'));
 }
+/* v1.48 (§9b): ตัวบันทึกค่าใช้จ่ายเป็นฟังก์ชันชื่อจริง + ด่านสิทธิ์เปิดหัว
+   ด่านเดิม (เงิน หมวด คนเบิกในสาขา) ยังอยู่ครบ — ย้ายออกจาก onclick เพื่อให้เรียกตรงพิสูจน์ได้ */
+function expSave(){
+  if(!permW('page:expense')){ toast('บทบาทของคุณบันทึกค่าใช้จ่ายไม่ได้','ต้องมีสิทธิ์เขียนของหน้า "ค่าใช้จ่าย"',1); return; }
+  const a=num($('#eAmt').value);
+  if(a<=0){ toast('กรอกจำนวนเงิน','',1); return; }
+  const cat=$('#eCat').value.trim();
+  if(!cat){ toast('กรอกหมวดหมู่','พิมพ์หมวดใหม่ได้เลย ครั้งหน้าจะขึ้นมาให้เลือกเอง',1); return; }
+  const who=$('#eStaff').value;
+  const st=STAFF.find(x=>x.id===who);
+  if(!st || !inScope(st.branch)){ toast('เลือกพนักงานที่เบิก','เลือกได้เฉพาะคนในสาขาที่คุณดูแล',1); return; }
+  /* ยืนยันก่อนบันทึก (L1+L2) — ค่าใช้จ่ายคือเงินออกจากร้าน อ่านทวนก่อน */
+  confirmSave('ยืนยันค่าใช้จ่าย', [
+    ['หมวดหมู่', cat], ['จำนวนเงิน', fmt(a)+' ฿'], ['ผู้เบิก', st.name],
+    ['สาขา', bName($('#eBranch').value)], ['ซื้อกับ', $('#eVendor').value.trim()],
+    ['วันที่', thDate($('#eDate').value||TODAY)],
+    ['ใบเสร็จ', eFilesArr.length? 'แนบ '+eFilesArr.length+' ไฟล์':'ยังไม่แนบ']
+  ], ()=>{
+    EXPENSES.push({id:nid('EX'),cat,branch:$('#eBranch').value,amt:a,at:$('#eDate').value||TODAY,
+      by:st.id, byName:st.name, note:$('#eNote').value.trim(),
+      /* การเงินเข้ามากดตรวจทีหลัง (บรีฟ: ฝั่งการเงินอนุมัติค่าใช้จ่าย) */
+      approval:{status:'รอตรวจ', by:'', at:'', note:''},
+      vendor:$('#eVendor').value.trim(),inv:$('#eInv').value.trim(),files:eFilesArr.slice()});
+    toast('บันทึกค่าใช้จ่ายแล้ว', baht(a)+' · '+st.nick
+      +(eFilesArr.length?' · แนบ '+eFilesArr.length+' ไฟล์':' · ยังไม่แนบใบเสร็จ'));
+    $('#eAmt').value=0; $('#eVendor').value=''; $('#eInv').value=''; $('#eNote').value='';
+    eFilesArr=[]; if(window._eDraw) _eDraw(); refreshAll();
+  });
+}
 function rExpense(){
   if(!$('#eSave').dataset.init){ $('#eSave').dataset.init=1;
     $('#eBranch').innerHTML=BRANCHES.filter(b=>inScope(b.code)).map(b=>'<option value="'+b.code+'">'+esc(b.name)+'</option>').join('');
     $('#eDate').value=TODAY;
     $('#eFile').onchange=ev=>{ eFilesArr=eFilesArr.concat(Array.from(ev.target.files).map(f=>f.name)); eDraw(); };
-    /* ด่านอยู่ในตัวบันทึก ไม่ใช่ที่ปุ่ม — ต้องมีจำนวนเงิน หมวดหมู่ และคนเบิกที่อยู่ในสาขาที่ดูแลจริง */
-    $('#eSave').onclick=()=>{
-      const a=num($('#eAmt').value);
-      if(a<=0){ toast('กรอกจำนวนเงิน','',1); return; }
-      const cat=$('#eCat').value.trim();
-      if(!cat){ toast('กรอกหมวดหมู่','พิมพ์หมวดใหม่ได้เลย ครั้งหน้าจะขึ้นมาให้เลือกเอง',1); return; }
-      const who=$('#eStaff').value;
-      const st=STAFF.find(x=>x.id===who);
-      if(!st || !inScope(st.branch)){ toast('เลือกพนักงานที่เบิก','เลือกได้เฉพาะคนในสาขาที่คุณดูแล',1); return; }
-      /* ยืนยันก่อนบันทึก (L1+L2) — ค่าใช้จ่ายคือเงินออกจากร้าน อ่านทวนก่อน */
-      confirmSave('ยืนยันค่าใช้จ่าย', [
-        ['หมวดหมู่', cat], ['จำนวนเงิน', fmt(a)+' ฿'], ['ผู้เบิก', st.name],
-        ['สาขา', bName($('#eBranch').value)], ['ซื้อกับ', $('#eVendor').value.trim()],
-        ['วันที่', thDate($('#eDate').value||TODAY)],
-        ['ใบเสร็จ', eFilesArr.length? 'แนบ '+eFilesArr.length+' ไฟล์':'ยังไม่แนบ']
-      ], ()=>{
-        EXPENSES.push({id:nid('EX'),cat,branch:$('#eBranch').value,amt:a,at:$('#eDate').value||TODAY,
-          by:st.id, byName:st.name, note:$('#eNote').value.trim(),
-          /* การเงินเข้ามากดตรวจทีหลัง (บรีฟ: ฝั่งการเงินอนุมัติค่าใช้จ่าย) */
-          approval:{status:'รอตรวจ', by:'', at:'', note:''},
-          vendor:$('#eVendor').value.trim(),inv:$('#eInv').value.trim(),files:eFilesArr.slice()});
-        toast('บันทึกค่าใช้จ่ายแล้ว', baht(a)+' · '+st.nick
-          +(eFilesArr.length?' · แนบ '+eFilesArr.length+' ไฟล์':' · ยังไม่แนบใบเสร็จ'));
-        $('#eAmt').value=0; $('#eVendor').value=''; $('#eInv').value=''; $('#eNote').value='';
-        eFilesArr=[]; eDraw(); refreshAll();
-      }); };
+    $('#eSave').onclick=expSave;
     $('#expBook').onclick=bookkeeperPack;
     $('#expExp').onclick=()=> csvMoney('ค่าใช้จ่าย_'+perFile('expense'),
       ['วันที่','สาขา','หมวดหมู่','พนักงานที่เบิก','ผู้ขาย','เลขที่ใบกำกับ','จำนวนเงิน','ใบเสร็จ'],
