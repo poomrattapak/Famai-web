@@ -3086,6 +3086,10 @@ function nextDocNo(branchCode, type){
   const y = NOW.getFullYear()+543;
   const k = branchCode+'|'+type+'|'+y;
   DOC_COUNTER[k] = (DOC_COUNTER[k]||0)+1;
+  /* v1.49: โหมดจริงให้ตัวนับกลาง (doc_counter) เดินตามทุกครั้งที่ออกเลข — ผ่าน RPC next_doc_no
+     ที่มีอยู่แล้วจาก migration 05 · เครื่องเดียวเลขตรงกันเสมอ · หลายเครื่องพร้อมกันยังต้องรอ
+     โหลดตัวนับกลับตอนล็อกอิน (v1.50) — ข้อจำกัดบันทึกใน docs/08 */
+  if(LIVE && BR_IDS[branchCode]) dbRpc('next_doc_no', { p_branch:BR_IDS[branchCode], p_type:type, p_year:y });
   return bOf(branchCode).prefix+'-'+type+'-'+y+'-'+String(DOC_COUNTER[k]).padStart(5,'0');
 }
 /* v1.36 เลขใบกำกับภาษีรันร่วม (คำตอบเจ้าของข้อ 7 — ระดับซีรีส์ยังรอยืนยัน ใช้ default ปลอดภัย):
@@ -3096,6 +3100,9 @@ function taxPrefix(branchCode){ const hq=branchesOf(coOf(branchCode).id)[0];
   return (hq||bOf(branchCode)).prefix; }
 function nextTaxNo(branchCode){
   const k=taxKey(branchCode); DOC_COUNTER[k]=(DOC_COUNTER[k]||0)+1;
+  /* v1.49: ซีรีส์ภาษีต่อบริษัท — ตัวนับกลางเก็บที่สาขาสำนักงานใหญ่ของบริษัทนั้น ชนิด 'TAX' */
+  const hq=(branchesOf(coOf(branchCode).id)[0]||bOf(branchCode)).code;
+  if(LIVE && BR_IDS[hq]) dbRpc('next_doc_no', { p_branch:BR_IDS[hq], p_type:'TAX', p_year:NOW.getFullYear()+543 });
   return taxPrefix(branchCode)+'-TAX-'+(NOW.getFullYear()+543)+'-'+String(DOC_COUNTER[k]).padStart(5,'0');
 }
 const peekTaxNo = branchCode => taxPrefix(branchCode)+'-TAX-'+(NOW.getFullYear()+543)
@@ -5581,7 +5588,9 @@ function saveSale(force, confirmed){
   /* v1.37: การจองของคันนี้ปิดเป็น "เปิดขายแล้ว" เมื่อการขายเกิดจริง — เก็บเป็นประวัติ ไม่ลบ */
   if(bkHold){ bkHold.status='เปิดขายแล้ว'; bkHold.saleId=s.id; bkHold.upAt=new Date().toISOString();
     if(LIVE) dbPatch('booking', bkHold.id, { status:bkHold.status, sale_id:s.id }); }
-  gl.forEach(g=>{ if(!g.id) return; const gg=GIFTS.find(x=>x.id===g.id); if(gg) gg.qty=Math.max(0,gg.qty-g.qty); });
+  gl.forEach(g=>{ if(!g.id) return; const gg=GIFTS.find(x=>x.id===g.id); if(!gg) return;
+    gg.qty=Math.max(0,gg.qty-g.qty);
+    if(isUuid(gg.id)) dbPatch('freebie', gg.id, { qty_on_hand:gg.qty }); });   /* v1.49 */
   /* ---------- write-through ลงฐานข้อมูลจริง (A1 — เริ่มที่แกนของกลุ่มเงินก่อน) ----------
      ปิดข้อค้าง "ต่อระบบจริงให้บันทึกการขาย" ที่คอมเมนต์ไว้เหนือ liveLogin
      ที่เขียนรอบนี้: ลูกค้า + การขาย + สถานะรถ · ทะเบียน/เคสสินเชื่อ/เงินค้างรับตามในรอบถัดไป
@@ -5598,20 +5607,39 @@ function saveSale(force, confirmed){
       gifts:s.gifts, fin_approval:s.finApproval });
     dbUp('motorcycle_unit', { id:u.id, status:'sold' });
   }
-  const rg={id:nid('RG'),saleId:s.id,branch:s.branch,stage:'ขายแล้ว',due:addDays(TODAY,CFG.regDays),plate:'',
+  /* v1.49 (โหลดข้อมูลกลับ ครึ่งแรก): ผลข้างเคียงของการขายทุกระเบียนลงฐานจริงด้วย —
+     ตารางมีครบแล้วจาก migration ชุดร่วม 02-04 · โหมดสาธิต dbUp เงียบเหมือนเดิม */
+  const rg={id: LIVE? dbId() : nid('RG'),saleId:s.id,branch:s.branch,stage:'ขายแล้ว',due:addDays(TODAY,CFG.regDays),plate:'',
     log:[{to:'ขายแล้ว',at:TODAY}]};
   REGS.push(rg);
+  dbUp('registration', { id:rg.id, sale_id:s.id, branch_id:BR_IDS[s.branch], stage:rg.stage,
+    due_at:rg.due, stage_log:rg.log });
   let fcCase=null;
   if(pay==='finance'){
-    fcCase={id:nid('FC'),saleId:s.id,custId:c.id,branch:s.branch,finId:s.finId,status:'ส่งเรื่อง',amount:net-s.down,at:TODAY,
+    fcCase={id: LIVE? dbId() : nid('FC'),saleId:s.id,custId:c.id,branch:s.branch,finId:s.finId,status:'ส่งเรื่อง',amount:net-s.down,at:TODAY,
       log:[{to:'ส่งเรื่อง',at:TODAY}]};
     FINCASES.push(fcCase);
-    AR.push({id:nid('AR'),saleId:s.id,branch:s.branch,kind:'finance',finId:s.finId,due:net-s.down,paid:0,dueAt:addDays(TODAY,15),pays:[]});
+    /* company_id ห้ามว่าง (NOT NULL) — ไฟแนนซ์ที่ยังไม่มี uuid จากฐาน = ข้ามพร้อม warn ไม่ใช่พังคิว */
+    const finDb=(finById(s.finId)||{}).dbId;
+    if(LIVE && !finDb) console.warn('ข้าม finance_case — ไฟแนนซ์ไม่มี dbId:', s.finId);
+    else dbUp('finance_case', { id:fcCase.id, branch_id:BR_IDS[s.branch], sale_id:s.id,
+      customer_id:c.id, company_id:finDb, status:fcCase.status, amount:fcCase.amount,
+      submitted_at:TODAY, stage_log:fcCase.log });
+    const arRow={id: LIVE? dbId() : nid('AR'),saleId:s.id,branch:s.branch,kind:'finance',finId:s.finId,due:net-s.down,paid:0,dueAt:addDays(TODAY,15),pays:[]};
+    AR.push(arRow);
+    dbUp('receivable', { id:arRow.id, branch_id:BR_IDS[s.branch], sale_id:s.id, kind:'finance',
+      payer_finance_id:finDb||null, amount_due:arRow.due, due_at:arRow.dueAt });
   }
-  String(CFG.cadence).split(',').map(x=>parseInt(x)).forEach(d=>
-    TASKS.push({id:nid('TK'),custId:c.id,saleId:s.id,branch:s.branch,kind:d+' วัน',due:addDays(TODAY,d),done:false}));
-  String(CFG.km).split(',').map(x=>parseInt(x)).forEach((km,i)=>
-    REMIND.push({id:nid('RM'),custId:c.id,unitId:u.id,km,due:addDays(TODAY,[20,45,150,300][i]||300),status:'รอถึงกำหนด'}));
+  String(CFG.cadence).split(',').map(x=>parseInt(x)).forEach(d=>{
+    const tk={id: LIVE? dbId() : nid('TK'),custId:c.id,saleId:s.id,branch:s.branch,kind:d+' วัน',due:addDays(TODAY,d),done:false};
+    TASKS.push(tk);
+    dbUp('follow_up_task', { id:tk.id, branch_id:BR_IDS[s.branch], customer_id:c.id,
+      sale_id:s.id, kind:tk.kind, due_at:tk.due }); });
+  String(CFG.km).split(',').map(x=>parseInt(x)).forEach((km,i)=>{
+    const rmRow={id: LIVE? dbId() : nid('RM'),custId:c.id,unitId:u.id,km,due:addDays(TODAY,[20,45,150,300][i]||300),status:'รอถึงกำหนด'};
+    REMIND.push(rmRow);
+    dbUp('service_reminder', { id:rmRow.id, customer_id:c.id, unit_id:u.id,
+      target_km:km, due_date:rmRow.due, status:rmRow.status }); });
   toast('บันทึกการขายแล้ว', s.docNo+' · '+u.model+' · '+name);
   sFree={}; sFreeX=[]; sCustSel='';
   ['sCust','sPhone','sBirth','sIdNo','sAddr','sNote'].forEach(k=>$('#'+k).value='');
@@ -6650,11 +6678,19 @@ function saveQuote(){
   if(!permW('page:quote')){ toast('บทบาทของคุณบันทึกใบเสนอราคาไม่ได้','ต้องมีสิทธิ์เขียนของหน้า "ใบเสนอราคา"',1); return null; }
   if(qSavedNo){ toast('บันทึกแล้ว', qSavedNo); return QUOTES.find(q=>q.no===qSavedNo)||null; }
   if(!$('#qV1').value){ toast('เลือกรุ่นรถก่อน','',1); return null; }
-  const q={id:nid('QT'), no:nextDocNo(ME.branch,'QUOTE'), at:TODAY, branch:ME.branch,
+  const q={id: LIVE? dbId() : nid('QT'), no:nextDocNo(ME.branch,'QUOTE'), at:TODAY, branch:ME.branch,
     name:$('#qName').value.trim()||'—', phone:$('#qPhone').value.trim(), until:$('#qUntil').value,
     v1:$('#qV1').value, v2:$('#qV2').value, f1:$('#qF1').value, f2:$('#qF2').value,
     down:num($('#qDown').value), by:ME.nick};
   QUOTES.unshift(q); qSavedNo=q.no;
+  /* v1.49: ใบเสนอลงฐาน — หัวใบ + ตัวเลือกคันละแถว (slot 1/2) ราคาแช่ ณ วันเสนอ */
+  dbUp('quotation', { id:q.id, branch_id:BR_IDS[q.branch], doc_no:q.no, quote_date:q.at,
+    valid_until:q.until||null, customer_name:q.name, customer_phone:q.phone||null });
+  [[1,q.v1,q.f1],[2,q.v2,q.f2]].forEach(([slot,v,f])=>{
+    if(!v || !VARIANT_IDS[v]) return;   /* คันที่ 2 ไม่บังคับ · รุ่นที่ไม่มี uuid ยังลงฐานไม่ได้ */
+    dbUp('quotation_option', { id:dbId(), quotation_id:q.id, slot,
+      variant_id:VARIANT_IDS[v], price:(PRICE[v]||{}).retail||0,
+      finance_id:(finById(f)||{}).dbId||null, down_payment:q.down||0 }); });
   qDraw(q.no); rQuoteList();
   toast('บันทึกใบเสนอแล้ว', q.no+' · '+q.name);
   return q;
@@ -7190,8 +7226,7 @@ function rDealOne(id){
   on('data-dlvoid',  cancelSale);
   on('data-dldrop',  custDropModal);
   on('data-dlcare',  ()=>go('aftercare'));
-  on('data-dltask',  tid=>{ const t=TASKS.find(x=>x.id===tid); if(!t) return;
-    t.done=true; toast('ปิดงานติดตามแล้ว'); refreshAll(); });
+  on('data-dltask',  dealTaskDone);
   on('data-fapok', sid=>finApprove(sid, true));
   /* ตีกลับต้องบอกเหตุผล — เซลล์จะได้รู้ว่าแก้อะไร */
   on('data-fapno', sid=>{
@@ -7207,8 +7242,7 @@ function rDealOne(id){
     confirmSave('ยืนยันรับเงิน', [
       ['ยอดที่ค้าง', fmt(left)+' ฿'],
       ['จาก', a.kind==='finance'? (finById(a.finId)||{}).name||'ไฟแนนซ์' : 'ลูกค้า']
-    ], ()=>{ a.pays=a.pays||[]; a.pays.push({at:TODAY, amt:left, way:'ติ๊กจากหน้าดีล'});
-      a.paid=a.due; touchSale(a.saleId); toast('บันทึกรับเงินครบแล้ว', fmt(left)+' ฿'); refreshAll(); }); });
+    ], ()=>{ arReceive(a.id, left, 'ติ๊กจากหน้าดีล'); }); });   /* v1.49: วิ่งผ่านแกนเดียวกัน */
   $$('#dlOne [data-dldt]').forEach(b=> b.onclick=()=>{ DOC_SEL=b.dataset.dldt; rDeal(); });
   const pr=$('#dlPrint'); if(pr) pr.onclick=printCurrentDoc;
   const ovb=$('#dlOv'); if(ovb) ovb.onclick=()=>docOvModal(DOC_SALE);
@@ -7595,6 +7629,8 @@ function finAdvance(id){
   c.status=FIN_STAGES[i+1]; finLog(c,c.status); syncFinToReg(c); touchCust(c.custId);
   const cu=CUSTOMERS.find(x=>x.id===c.custId);
   if(c.status==='อนุมัติแล้ว' && cu && cu.stage!=='รับรถสำเร็จ') cu.stage='ผ่าน';
+  dbPatch('finance_case', c.id, Object.assign({ status:c.status, stage_log:c.log },
+    c.status==='อนุมัติแล้ว'? { decided_at:TODAY } : {}));   /* v1.49 */
   toast('อัปเดตแล้ว', c.status); refreshAll(); return true;
 }
 function finBack(id){
@@ -7602,6 +7638,7 @@ function finBack(id){
   if(!canFinStage()) return finStageDeny();
   const i=FIN_STAGES.indexOf(finStageNorm(c)); if(i<=0) return false;
   c.status=FIN_STAGES[i-1]; finLog(c,c.status); touchCust(c.custId);
+  dbPatch('finance_case', c.id, { status:c.status, stage_log:c.log });   /* v1.49 */
   toast('ถอยกลับแล้ว', c.status); refreshAll(); return true;
 }
 /* ---------- เหตุผลที่ไฟแนนซ์ไม่ผ่าน (ข้อ 9 ของบรีฟ) ----------
@@ -7624,6 +7661,9 @@ function finReject(id, reason, blocker, note){
   finHistAdd(c.custId, { at:TODAY, fin:(finById(c.finId)||{}).name||'', event:'ปฏิเสธ',
     reason:c.rejectReason, with:c.rejectWith, note:c.rejectNote });
   finLog(c,'ปฏิเสธ · '+c.rejectReason+(c.rejectWith? ' ('+c.rejectWith+')' : ''));
+  dbPatch('finance_case', c.id, { status:'ปฏิเสธ', reject_reason:c.rejectReason
+    +(c.rejectWith? ' ('+c.rejectWith+')':'')+(c.rejectNote? ' — '+c.rejectNote:''),
+    decided_at:TODAY, stage_log:c.log });   /* v1.49 */
   syncFinToReg(c); touchCust(c.custId);
   const cu=CUSTOMERS.find(x=>x.id===c.custId); if(cu) cu.stage='ไม่ผ่าน';
   toast('บันทึกการปฏิเสธแล้ว', c.rejectReason+(c.rejectWith? ' · '+c.rejectWith : ''),1);
@@ -7672,6 +7712,9 @@ function finResubmit(id, after){
     delete c.rejectReason; delete c.rejectWith; delete c.rejectNote; delete c.rejectAt;
     finLog(c,'ส่งเรื่อง (ยื่นใหม่)'); touchCust(c.custId);
     finHistAdd(c.custId, { at:TODAY, fin:(finById(nf)||{}).name||'', event:'ยื่นใหม่' });
+    const nfDb=(finById(nf)||{}).dbId;   /* v1.49: ยื่นใหม่ = เปลี่ยนเจ้า + ล้างผลเดิม */
+    dbPatch('finance_case', c.id, Object.assign({ status:'ส่งเรื่อง', submitted_at:TODAY,
+      reject_reason:null, decided_at:null, stage_log:c.log }, nfDb? { company_id:nfDb } : {}));
     if(s){ s.finId=nf; const a=AR.find(x=>x.saleId===s.id&&x.kind==='finance'); if(a) a.finId=nf; }
     if(cu && cu.stage!=='รับรถสำเร็จ') cu.stage='จอง';
     syncFinToReg(c);                         /* ล้าง hold + ดันทะเบียนกลับเข้าราง */
@@ -7713,6 +7756,11 @@ function regAdvance(id, plate){
   }
   r.stage=nxt; r.log.push({to:nxt, at:TODAY}); touchSale(r.saleId);
   if(nxt==='ส่งมอบแล้ว') regMarkDelivered(r);
+  /* v1.49: ทุกการเดินขั้นแช่ลงฐานด้วย — ป้าย/วันได้ป้ายเฉพาะขั้นที่เกิดจริง */
+  dbPatch('registration', r.id, Object.assign({ stage:r.stage, stage_log:r.log },
+    r.plate? { plate_no:r.plate } : {},
+    nxt==='ได้ทะเบียนแล้ว'? { plate_received_at:TODAY } : {},
+    nxt==='ส่งมอบแล้ว'? { delivered_at:TODAY } : {}));
   toast('อัปเดตขั้นตอนแล้ว', nxt);
   /* ได้ป้ายจริง = จุดส่งต่อฝ่ายบริการจุดเดียวของระบบ (§9g) — ปิดงานจากหน้าไหนก็ผ่านตรงนี้
      รอบติดตามนับจากวันได้ป้าย (คำตอบเจ้าของข้อ 3) — careCreate อ่านวันจาก log ของงานนี้เอง */
@@ -7767,6 +7815,7 @@ function regBack(id){
   const r=REGS.find(x=>x.id===id); if(!r) return false;
   const i=REG_STAGES.indexOf(r.stage); if(i<=0) return false;
   r.stage=REG_STAGES[i-1]; r.log.push({to:r.stage, at:TODAY});
+  dbPatch('registration', r.id, { stage:r.stage, stage_log:r.log });   /* v1.49 */
   toast('ถอยกลับแล้ว', r.stage); refreshAll(); return true;
 }
 /* ปิดงานจากหน้าทะเบียน (v1.35) — เดินผ่าน regAdvance ทีละขั้นเสมอ:
@@ -7795,7 +7844,9 @@ function voidSaleCore(s, drop){
   u.status='available';
   /* รองรับทั้งรูปเก่า (array ของ id) และรูปใหม่ ({id,qty,...}) — ของนอกคลัง (id=null) ไม่มีสต๊อกให้คืน */
   (s.gifts||[]).forEach(g=>{ const id=typeof g==='string'? g : g&&g.id; if(!id) return;
-    const gg=GIFTS.find(x=>x.id===id); if(gg) gg.qty+=(g&&g.qty)||1; });
+    const gg=GIFTS.find(x=>x.id===id); if(!gg) return;
+    gg.qty+=(g&&g.qty)||1;
+    if(isUuid(gg.id)) dbPatch('freebie', gg.id, { qty_on_hand:gg.qty }); });   /* v1.49 คืนของแถมลงฐานด้วย */
   s.void=true; s.voidedAt=TODAY;
   if(drop) s.drop=drop;                       /* {reason, detail, downBack, by} — ลูกค้าเทตอนส่งมอบ (E1) */
   const ri=REGS.findIndex(x=>x.saleId===s.id); if(ri>=0) REGS.splice(ri,1);
@@ -7923,14 +7974,35 @@ function rAr(){
       +'<div><label class="fl">จำนวนเงินที่รับ (฿)</label><input class="inp num" id="arAmt" value="'+left+'"></div>'
       +'<div><label class="fl">วิธีรับ</label><select class="inp" id="arWay"><option>โอนเข้าบัญชี</option><option>เงินสด</option><option>เช็ค</option></select></div>'
       +'</div><div style="margin-top:var(--s2)"><button class="btn" id="arGo">ยืนยันลงรับ</button></div>');
-    $('#arGo').onclick=()=>{ const amt=Math.min(left, num($('#arAmt').value));
-      if(amt<=0){ toast('กรอกจำนวนเงินก่อน','',1); return; }
-      a.paid=Math.min(a.due, a.paid+amt);
-      (a.pays=a.pays||[]).push({at:TODAY, amt, way:$('#arWay').value});   /* เก็บวันที่รับไว้ให้บัญชี */
-      toast('ลงรับเงินแล้ว', baht(amt)+' · '+$('#arWay').value); closeModal(); refreshAll(); }; });
+    $('#arGo').onclick=()=>{ if(arReceive(a.id, $('#arAmt').value, $('#arWay').value)) closeModal(); }; });
+}
+/* v1.49: ลงรับเงินเป็นฟังก์ชันชื่อจริง + ด่านสิทธิ์ + แช่ลงฐาน (§9b — โมดัลเป็นแค่ทางเข้า)
+   receipt_payment เก็บทีละครั้งพร้อมวิธีรับ · receivable เดินยอดรวม — บัญชีอ่านย้อนหลังได้ทั้งคู่ */
+function arReceive(arId, amt, way){
+  const a=AR.find(x=>x.id===arId); if(!a) return false;
+  if(!canFinApprove()){ toast('ต้องเป็นการเงินหรือแอดมิน','',1); return false; }
+  amt=Math.min(Math.max(0,a.due-a.paid), num(amt));
+  if(amt<=0){ toast('กรอกจำนวนเงินก่อน','',1); return false; }
+  a.paid=Math.min(a.due, a.paid+amt);
+  const w=String(way||'').trim()||'โอนเข้าบัญชี';
+  (a.pays=a.pays||[]).push({at:TODAY, amt, way:w});   /* เก็บวันที่รับไว้ให้บัญชี */
+  dbUp('receipt_payment', { id:dbId(), receivable_id:a.id, paid_at:TODAY, amount:amt,
+    method:w, by_user: isUuid(ME.id)? ME.id : null });
+  dbPatch('receivable', a.id, Object.assign({ amount_paid:a.paid },
+    a.paid>=a.due? { settled_at:TODAY } : {}));
+  touchSale(a.saleId);
+  toast('ลงรับเงินแล้ว', baht(amt)+' · '+w); refreshAll(); return true;
 }
 
 /* ============================= 12. ศูนย์ซ่อม ============================= */
+/* v1.49: ปิดงานซ่อมเป็นฟังก์ชันชื่อจริง + แช่ลงฐาน (§9b — เดิมฝังใน onclick เขียนแต่ในเครื่อง) */
+function svDeliver(id){
+  const s=SERVICE.find(x=>x.id===id); if(!s || s.status==='ส่งมอบแล้ว') return false;
+  if(!permW('page:service')){ toast('บทบาทของคุณปิดใบงานไม่ได้','ต้องมีสิทธิ์เขียนของหน้า "ศูนย์ซ่อม"',1); return false; }
+  s.status='ส่งมอบแล้ว';
+  dbPatch('service_job', s.id, { status:s.status, finished_at:TODAY });
+  toast('ปิดงานแล้ว','ตั้งเตือนเช็กระยะรอบถัดไปอัตโนมัติ'); refreshAll(); return true;
+}
 let svFoundUnit=null;
 function rService(){
   if(!$('#svFind').dataset.init){ $('#svFind').dataset.init=1;
@@ -7968,8 +8040,7 @@ function rService(){
       '<span class="mono">'+esc(s.no||'—')+'</span> · '+thDate(s.at)+' · '+esc(u?u.model:'—')+' · '+esc(s.type),
       pill(s.status, s.status==='ส่งมอบแล้ว'?'good':'info')
         +(s.status!=='ส่งมอบแล้ว'?'<span style="flex:1"></span><button class="lnk" data-sv="'+s.id+'">ปิดงาน</button>':''))));
-  $$('[data-sv]').forEach(b=> b.onclick=()=>{ const s=SERVICE.find(x=>x.id===b.dataset.sv); s.status='ส่งมอบแล้ว';
-    toast('ปิดงานแล้ว','ตั้งเตือนเช็กระยะรอบถัดไปอัตโนมัติ'); refreshAll(); });
+  $$('[data-sv]').forEach(b=> b.onclick=()=> svDeliver(b.dataset.sv));
   const rr=REMIND.filter(r=>r.status==='รอถึงกำหนด').sort((a,b)=>a.due.localeCompare(b.due));
   tbl($('#svRemind'), ['ลูกค้า','เบอร์','รุ่น',{t:'รอบ (กม.)',n:1},'ครบกำหนด','สถานะ'],
     rr.slice(0,30).map(r=>{ const c=CUSTOMERS.find(x=>x.id===r.custId), u=UNITS.find(x=>x.id===r.unitId);
@@ -8024,22 +8095,45 @@ function svSave(){
   const p=PARTS.find(x=>x.id===$('#svPart').value);
   if(p && p.qty<1){ toast('อะไหล่ไม่พอ',p.name+' เหลือ '+p.qty,1); return; }
   let c=CUSTOMERS.find(x=>x.name===name);
-  if(!c){ c={id:nid('CU'),name,phone:$('#svPhone').value.trim(),src:'เข้าศูนย์บริการ',stage:'รับรถสำเร็จ',
-    branch:ME.branch,variant:'',owner:ME.nick}; CUSTOMERS.push(c); }
+  if(!c){ c={id: LIVE? dbId() : nid('CU'),name,phone:$('#svPhone').value.trim(),src:'เข้าศูนย์บริการ',stage:'รับรถสำเร็จ',
+    branch:ME.branch,variant:'',owner:ME.nick}; CUSTOMERS.push(c);
+    dbUp('customer', { id:c.id, branch_id:BR_IDS[c.branch]||null, full_name:c.name,
+      phone:c.phone||null, source:c.src, stage:c.stage });   /* v1.49 ลูกค้า walk-in ศูนย์ซ่อม */
+  }
   const now=new Date(); const hhmm=String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
   /* วันที่รับรถเลือกได้ (K9) — ห้ามเป็นวันอนาคต เพราะใบงานคือบันทึกของงานที่เกิดแล้ว */
   const svAt=$('#svDate').value||TODAY;
   if(svAt>TODAY){ toast('วันที่รับรถเป็นวันอนาคตไม่ได้','',1); return; }
-  const job={id:nid('SV'), no:nextDocNo(ME.branch,'SERVICE'), branch:ME.branch, custId:c.id,
+  const job={id: LIVE? dbId() : nid('SV'), no:nextDocNo(ME.branch,'SERVICE'), branch:ME.branch, custId:c.id,
     unitId:svFoundUnit?svFoundUnit.id:null, engine:svFoundUnit?svFoundUnit.engine:$('#svSearch').value.trim(),
     frame:svFoundUnit?svFoundUnit.frame:'', km:num($('#svKm').value), type:$('#svType').value,
     symptom:$('#svSymptom').value.trim(), at:svAt, time:hhmm, status:'รับเข้า',
     labor:num($('#svLabor').value), parts:p?p.price:0, tech:$('#svTech').value};
   SERVICE.push(job);
-  if(p){ p.qty--; PMOVES.push({id:nid('MV'),partId:p.id,qty:-1,type:'job',at:TODAY,branch:ME.branch,jobId:job.id}); }
+  /* v1.49: ใบงานลงฐานจริง — เวลาเข้ารับแช่เป็น timestamp เขตไทย */
+  dbUp('service_job', { id:job.id, branch_id:BR_IDS[job.branch], job_no:job.no,
+    customer_id: isUuid(c.id)? c.id : null,
+    unit_id: (job.unitId && isUuid(job.unitId))? job.unitId : null,
+    engine_no:job.engine||null, frame_no:job.frame||null, odometer_km:job.km||null,
+    service_type:job.type, symptom:job.symptom||null,
+    checked_in_at:job.at+'T'+job.time+':00+07:00', status:job.status, labor_cost:job.labor||0 });
+  if(p){ p.qty--;
+    const mv={id: LIVE? dbId() : nid('MV'),partId:p.id,qty:-1,type:'job',at:TODAY,branch:ME.branch,jobId:job.id};
+    PMOVES.push(mv);
+    if(isUuid(p.id)){   /* อะไหล่ id เดโมยังไม่มีในฐาน — ข้ามจนกว่าจะโหลดกลับ (v1.50) */
+      dbUp('part_movement', { id:mv.id, part_id:p.id, branch_id:BR_IDS[mv.branch],
+        kind:'job', qty:-1, job_id:job.id, at:TODAY });
+      dbPatch('part', p.id, { qty_on_hand:p.qty });
+    } }
   /* ตั้งเตือนรอบถัดไปจากเลขไมล์ */
   const kms=String(CFG.km).split(',').map(x=>parseInt(x)).filter(k=>k>job.km);
-  if(kms.length) REMIND.push({id:nid('RM'),custId:c.id,unitId:job.unitId,km:kms[0],due:addDays(svAt,90),status:'รอถึงกำหนด'});
+  if(kms.length){
+    const rmRow={id: LIVE? dbId() : nid('RM'),custId:c.id,unitId:job.unitId,km:kms[0],due:addDays(svAt,90),status:'รอถึงกำหนด'};
+    REMIND.push(rmRow);
+    dbUp('service_reminder', { id:rmRow.id, customer_id: isUuid(c.id)? c.id : null,
+      unit_id:(job.unitId && isUuid(job.unitId))? job.unitId : null,
+      target_km:kms[0], due_date:rmRow.due, status:rmRow.status });
+  }
   toast('เปิดใบงานแล้ว', job.no+' · ลงเวลาเข้า '+hhmm+(kms.length?(' · ตั้งเตือนรอบ '+fmt(kms[0])+' กม.'):''));
   $('#svSymptom').value=''; $('#svKm').value=''; refreshAll();
 }
@@ -8061,8 +8155,12 @@ function careCreate(s){
     check: String(CFG.careList||'').split('\n').map(x=>x.trim()).filter(Boolean)
       .map(t=>({t, done:false, at:'', by:''})),
     tasks: String(CFG.careDays||'7,30,60,90,120').split(',').map(x=>parseInt(x)).filter(x=>x>0)
-      .map(d=>({id:nid('CT'), kind:d+' วัน', due:addDays(at,d), done:false, doneAt:'', note:''})) };
+      .map(d=>({id: LIVE? dbId() : nid('CT'), kind:d+' วัน', due:addDays(at,d), done:false, doneAt:'', note:''})) };
   CARE.push(rec);
+  /* v1.49: รอบดูแลลงฐานเป็น follow_up_task (kind ขึ้นต้น 'care ') — checklist ส่งมอบยังอยู่ในเครื่อง
+     (ไม่มีตารางรองรับ บันทึกข้อจำกัดใน docs/08 รอเจ้าของสั่งถ้าต้องดูข้ามเครื่อง) */
+  rec.tasks.forEach(t=> dbUp('follow_up_task', { id:t.id, branch_id:BR_IDS[rec.branch],
+    customer_id:rec.custId, sale_id:rec.saleId, kind:'care '+t.kind, due_at:t.due }));
   return rec;
 }
 function careTick(careId, idx){
@@ -8077,7 +8175,15 @@ function careTask(careId, taskId, note){
   if(!canCare()){ toast('เฉพาะฝ่ายบริการและผู้บริหาร','',1); return false; }
   const t=r.tasks.find(x=>x.id===taskId); if(!t) return false;
   t.done=true; t.doneAt=TODAY; if(note!=null) t.note=String(note).trim();
+  dbPatch('follow_up_task', t.id, { done_at:TODAY, note:t.note||null });   /* v1.49 */
   toast('ปิดรอบติดตามแล้ว', t.kind+(t.note?' · '+t.note:'')); refreshAll(); return true;
+}
+/* v1.49: ปิดงานติดตาม (cadence หลังขาย) เป็นฟังก์ชันชื่อจริง + แช่ลงฐาน — เดิมฝังใน onclick */
+function dealTaskDone(tid){
+  const t=TASKS.find(x=>x.id===tid); if(!t || t.done) return false;
+  t.done=true;
+  dbPatch('follow_up_task', t.id, { done_at:TODAY, done_by: isUuid(ME.id)? ME.id : null });
+  toast('ปิดงานติดตามแล้ว'); refreshAll(); return true;
 }
 /* สรุปสั้น ๆ ให้เซลล์ดูในดีล — อ่านอย่างเดียว */
 function careBrief(saleId){
@@ -8281,8 +8387,11 @@ function partSave(){
   const code=$('#pCode').value.trim(), name=$('#pName').value.trim();
   if(!code||!name){ toast('กรอกรหัสและชื่ออะไหล่','',1); return; }
   if(PARTS.some(p=>p.code===code)){ toast('รหัสอะไหล่ซ้ำ','',1); return; }
-  PARTS.push({id:nid('PT'),code,name,cost:num($('#pCost').value),price:num($('#pPrice').value),
-    qty:num($('#pQty').value),min:num($('#pMin').value),branch:ME.branch});
+  const np={id: LIVE? dbId() : nid('PT'),code,name,cost:num($('#pCost').value),price:num($('#pPrice').value),
+    qty:num($('#pQty').value),min:num($('#pMin').value),branch:ME.branch};
+  PARTS.push(np);
+  dbUp('part', { id:np.id, branch_id:BR_IDS[np.branch], code:np.code, name:np.name,
+    cost:np.cost, price:np.price, qty_on_hand:np.qty, min_qty:np.min });   /* v1.49 */
   toast('เพิ่มอะไหล่แล้ว',name); $('#pCode').value=''; $('#pName').value=''; refreshAll();
 }
 function rPartsStock(){
@@ -8315,7 +8424,14 @@ function partMove(){
   const p=PARTS.find(x=>x.id===$('#msPart').value); const q=num($('#msQty').value);
   if(!p||q<1){ toast('เลือกอะไหล่และจำนวน','',1); return; }
   if(p.qty<q){ toast('ของไม่พอ',p.name+' เหลือ '+p.qty,1); return; }
-  p.qty-=q; PMOVES.push({id:nid('MV'),partId:p.id,qty:-q,type:$('#msType').value,at:TODAY,branch:$('#msBranch').value});
+  p.qty-=q;
+  const mv={id: LIVE? dbId() : nid('MV'),partId:p.id,qty:-q,type:$('#msType').value,at:TODAY,branch:$('#msBranch').value};
+  PMOVES.push(mv);
+  if(isUuid(p.id)){   /* v1.49 — อะไหล่ id เดโมยังไม่มีในฐาน ข้ามจนกว่าจะโหลดกลับ (v1.50) */
+    dbUp('part_movement', { id:mv.id, part_id:p.id, branch_id:BR_IDS[mv.branch],
+      kind:mv.type, qty:-q, at:TODAY });
+    dbPatch('part', p.id, { qty_on_hand:p.qty });
+  }
   toast('ตัดสต๊อกแล้ว',p.name+' × '+q); refreshAll();
 }
 function rPartSale(){
@@ -8351,9 +8467,15 @@ function giftSave(){
   if(!ptCanW('pt3')){ toast('บทบาทของคุณเพิ่มของแถมไม่ได้','สิทธิ์อยู่กับแท็บ "ของแถม"',1); return; }
   const n=$('#gName').value.trim(); if(!n){ toast('กรอกชื่อของแถม','',1); return; }
   const ex=GIFTS.find(g=>g.name===n&&g.branch===$('#gBranch').value);
-  if(ex){ ex.qty+=num($('#gQty').value); toast('เพิ่มจำนวนแล้ว',n+' รวม '+ex.qty); }
-  else { GIFTS.push({id:nid('G'),name:n,cost:num($('#gCost').value),price:num($('#gPrice').value),
-    qty:num($('#gQty').value),min:num($('#gMin').value),branch:$('#gBranch').value}); toast('เพิ่มของแถมแล้ว',n); }
+  if(ex){ ex.qty+=num($('#gQty').value);
+    if(isUuid(ex.id)) dbPatch('freebie', ex.id, { qty_on_hand:ex.qty });   /* v1.49 */
+    toast('เพิ่มจำนวนแล้ว',n+' รวม '+ex.qty); }
+  else { const ng={id: LIVE? dbId() : nid('G'),name:n,cost:num($('#gCost').value),price:num($('#gPrice').value),
+      qty:num($('#gQty').value),min:num($('#gMin').value),branch:$('#gBranch').value};
+    GIFTS.push(ng);
+    dbUp('freebie', { id:ng.id, branch_id:BR_IDS[ng.branch], name:ng.name, cost:ng.cost,
+      price:ng.price, qty_on_hand:ng.qty, min_qty:ng.min });   /* v1.49 */
+    toast('เพิ่มของแถมแล้ว',n); }
   $('#gName').value=''; refreshAll();
 }
 function rGift(){
@@ -8448,11 +8570,16 @@ function expSave(){
     ['วันที่', thDate($('#eDate').value||TODAY)],
     ['ใบเสร็จ', eFilesArr.length? 'แนบ '+eFilesArr.length+' ไฟล์':'ยังไม่แนบ']
   ], ()=>{
-    EXPENSES.push({id:nid('EX'),cat,branch:$('#eBranch').value,amt:a,at:$('#eDate').value||TODAY,
+    const ex={id: LIVE? dbId() : nid('EX'),cat,branch:$('#eBranch').value,amt:a,at:$('#eDate').value||TODAY,
       by:st.id, byName:st.name, note:$('#eNote').value.trim(),
       /* การเงินเข้ามากดตรวจทีหลัง (บรีฟ: ฝั่งการเงินอนุมัติค่าใช้จ่าย) */
       approval:{status:'รอตรวจ', by:'', at:'', note:''},
-      vendor:$('#eVendor').value.trim(),inv:$('#eInv').value.trim(),files:eFilesArr.slice()});
+      vendor:$('#eVendor').value.trim(),inv:$('#eInv').value.trim(),files:eFilesArr.slice()};
+    EXPENSES.push(ex);
+    /* v1.49: หมวดเป็นตัวหนังสือ (พิมพ์ใหม่ได้ตามบรีฟ) — migration 29 เปิดคอลัมน์ category */
+    dbUp('expense', { id:ex.id, branch_id:BR_IDS[ex.branch], category:ex.cat, spent_at:ex.at,
+      amount:ex.amt, vendor:ex.vendor||null, tax_invoice_no:ex.inv||null,
+      has_receipt:ex.files.length>0, note:ex.note||null, approval:ex.approval });
     toast('บันทึกค่าใช้จ่ายแล้ว', baht(a)+' · '+st.nick
       +(eFilesArr.length?' · แนบ '+eFilesArr.length+' ไฟล์':' · ยังไม่แนบใบเสร็จ'));
     $('#eAmt').value=0; $('#eVendor').value=''; $('#eInv').value=''; $('#eNote').value='';
@@ -8525,6 +8652,7 @@ function expApprove(id, ok, note){
   const e=EXPENSES.find(x=>x.id===id); if(!e) return false;
   if(!canFinApprove()){ toast('ต้องเป็นการเงินหรือแอดมินเท่านั้น','',1); return false; }
   e.approval={status: ok?'ผ่าน':'ไม่ผ่าน', by:ME.nick, at:TODAY, note:(note||'').trim()};
+  dbPatch('expense', e.id, { approval:e.approval });   /* v1.49 */
   toast(ok?'การเงินตรวจแล้ว — ผ่าน':'การเงินตีกลับแล้ว', e.cat+' '+fmt(e.amt)+' ฿', ok?0:'warn');
   refreshAll(); return true;
 }
