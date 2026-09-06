@@ -16,7 +16,11 @@
 
 Mutation allocation-r60 **24/24** จับข้อความ assertion ตามที่ตั้งใจ ต้นฉบับผ่านก่อน/หลัง ตรวจภาพ WebKit **184 ข้อ / 72 ภาพ** ที่ 820/1180/1440/390 สองธีมและสี่บทบาท ไม่มีล้น หน้า error หรือคำขอเขียนฐานจริง ช่องกรอกแท็บเล็ต 48px
 
-หลักฐาน: /tmp/famai-r60-all.log, /tmp/famai-r60-final-rerun.log, /tmp/famai-r60-mutations-status.json, /tmp/famai-r60-audit/visual/report.json ต้นฉบับแอปสุดท้าย SHA-256 `fb8c736ddd87a7a4a00bc1b63d37d5e2c6bbefccf409ba81dde936c0f68d7d8d` รอผลตรวจหลังเผยแพร่
+หลักฐาน: /tmp/famai-r60-all.log, /tmp/famai-r60-final-rerun.log, /tmp/famai-r60-mutations-status.json, /tmp/famai-r60-audit/visual/report.json ต้นฉบับแอปสุดท้าย SHA-256 `fb8c736ddd87a7a4a00bc1b63d37d5e2c6bbefccf409ba81dde936c0f68d7d8d` เผยแพร่ตัวแอปจาก commit `88f19d2d1a6ab3ca98bbc8bf666696518ba43a61` แล้ว Vercel `dpl_HjdTd7kJb7539hB1KdrNUfRKpTFn` READY และ alias famai-web.vercel.app ชี้เวอร์ชันนี้
+
+ตรวจ HTTPS production จริงแล้ว: Chromium ผ่าน 7/7 ชุด (allocation-r60, sales-brief-r56, sales-ack-r56, quote-brief-r56, pick-r3, intent-r32, tablet-r59) ครอบคลุมคำขอก่อนจัดคัน การเงินก่อนส่งมอบ เงินสด/ผ่อน และแท็บเล็ตหกขนาดสองธีม
+
+WebKit production ผ่าน 184/184 ข้อและตรวจภาพ 72 ภาพ จาก 32 demo sessions ที่ 820/1180/1440/390 สองธีม สี่บทบาท ค่ารุ่น รหัส สี ราคา ดาวน์ บริษัท และงวดตามไปคำขอครบ ไม่พบ overflow หรือ page error ไม่มีคำขอเขียน Supabase และ response ทั้ง 32 ครั้งตรงกับ SHA ของต้นฉบับสุดท้าย รายงาน /tmp/famai-r60-production.json และ /tmp/famai-r60-production-webkit/report.json
 
 
 
