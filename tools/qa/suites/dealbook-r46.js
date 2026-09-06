@@ -37,6 +37,10 @@ const {installPages}=require('../helpers/pages');
 
   /* ---------- [1][2] ป้ายขึ้นเฉพาะคนที่จองอยู่ ---------- */
   const g1 = await p.evaluate(() => {
+    /* ด่านป้ายตรวจข้อมูลตลอดช่วงสาธิตอย่างชัดเจน ไม่อิงค่าเริ่มต้น 30 วัน */
+    PERIOD.deal={r:3650,from:addDays(TODAY,-3650),to:TODAY};
+    /* seed เก่ามีลูกค้าที่ยังไม่มีวันเพิ่ม เติมวันจากการจองจริงเพื่อจำลองระเบียนฐานที่มี created_at */
+    BOOKINGS.filter(b=>b.custId).forEach(b=>{const c=CUSTOMERS.find(c=>c.id===b.custId);if(c&&!c.createdAt)c.createdAt=b.at;});
     go('deal'); DEAL_SEL = ''; rDeal();
     /* ค่าที่ตัวกรองตั้งอยู่ตอนเข้าหน้าครั้งแรก — ต้องเป็น "ไม่กรอง" ไม่งั้นตารางรวมที่ทุกคนเห็น
        (และที่ด่านชุดอื่นนับ) จะเปลี่ยนไปเงียบ ๆ · อ่านก่อนที่ข้ออื่นจะไปแตะค่า */

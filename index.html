@@ -1170,13 +1170,15 @@ textarea.inp{ height:auto; padding:var(--s1) var(--s2); resize:vertical; line-he
 .pm-row + .pm-row{ border-top:1px solid var(--hairline-2); }
 .pm-row small{ display:block; color:var(--muted); }
 .pm-row .inp{ width:100%; min-width:0; }
-.pm-save{ background:var(--card); }
+/* แถบบันทึกอยู่ระดับเดียวกับเนื้อหาการ์ด เพื่อไม่ซ้อนพื้นผิวเกินสองชั้น */
+#cf7 .card > .pm-save{ background:var(--card); margin:0; padding:var(--s3); }
 .pm-save [role="status"]{ flex:1 1 180px; }
 .pm-group-title{ display:flex; gap:var(--s1); align-items:center; }
 .pm-group-title i{ width:8px; height:8px; border-radius:50%; flex:none; }
 @media(max-width:600px){
   .pm-row{ grid-template-columns:minmax(0,1fr); gap:var(--s1); }
   .pm-tools .btn{ flex:1 1 160px; }
+  #cf7 .card > .pm-save{ padding:var(--s2); }
   .pm-save .btn{ flex:1 1 120px; }
 }
 /* ปฏิทิน — ช่องวันคือตัวข้อมูลเอง ไม่ใช่กล่องหุ้ม จึงใช้เส้นตารางแทนพื้นทึบ
@@ -1975,7 +1977,7 @@ body.lock{ overflow:hidden; }
                 <div><label class="fl">ชื่อลูกค้า</label><input class="inp" id="svName"></div>
                 <div><label class="fl">เบอร์โทร</label><input class="inp" id="svPhone"></div>
               </div>
-              <div><label class="fl">รุ่นรถ</label><input class="inp" id="svModel" placeholder="เลือกรถที่ค้นพบ หรือพิมพ์รุ่นรถนอกได้"></div>
+              <div><label class="fl">รุ่นรถ</label><input class="inp" id="svModelName" placeholder="เลือกรถที่ค้นพบ หรือพิมพ์รุ่นรถนอกได้"></div>
               <div class="f2">
                 <div><label class="fl">เลขเครื่อง</label><input class="inp mono" id="svEngine"></div>
                 <div><label class="fl">เลขถัง</label><input class="inp mono" id="svFrame"></div>
@@ -2407,8 +2409,9 @@ body.lock{ overflow:hidden; }
                 <p class="tsub">แม่แบบเป็นจุดเริ่มต้น ปรับแต่ละข้อได้ก่อนบันทึก การกระทำสำคัญต้องได้รับทั้งสิทธิ์แก้ไขหน้าและสิทธิ์ทำรายการนั้น</p>
               </div>
               <div id="pmList"></div>
-              <div class="savebar pm-save"><span id="pmStatus" role="status" aria-live="polite"></span><button class="btn sec" id="pmCancel">ยกเลิกการแก้ไข</button><button class="btn" id="pmSave">บันทึกสิทธิ์บทบาทนี้</button></div>
-            </div></div>
+            </div>
+            <div class="savebar pm-save"><span id="pmStatus" role="status" aria-live="polite"></span><button class="btn sec" id="pmCancel">ยกเลิกการแก้ไข</button><button class="btn" id="pmSave">บันทึกสิทธิ์บทบาทนี้</button></div>
+          </div>
         </div>
       </section>
 
@@ -2826,16 +2829,30 @@ const FIN_CO = [
    terms:[12,24,36,48]},
   {id:'F3', name:'ทิสโก้',        rate:1.42, minDownPct:20, commission:1800, active:true, note:''}
 ];
-const finActive = () => FIN_CO.filter(f=>f.active);
+const finActive = () => FIN_CO.filter(f=>f.active && finTerms(f).length>0);
 const finById   = id => FIN_CO.find(f=>f.id===id);
 /* เรตของเจ้านั้น ณ จำนวนงวดนั้น — ช่วงงวด (tiers) ชนะ → เรตรายงวดรูปเก่า (rates) → เรตฐาน */
+const finRateValue = v => v==null||v===''||!Number.isFinite(+v)||+v<0?null:+v;
 const finRate = (f, term) => {
+  if(!f)return null;
   const tr=(f.tiers||[]).find(t=>term>=t.from && term<=t.to);
-  if(tr) return tr.rate;
-  return (f.rates && f.rates[term]!=null) ? f.rates[term] : f.rate;
+  if(tr)return finRateValue(tr.rate);
+  return finRateValue(f.rates && f.rates[term]!=null?f.rates[term]:f.rate);
 };
-const FIN_TERMS = [12,18,24,30,36,42,48,60];   /* ชุดเริ่มต้นเมื่อบริษัทไม่ได้ตั้งงวดเอง */
-const finTerms = f => (f && f.terms && f.terms.length)? f.terms : FIN_TERMS;
+const FIN_TERMS = [12,18,24,30,36,42,48,60];
+/* terms ว่างใช้ชุดเริ่มต้นตามสัญญาคอลัมน์ แต่เสนอเฉพาะงวดที่มีเรตจริง
+   ฐานข้อมูลไม่ตั้งเรตไม่ใช่ 0% และไม่ถอยไปใช้ตัวเลขสาธิต */
+const finTerms = f => [...new Set((f&&Array.isArray(f.terms)&&f.terms.length?f.terms:FIN_TERMS).map(Number))]
+  .filter(t=>Number.isInteger(t)&&t>=6&&t<=120&&(!f||finRate(f,t)!=null)).sort((a,b)=>a-b);
+/* id ในโหมดจริงยึด uuid ของบริษัท เปลี่ยนชื่อแล้วความสัมพันธ์กับดีลไม่เปลี่ยน */
+const finCompanyColumns = money => 'id,name,flat_rate_pct,min_down_pct,note,is_active,tiers,terms,rate_tiers'+(money?',commission':'');
+function finCompanyFromRow(r){
+  return {id:r.id,dbId:r.id,name:r.name,rate:finRateValue(r.flat_rate_pct),
+    minDownPct:r.min_down_pct==null?0:+r.min_down_pct,commission:r.commission==null?null:+r.commission,
+    active:r.is_active!==false,note:r.note||'',tiers:Array.isArray(r.tiers)?r.tiers.map(t=>({...t})):null,
+    terms:Array.isArray(r.terms)?r.terms.map(Number):null,
+    rates:r.rate_tiers&&typeof r.rate_tiers==='object'&&!Array.isArray(r.rate_tiers)?{...r.rate_tiers}:null};
+}
 /* งวดทั้งหมดที่มีเจ้าไหนสักเจ้าเปิดขาย — เป็นแถวของตารางเทียบ */
 const finTermsAll = () => { const s=new Set();
   finActive().forEach(f=>finTerms(f).forEach(t=>s.add(t)));
@@ -2908,6 +2925,8 @@ function seedDemo(){
       variant:u.variant, owner:pick(SALESPEOPLE,spIdx), demo:true};   /* stage จริงคิดท้ายรอบจากทะเบียน/ไฟแนนซ์ */
     CUSTOMERS.push(cust);
     const soldAt = addDays(TODAY, -ago);
+    cust.createdAt=soldAt+'T09:00:00+07:00';cust.upAt=cust.createdAt;
+    cust.ownerId=STAFF.find(x=>x.nick===cust.owner)?.id||'';
     const disc = [0,1500,2000,3000][i%4];
     const net = u.retail - disc;
     const freeCost = 450+320;
@@ -2982,7 +3001,8 @@ function seedDemo(){
     }
   });
   LEADS.forEach(l=> CUSTOMERS.push({id:nid('CU'), name:l[0], phone:l[1], src:l[2], stage:l[3],
-    branch:'FMG01', variant:l[4], owner:pick(SALESPEOPLE,0), demo:true}));
+    branch:'FMG01', variant:l[4], owner:pick(SALESPEOPLE,0), ownerId:STAFF.find(x=>x.nick===pick(SALESPEOPLE,0))?.id||'',
+    createdAt:TODAY+'T09:00:00+07:00',upAt:TODAY+'T09:00:00+07:00',demo:true}));
   /* v1.37: การจองสาธิต 2 ราย — "คุณแนน สุดา" (stage จอง อยู่แล้ว) วางมัดจำ · อีกรายไม่วาง
      รถสองคันติดสถานะจองแล้ว ตัวกรอง "จองแล้ว" ในสต๊อกจึงมีของจริงให้เห็น (B4) */
   (function(){
@@ -5784,6 +5804,7 @@ function saveSale(force, confirmed){
   const arBody=arRow?{id:arRow.id,branch_id:BR_IDS[s.branch],sale_id:s.id,kind:'finance',payer_finance_id:(finById(s.finId)||{}).dbId||null,amount_due:arRow.due,due_at:arRow.dueAt}:null;
   const complete=record=>{
     if(record&&record.sale){const row=record.sale;s.soldAt=row.sold_at;s.finApproval=row.fin_approval;s.cost=row.cost;s.gp=row.gross_profit;}
+    if(record&&record.registration){const row=record.registration;rg.stage=row.stage;rg.log=row.stage_log||[];rg.due=row.due_at;}
     if(originalCustomer)Object.assign(originalCustomer,c);else CUSTOMERS.push(c);
     SALES.push(s);UNITS.find(x=>x.id===u.id).status='sold';REGS.push(rg);if(arRow)AR.push(arRow);
     if(request)request.saleId=s.id;
@@ -6030,7 +6051,7 @@ function rWsSale(){
               +(canPrintDoc()? '<button class="lnk" data-wsp2="'+w.id+'">พิมพ์ใบส่งของ/ใบเสร็จ</button>'
                 +' <button class="lnk" data-wsptx="'+w.id+'">พิมพ์ใบกำกับภาษี</button>'
                 +' <button class="lnk" data-wsbill="'+w.id+'">ใบวางบิล</button>':'')
-              +(canFinApprove()&&st!=='ผ่าน'? ' <button class="lnk" data-wsap="'+w.id+'">การเงินตรวจ: ผ่าน</button>':'')
+              +(canFinApprove('invoice')&&st!=='ผ่าน'? ' <button class="lnk" data-wsap="'+w.id+'">การเงินตรวจ: ผ่าน</button>':'')
               +(canVoidSale()&&st!=='ผ่าน'&&!busy? ' <button class="lnk q" data-wsv="'+w.id+'">ยกเลิกบิล</button>':'')
               +'</div>'
               +(canVoidSale()&&st!=='ผ่าน'&&busy? '<div class="tsub">ยกเลิกบิลไม่ได้ — '+esc(busy)+'</div>':''))
@@ -6118,9 +6139,9 @@ function wsCommit(p, br, dest, items, note){
       sold_at:w.at, doc_no:w.docNo, total:w.total, note:w.note||null, fin_approval:w.finApproval });
     w.items.forEach(x=> dbUp('wholesale_sale_item',
       { id:dbId(), ws_id:w.id, unit_id:x.unitId, price:x.price }, 'ws_id,unit_id'));
-    w.items.forEach(x=> dbUp('motorcycle_unit', p.own
-      ? { id:x.unitId, branch_id:BR_IDS[dest] }        /* ในเครือ: รถย้ายสาขา สถานะยังว่าง */
-      : { id:x.unitId, status:'sold' }));
+    w.items.forEach(x=> dbPatch('motorcycle_unit', x.unitId, p.own
+      ? { branch_id:BR_IDS[dest] }        /* ในเครือ: รถย้ายสาขา สถานะยังว่าง */
+      : { status:'sold' }));
   }
   return w;
 }
@@ -6185,9 +6206,9 @@ function wsVoid(id, reason){
   if(LIVE){
     dbPatch('wholesale_sale', w.id,
       { voided_at:new Date().toISOString(), voided_reason:rv, voided_by:w.voidedBy });
-    w.items.forEach(x=> dbUp('motorcycle_unit', own
-      ? { id:x.unitId, branch_id:BR_IDS[w.branch] }
-      : { id:x.unitId, status:'available' }));
+    w.items.forEach(x=> dbPatch('motorcycle_unit', x.unitId, own
+      ? { branch_id:BR_IDS[w.branch] }
+      : { status:'available' }));
   }
   toast('ยกเลิกบิลขายส่งแล้ว', (w.docNo||'')+' · คืนรถ '+w.items.length+' คัน'
     +(own? ' เข้า '+bName(w.branch) : ' เข้าสต๊อกพร้อมขาย'));
@@ -6221,7 +6242,7 @@ function wsVoidModal(id){
 function wsFinPass(id){
   const w=WSALES.find(x=>x.id===id); if(!w) return false;
   if(wsVoided(w)){ toast('บิลนี้ยกเลิกแล้ว','ตรวจผ่านไม่ได้',1); return false; }
-  if(!canFinApprove()){ toast('ต้องเป็นการเงินหรือแอดมิน','',1); return false; }
+  if(!permW('page:invoice') || !canFinApprove('invoice') || !inScope(w.branch)){ toast('ต้องมีสิทธิ์ตรวจการเงินและแก้ไขใบขายส่งในสาขานี้','',1); return false; }
   w.finApproval={status:'ผ่าน', by:ME.nick, at:TODAY, note:''};
   dbPatch('wholesale_sale', w.id, { fin_approval:w.finApproval });
   toast('การเงินตรวจแล้ว — ผ่าน', w.docNo||''); refreshAll(); return true;
@@ -6371,15 +6392,31 @@ function docHTML(type, d){
    ทุกการขายเกิดมาพร้อมสถานะ "รอตรวจ" การเงิน (หรือแอดมิน) กด ผ่าน/ตีกลับ ในหน้าดีล
    ด่านจริงอยู่ที่ printCurrentDoc: ใบกำกับภาษีออกไม่ได้จนกว่าจะผ่าน (ใบเสร็จธรรมดาพิมพ์ได้)
    การขายเก่าที่ไม่มีฟิลด์นี้ถือว่ารอตรวจ — ไม่มีทางหลุดเป็น "ผ่านโดยไม่มีใครกด" */
-const canFinApprove = () => permW('page:deal') && permW('act:finApprove') && inRoles(['admin','manager','acct']);
+/* การเงินตรวจได้ตามหน้าที่กำลังทำรายการ สิทธิ์ดูดีลไม่ควรตัดสิทธิ์เขียนค่าใช้จ่ายหรือรับเงิน */
+const canFinApprove = (page='deal') => permW('page:'+page) && permW('act:finApprove') && inRoles(['admin','manager','acct']);
 const finApStatus = s => (s && s.finApproval && s.finApproval.status) || 'รอตรวจ';
 /* รายการสำคัญรอฐานยืนยันก่อนเปลี่ยนจอ เพื่อไม่ให้สำเร็จในเครื่องเดียวทั้งที่ถูกปฏิเสธ */
 function salesConfirmedWrite(table,id,body,commit){
-  if(!LIVE)return commit(null);
+  const fc=table==='finance_case'&&FINCASES.find(c=>c.id===id);
+  const linkedSale=fc&&fc.saleId&&SALES.find(s=>s.id===fc.saleId);
+  const resetApproval=()=>{if(linkedSale)linkedSale.finApproval={status:'รอตรวจ',note:'ผลไฟแนนซ์เปลี่ยน ต้องตรวจใหม่'};};
+  if(!LIVE){if(linkedSale&&body.status!==undefined&&body.status!==fc.status)resetApproval();return commit(null);}
   return (async()=>{try{
     const rows=await sbFetch('/rest/v1/'+table+'?id=eq.'+encodeURIComponent(id),{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify(body)});
     if(!Array.isArray(rows)||!rows[0])throw new Error('ไม่พบรายการที่แก้ไขได้ กรุณาโหลดข้อมูลใหม่');
-    return commit(rows[0]);
+    let approvalUnavailable=false;
+    if(linkedSale){
+      /* trigger เปลี่ยนคำตัดสินการเงินด้วย จึงต้องอ่านใบขายกลับหลังผลไฟแนนซ์ได้รับการยืนยัน */
+      resetApproval();
+      try{
+        const sales=await sbFetch('/rest/v1/sale?id=eq.'+encodeURIComponent(linkedSale.id)+'&select=id,fin_approval');
+        if(!Array.isArray(sales)||!sales[0]||sales[0].id!==linkedSale.id)throw new Error('ไม่พบใบขายที่เกี่ยวข้อง');
+        linkedSale.finApproval=sales[0].fin_approval||{status:'รอตรวจ'};
+      }catch(e){approvalUnavailable=true;}
+    }
+    const result=await commit(rows[0]);
+    if(approvalUnavailable)toast('บันทึกผลไฟแนนซ์แล้ว แต่ยังโหลดผลตรวจการเงินไม่ได้','คงสถานะรอตรวจ กรุณาโหลดข้อมูลใหม่ก่อนส่งมอบ',1);
+    return result;
   }catch(e){toast('ยังบันทึกไม่สำเร็จ',e.message||'กรุณาลองใหม่',1);return false;}})();
 }
 function finApprove(saleId, ok, note){
@@ -6630,7 +6667,7 @@ function bookSave(){
       dbUp('booking', { id:b.id, branch_id:BR_IDS[u.branch], customer_id:c.id, unit_id:u.id,
         name:b.name, phone:b.phone, deposit:b.deposit, deposit_no:b.depositNo||null,
         status:b.status, booked_at:b.at, note:b.note||null });
-      dbUp('motorcycle_unit', { id:u.id, status:'reserved' });
+      dbPatch('motorcycle_unit', u.id, { status:'reserved' });
     }
     toast('จองแล้ว', u.model+' · '+name+(dep>0? ' · มัดจำ '+fmt(dep)+' ฿ ('+b.depositNo+')':''));
     ['bkName','bkPhone','bkDeposit','bkNote','bkQ'].forEach(k=>$('#'+k).value='');
@@ -6650,7 +6687,7 @@ function bookCancel(id, reason){
   if(u && u.status==='reserved') u.status='available';
   if(LIVE){ dbPatch('booking', b.id, { status:b.status, canceled_at:b.cancelAt,
       cancel_reason:rv, refunded:!!b.refunded });
-    if(u) dbUp('motorcycle_unit', { id:u.id, status:u.status }); }
+    if(u) dbPatch('motorcycle_unit', u.id, { status:u.status }); }
   toast('ยกเลิกการจองแล้ว', (u?u.model+' คืนสต๊อก':'')+(b.refunded? ' · บันทึกคืนมัดจำ '+fmt(b.deposit)+' ฿':''));
   refreshAll(); return true;
 }
@@ -6663,16 +6700,22 @@ function bookCancelModal(id){
     +'</div><div class="savebar"><button class="btn dgr" id="bkcGo">ยืนยันยกเลิกการจอง</button></div>');
   $('#bkcGo').onclick=()=>{ if(bookCancel(id, $('#bkcReason').value)) closeModal(); };
 }
-/* เปิดการขายจากการจอง — พาไปฟอร์มขายพร้อมลูกค้า+คันที่จอง (การปิดจองเกิดตอน saveSale จริง §9g) */
+/* ใบจองใช้ทางเดินเดียวกับดีล — ระบุเจตนาซื้อ/ยื่นไฟแนนซ์ก่อนผู้บริหารจัดสรรคัน */
 function bookOpenSale(id){
-  const b=BOOKINGS.find(x=>x.id===id); if(!b || b.status!=='จองอยู่') return;
-  if(!canSee('sell')){ toast('บทบาทของคุณเปิดการขายไม่ได้','',1); return; }
-  go('sell'); sellTab('p1');
-  sCustSel=b.custId||'';
-  $('#sCust').value=b.name; $('#sPhone').value=b.phone||'';
-  sCustExtras(CUSTOMERS.find(x=>x.id===b.custId)||null);  /* v1.41: ช่องเสริมจากระเบียน (ชื่อคงตามใบจอง) */
+  const b=BOOKINGS.find(x=>x.id===id);if(!b||b.status!=='จองอยู่')return false;
+  const c=CUSTOMERS.find(x=>x.id===b.custId);
+  if(!financeCustomerWrite(c)||!inScope(b.branch)){toast('ไม่มีสิทธิ์ดำเนินการใบจองนี้','ตรวจข้อมูลลูกค้าและสิทธิ์แก้ไขดีล',1);return false;}
+  if(!c.name||!c.phone||!c.addr||!c.idNo||!['เงินสด','เงินผ่อน'].includes(c.intent)){
+    dealGo(c.id);dealProceed(c.id);return false;
+  }
+  if(!dealSell(c.id))return false;
+  const u=UNITS.find(x=>x.id===b.unitId),fc=FINCASES.find(x=>x.custId===c.id&&!x.saleId);
+  if(fc&&(!u||fc.variant!==u.variant||fc.colorCode!==u.colorCode||fc.branch!==u.branch)){
+    toast('คันที่จองไม่ตรงคำขอที่อนุมัติ','เลือกรถให้ตรงรุ่นและสีในคำขอ หรือตรวจใบจองเดิมก่อน',1);return false;
+  }
+  $('#sCust').value=b.name;$('#sPhone').value=b.phone||c.phone||'';
   sUnitSet(b.unitId);
-  toast('เปิดการขายจากการจอง', b.name+(b.deposit>0? ' · มีมัดจำ '+fmt(b.deposit)+' ฿ — หักจากยอดชำระเอง':''));
+  toast('เปิดการขายจากการจอง',b.name+(b.deposit>0?' · มีมัดจำ '+fmt(b.deposit)+' ฿ — หักจากยอดชำระเอง':''));return true;
 }
 function bookDepositPrint(id){
   const b=BOOKINGS.find(x=>x.id===id); if(!b || !(b.deposit>0)) return false;
@@ -6818,7 +6861,7 @@ function rTransfer(){
         /* v1.36 (B8): ตาราง unit_transfer มีตั้งแต่ migration 01 แต่ไม่เคยถูกเขียน — โหมดจริงหายทุกรายการ */
         if(LIVE){ dbUp('unit_transfer', { id:t.id, unit_id:u.id, from_branch:BR_IDS[u.branch],
             to_branch:BR_IDS[t.to], status:'in_transit', note:t.note||null });
-          dbUp('motorcycle_unit', { id:u.id, status:'in_transfer' }); }
+          dbPatch('motorcycle_unit', u.id, { status:'in_transfer' }); }
         toast('ส่งคำขอโอนย้ายแล้ว', u.model+' ไป '+bName($('#tTo').value)); $('#tNote').value=''; refreshAll();
       }); };
   }
@@ -6851,8 +6894,8 @@ function rTransfer(){
     if(!canTransfer()){ toast('บทบาทของคุณยืนยันรับรถไม่ได้','',1); return; }
     if(!inScope(t.to)){ toast('สาขาปลายทางอยู่นอกขอบเขตของคุณ','',1); return; }
     const u=UNITS.find(x=>x.id===t.unitId); t.status='รับแล้ว'; if(u){ u.branch=t.to; u.status='available'; }
-    if(LIVE){ dbUp('unit_transfer', { id:t.id, status:'received', received_at:new Date().toISOString() });
-      if(u) dbUp('motorcycle_unit', { id:u.id, branch_id:BR_IDS[t.to], status:'available' }); }
+    if(LIVE){ dbPatch('unit_transfer', t.id, { status:'received', received_at:new Date().toISOString() });
+      if(u) dbPatch('motorcycle_unit', u.id, { branch_id:BR_IDS[t.to], status:'available' }); }
     toast('รับรถเข้าสาขาแล้ว', bName(t.to)); refreshAll(); });
 }
 
@@ -7389,7 +7432,8 @@ function dealActions(d){
   else if(d.k==='fin'){
     if(!d.fc) b.push('<button class="btn" data-dlgo="'+d.c.id+'">ยื่นไฟแนนซ์ให้ลูกค้าคนนี้</button>');
     else if(d.off){
-      b.push('<button class="btn" data-dlresub="'+d.fc.id+'">'+ic('repeat')+' ยื่นใหม่กับไฟแนนซ์อื่น</button>');
+      if(d.fc.saleId)b.push('<span class="pill p-warn">ให้ผู้บริหารตรวจหรือยกเลิกใบขายเดิมก่อนยื่นบริษัทใหม่</span>');
+      else b.push('<button class="btn" data-dlresub="'+d.fc.id+'">'+ic('repeat')+' ยื่นใหม่กับไฟแนนซ์อื่น</button>');
     } else {
       const i=FIN_STAGES.indexOf(d.fc.status);
       if(i>=0 && i<FIN_STAGES.length-1)
@@ -7517,7 +7561,7 @@ function dealDetail(d){
     const rows=d.ars.map(a=>{ const left=Math.max(0,a.due-a.paid);
       return '<div class="frow">'+(left>0? pill('ค้างจ่าย '+money(left),'warn') : pill('ชำระครบแล้ว','good'))
         +'<span>'+(a.kind==='finance'?'จากไฟแนนซ์':'จากลูกค้า')+' · ครบกำหนด '+thDate(a.dueAt)+'</span>'
-        +(left>0 && canFinApprove()? '<button class="lnk fx" data-arok="'+a.id+'">ติ๊กชำระครบ</button>':'')
+        +(left>0 && canFinApprove('ar')? '<button class="lnk fx" data-arok="'+a.id+'">ติ๊กชำระครบ</button>':'')
         +'</div>'; }).join('');
     h+='<h4 class="sec">เงินค้างรับ</h4>'+rows;
   }
@@ -7625,7 +7669,7 @@ function rDealOne(id){
       if(!w){ toast('บอกเหตุผลก่อน','',1); return; }
       closeModal(); finApprove(sid, false, w); }; });
   on('data-arok', aid=>{ const a=AR.find(x=>x.id===aid); if(!a) return;
-    if(!canFinApprove()){ toast('ต้องเป็นการเงินหรือแอดมิน','',1); return; }
+    if(!canFinApprove('ar')){ toast('ต้องเป็นการเงินหรือแอดมิน','',1); return; }
     const left=Math.max(0,a.due-a.paid);
     confirmSave('ยืนยันรับเงิน', [
       ['ยอดที่ค้าง', fmt(left)+' ฿'],
@@ -7816,7 +7860,7 @@ function dealRows(){
    && brMatch(br, d.c.branch)
    && (!sp || ((d.s?d.s.sales:d.c.owner)||'')===sp)
    && (!q  || (d.c.name+(d.c.phone||'')+(d.u?d.u.engine:'')).toLowerCase().indexOf(q)>=0))
-    .sort((a,b)=>String(dealUpdatedAt(b)).localeCompare(String(dealUpdatedAt(a)))
+    .sort((a,b)=>(Date.parse(dealUpdatedAt(b))||0)-(Date.parse(dealUpdatedAt(a))||0)
       ||a.c.id.localeCompare(b.c.id));
 }
 function rDealList(){
@@ -7872,7 +7916,7 @@ function rDealList(){
     'ไม่พบลูกค้าตามเงื่อนไข',
     rows.map(d=>crow('data-deal="'+d.c.id+'"', esc(d.c.name), dealPayPill(d)+dealBookPill(d)+badge(d),
       veh(d)+' · '+esc((d.s?d.s.sales:d.c.owner)||'—'),
-      bar(d)+'<span class="pslab'+(d.off?' off':'')+'">'+esc(dealHead(d).head)+'</span><span class="tsub">อัปเดต '+esc(thDT(dealUpdatedAt(d)))+'</span>')), 8);
+      bar(d)+'<span class="pslab'+(d.off?' off':'')+'">'+esc(dealHead(d).head)+'</span><span class="tsub">อัปเดต '+esc(thDT(dealUpdatedAt(d)))+'</span>')), MQ_CARD.matches?6:8);
   $$('#dlTable [data-deal]').forEach(r=> r.onclick=()=>{ DEAL_SEL=r.dataset.deal; rDeal(); window.scrollTo(0,0); });
 
   /* งานติดตามที่ถึงกำหนด — กดชื่อแล้วเข้าดีลของคนนั้นเลย */
@@ -7982,15 +8026,15 @@ function tierDraw(prefix){
     '<div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:var(--s1);margin-bottom:var(--s1);align-items:center">'
     +'<input class="inp num" data-k="from" data-i="'+i+'" value="'+(t.from||'')+'" placeholder="งวดจาก">'
     +'<input class="inp num" data-k="to" data-i="'+i+'" value="'+(t.to||'')+'" placeholder="ถึงงวด">'
-    +'<input class="inp num" data-k="rate" data-i="'+i+'" value="'+(t.rate||'')+'" placeholder="%/เดือน">'
+    +'<input class="inp num" data-k="rate" data-i="'+i+'" value="'+(t.rate==null?'':t.rate)+'" placeholder="%/เดือน">'
     +'<button class="lnk" data-del="'+i+'">ลบ</button></div>').join('')
     +'<button class="lnk" id="'+prefix+'Add">+ เพิ่มช่วงงวด</button>';
-  box.querySelectorAll('input').forEach(inp=> inp.oninput=()=>{ rows[+inp.dataset.i][inp.dataset.k]=num(inp.value); });
+  box.querySelectorAll('input').forEach(inp=> inp.oninput=()=>{ rows[+inp.dataset.i][inp.dataset.k]=inp.value.trim()===''?'':num(inp.value); });
   box.querySelectorAll('[data-del]').forEach(b=> b.onclick=()=>{ rows.splice(+b.dataset.del,1); tierDraw(prefix); });
   $('#'+prefix+'Add').onclick=()=>{ rows.push({from:'',to:'',rate:''}); tierDraw(prefix); };
 }
 function tierRead(prefix){
-  const ok=(TIER_ED[prefix]||[]).filter(t=>t.from>0 && t.to>=t.from && t.rate>0)
+  const ok=(TIER_ED[prefix]||[]).filter(t=>t.from>0 && t.to>=t.from && t.rate!=='' && t.rate!=null && t.rate>=0)
     .sort((a,b)=>a.from-b.from);
   return ok.length? ok : null;
 }
@@ -7999,9 +8043,44 @@ const tierText = f => f.tiers? f.tiers.map(t=>t.from+'-'+t.to+' งวด '+t.ra
 /* งวดที่เปิดขาย — พิมพ์เป็นตัวเลขคั่นจุลภาค เช่น "12, 24, 36" · ว่าง = ใช้ชุดเริ่มต้น */
 const termsRead = v => { const a=String(v||'').split(/[,\s]+/).map(x=>parseInt(x,10))
   .filter(x=>x>=6 && x<=120); return a.length? Array.from(new Set(a)).sort((x,y)=>x-y) : null; };
+/* คืน boolean ในเดโม และ Promise<boolean> ในโหมดจริง เพื่อให้ผู้เรียกรอผลจากฐานก่อนปิดฟอร์ม */
+function finCompanySave(next){
+  if(!canEditFin()){toast('ไม่มีสิทธิ์แก้ไขบริษัทไฟแนนซ์','',1);return false;}
+  const old=FIN_CO.find(f=>f.id===next.id);
+  if(!next.name||FIN_CO.some(f=>f!==old&&f.name===next.name)){toast('ตรวจชื่อบริษัทไฟแนนซ์','ชื่อห้ามว่างหรือซ้ำ',1);return false;}
+  if((next.rate!=null&&(next.rate<0||next.rate>=100||!Number.isFinite(next.rate)))||!Number.isFinite(next.minDownPct)||next.minDownPct<0||next.minDownPct>100||(next.commission!=null&&(!Number.isFinite(next.commission)||next.commission<0))){toast('ตรวจเรต เงินดาวน์ และค่าคอม','',1);return false;}
+  const commit=row=>{if(old)Object.assign(old,row);else FIN_CO.push(row);return true;};
+  if(!LIVE)return commit(next);
+  return (async()=>{try{
+    const id=next.dbId||next.id;
+    if(!isUuid(id))throw new Error('ข้อมูลบริษัทไฟแนนซ์ไม่มีรหัสฐานข้อมูล');
+    const body={id,name:next.name,flat_rate_pct:next.rate,min_down_pct:next.minDownPct,note:next.note||null,
+      is_active:next.active,tiers:next.tiers||null,terms:next.terms||null,rate_tiers:next.rates||null};
+    if(!noMoney())body.commission=next.commission;
+    const rows=await sbFetch('/rest/v1/finance_company?'+(old?'id=eq.'+id+'&':'')+'select='+finCompanyColumns(!noMoney()),{method:old?'PATCH':'POST',
+      headers:{Prefer:'return=representation'},body:JSON.stringify(body)});
+    if(!rows||!rows[0])throw new Error('ฐานข้อมูลยังไม่ยืนยันการบันทึก');
+    return commit(finCompanyFromRow(rows[0]));
+  }catch(e){toast('ยังบันทึกบริษัทไฟแนนซ์ไม่สำเร็จ',e.message,1);return false;}})();
+}
+function finCompanyDelete(id){
+  if(!canEditFin()){toast('ไม่มีสิทธิ์ลบบริษัทไฟแนนซ์','',1);return false;}
+  const f=finById(id);if(!f)return false;
+  const refs=finRefs(id)+QUOTES.filter(q=>q.f1===id||q.f2===id).length;
+  if(refs){toast('ลบไม่ได้ — มีข้อมูลอ้างถึงอยู่',f.name+' ถูกใช้ใน '+refs+' รายการ · ปิดใช้งานแทนได้',1);return false;}
+  const commit=()=>{FIN_CO.splice(FIN_CO.indexOf(f),1);return true;};
+  if(!LIVE)return commit();
+  return (async()=>{try{
+    if(!isUuid(f.dbId||f.id))throw new Error('ข้อมูลบริษัทไฟแนนซ์ไม่มีรหัสฐานข้อมูล');
+    const rows=await sbFetch('/rest/v1/finance_company?id=eq.'+(f.dbId||f.id)+'&select='+finCompanyColumns(!noMoney()),{method:'DELETE',headers:{Prefer:'return=representation'}});
+    if(!rows||!rows[0])throw new Error('ไม่มีรายการที่ลบได้');return commit();
+  }catch(e){toast('ยังลบบริษัทไฟแนนซ์ไม่สำเร็จ',e.message,1);return false;}})();
+}
+function finCompanyDone(result,done){if(result&&typeof result.then==='function')result.then(ok=>{if(ok)done();});else if(result)done();}
 /* ---------- บริษัทไฟแนนซ์ — เพิ่ม / แก้ / ปิดใช้งาน / ลบ / เรตรายช่วงงวด ---------- */
 function rFinCo(){
   const edit=canEditFin();
+  $('#fcComm').disabled=noMoney();if(noMoney()){$('#fcComm').value='';$('#fcComm').placeholder='—';}
   $('#fcFormCard').style.display = edit? '' : 'none';
   if(edit && !$('#fcSave').dataset.init){ $('#fcSave').dataset.init=1;
     $('#fcTiers').innerHTML=tierBox('fcT'); tierDraw('fcT');
@@ -8010,13 +8089,12 @@ function rFinCo(){
       const name=$('#fcName').value.trim();
       if(!name){ toast('กรอกชื่อบริษัท','',1); return; }
       if(FIN_CO.some(f=>f.name===name)){ toast('ชื่อบริษัทซ้ำ',name,1); return; }
-      FIN_CO.push({id:nid('FN'), name, rate:num($('#fcRate').value), minDownPct:num($('#fcDown').value),
+      const next={id:LIVE?dbId():nid('FN'), name, rate:$('#fcRate').value.trim()===''?null:num($('#fcRate').value), minDownPct:num($('#fcDown').value),
         commission:num($('#fcComm').value), active:true, note:$('#fcNote').value.trim(),
-        tiers:tierRead('fcT'), terms:termsRead($('#fcTerms').value)});
-      toast('เพิ่มบริษัทไฟแนนซ์แล้ว',name);
-      $('#fcName').value=''; $('#fcNote').value=''; $('#fcTerms').value='';
-      TIER_ED.fcT=[]; tierDraw('fcT');
-      refreshAll();
+        tiers:tierRead('fcT'), terms:termsRead($('#fcTerms').value)};
+      finCompanyDone(finCompanySave(next),()=>{
+        toast('เพิ่มบริษัทไฟแนนซ์แล้ว',name);$('#fcName').value='';$('#fcNote').value='';$('#fcTerms').value='';
+        TIER_ED.fcT=[];tierDraw('fcT');refreshAll();});
     };
   }
   const head=['บริษัท',{t:'ดอกเบี้ย (%/เดือน)',n:1},'สถานะ'];
@@ -8031,7 +8109,7 @@ function rFinCo(){
     return '<tr><td><b>'+esc(f.name)+'</b><div class="tsub">'+esc(sub)+'</div>'
       +(tiers? '<div class="tsub">เรตช่วงงวด: '+esc(tiers)+'</div>':'')
       +(f.note? '<div class="tsub">'+esc(f.note)+'</div>':'')+'</td>'
-      +'<td class="n">'+f.rate+'</td>'
+      +'<td class="n">'+(f.rate==null?'ยังไม่ตั้งเรตฐาน':f.rate)+'</td>'
       +'<td>'+(f.active? pill('ใช้งาน','good') : pill('ปิดใช้งาน','mut'))+'</td>'
       +(edit? '<td style="white-space:nowrap"><button class="lnk" data-fce="'+f.id+'">แก้ไข</button>'
         +' <button class="lnk" data-fct="'+f.id+'">'+(f.active?'ปิด':'เปิด')+'</button>'
@@ -8039,7 +8117,7 @@ function rFinCo(){
       +'</tr>'; }), 'ยังไม่มีบริษัทไฟแนนซ์',
     FIN_CO.map(f=>{
       const n=finRefs(f.id);
-      const sub=['ดอกเบี้ย '+f.rate+'%/เดือน','ดาวน์ขั้นต่ำ '+f.minDownPct+'%']
+      const sub=[f.rate==null?'ยังไม่ตั้งเรตฐาน':'ดอกเบี้ย '+f.rate+'%/เดือน','ดาวน์ขั้นต่ำ '+f.minDownPct+'%']
         .concat(f.terms? ['งวด '+f.terms.join('/')] : [])
         .concat(noMoney()? [] : ['ค่าคอม '+fmt(f.commission)+' ฿'])
         .concat(n? ['ใช้อยู่ '+n+' รายการ'] : []).join(' · ');
@@ -8050,17 +8128,16 @@ function rFinCo(){
           +'<button class="lnk q" data-fct="'+f.id+'">'+(f.active?'ปิด':'เปิด')+'</button>'
           +'<button class="lnk q" data-fcd="'+f.id+'">ลบ</button>' : '')); }));
   if(!edit) return;
-  $$('[data-fct]').forEach(b=> b.onclick=()=>{ if(!canEditFin()) return; const f=finById(b.dataset.fct); f.active=!f.active;
-    toast(f.active?'เปิดใช้งานแล้ว':'ปิดใช้งานแล้ว', f.name); refreshAll(); });
-  $$('[data-fcd]').forEach(b=> b.onclick=()=>{ if(!canEditFin()) return; const f=finById(b.dataset.fcd), n=finRefs(f.id);
-    if(n){ toast('ลบไม่ได้ — มีข้อมูลอ้างถึงอยู่', f.name+' ถูกใช้ใน '+n+' รายการ · ปิดใช้งานแทนได้',1); return; }
-    FIN_CO.splice(FIN_CO.indexOf(f),1); toast('ลบแล้ว',f.name); refreshAll(); });
+  $$('[data-fct]').forEach(b=>b.onclick=()=>{if(!canEditFin())return;const f=finById(b.dataset.fct);
+    finCompanyDone(finCompanySave({...f,active:!f.active}),()=>{toast(f.active?'เปิดใช้งานแล้ว':'ปิดใช้งานแล้ว',f.name);refreshAll();});});
+  $$('[data-fcd]').forEach(b=>b.onclick=()=>{if(!canEditFin())return;const f=finById(b.dataset.fcd);
+    finCompanyDone(finCompanyDelete(f.id),()=>{toast('ลบแล้ว',f.name);refreshAll();});});
   $$('[data-fce]').forEach(b=> b.onclick=()=>{ const f=finById(b.dataset.fce);
     openModal('แก้ไข '+f.name,
       '<div class="f"><div><label class="fl">ชื่อบริษัท</label><input class="inp" id="feName" value="'+esc(f.name)+'"></div>'
-      +'<div class="f3"><div><label class="fl">ดอกเบี้ยฐาน (%/เดือน)</label><input class="inp num" id="feRate" value="'+f.rate+'"></div>'
+      +'<div class="f3"><div><label class="fl">ดอกเบี้ยฐาน (%/เดือน)</label><input class="inp num" id="feRate" value="'+(f.rate==null?'':f.rate)+'"></div>'
       +'<div><label class="fl">ดาวน์ขั้นต่ำ (%)</label><input class="inp num" id="feDown" value="'+f.minDownPct+'"></div>'
-      +'<div><label class="fl">ค่าคอม (฿/สัญญา)</label><input class="inp num" id="feComm" value="'+f.commission+'"></div></div>'
+      +'<div><label class="fl">ค่าคอม (฿/สัญญา)</label><input class="inp num" id="feComm" value="'+(!noMoney()&&f.commission!=null?f.commission:'')+'" placeholder="—"'+(noMoney()?' disabled':'')+'></div></div>'
       +'<div><label class="fl">เรตตามช่วงงวด (เว้นว่าง = ใช้เรตฐาน)</label>'+tierBox('feT', f.tiers)+'</div>'
       +'<div><label class="fl">งวดที่เปิดให้เลือก (เว้นว่าง = ชุดเริ่มต้น)</label><input class="inp" id="feTerms" value="'+(f.terms? f.terms.join(', '):'')+'"></div>'
       +'<div><label class="fl">หมายเหตุ</label><input class="inp" id="feNote" value="'+esc(f.note||'')+'"></div></div>'
@@ -8069,10 +8146,9 @@ function rFinCo(){
     $('#feGo').onclick=()=>{ if(!canEditFin()) return; const nm=$('#feName').value.trim();
       if(!nm){ toast('กรอกชื่อบริษัท','',1); return; }
       if(FIN_CO.some(x=>x!==f&&x.name===nm)){ toast('ชื่อบริษัทซ้ำ',nm,1); return; }
-      f.name=nm; f.rate=num($('#feRate').value); f.minDownPct=num($('#feDown').value);
-      f.commission=num($('#feComm').value); f.note=$('#feNote').value.trim();
-      f.tiers=tierRead('feT'); f.terms=termsRead($('#feTerms').value); delete f.rates;
-      closeModal(); toast('บันทึกแล้ว',f.name); refreshAll(); };
+      const next={...f,name:nm,rate:$('#feRate').value.trim()===''?null:num($('#feRate').value),minDownPct:num($('#feDown').value),
+        commission:num($('#feComm').value),note:$('#feNote').value.trim(),tiers:tierRead('feT'),terms:termsRead($('#feTerms').value),rates:null};
+      finCompanyDone(finCompanySave(next),()=>{closeModal();toast('บันทึกแล้ว',f.name);refreshAll();}); };
   });
 }
 /* ไฟแนนซ์ขยับ → งานทะเบียนขยับตามอัตโนมัติ (ratchet ทางเดียว — ถอยไฟแนนซ์ไม่ดึงทะเบียนถอย)
@@ -8169,6 +8245,7 @@ function finRejectModal(id){
 /* ปฏิเสธไม่ใช่ทางตัน — เลือกยื่นเจ้าอื่นได้ after = สิ่งที่ต้องทำต่อหลังยื่นสำเร็จ (เช่นปิดแผ่น) */
 function finResubmit(id, after){
   const c=FINCASES.find(x=>x.id===id);if(!finCaseEditable(c))return false;
+  if(c.saleId){toast('มีใบขายแล้ว เปลี่ยนบริษัทไฟแนนซ์ในเคสเดิมไม่ได้','ให้ผู้บริหารตรวจหรือยกเลิกใบขายเดิม แล้วจึงยื่นคำขอใหม่จากดีล',1);return false;}
   const others=finActive().filter(x=>x.id!==c.finId);if(!others.length){toast('ไม่มีไฟแนนซ์อื่นที่เปิดใช้งาน','เพิ่มได้ที่ตั้งค่าระบบ',1);return false;}
   const oldSale=SALES.find(s=>s.id===c.saleId),list=c.list||(oldSale&&oldSale.list)||c.amount,disc=c.disc||(oldSale&&oldSale.disc)||0,down=c.down||(oldSale&&oldSale.down)||0;
   openModal('ยื่นใหม่กับไฟแนนซ์อื่น',
@@ -8182,7 +8259,7 @@ function finResubmit(id, after){
     $('#rsSummary').innerHTML='<dl class="kv"><dt>ราคาสุทธิ</dt><dd>'+baht(list-disc)+'</dd><dt>ค่างวดใหม่</dt><dd>'+baht(per)+' × '+el.value+' งวด</dd></dl>';};
   $('#rsFin').onchange=calc;$('#rsTerm').onchange=calc;$('#rsDown').oninput=calc;calc();
   $('#rsGo').onclick=async()=>{
-    if(!finCaseEditable(c))return false;
+    if(!finCaseEditable(c)||c.saleId)return false;
     const f=others.find(x=>x.id===$('#rsFin').value),down=num($('#rsDown').value),term=+$('#rsTerm').value;
     if(!f||!finTerms(f).includes(term)||down<0||down>=list-disc){toast('ตรวจบริษัท จำนวนงวด และเงินดาวน์','',1);return false;}
     if(LIVE&&!f.dbId){toast('ไฟแนนซ์ยังไม่มีข้อมูลในฐาน','โหลดข้อมูลใหม่',1);return false;}
@@ -8303,7 +8380,7 @@ function regPlateClose(id, plate){
   if(!pv){ toast('กรอกเลขทะเบียนก่อนปิดงาน','',1); return false; }
   let n=0;
   while(!regPlated(r) && n++<3){ if(!regAdvance(id, pv)) return false; }
-  if(LIVE) dbPatch('registration', r.id, { stage:r.stage, plate:r.plate });
+  if(LIVE) dbPatch('registration', r.id, { stage:r.stage, plate_no:r.plate });
   return regPlated(r);
 }
 /* ยกเลิกการขาย — ย้อนทุกอย่างที่ saveSale สร้าง ยกเว้นเลขเอกสาร (ต้อง audit ได้)
@@ -8341,7 +8418,7 @@ function voidSaleCore(s, drop){
      unique on sale(unit_id) where voided_at is null) ไม่งั้นโหมดจริงยกเลิกแล้วขายคันเดิมใหม่ไม่ได้ */
   dbPatch('sale', s.id, { voided_at:TODAY,
     voided_reason: drop? ('ลูกค้าเท: '+(drop.reason||'')+(drop.detail? ' — '+drop.detail:'')) : 'ยกเลิกการขาย' });
-  dbUp('motorcycle_unit', { id:u.id, status:'available' });
+  dbPatch('motorcycle_unit', u.id, { status:'available' });
   return true;
 }
 function cancelSale(saleId){
@@ -8435,7 +8512,7 @@ function rAr(){
         +'<td>'+esc(f?f.name:'—')+'</td><td class="n">'+fmt(a.due)+'</td><td class="n">'+fmt(a.paid)+'</td>'
         +'<td class="n"><b style="color:'+(left>0?'var(--accent)':'var(--pos)')+'">'+fmt(left)+'</b></td>'
         +'<td>'+thDate(a.dueAt)+(left>0&&od>0?' '+pill('เลย '+od+' วัน','bad'):'')+'</td>'
-        +'<td>'+(left>0?'<button class="lnk" data-ar="'+a.id+'">ลงรับเงิน</button>':pill('ครบแล้ว','good'))+'</td></tr>'),
+        +'<td>'+(left>0&&canFinApprove('ar')?'<button class="lnk" data-ar="'+a.id+'">ลงรับเงิน</button>':pill(left>0?'ค้างรับ':'ครบแล้ว',left>0?'warn':'good'))+'</td></tr>'),
     'ไม่มีเงินค้างรับ',
     arL.map(({a,u,c,f,left,od})=>crow('',
       esc(c?c.name:'—'),
@@ -8444,7 +8521,7 @@ function rAr(){
         +' · รับแล้ว '+fmt(a.paid)+'/'+fmt(a.due),
       'ครบกำหนด '+thDate(a.dueAt)+(left>0&&od>0?' '+pill('เลย '+od+' วัน','bad'):'')
         +'<span style="flex:1"></span>'
-        +(left>0?'<button class="lnk" data-ar="'+a.id+'">ลงรับเงิน</button>':pill('ครบแล้ว','good')))));
+        +(left>0&&canFinApprove('ar')?'<button class="lnk" data-ar="'+a.id+'">ลงรับเงิน</button>':pill(left>0?'ค้างรับ':'ครบแล้ว',left>0?'warn':'good')))));
   $$('[data-ar]').forEach(b=> b.onclick=()=>{ const a=AR.find(x=>x.id===b.dataset.ar); const left=a.due-a.paid;
     openModal('ลงรับเงิน','<div class="f"><div><label class="fl">ยอดคงค้าง</label><input class="inp num" value="'+fmt(left)+'" disabled></div>'
       +'<div><label class="fl">จำนวนเงินที่รับ (฿)</label><input class="inp num" id="arAmt" value="'+left+'"></div>'
@@ -8456,7 +8533,7 @@ function rAr(){
    receipt_payment เก็บทีละครั้งพร้อมวิธีรับ · receivable เดินยอดรวม — บัญชีอ่านย้อนหลังได้ทั้งคู่ */
 function arReceive(arId, amt, way){
   const a=AR.find(x=>x.id===arId); if(!a) return false;
-  if(!canFinApprove()){ toast('ต้องเป็นการเงินหรือแอดมิน','',1); return false; }
+  if(!canFinApprove('ar') || !inScope(a.branch)){ toast('ต้องมีสิทธิ์ตรวจการเงินและแก้ไขเงินค้างรับในสาขานี้','',1); return false; }
   amt=Math.min(Math.max(0,a.due-a.paid), num(amt));
   if(amt<=0){ toast('กรอกจำนวนเงินก่อน','',1); return false; }
   a.paid=Math.min(a.due, a.paid+amt);
@@ -8539,7 +8616,7 @@ function svLookup(){
   const q=$('#svSearch').value.trim();if(!q){toast('กรอกเลขเครื่องหรือเลขถังก่อน','',1);return;}
   const found=serviceVehicleLookup(q);svFoundUnit=found&&found.unit;svFoundCustomer=found&&found.cust;
   $('#svName').value=found&&found.cust?found.cust.name:'';$('#svPhone').value=found&&found.cust?found.cust.phone||'':'';
-  $('#svModel').value=found?found.model:'';$('#svEngine').value=found?found.engine:q;$('#svFrame').value=found?found.frame:'';
+  $('#svModelName').value=found?found.model:'';$('#svEngine').value=found?found.engine:q;$('#svFrame').value=found?found.frame:'';
   $('#svFound').innerHTML='<div class="note '+(found?'g':'w')+'">'+ic(found?'check':'alert','i i-sm')+'<span>'
     +(found?'พบประวัติรถ'+(found.cust?' · '+esc(found.cust.name):''):'ไม่พบในระบบ · กรอกลูกค้า รุ่นรถ เลขเครื่องหรือเลขถังด้านล่างได้')+'</span></div>';
   const matches=SERVICE.filter(x=>inScope(x.branch)&&((found&&found.unit&&x.unitId===found.unit.id)||
@@ -8554,7 +8631,7 @@ function svLookup(){
 async function svSave(){
   if(!permW('page:service')){toast('บทบาทของคุณเปิดใบงานซ่อมไม่ได้','ต้องมีสิทธิ์เขียนของหน้า "ศูนย์ซ่อม"',1);return false;}
   const name=$('#svName').value.trim();if(!name){toast('กรอกชื่อลูกค้าก่อน','',1);return false;}
-  const phone=$('#svPhone').value.trim(),model=$('#svModel').value.trim(),engine=$('#svEngine').value.trim(),frame=$('#svFrame').value.trim();
+  const phone=$('#svPhone').value.trim(),model=$('#svModelName').value.trim(),engine=$('#svEngine').value.trim(),frame=$('#svFrame').value.trim();
   if(!phone||!model||(!engine&&!frame)){toast('กรอกข้อมูลรถและลูกค้าให้ครบ','เบอร์โทร รุ่นรถ และเลขเครื่องหรือเลขถัง',1);return false;}
   const svAt=$('#svDate').value||TODAY;if(svAt>TODAY){toast('วันที่รับรถเป็นวันอนาคตไม่ได้','',1);return false;}
   const p=PARTS.find(x=>x.id===$('#svPart').value);if(p&&p.qty<1){toast('อะไหล่ไม่พอ',p.name+' เหลือ '+p.qty,1);return false;}
@@ -8631,6 +8708,8 @@ function careTask(careId,taskId,note,done=true){
 }
 function dealTaskDone(tid){
   const t=TASKS.find(x=>x.id===tid); if(!t || t.done)return false;
+  const c=CUSTOMERS.find(x=>x.id===t.custId);
+  if(!inScope(t.branch)||!customerCanWrite(c)){toast('ไม่มีสิทธิ์ปิดงานติดตามลูกค้าคนนี้','ต้องมีสิทธิ์แก้ไขดีลของลูกค้า',1);return false;}
   t.done=true;dbPatch('follow_up_task',t.id,{done_at:TODAY,done_by:isUuid(ME.id)?ME.id:null});
   toast('ปิดงานติดตามแล้ว');refreshAll();return true;
 }
@@ -9093,6 +9172,7 @@ function expSave(){
     ['วันที่', thDate($('#eDate').value||TODAY)],
     ['ใบเสร็จ', eFilesArr.length? 'แนบ '+eFilesArr.length+' ไฟล์':'ยังไม่แนบ']
   ], ()=>{
+    if(!permW('page:expense') || !inScope($('#eBranch').value) || !inScope(st.branch)){ toast('ไม่มีสิทธิ์บันทึกค่าใช้จ่ายในสาขานี้','',1); return; }
     const ex={id: LIVE? dbId() : nid('EX'),cat,branch:$('#eBranch').value,amt:a,at:$('#eDate').value||TODAY,
       by:st.id, byName:st.name, note:$('#eNote').value.trim(),
       /* การเงินเข้ามากดตรวจทีหลัง (บรีฟ: ฝั่งการเงินอนุมัติค่าใช้จ่าย) */
@@ -9147,7 +9227,7 @@ function rExpense(){
   /* การเงินตรวจค่าใช้จ่าย — สถานะ + ปุ่มเฉพาะคนมีสิทธิ์ ด่านจริงอยู่ใน expApprove() */
   const eap=e=>{ const st=(e.approval&&e.approval.status)||'รอตรวจ';
     return pill(st, st==='ผ่าน'?'good':(st==='ไม่ผ่าน'?'bad':'warn'))
-      +(canFinApprove()? (st!=='ผ่าน'? ' <button class="lnk" data-eapok="'+e.id+'">ผ่าน</button>':'')
+      +(canFinApprove('expense')? (st!=='ผ่าน'? ' <button class="lnk" data-eapok="'+e.id+'">ผ่าน</button>':'')
         +(st==='รอตรวจ'? ' <button class="lnk" data-eapno="'+e.id+'">ตีกลับ</button>':'') : ''); };
   tbl($('#eTable'), ['วันที่','หมวดหมู่','ผู้เบิก','สาขา','ซื้อกับ',{t:'จำนวน',n:1},'ใบเสร็จ','การเงิน'],
     eL.map(e=>'<tr><td>'+thDate(e.at)+'</td><td>'+esc(e.cat)
@@ -9174,7 +9254,7 @@ function rExpense(){
 /* การเงินตรวจค่าใช้จ่าย — เขียนที่นี่ที่เดียว (กฎ §9b) */
 function expApprove(id, ok, note){
   const e=EXPENSES.find(x=>x.id===id); if(!e) return false;
-  if(!canFinApprove()){ toast('ต้องเป็นการเงินหรือแอดมินเท่านั้น','',1); return false; }
+  if(!permW('page:expense') || !canFinApprove('expense') || !inScope(e.branch)){ toast('ต้องมีสิทธิ์ตรวจการเงินและแก้ไขค่าใช้จ่ายในสาขานี้','',1); return false; }
   e.approval={status: ok?'ผ่าน':'ไม่ผ่าน', by:ME.nick, at:TODAY, note:(note||'').trim()};
   dbPatch('expense', e.id, { approval:e.approval });   /* v1.49 */
   toast(ok?'การเงินตรวจแล้ว — ผ่าน':'การเงินตีกลับแล้ว', e.cat+' '+fmt(e.amt)+' ฿', ok?0:'warn');
@@ -12426,8 +12506,7 @@ async function liveHydrate(me,brs,mvs,empId){
         q2000('wholesale_sale_item','id,ws_id,unit_id,price'),
         q2000('other_doc','id,branch_id,doc_no,buyer_name,buyer_tax_id,buyer_addr,item,amount,issued_at,note'),
         q2000('unit_transfer','id,unit_id,from_branch,to_branch,requested_at,received_at,status,note'),
-        /* ใบลา/คำขอ: เฉพาะของตัวเอง — โหมดจริงยังไม่โหลดรายชื่อพนักงานทั้งบริษัท (issue 001)
-           แถวของคนอื่นจะไม่มีชื่อให้แสดง จึงยังไม่ดึงมา */
+        /* ฝ่ายบุคคลอ่านงานตามสิทธิ์สาขา ส่วนบทบาทอื่นอ่านเฉพาะคำขอของตนเอง */
         (hrRead||empId)? q2000('leave_request','id,employee_id,leave_type,date_from,date_to,status,reason,approved_by,approved_at,decide_note',hrRead?{}:{employee_id:'eq.'+empId}) : null,
         (hrRead||empId)? q2000('offsite_request','id,employee_id,on_date,time_range,place,reason,status,approved_by,approved_at,decide_note',hrRead?{}:{employee_id:'eq.'+empId}) : null,
         q2000('doc_counter','branch_id,doc_type,year_be,last_no',{limit:'1000'}),
@@ -12585,7 +12664,7 @@ async function liveHydrate(me,brs,mvs,empId){
     }catch(e){console.error('โหลดข้อมูลธุรกรรมไม่สำเร็จ',e);return false;}
  }
 function liveFormBusy(){return $('#modal')?.classList.contains('on')||$('#drw')?.classList.contains('on')
-  ||['sell','quote','settings','users','hr','service'].includes(CUR)||/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName||'');}
+  ||['sell','quote','settings','users'].includes(CUR)||/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName||'');}
 async function liveRefreshTasks(){
   if(!LIVE||!ME||!LIVE_CTX||LIVE_REFRESHING||DB_RUN||DB_Q.length||document.hidden||liveFormBusy())return;
   LIVE_REFRESHING=true;const before=new Set(notifItems().map(n=>n.id));
@@ -12602,7 +12681,7 @@ async function liveLogin(){
   /* QA A9: ล็อกอินพังกลางทางต้องคืนสภาพเดโมได้ครบ — เดิม global ชุดองค์กรถูกทับก่อนจุดที่พังบ่อยสุด
      แล้ว catch คืนแค่ LIVE/SB_TOKEN ทำให้เดโมอ้างสาขาที่หายไป เลขเอกสารออก prefix ผิดทั้งเซสชัน */
   const snap={ COMPANIES, BRANCHES, WS_PARTNERS, WS_PRICES, HOLIDAYS, EXEC_EVENTS, PERMS,
-    BR_IDS, VARIANT_IDS, LEAVES, OFFS, ATT, FIN_DBID: FIN_CO.map(f=>f.dbId),
+    BR_IDS, VARIANT_IDS, LEAVES, OFFS, ATT, FIN_COMPANIES: JSON.parse(JSON.stringify(FIN_CO)),
     /* v1.50: ตัวนับเลขเอกสารถูกทับด้วยของจริงจาก doc_counter — พังกลางทางต้องคืนของเดโม
        ไม่งั้นเลขเอกสารโหมดสาธิตออกซ้ำ/ข้ามทั้งเซสชัน */
     DOC_COUNTER: Object.assign({}, DOC_COUNTER),
@@ -12673,23 +12752,20 @@ async function liveLogin(){
       { select:'id,event_date,event_type,title,note' }).catch(()=>null);
     if(evs) EXEC_EVENTS = evs.map(e=>({ id:e.id, d:e.event_date, type:e.event_type,
       title:e.title, note:e.note||'' }));
-    /* QA P9: เดิมโหลดแค่ id,name — เรต/ช่วงงวด/ดาวน์ขั้นต่ำ "ของจริง" ใน DB ไม่เคยถูกใช้
-       ค่างวดที่แช่ลง sale เลยมาจากเรตสาธิตในไฟล์ — ตอนนี้ทับด้วยของจริงเมื่อคอลัมน์ไม่ null */
-    const fcs = await sbSelect('finance_company',
-      { select:'id,name,flat_rate_pct,min_down_pct,tiers,terms' }).catch(()=>null);
-    (fcs||[]).forEach(f=>{ const m=FIN_CO.find(x=>x.name===f.name); if(!m) return;
-      m.dbId=f.id;
-      if(f.flat_rate_pct!=null) m.rate=+f.flat_rate_pct;
-      if(f.min_down_pct!=null)  m.minDownPct=+f.min_down_pct;
-      if(f.tiers!=null) m.tiers=f.tiers;
-      if(f.terms!=null) m.terms=f.terms; });
-
     /* สิทธิ์ราย section ที่แอดมินตั้งไว้ (J3) — ทับค่าเริ่มต้นเฉพาะที่เคยตั้ง
        แถว admin ไม่รับค่าทับจากฐานข้อมูลเด็ดขาด: ต่อให้ข้อมูลเพี้ยนยังไง แอดมินต้องเข้าตั้งค่าได้เสมอ */
     const ps = await sbSelect('app_setting', { select:'value', key:'eq.perms' }).catch(()=>null);
     if(ps && ps[0] && ps[0].value){ const saved=ps[0].value, base=permDefaults();
       Object.keys(saved).forEach(r=>{ if(r!=='admin' && base[r]) Object.assign(base[r], saved[r]); });
       PERMS=base; }
+
+    /* บริษัทจริงครบทุกเจ้า รวมเจ้าที่เพิ่มใหม่และปิดใช้งาน ไม่มีการจับคู่ชื่อกับ seed
+       โหลดไม่สำเร็จต้องหยุด login เพื่อไม่ให้เสนอค่างวดด้วยข้อมูลคนละแหล่ง */
+    const financeMoneyRead=(me.app_user_role||[]).some(x=>['read','write'].includes((PERMS[x.role?.code]||{})['data:money']));
+    const fcs = await sbSelect('finance_company',
+      { select:finCompanyColumns(financeMoneyRead),order:'name',limit:'2000' });
+    if(!Array.isArray(fcs))throw new Error('โหลดบริษัทไฟแนนซ์ไม่สำเร็จ');
+    FIN_CO.splice(0,FIN_CO.length,...fcs.map(finCompanyFromRow));
 
     /* รถจริงตามสิทธิ์ — v1.50 อ่านผ่านวิว unit_v (migration 30): คอลัมน์เงินถูกตัดเป็น null
        ตั้งแต่ฐานเมื่อผู้ใช้ไม่มีสิทธิ์ data:money — ต้นทุนไม่เดินทางถึง client เลย ไม่ใช่แค่ซ่อนบนจอ
@@ -12758,7 +12834,7 @@ async function liveLogin(){
     WS_PRICES=snap.WS_PRICES; HOLIDAYS=snap.HOLIDAYS; EXEC_EVENTS=snap.EXEC_EVENTS; PERMS=snap.PERMS;
     BR_IDS=snap.BR_IDS; VARIANT_IDS=snap.VARIANT_IDS; LEAVES=snap.LEAVES; OFFS=snap.OFFS; ATT=snap.ATT;
     PRICE=snap.PRICE; DOC_COUNTER=snap.DOC_COUNTER;
-    FIN_CO.forEach((f,i)=>{ f.dbId=snap.FIN_DBID[i]; });
+    FIN_CO.splice(0,FIN_CO.length,...snap.FIN_COMPANIES);
     console.error('liveLogin ล้มเหลว', err);
     toast('เชื่อมฐานข้อมูลไม่สำเร็จ', String(err.message||err).slice(0,80)+' — ใช้โหมดสาธิตต่อได้', 1);
     $('#lgLive').style.display='none'; $('#lgDemo').style.display='';

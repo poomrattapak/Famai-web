@@ -151,14 +151,17 @@ const { chromium, EXE, BASE } = require('./env');
   if (t4.slowOff === false) fails.push('เกณฑ์สูงแล้ว slow ยังติด — ไม่ได้อ่าน CFG');
   if (t4.dotShown === false) fails.push('slow ติดแต่จุดเตือนไม่โผล่ในแถบขั้น');
 
-  /* ---- 6) เรียงล่าสุดขึ้นก่อน ---- */
-  const t6 = await page.evaluate(() => {
-    go('deal');
-    const rows = dealRows().filter(d => !d.off && !(d.late > 0) && !d.slow && d.k !== 'done' && d.s);
-    const ds = rows.map(d => d.s.soldAt);
-    return { sorted: ds.every((v, i) => i === 0 || ds[i - 1] >= v) };
+  /* บรีฟล่าสุด: ความเคลื่อนไหวจริงขึ้นก่อน แม้ขายก่อนหรือมีสถานะต่างกัน */
+  const t6=await page.evaluate(()=>{
+    go('deal');const rows=dealRows();if(rows.length<2)return {fixture:false};
+    const older=rows[rows.length-1],newer=rows[0];
+    const a=older.c.upAt,b=newer.c.upAt,at=new Date(punchNow().getTime()+1000);
+    older.c.upAt=at.toISOString();newer.c.upAt=new Date(at.getTime()-3600000).toISOString();
+    const actual=dealRows(),dates=actual.map(dealUpdatedAt);
+    const sorted=dates.every((v,i)=>i===0||dates[i-1]>=v),moved=actual[0].c.id===older.c.id;
+    older.c.upAt=a;newer.c.upAt=b;return {fixture:true,sorted,moved};
   });
-  if (!t6.sorted) fails.push('รายการกลุ่มปกติไม่ได้เรียงล่าสุดขึ้นก่อน');
+  if(!t6.fixture||!t6.sorted||!t6.moved)fails.push('ดีลที่อัปเดตล่าสุดไม่ได้ขึ้นก่อน: '+JSON.stringify(t6));
 
   console.log(fails.length ? 'FAILS:\n' + fails.join('\n') : 'ALL_CHECKS_PASS');
   console.log(errs.length ? 'ERRORS:\n' + [...new Set(errs)].join('\n') : 'NO_PAGE_ERRORS');

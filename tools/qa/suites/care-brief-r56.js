@@ -57,7 +57,9 @@ const {chromium,EXE,BASE}=require('./env');
    __form('SECOND-ENGINE');$('#csEngine').value='SECOND-ENGINE';$('#csFrame').value='SECOND-FRAME';$('#csModel').value='รถคันที่สอง';const second=await careServiceSave();
    const sj=SERVICE[SERVICE.length-1],sr=CARE.find(x=>x.tasks.some(t=>t.serviceJobId===sj.id));
    const separate=second&&CARE.length===bundles+1&&sr&&careVehicle(sr).model==='รถคันที่สอง'&&CUSTOMERS.length===nc;
-   return {separate,match:!!e&&!!f&&e.cust.id===f.cust.id&&f.frame==='OUT-56-FRAME'&&!partial,autofill,reuse:ok&&CUSTOMERS.length===nc};
+   const distinct=!!document.querySelector('#s-service #svModelName')&&document.querySelectorAll('#svModel').length===1;let serviceModel=false;
+   if(distinct){go('service');$('#svSearch').value='OUT-56-ENGINE';svLookup();serviceModel=$('#svModelName').value==='Honda Wave รุ่นพิมพ์เอง';}
+   return {distinct,serviceModel,separate,match:!!e&&!!f&&e.cust.id===f.cust.id&&f.frame==='OUT-56-FRAME'&&!partial,autofill,reuse:ok&&CUSTOMERS.length===nc};
  });
  if(Object.values(c).some(x=>!x))fails.push('[3] ค้นรถนอกหรือใช้ลูกค้าเดิมผิด '+JSON.stringify(c));
  const e=await p.evaluate(async()=>{
@@ -78,7 +80,11 @@ const {chromium,EXE,BASE}=require('./env');
    __imp('ST1');const saved=JSON.stringify(PERMS);PERMS.care=Object.assign({},PERMS.care,{'page:aftercare':'read','act:care':'write'});__imp('ST10');
    const read=!careTask(r.id,t.id);PERMS.care['page:aftercare']='write';PERMS.care['act:care']='none';const action=!careTask(r.id,t.id);__imp('ST1');PERMS=JSON.parse(saved);
    const old=r.branch;r.branch='QA-NO-SCOPE';__imp('ST10');const other=!careTask(r.id,t.id);r.branch=old;__imp('ST1');t.pendingSync=true;const pending=!careTask(r.id,t.id);delete t.pendingSync;closeModal();
-   return {sales,read,action,other,pending};
+   const customer=CUSTOMERS.find(x=>x.id===r.custId),owner=customer.ownerId,legacy={id:nid('LEGACY'),custId:customer.id,saleId:r.saleId,branch:r.branch,kind:'งานเก่า',due:TODAY,done:false};TASKS.push(legacy);
+   const customerBranch=customer.branch;__imp('ST3');customer.branch=ME.branch;legacy.branch=ME.branch;customer.ownerId='คนอื่น';const legacyOwner=!dealTaskDone(legacy.id)&&!legacy.done;customer.ownerId=ME.id;
+   const page=PERMS.sales['page:deal'];PERMS.sales['page:deal']='read';const legacyRead=!dealTaskDone(legacy.id)&&!legacy.done;PERMS.sales['page:deal']=page;const legacyOwnWrite=dealTaskDone(legacy.id)&&legacy.done;legacy.done=false;
+   __imp('ST1');customer.ownerId=owner;customer.branch=customerBranch;const legacyWrite=dealTaskDone(legacy.id)&&legacy.done;
+   return {sales,read,action,other,pending,legacyOwner,legacyRead,legacyOwnWrite,legacyWrite};
  });
  if(Object.values(f).some(x=>!x))fails.push('[6] guardสิทธิ์/สาขาหลุด '+JSON.stringify(f));
  const g=await p.evaluate(async()=>{

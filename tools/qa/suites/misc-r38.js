@@ -26,29 +26,34 @@ const { chromium, EXE, BASE } = require('./env');
 
   /* ---------- [1] finHist ---------- */
   await login('ST1');
-  const g1 = await p.evaluate(() => {
+  const g1 = await p.evaluate(async () => {
     const fc = FINCASES.find(x => x.status !== 'ปฏิเสธ' && x.status !== 'อนุมัติแล้ว');
     if (!fc) return { skip: true };
     const cu = CUSTOMERS.find(x => x.id === fc.custId);
     finReject(fc.id, 'ติดไฟแนนซ์เจ้าอื่น', 'SCB-QA', 'โน้ต QA');
     const h1 = cu.finHist && cu.finHist.length === 1 && cu.finHist[0].event === 'ปฏิเสธ'
       && cu.finHist[0].with === 'SCB-QA' && !!cu.finHist[0].fin;
-    /* ยื่นใหม่ผ่านโมดัลจริง */
-    finResubmit(fc.id);
-    const sel = $('#rsFin'); if (sel && $('#rsGo')) { $('#rsGo').onclick(); }
-    const h2 = cu.finHist.length === 2 && cu.finHist[1].event === 'ยื่นใหม่';
-    /* ยกเลิกการขาย — ประวัติต้องรอดและงอกอีกแถว */
-    const s = SALES.find(x => x.id === fc.saleId);
-    voidSaleCore(s);
-    const h3 = cu.finHist.length === 3 && cu.finHist[2].event === 'ยกเลิกการขาย';
+    /* มีใบขายอยู่ เปลี่ยนบริษัทไม่ได้: ยกเลิกใบขายเดิมก่อนแล้วประวัติต้องรอด */
+    const linkedBlocked=finResubmit(fc.id)===false&&!$('#rsFin')&&cu.finHist.length===1;
+    const s=SALES.find(x=>x.id===fc.saleId);voidSaleCore(s);
+    const h3=cu.finHist.length===2&&cu.finHist[1].event==='ยกเลิกการขาย'&&cu.finHist[0].with==='SCB-QA';
+    /* ยื่นคำขอใหม่โดยไม่ผูกรถ แล้วพิสูจน์การยื่นบริษัทอื่นผ่านโมดัลจริง */
+    Object.assign(cu,{addr:'99 เชียงใหม่',idNo:'1234567890123'});
+    finApplyModal(cu.id);$('#faDown').value=10000;await finApplySave(cu.id);
+    const fresh=FINCASES.find(x=>x.custId===cu.id&&!x.saleId);
+    if(!fresh)return {skip:false,h1,h2:false,h3,shown:false,linkedBlocked};
+    finReject(fresh.id,'เอกสารไม่ครบ','','ขอเอกสารเพิ่ม');finResubmit(fresh.id);
+    if($('#rsFin')&&$('#rsGo'))await $('#rsGo').onclick();
+    const h2=cu.finHist.length===4&&cu.finHist[3].event==='ยื่นใหม่'&&cu.finHist[0].with==='SCB-QA';
     go('deal'); DEAL_SEL = cu.id; rDeal();
     const shown = $('#dlOne').textContent.indexOf('ประวัติไฟแนนซ์') >= 0
       && $('#dlOne').textContent.indexOf('SCB-QA') >= 0;
     DEAL_SEL = '';
-    return { skip: false, h1, h2, h3, shown };
+    return {skip:false,h1,h2,h3,shown,linkedBlocked};
   });
   if (g1.skip) bad('[1] ไม่มีเคสไฟแนนซ์ค้างใน seed');
   else {
+    if(!g1.linkedBlocked)bad('[1] มีใบขายอยู่แต่เปลี่ยนบริษัทได้ หรือประวัติถูกแก้ทั้งที่ฐานไม่รับ');
     if (!g1.h1) bad('[1] ปฏิเสธแล้วประวัติไม่ถูกแช่ (เจ้า/เหตุผล/เจ้าที่ติด)');
     if (!g1.h2) bad('[1] ยื่นใหม่แล้วประวัติไม่งอก');
     if (!g1.h3) bad('[1] ยกเลิกการขายแล้วประวัติหาย/ไม่งอกแถวยกเลิก');

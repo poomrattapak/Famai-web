@@ -118,7 +118,7 @@ const { chromium, EXE, BASE } = require('./env');
   /* 6 · ศูนย์ซ่อม: วันที่เลือกได้ (K9) ห้ามอนาคต · ป้าย "ยอดชำระ" แทน "ค่าแรง" (K13) */
   const t6 = await p.evaluate(() => {
     go('service'); rService();
-    $('#svPhone').value='0897654321'; $('#svModel').value='รถนอกรุ่นทดสอบ'; $('#svEngine').value='QA-SERVICE-ENGINE'; $('#svFrame').value='QA-SERVICE-FRAME';
+    $('#svPhone').value='0897654321'; $('#svModelName').value='รถนอกรุ่นทดสอบ'; $('#svEngine').value='QA-SERVICE-ENGINE'; $('#svFrame').value='QA-SERVICE-FRAME';
     $('#svName').value = 'ทดสอบ เคเก้า'; $('#svSearch').value = 'E-TEST-K9';
     $('#svPart').value = ''; $('#svKm').value = '900';
     const n = SERVICE.length;

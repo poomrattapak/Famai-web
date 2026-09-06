@@ -109,7 +109,11 @@ const { chromium, EXE, BASE } = require('./env');
   const g5 = await p.evaluate(bkId => {
     const bk = BOOKINGS.find(x => x.id === bkId);
     const uid = bk.unitId, u = UNITS.find(x => x.id === uid);
-    go('sell'); sellTab('p1');
+    /* เซลล์จองได้ แต่เปิดขายและจัดสรรคันต้องให้ผู้บริหาร */
+    bookOpenSale(bk.id);const prior=SALES.length;saveSale(true,true);
+    const salesBlocked=SALES.length===prior&&u.status==='reserved';closeModal();
+    ME=Object.assign({},STAFF.find(x=>x.role==='admin'),{roles:['admin']});
+    go('sell');sellTab('p1');setPay('cash');
     sCustSel = ''; $('#sCust').value = 'QA คนอื่น'; $('#sPhone').value = '089-777-8899';
     sUnitSet(uid);
     const pickable = $('#sUnit').value === uid;
@@ -117,16 +121,18 @@ const { chromium, EXE, BASE } = require('./env');
     saveSale();
     const otherBlocked = SALES.length === n0 && !$('#modal').classList.contains('on')
       && u.status === 'reserved';
-    /* ลูกค้าที่จอง — ผ่านทางลัดจากหน้าจอง */
+    /* ใบจองยังไม่ใช่เจตนาซื้อ: ผู้บริหารยืนยันเงินสดและข้อมูลออกเอกสารก่อน */
+    Object.assign(CUSTOMERS.find(x=>x.id===bk.custId),{intent:'เงินสด',addr:'99 เชียงใหม่',idNo:'1234567890123'});
     bookOpenSale(bk.id);
     const prefill = CUR === 'sell' && $('#sCust').value === bk.name && $('#sUnit').value === uid;
     saveSale(); if ($('#cfmGo')) $('#cfmGo').onclick();
     const s = SALES[SALES.length - 1];
-    return { pickable, otherBlocked, prefill,
+    return {salesBlocked,pickable,otherBlocked,prefill,
       sold: SALES.length === n0 + 1 && u.status === 'sold',
       bkClosed: bk.status === 'เปิดขายแล้ว' && bk.saleId === s.id,
       saleNo: s.docNo, noPreissue: JSON.stringify(s.docs) === '{}' };
   }, g3.bkId);
+  if(!g5.salesBlocked)bad('[5] เซลล์เปิดขายคันที่จองได้เอง — ต้องรอผู้บริหารจัดสรร');
   if (!g5.pickable) bad('[5] คันติดจองหายจากตัวเลือกขาย — ลูกค้าที่จองเปิดการขายไม่ได้');
   if (!g5.otherBlocked) bad('[5] คนอื่นซื้อคันติดจองได้ — ด่านใน saveSale หลุด');
   if (!g5.prefill) bad('[5] bookOpenSale ไม่พาไปฟอร์มขายพร้อมข้อมูล');

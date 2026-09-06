@@ -7,7 +7,7 @@
    2 เดินครบเส้นทางแล้ว k/i ตรงทุกช่วง        6 ส่งมอบ → งานฝ่ายบริการเกิดเอง
    3 ไฟแนนซ์ยังไม่ผ่าน = ยังไม่เปิดการขาย      7 ทุกหน้าเรียงตรงกัน ไม่มีหน้าไหนสวน
    4 ส่งมอบ = จบงานและแถบเต็ม (งานป้ายเป็น waitPlate ไม่ใช่ขั้น)  8 หน้าสาธารณะไม่หลุดกฎ
-   6 ปรับ v1.35 (คำตอบเจ้าของข้อ 3): งานฝ่ายบริการเกิดตอนได้ป้าย ไม่ใช่ตอนส่งมอบ */
+   6 บรีฟใหม่: งานบริการหนึ่งเดือนเกิดเมื่อส่งมอบรถจริง ได้ป้ายภายหลังไม่สร้างซ้ำ */
 const { chromium, EXE, BASE } = require('./env');
 const WANT = ['คุยกับลูกค้า', 'ไฟแนนซ์', 'เปิดการขาย', 'ส่งมอบ'];
 
@@ -32,43 +32,45 @@ const WANT = ['คุยกับลูกค้า', 'ไฟแนนซ์', '
   if (t1.cash.length !== 3) fails.push('[1] เส้นทางเงินสดควรมี 3 ขั้น ได้ ' + t1.cash.length);
 
   /* 2+3+4+5+6 · เดินดีลผ่อนหนึ่งเส้นด้วยฟังก์ชันจริง แล้วดูทุกช่วง */
-  const walk = await p.evaluate(() => {
-    /* หาดีลผ่อนที่ยังไม่ส่งมอบและไฟแนนซ์ยังไม่จบ — ดันให้อยู่ต้นทางก่อน */
-    const s = SALES.find(x => !x.void && x.pay === 'finance' && FINCASES.some(f => f.saleId === x.id)
-      && REGS.some(r => r.saleId === x.id));
-    if (!s) return { skip: true };
-    const fc = FINCASES.find(f => f.saleId === s.id), rg = REGS.find(r => r.saleId === s.id);
-    fc.status = 'รอผลพิจารณา'; delete fc.rejectReason;
-    rg.stage = 'ส่งไฟแนนซ์'; rg.hold = ''; rg.plate = ''; delete rg.deliveredAt; delete s.deliveredAt;
-    CARE.length = 0;
-    const snap = t => { const d = dealOf(s.custId);
-      return { t, k: d.k, i: d.i, n: d.track.length, delivered: d.delivered,
-        saleTicked: d.i > d.track.findIndex(x => x.k === 'sale'), stage: d.rg.stage }; };
-    const out = [snap('รอผลไฟแนนซ์')];
-    finAdvance(fc.id);                                   /* รอผลพิจารณา → อนุมัติแล้ว (3 ขั้น v1.34) */
-    out.push(snap('ไฟแนนซ์อนุมัติ'));
-    /* v1.34: ปุ่มส่งมอบเดียวกระโดดขั้นภายในให้เอง — เดินด้วย regDeliver ตัวจริง */
-    const delivered = regDeliver(rg.id, { place: 'หน้าร้าน QA', by: 'QA', note: '' });
-    const stuck = !delivered || rg.stage !== 'ส่งมอบแล้ว';
-    out.push(snap('ส่งมอบแล้ว'));
-    const careN0 = CARE.filter(c => c.saleId === s.id).length;   /* v1.35: ส่งมอบแล้วต้องยังเป็น 0 */
-    regAdvance(rg.id);                                   /* ส่งมอบแล้ว → รอทะเบียน */
-    out.push(snap('รอทะเบียนจริง'));
-    const blocked = regAdvance(rg.id) === false && rg.stage === 'รอทะเบียน';  /* ไม่มีเลขทะเบียน = ปิดไม่ได้ */
-    regAdvance(rg.id, '1กก 9999');
-    out.push(snap('ได้ทะเบียนแล้ว'));
-    const careN = CARE.filter(c => c.saleId === s.id).length;    /* ได้ป้ายแล้วถึงเกิด */
-    return { out, careN0, careN, blocked, stuck };
+  const walk = await p.evaluate(async() => {
+    const u=UNITS.find(x=>x.status==='available'&&inScope(x.branch));if(!u)return {skip:true};
+    const c={id:'QA_FLOW_FIN',name:'QA เส้นทางผ่อนก่อนเลือกคัน',phone:'0801112222',addr:'99 เมือง',idNo:'1234567890123',branch:u.branch,
+      owner:ME.nick,ownerId:ME.id,stage:'สนใจ',intent:'เงินผ่อน',variant:u.variant,createdAt:TODAY};CUSTOMERS.push(c);
+    go('deal');DEAL_SEL=c.id;finApplyModal(c.id,{variant:u.variant,colorCode:u.colorCode,down:10000});
+    if(!await finApplySave(c.id))return {setup:'ยื่นคำขอไม่ได้'};
+    const fc=FINCASES.find(f=>f.custId===c.id&&!f.saleId);if(!fc)return {setup:'ไม่พบคำขอก่อนขาย'};
+    let s=null,rg=null;
+    const snap=t=>{const d=dealOf(c.id);return {t,k:d.k,i:d.i,n:d.track.length,delivered:d.delivered,
+      hasSale:!!d.s,saleTicked:d.i>d.track.findIndex(x=>x.k==='sale'),stage:d.rg?d.rg.stage:null};};
+    await finAdvance(fc.id);const out=[snap('รอผลไฟแนนซ์')];
+    await finAdvance(fc.id);out.push(snap('ไฟแนนซ์อนุมัติ'));
+    if(!dealSell(c.id))return {setup:'ผู้บริหารเปิดฟอร์มขายไม่ได้'};sUnitSet(u.id);calcSell();
+    if(!await saveSale(true,true))return {setup:'เปิดขายตามคำขออนุมัติไม่ได้'};
+    s=SALES.find(s=>s.custId===c.id&&!s.void);rg=REGS.find(r=>r.saleId===s.id);out.push(snap('เปิดการขาย'));
+    const internalBlocked=await regDeliver(rg.id,{date:TODAY})===false&&!rg.deliveredAt;
+    await finApprove(s.id,true);out.push(snap('การเงินอนุมัติ'));
+    const delivered=await regDeliver(rg.id,{date:TODAY,place:'หน้าร้าน QA',by:'QA',note:''});
+    const stuck=!delivered||rg.stage!=='ส่งมอบแล้ว';out.push(snap('ส่งมอบแล้ว'));
+    const careN0=CARE.filter(c=>c.saleId===s.id).length;
+    await regAdvance(rg.id);out.push(snap('รอทะเบียนจริง'));
+    const blocked=await regAdvance(rg.id)===false&&rg.stage==='รอทะเบียน';
+    await regAdvance(rg.id,'1กก 9999');out.push(snap('ได้ทะเบียนแล้ว'));
+    const careN=CARE.filter(c=>c.saleId===s.id).length;
+    return {out,careN0,careN,blocked,stuck,internalBlocked};
   });
   if (walk.skip) fails.push('[2] ไม่มีดีลผ่อนใน seed ให้เดินเส้นทาง');
+  else if(walk.setup)fails.push('[2] '+walk.setup);
   else if (walk.stuck) fails.push('[2] เดินไปถึงขั้นส่งมอบไม่ได้ — ลำดับขั้นทะเบียนขวางอยู่');
   else {
     const by = {}; walk.out.forEach(x => by[x.t] = x);
     const chk = (t, want) => { const g = by[t]; if (!g) { fails.push('[2] ไม่มีช่วง "' + t + '"'); return; }
       for (const key of Object.keys(want)) if (g[key] !== want[key])
         fails.push('[2] ช่วง "' + t + '" ' + key + ' = ' + JSON.stringify(g[key]) + ' ควรเป็น ' + JSON.stringify(want[key])); };
-    chk('รอผลไฟแนนซ์',  { k: 'fin',     i: 1, delivered: false, saleTicked: false });
-    chk('ไฟแนนซ์อนุมัติ', { k: 'deliver', i: 3, delivered: false, saleTicked: true });
+    chk('รอผลไฟแนนซ์',{k:'fin',i:1,delivered:false,saleTicked:false,hasSale:false});
+    chk('ไฟแนนซ์อนุมัติ',{k:'sale',i:2,delivered:false,saleTicked:false,hasSale:false});
+    chk('เปิดการขาย',{k:'sale',i:2,delivered:false,saleTicked:false,hasSale:true});
+    chk('การเงินอนุมัติ',{k:'deliver',i:3,delivered:false,saleTicked:true,hasSale:true});
+    if(!walk.internalBlocked)fails.push('[2] เปิดขายแล้วส่งมอบได้ก่อนฝ่ายการเงินอนุมัติ');
     chk('ส่งมอบแล้ว',    { k: 'done',    i: 4, delivered: true });
     chk('ได้ทะเบียนแล้ว', { k: 'done',    i: 4, delivered: true });
     /* 3 · แก่นของคำสั่ง — ไฟแนนซ์ยังไม่ผ่าน ห้ามติ๊กขั้นเปิดการขาย */
@@ -80,9 +82,9 @@ const WANT = ['คุยกับลูกค้า', 'ไฟแนนซ์', '
     if (dl && !dl.delivered) fails.push('[4] ส่งมอบแล้วแต่ไม่ถูกนับว่าจบงาน');
     /* 5 · ด่านเลขทะเบียน */
     if (!walk.blocked) fails.push('[5] ปิดงานทะเบียนได้ทั้งที่ยังไม่มีเลขทะเบียน');
-    /* 6 · v1.35: งานฝ่ายบริการเกิดตอนได้ป้าย — ส่งมอบอย่างเดียวยังไม่เกิด (คำตอบเจ้าของข้อ 3) */
-    if (walk.careN0) fails.push('[6] งานฝ่ายบริการเกิดตั้งแต่ส่งมอบ — ต้องรอได้ป้าย');
-    if (!walk.careN) fails.push('[6] ได้ป้ายแล้วงานฝ่ายบริการไม่เกิด');
+    /* งานบริการเกิดหลังส่งมอบรถครั้งเดียว ได้ป้ายไม่สร้างซ้ำ */
+    if(walk.careN0!==1)fails.push('[6] ส่งมอบแล้วต้องมีงานบริการหนึ่งชุด ได้ '+walk.careN0);
+    if(walk.careN!==1)fails.push('[6] ได้ป้ายแล้วงานบริการต้องยังมีชุดเดียว ได้ '+walk.careN);
   }
 
   /* 7 · ทุกหน้าเรียงตรงกัน — ทะเบียน / ผังกระบวนการ / หน้าสาธารณะ */

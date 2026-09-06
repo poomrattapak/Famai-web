@@ -30,6 +30,19 @@ const PICKS = [
     "UNITS.filter(u=>u.status==='available' && u.branch===document.getElementById('wsBranch').value && !WS_CART.some(x=>x.unitId===u.id)).length"]
 ];
 
+/* ข้อมูลในด่านแบ่งหน้าต้องมากกว่าหนึ่งหน้าในช่วงเวลาปัจจุบันเสมอ
+   ไม่พึ่งอายุ seed หรือขยายสิทธิ์/ช่วงเพื่อทำให้ผ่าน และยังตรวจไฟล์ครบเทียบกับหน้าที่สั้น */
+const pageFixtures = async p => p.evaluate(() => {
+  const at=TODAY+'T09:00:00+07:00';
+  for(let i=1;i<=16;i++){
+    const id='QA-R47-CU-'+i;
+    CUSTOMERS.push({id,name:'ทดสอบแบ่งหน้า '+i,phone:'08947000'+String(i).padStart(2,'0'),
+      branch:ME.branch,ownerId:ME.id,owner:ME.nick,createdAt:at,upAt:at,src:'ทดสอบแบ่งหน้า',
+      stage:'สนใจ',intent:'เงินสด',variant:Object.keys(PRICE)[0]});
+    TASKS.push({id:'QA-R47-TK-'+i,custId:id,branch:ME.branch,kind:'ติดตามรายการ '+i,due:addDays(TODAY,-1),done:false});
+  }
+});
+
 (async () => {
   const b = await chromium.launch({ executablePath: EXE });
   const fails = [], errors = [];
@@ -43,6 +56,7 @@ const PICKS = [
   await p.goto(BASE + '/index.html', { waitUntil: 'domcontentloaded' });
     await installPages(p);
   await p.click('#lgUsers [data-id="ST1"]'); await p.click('#lgGo'); await p.waitForTimeout(400);
+  await pageFixtures(p);
   await p.evaluate(() => { window.__F = []; csv = (n, h, r) => window.__F.push({ n: n, h: h, rows: r }); });
 
   const api = await p.evaluate(() => {
@@ -185,6 +199,7 @@ const PICKS = [
   q.on('pageerror', e => errors.push('390 PAGEERROR ' + e.message));
   await q.goto(BASE + '/index.html', { waitUntil: 'domcontentloaded' });
   await q.click('#lgUsers [data-id="ST1"]'); await q.click('#lgGo'); await q.waitForTimeout(450);
+  await pageFixtures(q);
   const tallOut = [];
   for (const [page, cap] of TALL) {
     await q.evaluate(x => go(x), page); await q.waitForTimeout(350);

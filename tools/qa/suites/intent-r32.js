@@ -103,6 +103,8 @@ const {installPages}=require('../helpers/pages');
 
   /* ---------- [6] pill + ตัวกรองในตารางรวม ---------- */
   const g6 = await p.evaluate(() => {
+    /* ตรวจตัวกรองวิธีชำระด้วยช่วงที่ครอบคลุม seed ทั้งหมด */
+    PERIOD.deal={r:3650,from:addDays(TODAY,-3650),to:TODAY};
     go('deal'); DEAL_SEL = ''; rDeal();
     const pills = [...document.querySelectorAll('#dlTable tbody tr .pill')]
       .map(x => x.textContent.trim()).filter(t => ['เงินสด', 'เงินผ่อน', 'ยังไม่ระบุ'].indexOf(t) >= 0);

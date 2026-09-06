@@ -1,6 +1,7 @@
 /* ด่าน QA รอบส่งมอบ (v1.22) — โหมดข้อมูลจริงต้องไม่ทำคิวพังถาวร (poison queue)
    จำลอง LIVE ด้วยการ stub sbFetch/sbUpload ในหน้า — พิสูจน์ที่ "สิ่งที่ถูกส่งจริง" ไม่ใช่แค่ตัวแปร */
 const { chromium, EXE, BASE } = require('./env');
+const {installLiveWriteAck}=require('../helpers/live-write-ack');
 
 (async () => {
   const b = await chromium.launch({ executablePath: EXE });
@@ -23,6 +24,8 @@ const { chromium, EXE, BASE } = require('./env');
     sbUpload = async () => 'x';
     LIVE = true;
   });
+
+  await p.evaluate(installLiveWriteAck);
 
   /* 1 · dbId ต้องได้ uuid เสมอ — แม้ browser ไม่มี crypto.randomUUID (http บน LAN) */
   const t1 = await p.evaluate(() => {
@@ -71,7 +74,7 @@ const { chromium, EXE, BASE } = require('./env');
     const s = SALES.find(x => !x.void); s.id2 = s.id;
     const sid = uuid4(); s.id = sid; s.finApproval = { status: 'รอตรวจ' };
     const n2 = REQ.length;
-    finApprove(sid, true);
+    await finApprove(sid, true);
     await drain();
     const r2 = REQ.slice(n2).find(x => x.path.includes('/sale?'));
     const finPatched = !!r2 && r2.method === 'PATCH';
@@ -112,14 +115,14 @@ const { chromium, EXE, BASE } = require('./env');
     go('sell');
     $('#sUnit').innerHTML = '<option value="' + u.id + '">x</option>'; $('#sUnit').value = u.id;
     $('#sBranch').innerHTML = '<option value="' + u.branch + '">x</option>'; $('#sBranch').value = u.branch;
-    $('#sCust').value = 'ทดสอบ โทเคน'; $('#sPay').value = 'cash';
+    sCustSel='';$('#sCust').value = 'ทดสอบ โทเคน';$('#sPhone').value='0800000022'; $('#sPay').value = 'cash';
     const n = REQ.length;
-    saveSale();
-    if ($('#cfmGo')) $('#cfmGo').onclick();
+    const saved=await saveSale(false,true);
     await drain();
-    const r = REQ.slice(n).find(x => x.path.includes('/sale?'));
+    const rpc=REQ.slice(n).find(x=>x.path.includes('/rpc/create_sale_bundle'));
+    const r=rpc&&{body:rpc.body.p_sale};
     const s = SALES[SALES.length - 1];
-    return { sent: !!r, tok: r && r.body.public_token && r.body.public_token === s.pubToken };
+    return { sent: !!r&&saved===true, tok: r && r.body.public_token && r.body.public_token === s.pubToken };
   });
   if (t5.skip) bad('ข้าม token: ' + t5.skip);
   else {

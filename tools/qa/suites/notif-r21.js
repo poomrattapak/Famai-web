@@ -1,6 +1,6 @@
 /* ด่านศูนย์แจ้งเตือน (บรีฟรอบ 1 · J1-J2)
    หลักที่คุม: รายการคิดสดจากระเบียนจริง (กฎข้อ 8) · สิทธิ์/ขอบเขตเท่าหน้าจริง ไม่รั่วข้ามบทบาท ·
-   อ่านแล้วนับศูนย์ต่อคน · ปิดหมวดได้ (J2) · สรุปประจำวันเฉพาะผู้บริหาร · ช่องทางนอกแอปเป็นโครง (J1) */
+   อ่านเฉพาะรายการที่กดต่อคน · ปิดหมวดได้ (J2) · สรุปประจำวันเฉพาะผู้บริหาร · ช่องทางนอกแอปเป็นโครง (J1) */
 const { chromium, EXE, BASE } = require('./env');
 
 (async () => {
@@ -14,7 +14,7 @@ const { chromium, EXE, BASE } = require('./env');
     await pg.click('#lgUsers [data-id="' + id + '"]'); await pg.click('#lgGo'); await pg.waitForTimeout(400); };
   await login(p, 'ST1');
 
-  /* 1 · แอดมิน: มีงานค้างจาก seed → กระดิ่งขึ้นเลข · เปิดดูแล้วนับศูนย์ · ระเบียนใหม่ → เด้งกลับมา */
+  /* 1 · แอดมิน: มีงานค้างจาก seed → กระดิ่งขึ้นเลข · เปิดดูยังคงจำนวนที่ไม่อ่าน · ระเบียนใหม่ → เด้งกลับมา */
   const t1 = await p.evaluate(() => {
     const n0 = notifItems().length;
     const bell0 = $('#bellN').textContent;
@@ -23,7 +23,7 @@ const { chromium, EXE, BASE } = require('./env');
     const hasDigest = $('#drwB').innerHTML.includes('สรุปวันนี้');
     const hasChannels = $('#drwB').innerHTML.includes('LINE') && $('#drwB').innerHTML.includes('ยังไม่เปิดใช้');
     closeDrawer(); notifSync();
-    const afterOpen = $('#bellN').style.display === 'none';
+    const afterOpen = +$('#bellN').textContent === n0 && !Object.keys(ntfLoad().seen).length;
     /* ใบลาใหม่ = ระเบียนจริงใหม่ → ต้องเด้งโดยไม่ต้องมีใคร "สร้างแจ้งเตือน" */
     LEAVES.push({ id: 'LVN1', staffId: 'ST6', type: 'ลากิจ', from: addDays(curDate(), 5),
       to: addDays(curDate(), 5), status: 'รออนุมัติ' });
@@ -36,7 +36,7 @@ const { chromium, EXE, BASE } = require('./env');
   if (!t1.drawerOpen)   bad('กดกระดิ่งแล้วแผ่นแจ้งเตือนไม่เปิด');
   if (!t1.hasDigest)    bad('ผู้บริหารไม่เห็นสรุปประจำวัน (J2)');
   if (!t1.hasChannels)  bad('ไม่มีโครงช่องทางอีเมล/LINE ที่บอกว่ายังไม่เปิดใช้ (J1)');
-  if (!t1.afterOpen)    bad('เปิดอ่านแล้วเลขบนกระดิ่งไม่กลับเป็นศูนย์');
+  if (!t1.afterOpen)    bad('เปิดกระดิ่งแล้วทำให้งานที่ยังไม่กดถูกนับว่าอ่านแล้ว');
   if (!t1.reNotified)   bad('มีระเบียนค้างใหม่แล้วกระดิ่งไม่เด้งกลับมา (ต้องคิดสดจากระเบียน)');
 
   /* 2 · ปิดหมวด (J2) — หมวดที่ปิดหายทั้งจากรายการและตัวนับ · เปิดคืนแล้วกลับมา */

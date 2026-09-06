@@ -1,31 +1,16 @@
-/* ด่าน v1.49 — เขียนลงฐานข้อมูลให้ครบทุกตารางธุรกรรม (ครึ่งแรกของ "โหลดข้อมูลกลับ" ทาง ก.)
-   คำสั่งเจ้าของ 31 ส.ค. 2569: ผสานจุดแข็ง grape ทาง ก. **รวมโหลดข้อมูลกลับด้วย**
-   รอบนี้ = ทุก action ที่เขียนข้อมูลต้องยิงคำขอลงตารางจริง (โหมดสาธิตยังเงียบเหมือนเดิม)
-   ตารางที่เริ่มเขียน: registration · finance_case · receivable · receipt_payment · service_job ·
-   expense · part · part_movement · freebie · quotation(+option) · follow_up_task · service_reminder
-   + ตัวนับเลขเอกสารโหมดจริงยิง RPC next_doc_no ให้ตัวนับกลางเดินตาม
-
-   วิธีทดสอบ: stub sbFetch (แบบ live-r22) — REQ เก็บทุกคำขอที่จะยิงจริง แล้วตรวจ path/method/body
-   ล็อก:
-   [1] saveSale เงินผ่อน → insert registration (sale_id/due_at/stage_log) + finance_case (company_id
-       uuid จริง) + receivable (kind=finance) + follow_up_task ตาม cadence + service_reminder ตามไมล์
-       + RPC next_doc_no ของเลขใบขาย
-   [2] regAdvance เดินถึง "ได้ทะเบียนแล้ว" → PATCH registration (stage/stage_log/plate_no/
-       plate_received_at) + งานดูแลหลังการขายลง follow_up_task (kind ขึ้นต้น care)
-   [3] finAdvance → PATCH finance_case (status+stage_log) · finReject → PATCH (reject_reason+decided_at)
-   [4] arReceive (ลงรับเงิน — ฟังก์ชันชื่อจริง ไม่ใช่ closure) → insert receipt_payment
-       + PATCH receivable (amount_paid/settled_at) · ด่านสิทธิ์: ST3 เรียกตรงต้องเงียบทั้งคิว
-   [5] svSave → insert service_job (job_no/checked_in_at) + ตัดอะไหล่ → insert part_movement
-       + PATCH part.qty_on_hand · ปุ่มส่งมอบ [data-sv] → PATCH service_job.status
-   [6] expSave → insert expense (category ตัวหนังสือ + approval) · expApprove → PATCH approval
-   [7] partSave → insert part · partMove → insert part_movement + PATCH part
-   [8] giftSave → insert freebie · ขายพร้อมของแถม → PATCH freebie.qty_on_hand
-   [9] saveQuote → insert quotation + quotation_option (slot 1[/2] + variant_id uuid)
-   [10] ปิดงานติดตาม (data-dltask) + careTask → PATCH follow_up_task.done_at
-   [11] id เดโมใน FK ห้ามหลุดเข้าคิว (อะไหล่ id 'PT1' → ไม่มีคำขอ ไม่มี error)
-
-   mutation ที่ต้องแดง: ถอด dbUp/dbPatch ทีละจุด → ข้อของมันแดง (ตารางอยู่หัวข้อละบรรทัดด้านบน) */
+/* ด่าน writeback v1.49 ปรับตามบรีฟ 6 ก.ย. 2569 โดยคงการตรวจคำขอที่ส่งจริง
+   [1] ยื่น finance_case โดยไม่มี sale_id/คันรถ → พิจารณา → create_sale_bundle ส่ง sale,
+       registration, receivable และของแถมที่ต้องตัดใน transaction เดียว พร้อมตัวนับเอกสาร
+       เปิดขายต้องยังไม่มี cadence/service_reminder แบบเดิม
+   [2] การเงินอนุมัติ → ส่งมอบ ACK → โหลด UUID จริงของงานหนึ่งเดือนที่ฐานสร้าง → ปิดป้ายไม่สร้างซ้ำ
+   [3] พิจารณา/ปฏิเสธคำขอก่อนขาย: status, stage_log, reject_reason, reject_note, decided_at ครบ
+   [4] รับเงิน: receipt_payment และ receivable PATCH + เซลล์เรียก handler ตรงต้องเงียบ
+   [5] ซ่อม: service_job + part_movement + part stock PATCH + finished status
+   [6] ค่าใช้จ่ายและผลอนุมัติ [7] อะไหล่ [8] ของแถม [9] ใบเสนอและตัวเลือก
+   [10] ปิดงานติดตามเดิมและงานบริการใหม่ลงฐาน [11] UUID guard กันคิวพัง
+   Stub ตอบ representation ตามฐานจริงเพื่อให้ ACK guard ถูกทดสอบ ไม่อ่านแถว seed แทนรายการใหม่ */
 const { chromium, EXE, BASE } = require('./env');
+const {installLiveWriteAck}=require('../helpers/live-write-ack');
 
 (async () => {
   const b = await chromium.launch({ executablePath: EXE });
@@ -49,107 +34,88 @@ const { chromium, EXE, BASE } = require('./env');
     BRANCHES.forEach(br => { BR_IDS[br.code] = BR_IDS[br.code] || uuid4(); });
     FIN_CO.forEach(f => { f.dbId = uuid4(); });
     Object.keys(PRICE).forEach(v => { VARIANT_IDS[v] = VARIANT_IDS[v] || uuid4(); });
-    window.__imp = id => { const st = STAFF.find(s => s.id === id);
+    window.__staffFixture=Object.fromEntries(STAFF.map(s=>[s.id,s]));
+    STAFF.forEach(s=>{s.id=uuid4();});
+    window.__imp = id => { const st = __staffFixture[id];
       ME = { id: st.id, name: st.name, nick: st.nick, role: st.role, branch: st.branch }; };
+    __imp('ST1');
     window.__drain = () => new Promise(r => { const k = () => (DB_Q.length || DB_RUN) ? setTimeout(k, 30) : r(); k(); });
     window.__of = (n, tbl, method) => REQ.slice(n).filter(x =>
-      x.path.includes('/' + tbl + '?') && (!method || x.method === (method || 'POST')));
+      x.path.split('?')[0].endsWith('/' + tbl) && (!method || x.method === (method || 'POST')));
   });
 
-  /* ---------- [1] saveSale เงินผ่อน ---------- */
-  const g1 = await p.evaluate(async () => {
-    go('sell');
-    const u = UNITS.find(x => x.status === 'available' && x.retail != null && !x.clearance
-      && !BOOKINGS.some(bk => bk.status === 'จองอยู่' && bk.unitId === x.id));
-    u.id = uuid4();                                   /* จำลองรถที่โหลดจากฐานจริง */
-    const g = GIFTS.find(x => x.qty > 0); g.id = uuid4(); g.branch = u.branch;
-    $('#sUnit').innerHTML = '<option value="' + u.id + '">x</option>'; $('#sUnit').value = u.id;
-    $('#sBranch').innerHTML = '<option value="' + u.branch + '">x</option>'; $('#sBranch').value = u.branch;
-    sCustSel = ''; $('#sCust').value = 'QA ไลฟ์49'; $('#sPhone').value = '081-000-4949';
-    $('#sPay').value = 'finance';
-    $('#sFinCo').innerHTML = '<option value="' + FIN_CO[0].id + '">x</option>'; $('#sFinCo').value = FIN_CO[0].id;
-    $('#sDown').value = '15000';   /* เกินดาวน์ขั้นต่ำ 15% — ไม่ให้กล่องเตือนดาวน์ต่ำมาคั่นโฟลว์ */
-    sFree = {}; sFree[g.id] = 1; sFreeX = [];
-    const n = REQ.length;
-    saveSale(); if ($('#cfmGo')) $('#cfmGo').onclick();
-    await __drain();
-    const reg = __of(n, 'registration')[0], fc = __of(n, 'finance_case')[0];
-    const ar = __of(n, 'receivable')[0];
-    const tk = __of(n, 'follow_up_task'), rm = __of(n, 'service_reminder');
-    const rpc = REQ.slice(n).find(x => x.path.includes('/rpc/next_doc_no'));
-    const gp = __of(n, 'freebie', 'PATCH')[0];
-    const s = SALES[SALES.length - 1];
-    return { saleId: s.id, regId: REGS.find(r => r.saleId === s.id).id,
-      fcId: (FINCASES.find(f => f.saleId === s.id) || {}).id,
-      arId: (AR.find(a => a.saleId === s.id) || {}).id, giftId: g.id,
-      reg: !!reg && reg.body.sale_id === s.id && !!reg.body.due_at && Array.isArray(reg.body.stage_log),
-      fc: !!fc && /^[0-9a-f]{8}-/.test(fc.body.company_id || '') && fc.body.status === 'ส่งเรื่อง',
-      ar: !!ar && ar.body.kind === 'finance' && ar.body.amount_due > 0,
-      tk: tk.length >= 3 && tk.every(x => x.body.due_at && x.body.kind),
-      rm: rm.length >= 1 && rm.every(x => x.body.target_km > 0),
-      rpc: !!rpc && /^[0-9a-f]{8}-/.test(rpc.body.p_branch || '') && rpc.body.p_type === 'SALE',
-      gift: !!gp && typeof gp.body.qty_on_hand === 'number' };
+  await p.evaluate(installLiveWriteAck);
+  await p.evaluate(()=>{
+    window.__request=async(u,name,phone)=>{
+      const c={id:uuid4(),name,phone,addr:'1 ถนนทดสอบ',idNo:'1234567890123',branch:u.branch,variant:u.variant,
+        owner:ME.nick,ownerId:ME.id,intent:'เงินผ่อน',createdAt:punchNow().toISOString()};CUSTOMERS.push(c);
+      const before=SALES.length;
+      finApplyModal(c.id,{variant:u.variant,colorCode:u.colorCode,list:u.retail,down:15000,finId:FIN_CO[0].id});
+      const ok=await finApplySave(c.id),fc=FINCASES.find(x=>x.custId===c.id&&!x.saleId);
+      return {c,fc,ok,noSale:SALES.length===before&&u.status==='available'};
+    };
   });
-  if (!g1.reg) bad('[1] ขายแล้วไม่ insert registration (หรือขาด sale_id/due_at/stage_log)');
-  if (!g1.fc) bad('[1] ขายผ่อนไม่ insert finance_case พร้อม company_id uuid จริง');
-  if (!g1.ar) bad('[1] ขายผ่อนไม่ insert receivable kind=finance');
-  if (!g1.tk) bad('[1] งานติดตามตาม cadence ไม่ลง follow_up_task');
-  if (!g1.rm) bad('[1] เตือนเช็กระยะไม่ลง service_reminder');
-  if (!g1.rpc) bad('[1] เลขใบขายโหมดจริงไม่ยิง RPC next_doc_no (ตัวนับกลางไม่เดินตาม)');
-  if (!g1.gift) bad('[8] ขายพร้อมของแถมแล้วไม่ PATCH freebie.qty_on_hand');
 
-  /* ---------- [2] regAdvance ถึง "ได้ทะเบียนแล้ว" ---------- */
-  const g2 = await p.evaluate(async (ids) => {
-    const fcObj = FINCASES.find(f => f.id === ids.fcId);
-    fcObj.status = 'อนุมัติแล้ว';                       /* ให้ทะเบียนเดินได้ */
-    const n = REQ.length;
-    regAdvance(ids.regId); regAdvance(ids.regId); regAdvance(ids.regId);
-    regAdvance(ids.regId); regAdvance(ids.regId, '1กข 4949');
-    await __drain();
-    const ps = __of(n, 'registration', 'PATCH');
-    const last = ps[ps.length - 1];
-    const care = __of(n, 'follow_up_task').filter(x => String(x.body.kind).indexOf('care') === 0);
-    return { n: ps.length, last: !!last && last.body.stage === 'ได้ทะเบียนแล้ว'
-        && last.body.plate_no === '1กข 4949' && !!last.body.plate_received_at
-        && Array.isArray(last.body.stage_log),
-      care: care.length >= 3 };
-  }, g1);
-  if (g2.n < 5) bad('[2] เดินขั้นทะเบียน 5 ครั้งแต่ PATCH registration ' + g2.n + ' ครั้ง');
-  if (!g2.last) bad('[2] ขั้นสุดท้ายไม่ครบ (stage/plate_no/plate_received_at/stage_log)');
-  if (!g2.care) bad('[2] ได้ป้ายแล้วงานดูแลหลังการขายไม่ลง follow_up_task (kind ขึ้นต้น care)');
-
-  /* ---------- [3] finAdvance / finReject ---------- */
-  const g3 = await p.evaluate(async () => {
-    /* เคสใหม่แยกจาก [2] — สร้างขายผ่อนอีกใบเร็ว ๆ */
-    const u = UNITS.find(x => x.status === 'available' && x.retail != null && !x.clearance
-      && !BOOKINGS.some(bk => bk.status === 'จองอยู่' && bk.unitId === x.id));
-    u.id = uuid4();
-    $('#sUnit').innerHTML = '<option value="' + u.id + '">x</option>'; $('#sUnit').value = u.id;
-    $('#sBranch').innerHTML = '<option value="' + u.branch + '">x</option>'; $('#sBranch').value = u.branch;
-    sCustSel = ''; $('#sCust').value = 'QA ไลฟ์49บี'; $('#sPhone').value = '081-000-4950';
-    $('#sPay').value = 'finance';
-    $('#sFinCo').innerHTML = '<option value="' + FIN_CO[0].id + '">x</option>'; $('#sFinCo').value = FIN_CO[0].id;
-    $('#sDown').value = '15000';
-    sFree = {}; sFreeX = [];
-    saveSale(); if ($('#cfmGo')) $('#cfmGo').onclick();
-    const s = SALES[SALES.length - 1];
-    const fc = FINCASES.find(f => f.saleId === s.id);
-    const n = REQ.length;
-    finAdvance(fc.id);
-    finReject(fc.id, 'รายได้ไม่พอ', '', 'QA');
-    await __drain();
-    const ps = __of(n, 'finance_case', 'PATCH');
-    return { adv: ps.some(x => x.body.status === 'ยื่นเอกสาร' || x.body.status === FIN_STAGES[1]),
-      rej: ps.some(x => x.body.status === 'ปฏิเสธ' && x.body.decided_at
-        && String(x.body.reject_reason).indexOf('รายได้ไม่พอ') === 0) };   /* เหตุผล+หมายเหตุถูกรวมในช่องเดียว */
+  /* [1] บรีฟใหม่: ยื่นก่อนเลือกคัน → อนุมัติ → บันทึกขายผ่าน transaction เดียว */
+  const g1=await p.evaluate(async()=>{
+    go('sell');const u=UNITS.find(x=>x.status==='available'&&x.retail!=null&&!x.clearance&&!BOOKINGS.some(b=>b.status==='จองอยู่'&&b.unitId===x.id));u.id=uuid4();
+    const gift=GIFTS.find(x=>x.qty>0);gift.id=uuid4();gift.branch=u.branch;
+    const n=REQ.length,req=await __request(u,'QA ไลฟ์49','0810004949');
+    if(!req.ok||!req.fc)return {why:$('#toasts').textContent};
+    for(let i=0;i<FIN_STAGES.length&&req.fc.status!=='อนุมัติแล้ว';i++)if(!await finAdvance(req.fc.id))break;
+    dealSell(req.c.id);$('#sUnit').innerHTML='<option value="'+u.id+'">x</option>';$('#sUnit').value=u.id;
+    $('#sBranch').innerHTML='<option value="'+u.branch+'">x</option>';$('#sBranch').value=u.branch;
+    sFree={};sFree[gift.id]=1;sFreeX=[];
+    const saved=await saveSale(false,true);await __drain();
+    const bundle=REQ.slice(n).find(x=>x.path.includes('/rpc/create_sale_bundle')),fc=__of(n,'finance_case','POST')[0];
+    const sale=SALES.find(x=>x.custId===req.c.id),args=bundle&&bundle.body;
+    if(!saved||!sale||!args)return {why:$('#toasts').textContent};
+    const reg=args.p_registration,ar=args.p_receivable;
+    const counter=REQ.slice(n).find(x=>x.path.includes('/rpc/next_doc_no')&&x.body.p_type==='SALE');
+    return {saleId:sale.id,regId:reg.id,fcId:req.fc.id,arId:ar.id,
+      reg:reg.sale_id===sale.id&&!!reg.due_at&&Array.isArray(reg.stage_log),
+      fc:!!fc&&fc.body.sale_id===null&&/^[0-9a-f]{8}-/.test(fc.body.company_id||'')&&fc.body.status==='ส่งเรื่อง'&&req.noSale&&args.p_sale.finance_case_id===req.fc.id,
+      ar:ar.kind==='finance'&&ar.amount_due===req.fc.amount&&ar.sale_id===sale.id,
+      noPremature:!__of(n,'follow_up_task','POST').length&&!__of(n,'service_reminder','POST').length,
+      rpc:!!counter&&/^[0-9a-f]{8}-/.test(counter.body.p_branch||''),
+      gift:args.p_gifts.some(x=>x.id===gift.id&&x.qty===1)&&sale.gifts.some(x=>x.id===gift.id&&x.qty===1)};
   });
-  if (!g3.adv) bad('[3] finAdvance ไม่ PATCH finance_case.status');
-  if (!g3.rej) bad('[3] finReject ไม่ PATCH reject_reason/decided_at');
+  if(!g1.reg)bad('[1] transaction เปิดขายไม่มี registration ที่ผูกการขาย/กำหนด/ประวัติขั้น');
+  if(!g1.fc)bad('[1] ต้องยื่น finance_case ก่อนคันจริงและผูกคำขอเดิมใน transaction');
+  if(!g1.ar)bad('[1] transaction ไม่มี receivable ของคำขอที่อนุมัติแล้ว');
+  if(!g1.noPremature)bad('[1] เปิดขายแล้วสร้างงานบริการก่อนส่งมอบ หรือยังสร้างรอบเดิม');
+  if(!g1.rpc)bad('[1] เลขใบขายไม่เดินตัวนับกลาง');
+  if(!g1.gift)bad('[8] transaction ไม่ส่งของแถมที่ต้องตัดสต๊อกพร้อมการขาย');
+
+  /* [2] ฝ่ายการเงินอนุมัติ → ส่งมอบ ACK → ฐานสร้างหนึ่งงาน → ได้ป้ายไม่สร้างซ้ำ */
+  const g2=await p.evaluate(async ids=>{
+    const sale=SALES.find(x=>x.id===ids.saleId),reg=REGS.find(x=>x.id===ids.regId);if(!sale||!reg)return {n:0};
+    await finApprove(sale.id,true);const n=REQ.length;
+    await regDeliver(reg.id,{date:TODAY,by:ME.nick});
+    await regAdvance(reg.id);await regAdvance(reg.id,'1กข 4949');await __drain();
+    const ps=__of(n,'registration','PATCH'),last=ps[ps.length-1],care=careOf(sale.id);
+    return {n:ps.length,last:!!last&&last.body.stage==='ได้ทะเบียนแล้ว'&&last.body.plate_no==='1กข 4949'&&!!last.body.plate_received_at&&Array.isArray(last.body.stage_log),
+      care:!!care&&care.tasks.length===1&&care.tasks[0].source==='delivery_month'&&isUuid(care.tasks[0].id)&&!care.tasks[0].pendingSync&&care.tasks[0].due===careMonthDate(reg.deliveredAt)
+        &&REQ.slice(n).some(x=>x.method==='GET'&&x.path.includes('task_source=eq.delivery_month'))&&!__of(n,'follow_up_task','POST').length};
+  },g1);
+  if(g2.n<3)bad('[2] ส่งมอบ→รอทะเบียน→ได้ป้าย ต้องบันทึก registration ครบ3ขั้น');
+  if(!g2.last)bad('[2] ขั้นสุดท้ายไม่แช่เลขป้าย/วันได้ป้าย/stage_log');
+  if(!g2.care)bad('[2] ส่งมอบต้องโหลดUUIDจริงของงานหนึ่งเดือนจากฐาน และไม่สร้างซ้ำตอนได้ป้าย');
+
+  /* [3] พิจารณาคำขอก่อนเปิดขาย ไม่แก้ผลคำขอที่ผูกการขายแล้ว */
+  const g3=await p.evaluate(async()=>{
+    const u=UNITS.find(x=>x.status==='available'&&x.retail!=null&&!x.clearance);const req=await __request(u,'QA พิจารณา49','0810004950');
+    if(!req.ok||!req.fc)return {adv:false,rej:false};const n=REQ.length;
+    await finAdvance(req.fc.id);await finReject(req.fc.id,'รายได้ไม่พอ','','QA');await __drain();const ps=__of(n,'finance_case','PATCH');
+    return {adv:ps.some(x=>x.body.status===FIN_STAGES[1]&&Array.isArray(x.body.stage_log)),rej:ps.some(x=>x.body.status==='ปฏิเสธ'&&x.body.decided_at&&x.body.reject_reason==='รายได้ไม่พอ'&&x.body.reject_note==='QA')};
+  });
+  if(!g3.adv)bad('[3] finAdvance ไม่ PATCH สถานะ/ประวัติคำขอ');
+  if(!g3.rej)bad('[3] finReject ไม่ PATCH เหตุผล/หมายเหตุ/วันที่ตัดสิน');
 
   /* ---------- [4] arReceive — ฟังก์ชันชื่อจริง + ด่านสิทธิ์ ---------- */
   const g4 = await p.evaluate(async (ids) => {
     if (typeof arReceive !== 'function') return { noFn: true };
-    const a = AR.find(x => x.id === ids.arId);
+    const a = AR.find(x => x.id === ids.arId);if(!a)return {blockedQuiet:false,pay:false,pat:false};
     const n = REQ.length;
     __imp('ST3'); const r1 = arReceive(a.id, 1000, 'เงินสด');
     await __drain();
@@ -172,7 +138,7 @@ const { chromium, EXE, BASE } = require('./env');
   /* ---------- [5] svSave + ส่งมอบ ---------- */
   const g5 = await p.evaluate(async () => {
     go('service'); rService();
-    $('#svPhone').value='0897654321'; $('#svModel').value='รถนอกรุ่นทดสอบ'; $('#svEngine').value='QA-SERVICE-ENGINE'; $('#svFrame').value='QA-SERVICE-FRAME';
+    $('#svPhone').value='0897654321'; $('#svModelName').value='รถนอกรุ่นทดสอบ'; $('#svEngine').value='QA-SERVICE-ENGINE'; $('#svFrame').value='QA-SERVICE-FRAME';
     const pt = PARTS.find(x => x.qty > 0); pt.id = uuid4(); pt.branch = ME.branch;
     $('#svName').value = 'QA ซ่อมไลฟ์'; $('#svSearch').value = 'QA-LIVE-SV'; $('#svKm').value = '450';
     $('#svDate').value = curDate();
@@ -203,7 +169,7 @@ const { chromium, EXE, BASE } = require('./env');
   const g6 = await p.evaluate(async () => {
     go('expense'); rExpense();
     $('#eAmt').value = '777'; $('#eCat').value = 'QA-live';
-    const st = STAFF.find(s => s.id === 'ST1');
+    const st = __staffFixture.ST1;
     $('#eStaff').innerHTML = '<option value="' + st.id + '">x</option>'; $('#eStaff').value = st.id;
     $('#eBranch').innerHTML = '<option value="FMG01">x</option>'; $('#eBranch').value = 'FMG01';
     const n = REQ.length;
@@ -280,16 +246,18 @@ const { chromium, EXE, BASE } = require('./env');
   /* ---------- [10] ปิดงานติดตาม + careTask ---------- */
   const g10 = await p.evaluate(async (ids) => {
     if (typeof window.dealTaskDone !== 'function') return { noFn: true };
-    const t = TASKS.find(x => x.saleId === ids.saleId && !x.done);
+    const sale=SALES.find(x=>x.id===ids.saleId);if(!sale)return {tk:false,ca:false};
+    /* fixture งานเก่าที่โหลดมา ต้องปิดได้ต่อ แม้โฟลว์ใหม่ไม่สร้าง cadence อีก */
+    const t={id:uuid4(),saleId:sale.id,custId:sale.custId,branch:sale.branch,kind:'งานเดิม',due:TODAY,done:false};TASKS.push(t);
     const n = REQ.length;
     dealTaskDone(t.id);
     const care = CARE.find(x => x.saleId === ids.saleId);
     let ct = null;
-    if (care) { ct = care.tasks.find(x => !x.done); careTask(care.id, ct.id, 'QA โทรแล้ว'); }
+    if (care) { ct = care.tasks.find(x => !x.done); if(ct)careTask(care.id, ct.id, 'QA โทรแล้ว'); }
     await __drain();
     const ps = __of(n, 'follow_up_task', 'PATCH');
     return { tk: t.done === true && ps.some(x => x.path.includes(t.id) && x.body.done_at),
-      ca: !care || ps.some(x => ct && x.path.includes(ct.id) && x.body.done_at) };
+      ca: !!care && ps.some(x => ct && x.path.includes(ct.id) && x.body.done_at) };
   }, g1);
   if (g10.noFn) bad('[10] ไม่มีฟังก์ชัน dealTaskDone — ปิดงานติดตามยังฝังใน onclick');
   else {

@@ -27,7 +27,7 @@ const { chromium, EXE, BASE } = require('./env');
   await p.evaluate(() => go('sell')); await p.waitForTimeout(250);
 
   /* ตัวเรียง zero-state — mirror จากแอป ใช้ร่วมหลายข้อ */
-  const RECENT = `CUSTOMERS.filter(c=>inScope(c.branch)).slice()
+  const RECENT = `CUSTOMERS.filter(c=>customerVisible(c)&&!c.archivedAt).slice()
     .sort((a,b)=>String(b.upAt||b.createdAt||'').localeCompare(String(a.upAt||a.createdAt||''))).slice(0,8)`;
 
   /* ---------- [1] แตะช่องชื่อว่าง → ลูกค้าล่าสุดขึ้นให้เลือก ---------- */
@@ -196,13 +196,15 @@ const { chromium, EXE, BASE } = require('./env');
     const bk = BOOKINGS.find(x => x.status === 'จองอยู่' && x.custId && CUSTOMERS.some(c => c.id === x.custId));
     if (!bk) return { skip: true };
     const c = CUSTOMERS.find(x => x.id === bk.custId);
-    const keep = { birth: c.birth, addr: c.addr };
-    c.birth = '1995-05-05'; c.addr = 'ที่อยู่จากระเบียน 10';
+    const keep = { birth:c.birth,addr:c.addr,intent:c.intent,idNo:c.idNo };
+    c.birth='1995-05-05';c.addr='ที่อยู่จากระเบียน 10';c.intent='เงินสด';c.idNo='1234567890123';
     bookOpenSale(bk.id);
     const r = { skip: false, name: $('#sCust').value, wantName: bk.name,
       birth: $('#sBirth').value, addr: $('#sAddr').value, sel: sCustSel === bk.custId };
     if (keep.birth === undefined) delete c.birth; else c.birth = keep.birth;
     if (keep.addr === undefined) delete c.addr; else c.addr = keep.addr;
+    if(keep.intent===undefined)delete c.intent;else c.intent=keep.intent;
+    if(keep.idNo===undefined)delete c.idNo;else c.idNo=keep.idNo;
     ['sCust', 'sPhone', 'sBirth', 'sIdNo', 'sAddr'].forEach(x => $('#' + x).value = '');
     sCustSel = ''; rSell();
     return r;
@@ -216,13 +218,19 @@ const { chromium, EXE, BASE } = require('./env');
   }
 
   /* ---------- [4] สิทธิ์เลขบัตร + saveSale จริง (ท้ายไฟล์ — มีผลข้างเคียงขายจริง) ---------- */
-  const prep4 = await p.evaluate(want => {
-    const c = eval(want)[0]; if (!c) return null;
-    window.QA_KEEP4 = { id: c.id, idNo: c.idNo, pa: {} };
+  const prep4 = await p.evaluate(() => {
+    /* ด่านบรีฟใหม่ห้ามเปิดขายซ้ำกับดีลที่ยังไม่จบ จึงใช้ลูกค้าเดิมในระบบที่ยังไม่เคยขาย
+       บันทึกข้อมูลครบตั้งแต่ก่อนเลือก ไม่ลดด่านคำขอไฟแนนซ์หรือด่านป้องกันขายซ้ำ */
+    const at=punchNow().toISOString(),c={id:'QA-R41-MASK',name:'QA ลูกค้าเลขบัตรเดิม',phone:'0810004199',
+      branch:ME.branch,ownerId:ME.id,owner:ME.nick,createdAt:at,upAt:at,stage:'สนใจ',intent:'เงินสด',
+      birth:'1999-01-01',addr:'99 ถนนทดสอบ',idNo:'8877665544332'};
+    CUSTOMERS.push(c);
+    window.QA_KEEP4 = { id: c.id, idNo: c.idNo, pa: {}, sales:SALES.length };
     myRoles().forEach(r => { window.QA_KEEP4.pa[r] = PERMS[r]['data:idNo']; PERMS[r]['data:idNo'] = 'none'; });
     c.idNo = '8877665544332';
+    setPay('cash');
     return { id: c.id, mask: idMask('8877665544332') };
-  }, RECENT);
+  });
   if (!prep4) bad('[4] ไม่มีลูกค้าให้ทดสอบ');
   else {
     await p.click('#sCust'); await p.waitForTimeout(150);
@@ -238,7 +246,8 @@ const { chromium, EXE, BASE } = require('./env');
       if (g4a.ph !== prep4.mask) bad('[4] placeholder ไม่ใช่เลขปิดกลาง (ได้ "' + g4a.ph + '")');
       const g4b = await p.evaluate(() => {
         /* [10] ทิ้งคันติดจองค้างใน #sUnit — เลือกคันว่างจริงก่อน ไม่งั้นด่านจองใน saveSale กันไว้ (ถูกแล้ว) */
-        const u = sellPool().find(x => x.status === 'available'); if (u) sUnitSet(u.id);
+        const u = sellPool().find(x => x.status === 'available'&&!BOOKINGS.some(b=>b.status==='จองอยู่'&&b.unitId===x.id)); if (u) sUnitSet(u.id);
+        setPay('cash');
         saveSale(false); return !!document.getElementById('cfmGo'); });
       if (!g4b) bad('[4] saveSale ไม่เปิดกล่องยืนยัน — เคสทดสอบไม่เดินต่อ');
       else {
@@ -247,11 +256,12 @@ const { chromium, EXE, BASE } = require('./env');
         const g4c = await p.evaluate(() => {
           const k = window.QA_KEEP4;
           const c = CUSTOMERS.find(x => x.id === k.id);
-          const r = { idNo: c ? c.idNo : '(หาย)' };
+          const r = { idNo: c ? c.idNo : '(หาย)', sold:SALES.length===k.sales+1&&SALES.some(s=>s.custId===k.id&&!s.void) };
           myRoles().forEach(r2 => { PERMS[r2]['data:idNo'] = k.pa[r2]; });
           if (k.idNo === undefined) delete c.idNo; else c.idNo = k.idNo;
           return r;
         });
+        if (!g4c.sold) bad('[4] กดยืนยันแล้วไม่มีการขายจริงของลูกค้าเดิม');
         if (g4c.idNo !== '8877665544332')
           bad('[4] บันทึกขายแล้วเลขบัตรเดิมโดนทับเป็น "' + g4c.idNo + '" — placeholder หลุดไปเป็นค่าจริง');
       }

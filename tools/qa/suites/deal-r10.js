@@ -2,7 +2,7 @@
    หัวใจที่ต้องพิสูจน์: ขั้นที่โชว์ "คำนวณ" จาก SALES/FINCASES/REGS จริง ไม่ใช่ฟิลด์ที่เก็บไว้
    และทุกปุ่มทำงานแล้วอยู่หน้าเดิม (CUR ต้องไม่เปลี่ยน) ไม่มีการเด้งข้ามหน้าอีก */
 const { chromium, EXE, BASE } = require('./env');
-const ROLES = ['ST1', 'ST2', 'ST4', 'ST3'];   /* admin · manager · (บัญชี/เซลล์ ตามลำดับใน STAFF) */
+const ROLES = ['ST1', 'ST2', 'ST7', 'ST3'];   /* แอดมิน · ผู้บริหาร · บัญชี · เซลล์ */
 
 (async () => {
   const b = await chromium.launch({ executablePath: EXE });
@@ -30,8 +30,9 @@ const ROLES = ['ST1', 'ST2', 'ST4', 'ST3'];   /* admin · manager · (บัญ�
       out.push(['ผ่อน · รอผล', snap()]);
       /* ผ่อน + ปฏิเสธ → ตกรางที่ไฟแนนซ์ */
       fc.status = 'ปฏิเสธ'; out.push(['ผ่อน · ปฏิเสธ', snap()]);
-      /* ผ่อน + อนุมัติ → เปิดการขายติ๊กแล้ว ตัวชี้ไปรอส่งมอบ */
-      fc.status = 'อนุมัติแล้ว'; rg.stage = 'อนุมัติ'; out.push(['ผ่อน · อนุมัติ', snap()]);
+      /* ไฟแนนซ์อนุมัติแล้ว ยังรอการเงินของร้านตรวจใบขาย */
+      fc.status='อนุมัติแล้ว';rg.stage='อนุมัติ';s.finApproval={status:'รอตรวจ'};out.push(['ผ่อน · อนุมัติ',snap()]);
+      s.finApproval={status:'ผ่าน'};out.push(['การเงินอนุมัติ',snap()]);
       /* ส่งมอบแล้ว → นับว่าจบงาน แต่ยังเหลือขั้นทะเบียนจริง */
       rg.stage = 'ส่งมอบแล้ว'; rg.deliveredAt = curDate(); out.push(['ส่งมอบแล้ว', snap()]);
       /* ได้ทะเบียนจริง → จบครบ แถบเต็ม */
@@ -49,7 +50,8 @@ const ROLES = ['ST1', 'ST2', 'ST4', 'ST3'];   /* admin · manager · (บัญ�
     const want = {
       'ผ่อน · รอผล':    { k: 'fin',     off: false, n: 4, i: 1 },
       'ผ่อน · ปฏิเสธ':  { k: 'fin',     off: true,  n: 4, i: 1 },
-      'ผ่อน · อนุมัติ':  { k: 'deliver', off: false, n: 4, i: 3 },
+      'ผ่อน · อนุมัติ':  { k:'sale',off:false,n:4,i:2 },
+      'การเงินอนุมัติ': { k:'deliver',off:false,n:4,i:3 },
       'ส่งมอบแล้ว':      { k: 'done',    off: false, n: 4, i: 4 },
       'ได้ทะเบียนแล้ว': { k: 'done',    off: false, n: 4, i: 4 },
       'เงินสด':          { k: 'deliver', off: false, n: 3, i: 2 },
@@ -77,7 +79,15 @@ const ROLES = ['ST1', 'ST2', 'ST4', 'ST3'];   /* admin · manager · (บัญ�
       p.on('pageerror', e => errors.push(tag + ' PAGEERROR ' + e.message));
 
       if (!await p.evaluate(() => canSee('deal'))) { await ctx.close(); continue; }
-      await p.evaluate(() => go('deal')); await p.waitForTimeout(400);
+      await p.evaluate(() => {
+        /* ทุกบทบาทมีลูกค้าของตัวเองในช่วงทดสอบ พร้อมคนอื่นสาขาเดียวกันให้ตรวจขอบเขตจริง */
+        CUSTOMERS.push({id:'QA_OWN_'+ME.id,name:'QA ลูกค้าผู้ดูแล '+ME.nick,phone:'0800000001',branch:ME.branch,ownerId:ME.id,owner:ME.nick,stage:'สนใจ',intent:'ยังไม่ระบุ',createdAt:TODAY,upAt:punchNow().toISOString()});
+        CUSTOMERS.push({id:'QA_OTHER_'+ME.id,name:'QA ลูกค้าพนักงานอื่น',phone:'0800000002',branch:ME.branch,ownerId:'QA_OTHER',owner:'ผู้ดูแลอื่น',stage:'สนใจ',intent:'ยังไม่ระบุ',createdAt:TODAY,upAt:punchNow().toISOString()});
+        go('deal');
+      });await p.waitForTimeout(400);
+      const scope=await p.evaluate(()=>({own:dealRows().some(d=>d.c.id==='QA_OWN_'+ME.id),foreign:dealRows().some(d=>d.c.id==='QA_OTHER_'+ME.id),restricted:customerOwnOnly()}));
+      if(!scope.own)bad(tag+': ลูกค้าของตัวเองในช่วงที่เลือกหายไป');
+      if(scope.restricted&&scope.foreign)bad(tag+': เซลล์เห็นลูกค้าของพนักงานอื่นสาขาเดียวกัน');
 
       /* รายการต้องวาดครบและทุกแถวมีแถบ */
       const nRows = await p.$$eval('#dlTable [data-deal]', e => e.length);
@@ -88,6 +98,7 @@ const ROLES = ['ST1', 'ST2', 'ST4', 'ST3'];   /* admin · manager · (บัญ�
       if (await p.isVisible('#dlOne')) bad(tag + ': มุมมองรายละเอียดโผล่มาทั้งที่ยังไม่ได้เลือกใคร');
 
       /* แตะแถว → รายละเอียด และต้องยังอยู่หน้า deal */
+      if(!nRows){await ctx.close();continue;}
       await p.click('#dlTable [data-deal]'); await p.waitForTimeout(350);
       if (await p.evaluate(() => CUR) !== 'deal') bad(tag + ': แตะแถวแล้วเด้งออกจากหน้าดีล');
       if (!await p.isVisible('#dlOne')) bad(tag + ': แตะแถวแล้วไม่เปิดรายละเอียด');
@@ -149,9 +160,13 @@ const ROLES = ['ST1', 'ST2', 'ST4', 'ST3'];   /* admin · manager · (บัญ�
         if (await p.evaluate(() => CUR) !== 'deal') { bad('เดินขั้นไฟแนนซ์แล้วเด้งออกจากหน้าดีล'); break; }
       }
       if (guard >= 8) bad('เดินขั้นไฟแนนซ์ไม่จบใน 8 ครั้ง — อาจวนลูป');
-      const k1 = await p.evaluate(id => dealOf(id).k, cid);
-      /* v1.28: อนุมัติแล้วขั้น "เปิดการขาย" ติ๊ก ตัวชี้ไปรอส่งมอบ */
-      if (k1 !== 'deliver') bad('ไฟแนนซ์อนุมัติครบแล้วแต่ยังไม่ไปขั้นรอส่งมอบ (k=' + k1 + ')');
+      const approval=await p.evaluate(id=>{const d=dealOf(id);if(!d.s)return {missing:true};d.s.finApproval={status:'รอตรวจ'};rDeal();return {missing:false,k:d.k};},cid);
+      if(approval.missing)bad('fixture เดิมต้องมีใบขายให้ฝ่ายการเงินตรวจ');
+      const approvalButton=await p.$('#dlOne [data-fapok]');
+      if(!approvalButton)bad('หลังเปิดขายไม่มีปุ่มอนุมัติของฝ่ายการเงิน');
+      else{await p.click('#dlOne [data-fapok]');await p.waitForTimeout(200);}
+      const k1=await p.evaluate(id=>dealOf(id).k,cid);
+      if(k1!=='deliver')bad('การเงินอนุมัติแล้วแต่ยังไม่ไปขั้นส่งมอบ (k='+k1+')');
 
       /* v1.34: ขั้นส่งมอบเหลือปุ่มเดียว — เปิดโมดัลกรอกกล่องส่งมอบแล้วยืนยัน */
       if (!await p.$('#dlOne [data-dlv]')) bad('ขั้นรอส่งมอบไม่มีปุ่ม "ส่งมอบรถ"');

@@ -26,6 +26,7 @@
 
    mutation ที่ต้องแดง: ถอด mapper ทีละตาราง → ข้อของตารางนั้นแดง */
 const { chromium, EXE, BASE } = require('./env');
+const {installLiveWriteAck}=require('../helpers/live-write-ack');
 
 (async () => {
   const b = await chromium.launch({ executablePath: EXE });
@@ -94,7 +95,7 @@ const { chromium, EXE, BASE } = require('./env');
       model_photo: [],
       customer: [{ id: U.c1, branch_id: B1, full_name: 'ลูกค้า โหลดกลับ', nickname: null,
         phone: '0810004950', address: null, tax_id: null, source: 'เดินเข้าร้าน', stage: 'รับรถสำเร็จ',
-        created_at: T + 'T01:00:00+00:00', note: null, birth_date: null }],
+        created_at: T + 'T01:00:00+00:00', updated_at:T+'T02:00:00+00:00', owner_id:U.sp, note: null, birth_date: null }],
       sale: [
         { id: U.s1, branch_id: B1, unit_id: U.u1, customer_id: U.c1, salesperson_id: U.sp,
           sold_at: T, list_price: 60000, discount: 1000, net_price: 59000, cost: 50000,
@@ -214,6 +215,7 @@ const { chromium, EXE, BASE } = require('./env');
     $('#lgSwap').onclick(); $('#lgEmail').value = 'qa@famai.local'; $('#lgPw2').value = 'x';
   });
 
+  await p.evaluate(installLiveWriteAck);
   await p.evaluate(() => liveLogin());
   await p.waitForTimeout(300);
 
@@ -408,10 +410,11 @@ const { chromium, EXE, BASE } = require('./env');
     sCustSel = ''; $('#sCust').value = 'ผู้ซื้อทุนปิด'; $('#sPhone').value = '0800000050';
     $('#sPay').value = 'cash'; sFree = {}; sFreeX = [];
     const n = REQ.length;
-    saveSale(); if ($('#cfmGo')) $('#cfmGo').onclick();
+    const saved=await saveSale(false,true);
     await __drain();
-    const r = REQ.slice(n).find(x => x.method === 'POST' && x.path.includes('/sale?'));
-    return { sent: !!r, cost: r && r.body.cost === null, gp: r && r.body.gross_profit === null,
+    const rpc=REQ.slice(n).find(x=>x.method==='POST'&&x.path.includes('/rpc/create_sale_bundle'));
+    const r=rpc&&{body:rpc.body.p_sale};
+    return { sent: !!r&&saved===true, cost: r && r.body.cost === null, gp: r && r.body.gross_profit === null,
       net: r && r.body.net_price === 61000 };
   });
   if (!g13.sent) bad('[13] ขายคันทุนปิดแล้วไม่ยิง sale');
@@ -422,7 +425,7 @@ const { chromium, EXE, BASE } = require('./env');
   /* ---------- [14] ใบงานซ่อม/ค่าใช้จ่ายแช่ครบ (parts_cost/total · created_by) ---------- */
   const g14 = await p.evaluate(async () => {
     go('service'); rService();
-    $('#svPhone').value='0897654321'; $('#svModel').value='รถนอกรุ่นทดสอบ'; $('#svEngine').value='QA-SERVICE-ENGINE'; $('#svFrame').value='QA-SERVICE-FRAME';
+    $('#svPhone').value='0897654321'; $('#svModelName').value='รถนอกรุ่นทดสอบ'; $('#svEngine').value='QA-SERVICE-ENGINE'; $('#svFrame').value='QA-SERVICE-FRAME';
     const pt = PARTS.find(x => x.id === FXU.pt1);
     if (!pt) return { sj: false, sjWhy: 'PARTS ไม่มีอะไหล่จากฐาน (ดูข้อ [8])', ex: false };
     $('#svName').value = 'QA ทุนอะไหล่'; $('#svSearch').value = 'QA-R50-SV'; $('#svKm').value = '400';

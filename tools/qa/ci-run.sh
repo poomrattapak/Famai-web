@@ -12,10 +12,11 @@ mkdir -p "$QA_ARTIFACT_DIR"
 set +e
 QA_SQL_STATUS=0
 if [ -f tools/qa/sql/brief32-pglite.mjs ]; then
-  "$QA_NODE_BIN" tools/qa/sql/brief32-pglite.mjs 2>&1 | tee "$QA_ARTIFACT_DIR/sql.log"
+  "$QA_NODE_BIN" tools/qa/sql/brief32-pglite.mjs --mutations 2>&1 | tee "$QA_ARTIFACT_DIR/sql.log"
   QA_SQL_STATUS=${PIPESTATUS[0]}
 else
-  printf 'ยังไม่มีตัวรัน SQL ใน commit นี้\n' > "$QA_ARTIFACT_DIR/sql.log"
+  printf 'ไม่พบตัวรัน SQL ใน commit นี้: ต้องรวม migration และด่าน SQL ก่อนตรวจรับ\n' | tee "$QA_ARTIFACT_DIR/sql.log"
+  QA_SQL_STATUS=1
 fi
 "$QA_NODE_BIN" tools/qa/run.js 2>&1 | tee "$QA_ARTIFACT_DIR/full-qa.log"
 QA_SUITE_STATUS=${PIPESTATUS[0]}
