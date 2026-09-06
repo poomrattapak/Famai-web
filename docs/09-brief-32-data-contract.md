@@ -75,25 +75,24 @@ npm install --prefix /tmp/famai-qa --ignore-scripts @electric-sql/pglite@0.5.8
 PGLITE_PACKAGE=/tmp/famai-qa/node_modules/@electric-sql/pglite node tools/qa/sql/brief32-pglite.mjs --mutations
 ```
 
-Runner ใช้ PostgreSQL WASM จริง สร้าง auth/storage ขั้นต่ำและ pgcrypto ในฐานชั่วคราว แล้ว replay migration เดิมทุกไฟล์โดยไม่แก้ SQL (01–33 รวม 34 ไฟล์) ทดสอบด้วย `SET ROLE authenticated/anon` และ JWT สมมติภายในธุรกรรม rollback ตรวจคอลัมน์จาก `q2000` ใน `index.html` ด้วย สามารถระบุ `--source /absolute/path/index.html` เพื่อตรวจ worktree ที่รวม UI แล้ว
+Runner ใช้ PostgreSQL WASM จริง สร้าง auth/storage ขั้นต่ำและ pgcrypto ในฐานชั่วคราว แล้ว replay migration เดิมทุกไฟล์โดยไม่แก้ SQL (01–34 รวม 35 ไฟล์) ทดสอบด้วย `SET ROLE authenticated/anon` และ JWT สมมติภายในธุรกรรม rollback ตรวจคอลัมน์จาก `q2000` ใน `index.html` ด้วย สามารถระบุ `--source /absolute/path/index.html` เพื่อตรวจ worktree ที่รวม UI แล้ว
 
-ผล ณ เวลาส่งงาน: 86 assertions ผ่าน, 33 mutations ถูกจับทั้งหมด, หน้าเว็บรวมผ่าน 27 query/302 คอลัมน์ ไม่มีผู้ใช้ทดสอบเหลือหลัง rollback
+ผล ณ เวลาส่งงาน: 98 assertions ผ่าน, 36 mutations ถูกจับทั้งหมด, หน้าเว็บรวมผ่าน 27 query/302 คอลัมน์ ไม่มีผู้ใช้ทดสอบเหลือหลัง rollback
 
 PGlite ไม่แทนการทดสอบ HTTP/PostgREST, embedded relations, Storage หรือการชนกันของหลาย connection จริง กลไก concurrency ตรวจจากการล็อกใบขายจน transaction สิ้นสุด; PostgreSQL อาจยกเลิกหนึ่งคำสั่งเมื่อพบ deadlock ซึ่งปลอดภัยกว่าการรับผลอนุมัติเก่า UI ต้องแสดงข้อผิดพลาดและให้ลองใหม่
 
-CLI ใน workspace ใช้งานไม่ได้และขั้นติดตั้งเดิมถูกจำกัด จึงสร้างไฟล์ใหม่ด้วย timestamp UTC ตามคำสั่งผู้ประสานงานโดยไม่แก้ migration เก่า การ rehearsal ผ่าน Supabase execute_sql ถูกปฏิเสธตั้งแต่ CREATE SCHEMA ด้วย SQLSTATE 25006 (read-only transaction); ตรวจยืนยันว่า schema/table ใหม่ยังไม่อยู่บน production ไม่ได้ใช้ apply_migration อ้อมข้อจำกัด และยังไม่มีการ apply ถาวร ณ จุดส่งงานนี้
+## สถานะฐานข้อมูลจริง · รอบ v1.57
 
+วันที่ 6 ก.ย. 2569 UTC ใช้เครื่องมือ Supabase apply_migration ลงฐาน famai-motor สำเร็จทั้ง 32, 33 และ 34 ตามลำดับ ประวัติ production คือ `20260906200933`, `20260906200937`, `20260906200941` ส่วนไฟล์ใน repo คง timestamp ตอนสร้างเดิมไว้ migration 34 สร้างด้วย Supabase CLI 2.116.0 ไม่แก้ต้นฉบับ 32–33
 
-## สถานะอนุมัติและเผยแพร่หลังตรวจรวม
+ตรวจ read-only หลังอัปเดตพบ schema `famai_private`, `notification_seen`, `customer.archived_at` ครบ ตารางลูกค้า/ขาย/ไฟแนนซ์/ทะเบียน/ใบเสนอ/บริการ/งานติดตาม/สถานะอ่านเปิด RLS พร้อม policy และ RPC ทั้งสามเป็น SECURITY INVOKER, authenticated เรียกได้, anon เรียกไม่ได้ จำนวนลูกค้า ใบขาย และงานบริการก่อน–หลังยังเป็น 0 จึงไม่มีข้อมูลทดสอบหลงเหลือบนระบบจริง
 
-ผ่านด่าน Chromium 95/95 และภาพ 68 ภาพใน run 34030580272 แล้ว แต่การเรียก `apply_migration` สำหรับ 32 ถูก auto-review ปฏิเสธด้วยเหตุว่ามีผลถาวรต่อโครงสร้าง ownership และกฎเข้าถึงหลายตาราง ต้องได้รับอนุมัติเฉพาะชุด 32–33 ของฐาน famai-motor ก่อนเผยแพร่ โค้ด candidate อยู่ `work/brief-r56-ready`; production และฐานข้อมูลยังไม่เปลี่ยน
+ปัญหา auto-review ที่เคยบล็อกในแชทก่อนสิ้นสุดแล้ว ไม่ต้องรันไฟล์ manual 32–33 ซ้ำ รายละเอียดตรวจหน้าเว็บและข้อจำกัดที่ยังคงอยู่ดู [สถานะส่งมอบ](08-state-and-handoff.md) และ [บันทึกเผยแพร่](10-release-manual.md)
 
-ตรวจหลังการปฏิเสธแบบ read-only พบ schema `famai_private`, ตาราง `notification_seen` และคอลัมน์ `customer.archived_at` ยังไม่มี จึงยืนยันว่า 32 ไม่ได้เริ่มใช้งาน และไม่ได้ลอง apply 33 ที่ต้องพึ่ง 32
+## เพิ่มเติมรอบส่งมอบ: migration 34
 
-ไฟล์ที่ผ่านด่านและรออนุมัติ:
+`public.create_care_service(p_request jsonb)` ใช้สิทธิ์ผู้เรียกและ RLS รับ UUID คำขอ/ลูกค้า/สาขา, ชื่อและเบอร์ลูกค้าใหม่, เลขรถ, รุ่นที่พิมพ์เอง, รายละเอียด, amount nullable และ appointment_at nullable บันทึกลูกค้า ใบงาน งานประวัติ และนัดถัดไปพร้อมกัน คืน `{customer,job,tasks}` ก่อนหน้าเว็บเพิ่มรายการจริง การลองใหม่จากฟอร์มเดิมส่ง UUID เดิมเพื่อคืนรายการเดิมโดยไม่ออกเลขซ้ำ
 
-- `20260906094608_32_brief_workflows.sql` · SHA-256 `24240f48be4a682266465a5febd5baab93b4f1e00046d67c69d530cb6bb43698`
-- `20260906102311_33_permission_guards.sql` · SHA-256 `483f8e98e7ae5c6cdb486cecca88593571e1c7a18b1d32c3d77bb4500e5a3acf`
+สิทธิ์ต้องมี act:care พร้อมสิทธิ์เขียนหน้า service หรือ aftercare และสิทธิ์สาขา ข้อมูลที่อยู่ในรถของลูกค้าคนอื่นใช้เปิดบริการให้คนใหม่ไม่ได้ การปิดงานใช้ PATCH ที่รอผลและอ่านเวลา done_at จากฐาน ไม่มีการเข้าคิวแล้วแสดงสำเร็จล่วงหน้าในโฟลวใหม่นี้
 
-
-อัปเดตหลังเจ้าของอนุมัติให้ทำต่อ: auto-review ยังคงปฏิเสธ migration 32 เพราะขอบเขตการเปลี่ยนฐาน/สิทธิ์กว้างเกิน แม้ได้รับ continuation approval แล้ว ตรวจ read-only ยืนยัน schema ใหม่ยังไม่เกิดขึ้น จัด [คู่มือและไฟล์สำหรับเจ้าของรันด้วยตนเอง](10-release-manual.md) ไว้แล้ว ไม่มีการลองรันอ้อมผ่านเครื่องมืออื่น
+เอกสารสรุปบรีฟสองกลุ่มผู้อ่านอยู่ [docs/brief](brief/README.md) และสร้างซ้ำด้วย tools/brief/build.js

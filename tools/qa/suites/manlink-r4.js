@@ -16,7 +16,7 @@ const fs = require('fs');
     if (mine !== `docs/manual/famai-${role}.pdf`) fails.push(`[${role}] wrong manual link: ${mine}`);
     if (links[1].href !== 'docs/manual/famai-flow.pdf') fails.push(`[${role}] flow link wrong: ${links[1].href}`);
     if (links.some(l => l.target !== '_blank')) fails.push(`[${role}] manual link does not open in a new tab`);
-    for (const l of links) if (!fs.existsSync('/home/user/Famai-web/' + l.href)) fails.push(`[${role}] file missing: ${l.href}`);
+    for (const l of links) if (!fs.existsSync(require('path').resolve(__dirname, '../../..', l.href))) fails.push(`[${role}] file missing: ${l.href}`);
     // แตะแล้วต้องปิดแผ่น ไม่ใช่เด้ง "ไม่มีสิทธิ์"
     await p.evaluate(() => document.querySelector('#moreB a.nb').removeAttribute('href'));
     await p.click('#moreB a.nb'); await p.waitForTimeout(300);

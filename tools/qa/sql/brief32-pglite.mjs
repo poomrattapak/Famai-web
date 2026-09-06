@@ -67,6 +67,11 @@ mutations.push(...[
   ['payment-page',"famai_private.page_action('ar','finApprove')","famai_private.allowed('act:finApprove',true)",'ลูกหนี้อ่านอย่างเดียวรับเงินไม่ได้แม้ดีลเขียนได้',true]
   ,['sale-approval-page',"and not famai_private.allowed('page:deal',true) then","and false then",'หน้าเอกสารเขียนได้ไม่ให้อนุมัติขายเมื่อดีลอ่านอย่างเดียว']
 ].map(m=>[m[0],m[1],m[2],m[3],!!m[4],'_33_permission_guards']));
+mutations.push(
+  ['care-negative', 'or v_amount<0 or v_amount::text', 'or false or v_amount::text', 'บริการห้ามจำนวนเงินติดลบ', false, '_34_service_bundle'],
+  ['care-past', 'if appointment is not null and appointment<=at_time then', 'if false then', 'บริการห้ามนัดย้อนหลัง', false, '_34_service_bundle'],
+  ['care-retry', 'or previous.symptom is distinct from detail', 'or false', 'คำขอซ้ำเปลี่ยนข้อมูลไม่ได้', false, '_34_service_bundle']
+);
 async function run(mutation=null){
 const db=new PGlite({extensions:{pgcrypto}});
 let step='โครงทดสอบ Supabase';

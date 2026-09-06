@@ -8710,10 +8710,25 @@ function careTask(careId,taskId,note,done=true){
   if(!canCare()){toast('ไม่มีสิทธิ์แก้ไขงานบริการ','ต้องมีสิทธิ์แก้ไขหน้าดูแลหลังการขาย',1);return false;}
   const t=r.tasks.find(x=>x.id===taskId); if(!t) return false;
   if(t.pendingSync){toast('กำลังรอยืนยันงานจากระบบ','กดโหลดงานติดตามอีกครั้งก่อนบันทึก',1);return false;}
+  if(LIVE)return careTaskLive(r,t,note,done);
   t.done=!!done;t.doneAt=t.done?punchNow().toISOString():'';t.by=t.done?ME.nick:'';
   if(note!=null)t.note=String(note).trim();
   dbPatch('follow_up_task',t.id,{done_at:t.doneAt||null,note:t.note||null,done_by:t.done&&isUuid(ME.id)?ME.id:null});
   toast(t.done?'บันทึกว่าให้บริการแล้ว':'เปิดงานอีกครั้ง',t.title||t.kind);refreshAll();return true;
+}
+/* ไม่ปิดงานในเครื่องจนกว่าฐานยืนยัน เพื่อให้การแจ้งเตือนยังอยู่เมื่อบันทึกไม่สำเร็จ */
+async function careTaskLive(r,t,note,done){
+  if(t.saving)return false;
+  t.saving=true;
+  try{
+    const rows=await sbFetch('/rest/v1/follow_up_task?id=eq.'+encodeURIComponent(t.id),{method:'PATCH',
+      headers:{Prefer:'return=representation'},body:JSON.stringify({done_at:done?punchNow().toISOString():null,
+        note:note==null?t.note||null:String(note).trim()||null,done_by:done?ME.id:null})});
+    if(!rows||!rows[0])throw new Error('ไม่ได้รับข้อมูลยืนยันจากฐานข้อมูล');
+    const row=rows[0];Object.assign(t,{done:!!row.done_at,doneAt:row.done_at||'',note:row.note||'',by:row.done_at?ME.nick:''});
+    toast(t.done?'บันทึกว่าให้บริการแล้ว':'เปิดงานอีกครั้ง',t.title||t.kind);refreshAll();return true;
+  }catch(e){toast('ยังบันทึกงานไม่สำเร็จ',e.message,1);return false;}
+  finally{delete t.saving;}
 }
 function dealTaskDone(tid){
   const t=TASKS.find(x=>x.id===tid); if(!t || t.done)return false;
@@ -8761,7 +8776,7 @@ function careCtModal(careId,taskId){
   openModal(t.title||t.kind,'<div class="f"><label class="fl" for="ctNote">ผลการติดตาม / บริการ (ไม่บังคับ)</label>'
     +'<textarea class="inp" id="ctNote" rows="3">'+esc(t.note||'')+'</textarea></div>'
     +'<div class="savebar"><button class="btn" id="ctGo">บันทึกว่าเสร็จแล้ว</button></div>');
-  $('#ctGo').onclick=()=>{if(careTask(careId,taskId,$('#ctNote').value))closeModal();};
+  $('#ctGo').onclick=async()=>{if(await careTask(careId,taskId,$('#ctNote').value))closeModal();};
 }
 function rCare(){
   $('#expCare').onclick=expCareList;$('#acAdd').hidden=!canCare();$('#acAdd').onclick=()=>careServiceModal();
@@ -8792,7 +8807,7 @@ function rCare(){
 function careBind(host){
   $$('[data-care-sync]',host).forEach(b=>b.onclick=()=>careSyncSale(b.dataset.careSync));
   $$('[data-cdrw]',host).forEach(b=>b.onclick=()=>careDrawer(b.dataset.cdrw));
-  $$('[data-care-done]',host).forEach(b=>b.onchange=e=>{e.stopPropagation();const [rid,tid]=b.dataset.careDone.split('|');if(!careTask(rid,tid,null,b.checked))b.checked=!b.checked;});
+  $$('[data-care-done]',host).forEach(b=>b.onchange=async e=>{e.stopPropagation();const [rid,tid]=b.dataset.careDone.split('|');const wanted=b.checked;b.disabled=true;if(!await careTask(rid,tid,null,wanted))b.checked=!wanted;b.disabled=false;});
 }
 let CARE_HISTORY_CUST=null;
 function careDrawer(careId,focusTaskId){
@@ -8814,7 +8829,7 @@ function careDrawer(careId,focusTaskId){
     +'<h4 class="sec">ประวัติและนัดหมาย</h4><div id="careTaskHistory">'+tk+'</div>'+(legacy?'<h4 class="sec">Checklist เดิม (ประวัติ)</h4>'+legacy:''));
   pageFoot($('#careTaskHistory'),()=>careDrawer(careId));
   careBind($('#drwB'));
-  $$('[data-care-done]',$('#drwB')).forEach(b=>b.onchange=()=>{const [rid,tid]=b.dataset.careDone.split('|');if(careTask(rid,tid,null,b.checked))careDrawer(careId,tid);});
+  $$('[data-care-done]',$('#drwB')).forEach(b=>b.onchange=async()=>{const [rid,tid]=b.dataset.careDone.split('|');const wanted=b.checked;b.disabled=true;if(await careTask(rid,tid,null,wanted))careDrawer(careId,tid);else b.checked=!wanted;b.disabled=false;});
   $$('[data-ck]',$('#drwB')).forEach(b=>b.onclick=()=>{const [rid,i]=b.dataset.ck.split('|');if(careTick(rid,+i))careDrawer(careId);});
   if($('#careAddOne'))$('#careAddOne').onclick=()=>careServiceModal(careId);
   const target=focusTaskId&&document.getElementById('care-task-'+focusTaskId);if(target)target.scrollIntoView({block:'nearest'});
@@ -8868,6 +8883,7 @@ async function careServiceSave(){
   if(known&&known.cust&&careLookupState.cust&&known.cust.id!==careLookupState.cust.id){toast('เลขรถตรงกับลูกค้าอื่น','ค้นหารถใหม่ก่อนบันทึก',1);return false;}
   let c=careLookupState.cust||(known&&known.cust)||CUSTOMERS.find(x=>inScope(x.branch)&&String(x.phone||'').replace(/\D/g,'')===phone.replace(/\D/g,'')&&x.name===name);
   const at=punchNow().toISOString(),branch=careLookupState.branch||ME.branch;
+  if(LIVE)return careServiceLive({c,branch,name,phone,model,engine,frame,detail,amount,appointmentAt,known});
   if(!c){c={id:LIVE?dbId():nid('CU'),name,phone,branch,src:'เข้าศูนย์บริการ',stage:'รับรถสำเร็จ',variant:'',owner:ME.nick,ownerId:ME.id,createdAt:at,upAt:at};
     if(LIVE&&typeof custPersist==='function'){if(!await custPersist(c))return false;}else dbUp('customer',{id:c.id,branch_id:BR_IDS[branch],full_name:name,phone,source:c.src,stage:c.stage,owner_id:isUuid(ME.id)?ME.id:null});CUSTOMERS.push(c);}
   const unit=careLookupState.unit||(known&&known.unit);
@@ -8882,6 +8898,42 @@ async function careServiceSave(){
   r.tasks.push(t);careSaveTask(r,t);
   if(appointmentAt){const next={id:LIVE?dbId():nid('CT'),source:'service_next',title:'นัดบริการครั้งถัดไป · '+detail,kind:'นัดบริการครั้งถัดไป',amount:null,due:rawAt.slice(0,10),appointmentAt,done:false,doneAt:'',note:'',parentTaskId:t.id,serviceJobId:job.id};r.tasks.push(next);careSaveTask(r,next);}
   closeModal();toast('บันทึกบริการแล้ว',appointmentAt?'สร้างงานนัดถัดไปและเตือนล่วงหน้า 7 วัน':'เก็บประวัติของลูกค้าแล้ว');refreshAll();return true;
+}
+/* ลูกค้าใหม่ + บริการ + นัดถัดไปบันทึกพร้อมกัน และใช้รหัสเดิมเมื่อส่งซ้ำ */
+async function careServiceLive(input){
+  const state=careLookupState,button=$('#csSave');if(state.saving)return false;
+  const {c,branch,name,phone,model,engine,frame,detail,amount,appointmentAt,known}=input;
+  const existing=CARE.find(x=>x.custId===c?.id&&x.branch===branch&&careSameVehicle(x,engine,frame));
+  const unit=state.unit||known?.unit;
+  const fields={customer_id:c?.id||state.newCustomerId||(state.newCustomerId=dbId()),branch_id:BR_IDS[branch],
+    customer_name:name,customer_phone:phone,unit_id:unit?.id||null,sale_id:existing?.saleId||null,
+    model,engine,frame,detail,amount,appointment_at:appointmentAt};
+  const fingerprint=JSON.stringify(fields);
+  if(state.requestFingerprint!==fingerprint){state.requestFingerprint=fingerprint;state.requestId=dbId();}
+  state.saving=true;button.disabled=true;button.textContent='กำลังบันทึก…';
+  try{
+    const result=await sbFetch('/rest/v1/rpc/create_care_service',{method:'POST',body:JSON.stringify({p_request:{id:state.requestId,...fields}})});
+    const j=result?.job,customer=result?.customer,tasks=result?.tasks;
+    if(!j?.id||!customer?.id||!Array.isArray(tasks)||!tasks.some(t=>t.task_source==='manual')
+      ||(appointmentAt&&!tasks.some(t=>t.task_source==='service_next')))throw new Error('ไม่ได้รับข้อมูลบริการและนัดหมายครบจากฐานข้อมูล');
+    let localCustomer=CUSTOMERS.find(x=>x.id===customer.id);
+    if(!localCustomer){localCustomer={id:customer.id,name:customer.full_name,phone:customer.phone,branch,src:customer.source,
+      stage:customer.stage,variant:'',owner:ME.nick,ownerId:customer.owner_id,createdAt:customer.created_at};CUSTOMERS.push(localCustomer);}
+    localCustomer.upAt=customer.updated_at;
+    const job={id:j.id,no:j.job_no,branch,custId:j.customer_id,unitId:j.unit_id,engine:j.engine_no||'',frame:j.frame_no||'',model:j.model_name,
+      km:0,type:j.service_type,symptom:j.symptom,at:iso(new Date(j.checked_in_at)),time:hhmmss(new Date(j.checked_in_at)).slice(0,5),
+      status:j.status,labor:+j.labor_cost,parts:+j.parts_cost,nextAppointmentAt:j.next_appointment_at};
+    const ji=SERVICE.findIndex(x=>x.id===job.id);if(ji<0)SERVICE.push(job);else SERVICE[ji]=job;
+    let r=existing||CARE.find(x=>x.custId===customer.id&&x.branch===branch&&careSameVehicle(x,engine,frame));
+    if(!r){r={id:nid('CA'),saleId:null,custId:customer.id,branch,createdAt:TODAY,note:'',check:[],tasks:[]};CARE.push(r);}
+    r.vehicle={engine,frame,model};
+    for(const t of tasks){const local={id:t.id,source:t.task_source,title:t.title,kind:t.title,amount:t.amount==null?null:+t.amount,
+      due:t.due_at,done:!!t.done_at,doneAt:t.done_at||'',note:t.note||'',appointmentAt:t.appointment_at||null,
+      parentTaskId:t.parent_task_id||null,serviceJobId:t.service_job_id};
+      const ti=r.tasks.findIndex(x=>x.id===t.id);if(ti<0)r.tasks.push(local);else r.tasks[ti]=local;}
+    closeModal();toast('บันทึกบริการแล้ว',appointmentAt?'สร้างงานนัดถัดไปและเตือนล่วงหน้า 7 วัน':'เก็บประวัติของลูกค้าแล้ว');refreshAll();return true;
+  }catch(e){toast('ยังบันทึกบริการไม่สำเร็จ',e.message+' · ตรวจข้อมูลแล้วกดยืนยันเพื่อลองอีกครั้ง',1);return false;}
+  finally{state.saving=false;button.disabled=false;button.textContent='ยืนยันบันทึกบริการ';}
 }
 function careSaveTask(r,t){
   dbUp('follow_up_task',{id:t.id,branch_id:BR_IDS[r.branch],customer_id:r.custId,sale_id:r.saleId||null,
@@ -12682,6 +12734,8 @@ async function liveRefreshTasks(){
     if(n)toast('มีงานใหม่ '+n+' รายการ','กดกระดิ่งเพื่อเปิดงานที่ต้องทำ');
   }}finally{LIVE_REFRESHING=false;}
 }
+
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)liveRefreshTasks();});
 
 async function liveLogin(){
   const email=$('#lgEmail').value.trim(), pw=$('#lgPw2').value;

@@ -13,7 +13,7 @@ const { chromium, EXE, BASE } = require('./env');
   const browser = await chromium.launch({ executablePath: EXE });
   const fails = [];
   const errs = [];
-  const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+  const page = await browser.newPage({ viewport: { width: 1280, height: 900 }, timezoneId:'Asia/Bangkok' });
   page.on('pageerror', e => errs.push(e.message));
   const login = async id => {
     await page.goto(BASE + '/index.html');
@@ -155,9 +155,9 @@ const { chromium, EXE, BASE } = require('./env');
   const t6=await page.evaluate(()=>{
     go('deal');const rows=dealRows();if(rows.length<2)return {fixture:false};
     const older=rows[rows.length-1],newer=rows[0];
-    const a=older.c.upAt,b=newer.c.upAt,at=new Date(punchNow().getTime()+1000);
+    const a=older.c.upAt,b=newer.c.upAt,at=new Date(Math.max(punchNow().getTime(),...rows.map(d=>Date.parse(dealUpdatedAt(d))||0))+1000);
     older.c.upAt=at.toISOString();newer.c.upAt=new Date(at.getTime()-3600000).toISOString();
-    const actual=dealRows(),dates=actual.map(dealUpdatedAt);
+    const actual=dealRows(),dates=actual.map(d=>Date.parse(dealUpdatedAt(d))||0);
     const sorted=dates.every((v,i)=>i===0||dates[i-1]>=v),moved=actual[0].c.id===older.c.id;
     older.c.upAt=a;newer.c.upAt=b;return {fixture:true,sorted,moved};
   });

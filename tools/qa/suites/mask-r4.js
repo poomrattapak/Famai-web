@@ -1,7 +1,7 @@
 /* ตรวจว่าการปิดบังข้อมูลในคู่มือทำงานจริง — เลขเครื่อง เลขถัง เลขเอกสาร ต้องหายจากจอ */
 const { chromium, EXE, BASE } = require('./env');
 const path = require('path');
-const MASK_FN = require('fs').readFileSync(path.resolve('/home/user/Famai-web/tools/manual/build.js'), 'utf8')
+const MASK_FN = require('fs').readFileSync(path.resolve(__dirname, '../../manual/build.js'), 'utf8')
   .match(/const MASK_FN = \(\) => \{[\s\S]*?\n\};/)[0].replace(/^const MASK_FN = \(\) => /, '').replace(/;$/, '');
 
 (async () => {

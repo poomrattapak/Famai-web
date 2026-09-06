@@ -25,3 +25,6 @@ backups/
 # แคชฟอนต์กับสกรีนช็อตของ gallery-check.js — ของชั่วคราว ไม่ commit
 tools/qa/.fontcache/
 tools/qa/.shots/
+
+# แคช Supabase CLI
+supabase/.temp/

@@ -177,7 +177,7 @@ reset role;
 
 select pg_temp.login('sales1'); set local role authenticated;
 select pg_temp.expect_error('วันส่งมอบจริงห้ามอนาคต',
-  $$update public.registration set stage='ส่งมอบแล้ว',delivered_at=current_date+1 where id=pg_temp.fx('reg1')$$,'23514');
+  $$update public.registration set stage='ส่งมอบแล้ว',delivered_at=(clock_timestamp() at time zone 'Asia/Bangkok')::date+1 where id=pg_temp.fx('reg1')$$,'23514');
 update public.registration set stage='ส่งมอบแล้ว',delivered_at='2026-01-31' where id=pg_temp.fx('reg1');
 select pg_temp.assert_ok('หลังการเงินผ่านเซลล์ส่งมอบลูกค้าตนได้',(select delivered_at='2026-01-31' and delivered_by=auth.uid() from public.registration where id=pg_temp.fx('reg1')));
 select pg_temp.assert_ok('หนึ่งเดือนปฏิทินจากวันส่งมอบ clamp ปลายเดือน',

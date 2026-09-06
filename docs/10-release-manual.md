@@ -1,33 +1,41 @@
-# ขั้นตอนเผยแพร่ v1.56 เมื่อการอัปเดตฐานผ่านเครื่องมือถูกปฏิเสธ
+# บันทึกเผยแพร่ v1.57
 
-เจ้าของอนุมัติให้ทำต่อหลังรับทราบ migration 32–33 แล้ว แต่ auto-review ปฏิเสธซ้ำ โดยระบุว่าการเปลี่ยนโครงสร้าง ownership, trigger และ RLS หลายตารางยังมีขอบเขตกว้างเกินที่เครื่องมือยอมให้ทำ จึงยังไม่มี SQL ใหม่ถูกใช้และยังไม่ย้าย production
+รอบนี้ทำต่อจาก work/brief-r56-ready และเพิ่ม RPC งานบริการที่บันทึกเป็นชุดพร้อมกัน รวมเอกสารสรุปบรีฟสองแบบ การอัปเดตฐานที่ถูกบล็อกในแชทก่อนทำสำเร็จแล้ว **ไม่ต้องรันไฟล์ manual 32–33 ซ้ำ** ไฟล์ใน tools/release เก็บเพื่ออ้างอิงประวัติเท่านั้น
 
-ส่วนนี้ให้เจ้าของโปรเจกต์ตรวจและดำเนินการจากบัญชี Supabase ของตนเอง ไม่มีการส่งรหัสผ่านหรือสิทธิ์เข้าระบบให้ผู้อื่น และไม่ใช้เครื่องมืออื่นรันแทนการกระทำที่ถูกปฏิเสธ
+## ฐานข้อมูลจริง
 
-## ไฟล์สำหรับรันด้วยตนเอง
+โปรเจกต์ famai-motor (`hpsmjavfvrdctclmlmhp`) ใช้เครื่องมือ apply_migration สำเร็จตามลำดับ:
 
-1. เปิด Supabase Dashboard เลือกโปรเจกต์ **famai-motor** รหัส **hpsmjavfvrdctclmlmhp** แล้วเข้า **SQL Editor**
-2. เปิด [32_brief_workflows_manual.sql](../tools/release/32_brief_workflows_manual.sql) กด Raw แล้วคัดลอกเนื้อหาทั้งไฟล์ลง query ใหม่ ตรวจเนื้อหาแล้วกด Run
-3. เมื่อข้อ 2 สำเร็จ เปิด query ใหม่แล้วรัน [33_permission_guards_manual.sql](../tools/release/33_permission_guards_manual.sql) ทั้งไฟล์
-4. ถ้าเกิดข้อผิดพลาด ให้หยุดที่ไฟล์นั้นและเก็บข้อความผิดพลาดไว้ ไม่รันไฟล์ถัดไป
-5. เมื่อทั้งสองไฟล์สำเร็จ ให้แจ้งกลับเพื่อให้ตรวจฐานและเผยแพร่เว็บเวอร์ชันที่ผ่านด่านแล้ว
+| ชื่อ | version ใน production |
+|---|---|
+| 32_brief_workflows | 20260906200933 |
+| 33_permission_guards | 20260906200937 |
+| 34_service_bundle | 20260906200941 |
 
-แต่ละไฟล์หุ้ม migration ต้นฉบับไว้ใน BEGIN/COMMIT พร้อมบันทึก version, name และ SQL ต้นฉบับลงประวัติ migration ในธุรกรรมเดียว ห้ามเลือก Run เฉพาะบางบรรทัด ไฟล์นี้ไม่ใช่ชุดข้อมูลทดสอบ และไม่ต้องนำไฟล์จาก supabase/tests มารัน
+ตรวจ schema/คอลัมน์ใหม่ครบ ตารางงานหลัก 8 ตารางเปิด RLS พร้อม policy; create_sale_bundle, catalog_save_variant และ create_care_service เป็น SECURITY INVOKER ทั้งหมด authenticated เรียกได้ แต่ anon ไม่มี EXECUTE จำนวนลูกค้า/ใบขาย/งานบริการยังเป็น 0 เท่าก่อนอัปเดต ไม่มีการเติมข้อมูลทดสอบลง production
 
-## ขอบเขตที่เปลี่ยน
+## การตรวจ
 
-- 32: คำขอไฟแนนซ์ก่อนมีใบขาย, ข้อมูลผู้ดูแล/คลังลูกค้า, ชื่อและเบอร์เซลล์ในใบเสนอ, ข้อมูลรถนอกและงานบริการ/นัดหมาย, แจ้งเตือนรายคน, ธุรกรรมเปิดขาย และเงื่อนไขส่งมอบ
-- 33: ด่านสิทธิ์เขียนของหน้าที่ใช้ตารางร่วม รวมสต๊อก อะไหล่ การเงิน บุคลากร ตั้งค่า และไฟล์รูป
-- ลูกค้าเดิมจะเติมผู้ดูแลเฉพาะที่มีหลักฐานจากใบขาย ประวัติเดิมคงอยู่ และเปลี่ยนการลบเป็นเก็บประวัติ
-- รายละเอียด RLS/RPC และข้อจำกัด API ต้นทุนเดิมอยู่ใน [สัญญาข้อมูล](09-brief-32-data-contract.md)
+Chromium รวม 96 ชุด (รวมการตรวจซ้ำ care-r17 หลังแก้ fixture เวลา), PostgreSQL 98 assertions, mutation ฐาน 36/36 และ browser 3/3 ภาพ 68 ภาพครบ 1440/390 และสองธีม PDF ทีม 9 หน้า/ลูกค้า 5 หน้า ฝังฟอนต์ไทยและตรวจขอบหน้า
 
-## หลักฐานที่ใช้กับชุดนี้
+คำสั่งทำซ้ำใช้ QA_PLAYWRIGHT/QA_CHROMIUM ชี้ package และ Chromium ที่ติดตั้ง และ PGLITE_PACKAGE ชี้ @electric-sql/pglite:
 
-ต้นฉบับ migration ไม่เปลี่ยนจากชุดที่ผ่าน 95/95 Chromium suites, PostgreSQL 86 assertions/33 mutations และภาพ 68 ภาพใน [run 34030580272](https://github.com/poomrattapak/Famai-web/actions/runs/34030580272) ไฟล์ manual เพิ่มเฉพาะกรอบธุรกรรมและบันทึกประวัติหลังตรวจด่านรอบนั้น ไม่อ้างว่าได้รันบน production แล้ว
+```sh
+node tools/qa/run.js
+node tools/qa/sql/brief32-pglite.mjs --mutations
+node tools/qa/mutations/care-ack-r57.cjs
+node tools/qa/ci-visual.js
+node tools/brief/build.js
+```
 
-- 32 SHA-256: `24240f48be4a682266465a5febd5baab93b4f1e00046d67c69d530cb6bb43698`
-- 33 SHA-256: `483f8e98e7ae5c6cdb486cecca88593571e1c7a18b1d32c3d77bb4500e5a3acf`
-- code ที่ผ่านด่าน: `d2b05468f41b2d3b3bd4a9beb3838e5e7fb5b319`
-- production ก่อนเผยแพร่: `a9055ff534a386c1b62c83bd2dfd2d0684009474`
+## เว็บจริง
 
-ก่อนย้าย production ต้องตรวจว่าประวัติ migration 32/33, schema ใหม่ และสิทธิ์ RPC ครบ จากนั้นเผยแพร่ app ที่มี blob `6b18a55e5ec2d694cb7469b081b04ed3096163f8` และตรวจพฤติกรรมผ่านเว็บจริง
+รอบก่อน production คือ a9055ff534a386c1b62c83bd2dfd2d0684009474 บน branch claude/start-b18xi3 เว็บ https://famai-web.vercel.app สถานะการตรวจหลังเผยแพร่จะบันทึกเพิ่มเติมเมื่อ Vercel พร้อม
+
+## ข้อสังเกตเดิมของ Security Advisor
+
+หลัง migration พบข้อสังเกตเดิม 13 รายการ ไม่มีข้อใหม่จากงานนี้: public_lookup_log เปิด RLS โดยไม่มี policy, ฟังก์ชัน SECURITY DEFINER เดิมเรียกได้ตาม role และ leaked-password protection ยังปิด ไม่ควรตีความจำนวนนี้เป็นช่องโหว่ที่ยืนยันทั้งหมดหรือปิดสิทธิ์เดิมโดยไม่ตรวจผู้ใช้งาน
+
+แนวทางของ Supabase: [ตาราง RLS ไม่มี policy](https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy), [ฟังก์ชันที่ anon เรียกได้](https://supabase.com/docs/guides/database/database-linter?lint=0028_anon_security_definer_function_executable), [ฟังก์ชันที่ผู้ลงชื่อเข้าใช้เรียกได้](https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable), [ป้องกันรหัสผ่านรั่ว](https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection)
+
+ข้อจำกัดการทดสอบและข้อเสนอเพิ่มเติมดู docs/08-state-and-handoff.md และ PDF ทีม ไม่มี credentials พนักงานจริง จึงไม่อ้างผลธุรกรรมผ่าน HTTP ด้วยบัญชีพนักงานบน production
