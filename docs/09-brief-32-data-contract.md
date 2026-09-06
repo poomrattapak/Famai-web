@@ -1,4 +1,4 @@
-# สัญญาข้อมูลบรีฟ 6 ก.ย. 2569 · migration 32
+# สัญญาข้อมูลบรีฟ 6 ก.ย. 2569 · migration 32–33
 
 ใช้ร่วมกับ migration `20260906094608_32_brief_workflows.sql`, `20260906102311_33_permission_guards.sql` และหน้าเว็บรอบบรีฟเดียวกัน ต้องผ่าน QA ร่วมก่อน apply จริง ห้ามนำไฟล์ SQL ทดสอบไป apply เป็น migration
 
@@ -82,3 +82,15 @@ Runner ใช้ PostgreSQL WASM จริง สร้าง auth/storage ข�
 PGlite ไม่แทนการทดสอบ HTTP/PostgREST, embedded relations, Storage หรือการชนกันของหลาย connection จริง กลไก concurrency ตรวจจากการล็อกใบขายจน transaction สิ้นสุด; PostgreSQL อาจยกเลิกหนึ่งคำสั่งเมื่อพบ deadlock ซึ่งปลอดภัยกว่าการรับผลอนุมัติเก่า UI ต้องแสดงข้อผิดพลาดและให้ลองใหม่
 
 CLI ใน workspace ใช้งานไม่ได้และขั้นติดตั้งเดิมถูกจำกัด จึงสร้างไฟล์ใหม่ด้วย timestamp UTC ตามคำสั่งผู้ประสานงานโดยไม่แก้ migration เก่า การ rehearsal ผ่าน Supabase execute_sql ถูกปฏิเสธตั้งแต่ CREATE SCHEMA ด้วย SQLSTATE 25006 (read-only transaction); ตรวจยืนยันว่า schema/table ใหม่ยังไม่อยู่บน production ไม่ได้ใช้ apply_migration อ้อมข้อจำกัด และยังไม่มีการ apply ถาวร ณ จุดส่งงานนี้
+
+
+## สถานะอนุมัติและเผยแพร่หลังตรวจรวม
+
+ผ่านด่าน Chromium 95/95 และภาพ 68 ภาพใน run 34030580272 แล้ว แต่การเรียก `apply_migration` สำหรับ 32 ถูก auto-review ปฏิเสธด้วยเหตุว่ามีผลถาวรต่อโครงสร้าง ownership และกฎเข้าถึงหลายตาราง ต้องได้รับอนุมัติเฉพาะชุด 32–33 ของฐาน famai-motor ก่อนเผยแพร่ โค้ด candidate อยู่ `work/brief-r56-ready`; production และฐานข้อมูลยังไม่เปลี่ยน
+
+ตรวจหลังการปฏิเสธแบบ read-only พบ schema `famai_private`, ตาราง `notification_seen` และคอลัมน์ `customer.archived_at` ยังไม่มี จึงยืนยันว่า 32 ไม่ได้เริ่มใช้งาน และไม่ได้ลอง apply 33 ที่ต้องพึ่ง 32
+
+ไฟล์ที่ผ่านด่านและรออนุมัติ:
+
+- `20260906094608_32_brief_workflows.sql` · SHA-256 `24240f48be4a682266465a5febd5baab93b4f1e00046d67c69d530cb6bb43698`
+- `20260906102311_33_permission_guards.sql` · SHA-256 `483f8e98e7ae5c6cdb486cecca88593571e1c7a18b1d32c3d77bb4500e5a3acf`
