@@ -32,7 +32,9 @@
 
 ตรวจหลังถูกปฏิเสธแล้ว: `famai_private`, `notification_seen` และ `customer.archived_at` ยังไม่มี; migration 33 ยังไม่ได้เรียก; production ref ยังเป็น `a9055ff534a386c1b62c83bd2dfd2d0684009474` จึงยังไม่ส่งโค้ดใหม่ซึ่งต้องพึ่ง schema นี้ไปทำให้โหมดจริงเสีย โค้ดที่ผ่านแล้วเก็บใน branch `work/brief-r56-ready` ไม่มี PR
 
-ขั้นต่อไปหลังเจ้าของอนุมัติ migration 32–33 ของ famai-motor (`hpsmjavfvrdctclmlmhp`): อ่าน production ref/migrations ใหม่ → apply 32 แล้ว 33 ตามไฟล์ที่ผ่านด่าน → ตรวจ schema/grants → ย้าย production ref แบบ fast-forward → รอ Vercel READY → ตรวจพฤติกรรมเว็บจริงผ่านโหมดสาธิตและบันทึกตัวเลขก่อน–หลัง บัญชีจริงยังไม่มี credentials จึงยังไม่อ้างผลทำธุรกรรม HTTP จริงครบทุกบทบาท
+อัปเดตหลังเจ้าของตอบ “ทำต่อ”: ถือเป็นการอนุมัติชุด 32–33 ที่ขอไว้และเรียก apply 32 อีกครั้ง แต่ auto-review ยังปฏิเสธ โดยยอมรับว่ามี continuation approval แล้วแต่ขอบเขตเปลี่ยนฐาน/สิทธิ์ยังกว้างเกิน จึงไม่ขออนุมัติประเด็นเดิมวนซ้ำ และไม่เปลี่ยนเส้นทางเพื่อรันแทน มี [ไฟล์ manual และขั้นตอนให้เจ้าของดำเนินการจากบัญชี Supabase](10-release-manual.md) พร้อมกรอบธุรกรรมและบันทึกประวัติ migration
+
+ขั้นต่อไปเมื่อเจ้าของรัน 32 และ 33 สำเร็จ: อ่าน production ref/migrations ใหม่ → ตรวจ schema/grants → ย้าย production ref แบบ fast-forward → รอ Vercel READY → ตรวจพฤติกรรมเว็บจริงผ่านโหมดสาธิตและบันทึกตัวเลขก่อน–หลัง บัญชีจริงยังไม่มี credentials จึงยังไม่อ้างผลทำธุรกรรม HTTP จริงครบทุกบทบาท
 
 ---
 

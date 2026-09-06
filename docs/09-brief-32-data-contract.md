@@ -94,3 +94,6 @@ CLI ใน workspace ใช้งานไม่ได้และขั้น�
 
 - `20260906094608_32_brief_workflows.sql` · SHA-256 `24240f48be4a682266465a5febd5baab93b4f1e00046d67c69d530cb6bb43698`
 - `20260906102311_33_permission_guards.sql` · SHA-256 `483f8e98e7ae5c6cdb486cecca88593571e1c7a18b1d32c3d77bb4500e5a3acf`
+
+
+อัปเดตหลังเจ้าของอนุมัติให้ทำต่อ: auto-review ยังคงปฏิเสธ migration 32 เพราะขอบเขตการเปลี่ยนฐาน/สิทธิ์กว้างเกิน แม้ได้รับ continuation approval แล้ว ตรวจ read-only ยืนยัน schema ใหม่ยังไม่เกิดขึ้น จัด [คู่มือและไฟล์สำหรับเจ้าของรันด้วยตนเอง](10-release-manual.md) ไว้แล้ว ไม่มีการลองรันอ้อมผ่านเครื่องมืออื่น
