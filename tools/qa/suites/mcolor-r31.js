@@ -6,6 +6,7 @@
    ถ้าข้อนี้เขียวโดยที่โค้ดยังผูกรูปกับรุ่น แปลว่าด่านอ่อน ไม่ใช่ว่าโค้ดถูก
    v1.53: สีอื่นมีภาพแคตตาล็อกแล้ว จึงตรวจ URL ของสีนั้นตรง ๆ ว่าไม่ถูกภาพอัปโหลดทับ */
 const { chromium, EXE, BASE } = require('./env');
+const {installPages}=require('../helpers/pages');
 
 /* PNG 1x1 — เล็กที่สุดที่ imgPrepare ยังทำงานได้จริง ไม่ต้องพึ่งไฟล์ในรีโป */
 const PNG = Buffer.from(
@@ -27,6 +28,7 @@ const PNG = Buffer.from(
       if (m.type() === 'error' && !/favicon|fonts\.g|gstatic/.test(u) && !/ERR_CONNECTION/.test(m.text()))
         errors.push(tag + ' CONSOLE ' + m.text()); });
     await p.goto(BASE + '/index.html', { waitUntil: 'domcontentloaded' });
+    await installPages(p);
     await p.click('#lgGo'); await p.waitForTimeout(450);
     await p.evaluate(() => go('settings')); await p.waitForTimeout(250);
 
@@ -209,14 +211,14 @@ const PNG = Buffer.from(
        → ยุบเป็นการ์ดละรหัสรุ่น สีทั้งหมดเป็นชิปให้จิ้มสลับรูป/ดูจำนวนในการ์ดเดียว */
     await p.evaluate(() => { closeModal(); go('stock'); }); await p.waitForTimeout(300);
     await p.evaluate(() => stTab('gal')); await p.waitForTimeout(350);
-    /* v1.47: แกลเลอรีถูกตัดที่การวาด 6 ใบแรก (คำสั่งเจ้าของเรื่องหน้ายาวเกินไป) — ต้องกางก่อนนับ
+    /* v1.47: แกลเลอรีถูกตัดที่การวาด 6 ใบแรก (คำสั่งเจ้าของเรื่องหน้ายาวเกินไป) — ต้องเก็บทุกหน้าก่อนนับ
        สัญญาของข้อนี้คือ "รถต้องไม่นับเบิ้ลและไม่ตกหล่น" ไม่ใช่ "ต้องวาดครบทุกใบพร้อมกัน" */
-    await p.evaluate(() => { CAP_OPEN['stGal'] = true; refreshAll(); });
+    await p.evaluate(() => { pageGo('stGal',1); });
     await p.waitForTimeout(300);
     const gal = await p.evaluate(() => {
       const seen = new Set();
       stList().forEach(u => seen.add(u.variant));
-      const cards = [...document.querySelectorAll('#stGal .gcard')];
+      const cards = qaPageRows('stGal','#stGal .gcard');
       return { want: seen.size, got: cards.length,
         /* v1.42.1 (เจ้าของ: "เช็คว่า...ไม่มีรถเบิ้ล"): ทุกคันต้องถูกนับครั้งเดียวพอดี —
            ผลรวมเลขใหญ่ของทุกใบ = จำนวนรถทั้งหมดใน stList เป๊ะ (เกิน=นับเบิ้ล ขาด=ตกหล่น) */

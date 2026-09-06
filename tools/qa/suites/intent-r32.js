@@ -10,6 +10,7 @@
    [6] ตารางรวมมี pill เงินสด/ผ่อน + ตัวกรอง #dlPay กรองจริง
    [7] dealProceedSave ครบทุกช่อง → บันทึกลง c.* และพาไปหน้าขายพร้อมวิธีชำระที่ถูก */
 const { chromium, EXE, BASE } = require('./env');
+const {installPages}=require('../helpers/pages');
 
 (async () => {
   const b = await chromium.launch({ executablePath: EXE });
@@ -19,6 +20,7 @@ const { chromium, EXE, BASE } = require('./env');
   const p = await ctx.newPage();
   p.on('pageerror', e => errors.push('PAGEERROR ' + e.message));
   await p.goto(BASE + '/index.html');
+    await installPages(p);
   await p.click('#lgUsers [data-id="ST1"]'); await p.click('#lgGo'); await p.waitForTimeout(500);
 
   /* ---------- [1] B3 ---------- */
@@ -112,10 +114,9 @@ const { chromium, EXE, BASE } = require('./env');
     el.value = 'เงินสด'; el.onchange();
     /* v1.47: ตารางถูกตัดที่การวาด — กางก่อนนับ ไม่งั้นข้อนี้เขียวเพราะบังเอิญเงินสดน้อยกว่า cap
        แล้ววันที่ลูกค้าเงินสดเกิน cap ตัวกรองจะพังโดยไม่มีใครรู้ */
-    CAP_OPEN['dlTable'] = true; refreshAll();
-    const rows = [...document.querySelectorAll('#dlTable tbody tr')].filter(tr => !tr.querySelector('.empty')).length;
+    const allRows=qaPageRows('dlTable','#dlTable tbody tr');
+    const rows = allRows.filter(tr => !tr.querySelector('.empty')).length;
     const want = dealAll().filter(d => dealPay(d) === 'เงินสด').length;
-    CAP_OPEN['dlTable'] = false;
     el.value = ''; el.onchange();
     return { noSel: false, pills: pills.length, rows, want };
   });

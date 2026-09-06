@@ -15,6 +15,7 @@
    [8] แผ่นตัวกรองบนมือถือมี #dlBook ด้วย (ที่ 390 ตัวกรองย้ายเข้าแผ่น)
    [9] ที่ 390 การ์ดมือถือของคนที่จองอยู่ ต้องมีป้ายเหมือนกัน และหน้าไม่ล้นข้าง */
 const { chromium, EXE, BASE } = require('./env');
+const {installPages}=require('../helpers/pages');
 
 (async () => {
   const b = await chromium.launch({ executablePath: EXE });
@@ -25,11 +26,11 @@ const { chromium, EXE, BASE } = require('./env');
   const p = await ctx.newPage();
   p.on('pageerror', e => errors.push('PAGEERROR ' + e.message));
   await p.goto(BASE + '/index.html', { waitUntil: 'domcontentloaded' });
+    await installPages(p);
   await p.click('#lgUsers [data-id="ST1"]'); await p.click('#lgGo'); await p.waitForTimeout(400);
   await p.evaluate(() => { window.__F = []; csv = (n, h, r) => window.__F.push({ n: n, h: h, rows: r });
-    /* v1.47: ตารางดีลถูกตัดที่การวาด 8 แถว — ด่านนี้นับ "ใครมีป้ายบ้าง" จึงต้องกางให้ครบก่อน
-       ไม่งั้นคนที่จองอยู่อาจตกอยู่นอก 8 แถวแรกแล้วด่านแดงทั้งที่โค้ดถูก */
-    CAP_OPEN['dlTable'] = true; });
+    /* v1.55: ตรวจป้ายจากทุกหน้าผ่านปุ่มจริง */
+     });
 
   const has = await p.evaluate(() => !!document.getElementById('dlBook'));
   if (!has) bad('[3] ไม่มีตัวกรอง #dlBook ในหน้าลูกค้าและดีล');
@@ -42,15 +43,15 @@ const { chromium, EXE, BASE } = require('./env');
     const initial = document.getElementById('dlBook').value;
     const want = dealAll().filter(d =>
       BOOKINGS.some(x => x.status === 'จองอยู่' && x.custId === d.c.id)).length;
-    const trs = [...document.querySelectorAll('#dlTable tbody tr[data-deal]')];
+    const trs = qaPageRows('dlTable','#dlTable tbody tr[data-deal]');
     const withPill = trs.filter(tr => [...tr.querySelectorAll('.pill')]
       .some(x => x.textContent.trim() === 'จองอยู่'));
     /* ป้ายต้องอยู่กับคนที่จองจริง ไม่ใช่แค่จำนวนบังเอิญเท่ากัน */
     const wrong = withPill.filter(tr => !BOOKINGS.some(x => x.status === 'จองอยู่' && x.custId === tr.dataset.deal));
     return { want, initial, got: withPill.length, wrong: wrong.length,
-      rows: trs.length, bars: document.querySelectorAll('#dlTable .pstep').length,
+      rows: trs.length, bars: trs.reduce((n,tr)=>n+tr.querySelectorAll('.pstep').length,0),
       /* คำที่ intent-r32 [6] นับ ต้องไม่มีตัวไหนกลายเป็น "จองอยู่" */
-      payWords: [...document.querySelectorAll('#dlTable tbody tr .pill')]
+      payWords: trs.flatMap(tr=>[...tr.querySelectorAll('.pill')])
         .map(x => x.textContent.trim())
         .filter(t => ['เงินสด', 'เงินผ่อน', 'ยังไม่ระบุ'].indexOf(t) >= 0).length };
   });
@@ -69,8 +70,8 @@ const { chromium, EXE, BASE } = require('./env');
   const g3 = await p.evaluate(() => {
     const el = document.getElementById('dlBook'); if (!el) return { no: 1 };
     const count = v => { el.value = v; el.onchange();
-      const trs = [...document.querySelectorAll('#dlTable tbody tr[data-deal]')];
-      return { n: trs.length, bars: document.querySelectorAll('#dlTable .pstep').length,
+      const trs = qaPageRows('dlTable','#dlTable tbody tr[data-deal]');
+      return { n: trs.length, bars: trs.reduce((n,tr)=>n+tr.querySelectorAll('.pstep').length,0),
         pill: trs.filter(tr => [...tr.querySelectorAll('.pill')]
           .some(x => x.textContent.trim() === 'จองอยู่')).length }; };
     const all = count(''), on = count('จองอยู่'), off = count('ไม่มีการจอง');
@@ -127,7 +128,7 @@ const { chromium, EXE, BASE } = require('./env');
     if (!bk) return { skip: 1 };
     const cid = bk.custId;
     const pilled = () => { rDeal();
-      const tr = document.querySelector('#dlTable tbody tr[data-deal="' + cid + '"]');
+      const tr = qaPageRows('dlTable','#dlTable tbody tr[data-deal]').find(tr=>tr.dataset.deal===cid);
       return tr ? [...tr.querySelectorAll('.pill')].some(x => x.textContent.trim() === 'จองอยู่') : null; };
     const before = pilled();
     const ok = bookCancel(bk.id, 'ทดสอบว่าป้ายหายเอง');
@@ -177,7 +178,7 @@ const { chromium, EXE, BASE } = require('./env');
     openFilters('deal');
     const inSheet = !!document.querySelector('#fsBody #dlBook');
     closeFilters();
-    const cards = [...document.querySelectorAll('#dlTable .crow[data-deal]')];
+    const cards = qaPageRows('dlTable','#dlTable .crow[data-deal]');
     const pilled = cards.filter(c => [...c.querySelectorAll('.pill')]
       .some(x => x.textContent.trim() === 'จองอยู่'));
     const want = dealRows().filter(d =>

@@ -613,8 +613,14 @@ textarea.inp{ height:auto; padding:var(--s1) var(--s2); resize:vertical; line-he
   min-height:44px; padding:var(--s1) 0; font-size:var(--t-table); }
 .uplist .si:not(:last-child){ border-bottom:1px solid var(--hairline-2); }
 .uplist .si.on{ font-weight:600; }
-/* ท้ายรายการที่ถูกตัด — ระยะแนวตั้งอย่างเดียว ไม่มีพื้นและไม่กินระยะข้าง จึงไม่นับเป็นชั้นกล่อง */
-.capmore{ padding:var(--s2) 0 0; text-align:center; }
+/* แถบแบ่งหน้าใช้ระยะแนวตั้งอย่างเดียว ไม่เพิ่มชั้นกล่อง */
+/* เลขหน้าไม่เกินห้าปุ่มพร้อมลูกศร จึงพอดีจอ 390 และแตะได้โดยไม่เลื่อนข้าง */
+.pagination{ padding:var(--s2) 0; text-align:center; }
+.page-controls{ display:flex; flex-wrap:wrap; justify-content:center; gap:var(--s-half); margin-top:var(--s1); }
+.page-btn{ display:grid; place-items:center; min-width:40px; height:44px; padding:0 var(--s1);
+  border:1px solid var(--hairline); border-radius:var(--r-input); color:var(--ink); background:var(--card); }
+.page-btn[aria-current="page"]{ background:var(--grp-cur); border-color:var(--grp-cur); color:var(--paper); font-weight:600; }
+.page-btn:disabled{ color:var(--muted); opacity:.45; cursor:default; }
 .hint{ font-size:var(--t-label); color:var(--muted); margin-top:var(--s-half); }
 
 .btn{ height:40px; padding:0 var(--s3); border-radius:var(--r-btn);
@@ -1660,7 +1666,8 @@ body.lock{ overflow:hidden; }
         <!-- flush: การ์ดในแกลเลอรีเป็นกรอบของตัวเอง (v1.31) ถ้าตัวห่อยังมีระยะขอบในด้วย
              จะกลายเป็นกล่องซ้อนสามชั้นทันที — ขอบจอ → .card → .gcard → ตัวหนังสือ คือ 2 ชั้นพอดี -->
         <div class="bd flush" id="stGalWrap"><div class="gal" id="stGal"></div></div>
-        </div></section>
+        </div>
+      </section>
 
       <!-- ============ 5. ขายรถ ============ -->
       <section class="screen" id="s-sell">
@@ -1829,7 +1836,8 @@ body.lock{ overflow:hidden; }
             <div class="card"><div class="hd"><h3>ภาพรวมขั้นตอน</h3></div><div class="bd" id="dlFunnel"></div></div>
           </div>
         </div>
-        <div id="dlOne" style="display:none"></div></section>
+        <div id="dlOne" style="display:none"></div>
+      </section>
 
       <!-- ============ 8d. ใบกำกับภาษี (บรีฟรอบ 2 ข้อ 26 · v1.36) ============
            สามส่วนในหน้าเดียว: ลูกค้า (ขายปลีกที่ส่งมอบแล้ว) · ขายส่ง (ย้ายมาจากหน้าขายรถ) ·
@@ -3552,29 +3560,55 @@ function upickWire(){
   });
   upickSync();
 }
-/* ---------- ตัดรายการยาว (v1.47) ----------
-   เจ้าของ: "ส่วนการ์ดในแต่ละหน้าที่มีหลายการ์ดจนทำให้หน้ายาวขึ้นเยอะ"
-   ตัดที่ **การวาด** เท่านั้น — ข้อมูล ตัวกรอง และไฟล์ส่งออกยังครบทุกแถวเสมอ
-   สถานะ "กางแล้ว" อยู่ใน CAP_OPEN ตัวเดียว คีย์ด้วย id ของตาราง ไม่มี state ซ้ำที่อื่น */
-const CAP_OPEN={};
-const capSlice = (id, arr, n) => (n && !CAP_OPEN[id] && arr.length>n)? arr.slice(0,n) : arr;
-function capFoot(el, total, shown){
+/* ---------- แบ่งหน้ารายการ (v1.55) ----------
+   แบ่งเฉพาะการวาด ข้อมูลและไฟล์ส่งออกยังครบทุกแถว
+   เก็บหน้าของแต่ละรายการแยกกัน เปลี่ยนตัวกรองหรือขอบเขตแล้วเริ่มหน้า 1
+   วาดสถานะในแถวใหม่ไม่ทำให้หน้ากระโดด ส่วนข้อมูลลดจะปรับเลขหน้าไม่ให้เกินหน้าสุดท้าย */
+const LIST_PAGES={};
+function pageSlice(id, arr, size){
+  const key=CUR==='hr'?'hrday':CUR==='payroll'?'payrol':CUR;
+  const filters=FILTERS[key]?FILTERS[key].f.map(([field])=>$('#'+field)?.value||''):[];
+  const branch=NAV_BR[CUR]?$('#'+NAV_BR[CUR])?.value||'':'';
+  const period=NAV_PER[CUR]?perOf(NAV_PER[CUR]):null;
+  const signature=JSON.stringify([ME&&ME.id,CUR,branch,filters,period,CUR==='deal'?DEAL_SEL:'']);
+  let st=LIST_PAGES[id];
+  if(!st || st.signature!==signature) st=LIST_PAGES[id]={page:1,signature};
+  st.size=size;st.total=arr.length;st.pages=Math.max(1,Math.ceil(arr.length/size));
+  st.page=Math.max(1,Math.min(st.page,st.pages));
+  return arr.slice((st.page-1)*size,st.page*size);
+}
+function pageGo(id, page){
+  const st=LIST_PAGES[id]; if(!st) return;
+  st.page=Math.max(1,Math.min(page,st.pages));
+  refreshAll();
+  const el=$('#'+id); if(!el) return;
+  const foot=document.querySelector('[data-list="'+id+'"]');
+  foot?.querySelector('[aria-current="page"]')?.focus({preventScroll:true});
+  const top=el.getBoundingClientRect().top+scrollY-($('.top')?.offsetHeight||0)-16;
+  window.scrollTo({top:Math.max(0,top),behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth'});
+}
+function pageFoot(el, draw){
   if(!el) return;
-  const host=el.closest('.tw')||el, box=host.parentNode;
-  let f=[...box.children].find(x=>x.classList&&x.classList.contains('capmore')&&x.dataset.cap===el.id);
-  const hidden=total-shown;
-  if(hidden<=0 && !CAP_OPEN[el.id]){ if(f) f.remove(); return; }
-  if(!f){ f=document.createElement('div'); f.className='capmore'; f.dataset.cap=el.id;
-    host.insertAdjacentElement('afterend', f); }
-  f.innerHTML='<button class="lnk" type="button">'+(CAP_OPEN[el.id]
-    ? 'ย่อรายการ — กลับไปแสดง '+shown+' จาก '+total+' รายการ'
-    : 'ดูทั้งหมด '+total+' รายการ (ซ่อนอยู่ '+hidden+')')+'</button>';
-  f.firstChild.onclick=()=>{ CAP_OPEN[el.id]=!CAP_OPEN[el.id]; refreshAll(); };
+  const st=LIST_PAGES[el.id],host=el.closest('.tw')||el,box=host.parentNode;
+  let foot=[...box.children].find(x=>x.dataset.list===el.id);
+  if(!st || st.pages<=1){ if(foot) foot.remove(); return; }
+  if(!foot){foot=document.createElement('nav');foot.className='pagination noprint';foot.dataset.list=el.id;
+    foot.setAttribute('aria-label','หน้ารายการ');host.insertAdjacentElement('afterend',foot);}
+  const first=Math.max(1,Math.min(st.page-2,st.pages-4));
+  const nums=Array.from({length:Math.min(5,st.pages)},(_,i)=>first+i);
+  foot.innerHTML='<div class="tsub" role="status">หน้า '+st.page+' จาก '+st.pages+' · แสดง '+((st.page-1)*st.size+1)+'–'+Math.min(st.page*st.size,st.total)+' จาก '+st.total+' รายการ</div>'
+    +'<div class="page-controls"><button type="button" class="page-btn" data-prev aria-label="หน้าก่อนหน้า"'+(st.page===1?' disabled':'')+'>'+ic('left','i i-sm')+'</button>'
+    +nums.map(n=>'<button type="button" class="page-btn" data-page="'+n+'" aria-label="หน้า '+n+'"'+(n===st.page?' aria-current="page"':'')+'>'+n+'</button>').join('')
+    +'<button type="button" class="page-btn" data-next aria-label="หน้าถัดไป"'+(st.page===st.pages?' disabled':'')+'>'+ic('right','i i-sm')+'</button></div>';
+  foot.querySelectorAll('button').forEach(btn=>btn.onclick=()=>{
+    const target=btn.hasAttribute('data-prev')?st.page-1:btn.hasAttribute('data-next')?st.page+1:+btn.dataset.page;
+    if(draw){st.page=target;draw();}else pageGo(el.id,target);
+  });
 }
 function tbl(el, head, rows, empty, cards, cap){
-  const total=rows.length;
-  if(cap && !CAP_OPEN[el.id] && total>cap){ rows=rows.slice(0,cap); if(cards) cards=cards.slice(0,cap); }
-  const foot=()=>{ if(cap) capFoot(el, total, rows.length); };
+  if(cap){ rows=pageSlice(el.id,rows,cap);
+    if(cards){const start=(LIST_PAGES[el.id].page-1)*cap;cards=cards.slice(start,start+cap);} }
+  const foot=()=>{ pageFoot(el); };
   if(cards && MQ_CARD.matches){
     /* การ์ดอยู่ใน <td> เดียว — selector เดิมที่ยิงเข้า element ตารางยังใช้ได้ */
     el.classList.add('cards');
@@ -4351,13 +4385,14 @@ function rDash(){
     +'<div style="margin-top:var(--s2)">'+REG_STAGES.map(s=>'<div class="kv2"><span>'+esc(s)+'</span><b>'+rc[s]+'</b></div>').join('')+'</div>';
 
   /* คิวงานเรียงตามวันครบกำหนด — เลยกำหนดต้องขึ้นเป็น "ข้อความ" ไม่ใช่แค่จุดแดง (กฎข้อ 3)
-     regQueue() เรียงตาม due ให้แล้ว การ์ดโชว์ 6 อันดับแรก ป๊อปอัพโชว์ทั้งหมด */
-  const q=rgWait.slice(0,6);
+     regQueue() เรียงตาม due ให้แล้ว แสดงหน้าละ 6 งานและเปิดรายละเอียดในป๊อปอัพได้ */
+  const q=pageSlice('dQueue',rgWait,6);
   $('#dQueue').innerHTML = q.length? q.map(t=>'<div class="q">'
       +'<span class="dot '+(t.d<0?'late':(t.d<=7?'soon':''))+'"></span>'
       +'<span class="nm">'+esc(t.nm)+'<span class="tsub">'+esc(t.stage)+'</span></span>'
       +'<span class="when'+(t.d<0?' late':'')+'">'+(t.d<0? 'เลย '+(-t.d)+' วัน' : (t.d===0?'ครบวันนี้':'อีก '+t.d+' วัน'))+'</span></div>').join('')
     : '<div class="empty"><b>ไม่มีคิวงานทะเบียน</b>ส่งมอบครบทุกคันแล้ว</div>';
+  pageFoot($('#dQueue'));
 
   /* เงินค้างรับ — การ์ดทั้งใบซ่อนถ้าไม่มีสิทธิ์ ar · คนไม่มีสิทธิ์เงินเห็นจำนวนรายแทนตัวเลขเงิน */
   const arDue=AR.filter(a=>inScope(a.branch)).reduce((s,a)=>s+a.due,0);
@@ -4490,7 +4525,7 @@ function rDash(){
     : '<div class="empty"><b>สต๊อกทุกรุ่นเพียงพอ</b>ไม่มีรุ่นไหนต่ำกว่า '+CFG.lowStock+' คัน</div>';
 
   /* ขายล่าสุด */
-  const rsL=sScoped().slice().sort((a,b)=>b.soldAt.localeCompare(a.soldAt)).slice(0,10)
+  const rsL=sScoped().slice().sort((a,b)=>b.soldAt.localeCompare(a.soldAt))
     .map(s=>({s, u:UNITS.find(x=>x.id===s.unitId), c:CUSTOMERS.find(x=>x.id===s.custId)}));
   tbl($('#recentSales'), ['วันที่','สาขา','รุ่น','ลูกค้า',{t:'ราคา',n:1},{t:'กำไร',n:1},'ชำระ','เซลล์'],
     rsL.map(({s,u,c})=>'<tr class="clk" data-unit="'+u.id+'"><td>'+thDate(s.soldAt)+'</td><td>'+esc(bName(s.branch))+'</td>'
@@ -4502,7 +4537,7 @@ function rDash(){
       esc(u.model)+' · '+esc(c?c.name:'—'), fmt(s.net),
       thDate(s.soldAt)+' · '+esc(bName(s.branch))+' · '+esc(s.sales),
       (s.pay==='cash'?pill('เงินสด','mut'):pill('ผ่อน','info'))
-        +'<span style="flex:1"></span><button class="lnk" data-sdet="'+s.id+'">ดูการขาย</button>')));
+        +'<span style="flex:1"></span><button class="lnk" data-sdet="'+s.id+'">ดูการขาย</button>')), 10);
   wireGo(); wireUnitRows(); wireSaleLinks(); wirePop();
 }
 /* ---------- ป๊อปอัพเนื้อหาบนหน้าแรก (v1.26 ข้อ 2) ----------
@@ -5022,13 +5057,13 @@ function rPromoBox(){
 }
 function rRecent(){
   tbl($('#rRecent'), ['รุ่น','เลขเครื่อง','สาขา',{t:'อายุ',n:1}],
-    UNITS.filter(u=>inScope(u.branch)).slice().sort((a,b)=>b.received.localeCompare(a.received)).slice(0,8)
+    UNITS.filter(u=>inScope(u.branch)).slice().sort((a,b)=>b.received.localeCompare(a.received))
     .map(u=>'<tr class="clk" data-unit="'+u.id+'"><td><b>'+esc(u.model)+'</b><div class="tsub">'+esc(u.color)+'</div></td>'
       +'<td class="mono">'+esc(u.engine)+'</td><td>'+esc(bName(u.branch))+'</td><td class="n">'+ageTag(age(u))+'</td></tr>'),
     'ยังไม่มีรถในสาขาที่คุณดูแล',
-    UNITS.filter(u=>inScope(u.branch)).slice().sort((a,b)=>b.received.localeCompare(a.received)).slice(0,8)
+    UNITS.filter(u=>inScope(u.branch)).slice().sort((a,b)=>b.received.localeCompare(a.received))
     .map(u=>crow('data-unit="'+u.id+'"', esc(u.model), ageTag(age(u)),
-      esc(u.color)+' · <span class="mono">'+esc(u.engine)+'</span> · '+esc(bName(u.branch)))));
+      esc(u.color)+' · <span class="mono">'+esc(u.engine)+'</span> · '+esc(bName(u.branch)))), 8);
   wireUnitRows();
 }
 function saveRecv(){
@@ -5235,10 +5270,8 @@ function rStock(){
     /* สีของสาขาผูกกับลำดับใน BRANCHES ไม่ใช่ลำดับที่เจอในรายการ — สาขาเดิมจึงได้สีเดิมทุกการ์ด
        ถ้าไล่สีตามลำดับที่เจอ สาขาเดียวกันจะเปลี่ยนสีไปมาระหว่างการ์ด อ่านแล้วสับสนกว่าไม่มีสี */
     const brHue = code => 'var(--ch'+((Math.max(0, BRANCHES.findIndex(b=>b.code===code)) % 6) + 1)+')';
-    /* v1.47: แกลเลอรีคือหน้าที่ยาวที่สุด (5.3 จอที่ 390) — ตัดที่ "การวาด" 8 ใบแรก แล้วกางเอง
-       ผลรวมจำนวนรถของทุกใบยังเท่ากับ stList() เป๊ะเหมือนเดิมเมื่อกางครบ (สัญญา mcolor-r31 ข้อ 11
-       ที่เจ้าของสั่งเอง — ด่านนั้นกางก่อนนับ เพราะสัญญาคือ "ห้ามนับเบิ้ล" ไม่ใช่ "ห้ามซ่อน") */
-    const gKeys = capSlice('stGal', Object.keys(grp), 6);
+    /* แกลเลอรีหน้าละ 6 รหัสรุ่น รวมทุกหน้าแล้วจำนวนรถต้องตรง stList() */
+    const gKeys = pageSlice('stGal', Object.keys(grp), 6);
     $('#stGal').innerHTML = Object.keys(grp).length? gKeys.map(v=>{ const g=grp[v];
       const brs=Object.keys(g.br).sort((a,b)=>g.br[b]-g.br[a]);
       const ccs=Object.keys(g.cols).sort((a,b)=>g.cols[b].n-g.cols[a].n);   /* สีที่มีของมากสุด = ค่าเริ่มต้น */
@@ -5259,7 +5292,7 @@ function rStock(){
         +'<div class="tsub" style="margin-top:var(--s1)">'+(g.sold===g.n? 'ขายแล้วทั้งหมด' : 'อายุเฉลี่ย '+Math.round(g.age/g.n)+' วัน')+'</div>'
         +'</div></button>';
     }).join('') : '<div class="empty"><b>ไม่พบรถ</b>ลองปรับตัวกรอง</div>';
-    capFoot($('#stGal'), Object.keys(grp).length, gKeys.length);
+    pageFoot($('#stGal'));
     /* จิ้มชิปสี = สลับรูป/ชิปเลือกในการ์ด (ไม่นำทาง ไม่ re-render — สถานะชั่วคราวใน DOM
        รีเซ็ตเองเป็นสีหลักทุกครั้งที่วาดใหม่ ไม่มีตัวแปรชุดที่สอง) · กดที่อื่นของการ์ด →
        ตั้งตัวกรอง รุ่น+รหัสรุ่น (v1.33 B1 — รหัสเดียวราคาเดียว) แล้วไปดูรายคันในแท็บตาราง */
@@ -7339,13 +7372,15 @@ function dealDetail(d){
         +'</div>'; }).join('');
     h+='<h4 class="sec">เงินค้างรับ</h4>'+rows;
   }
-  h+='<h4 class="sec">งานติดตาม ('+d.tasks.length+')</h4>';
-  h+= d.tasks.length? d.tasks.slice(0,8).map(t=>{ const dd=days(t.due,TODAY);
+  h+='<h4 class="sec">งานติดตาม ('+d.tasks.length+')</h4><div id="dlOneTasks">';
+  const taskPage=pageSlice('dlOneTasks',d.tasks,8);
+  h+= d.tasks.length? taskPage.map(t=>{ const dd=days(t.due,TODAY);
       return '<div class="frow">'
         +(dd>0?pill('เลย '+dd+' วัน','bad'):(dd===0?pill('วันนี้','warn'):pill('อีก '+(-dd)+' วัน','mut')))
         +'<span>'+esc(t.kind)+' · '+thDate(t.due)+'</span>'
         +'<button class="lnk fx" data-dltask="'+t.id+'">เสร็จแล้ว</button></div>'; }).join('')
     : '<p class="foot">ไม่มีงานติดตามค้าง</p>';
+  h+='</div>';
   /* หมายเหตุของดีล (บรีฟ: "ช่วยเพิ่มช่องหมายเหตุให้เขียน note ไว้ได้") — แก้ผ่านหน้าลูกค้า */
   if(d.c.note || (d.s&&d.s.note))
     h+='<h4 class="sec">หมายเหตุ</h4><p class="foot">'
@@ -7399,6 +7434,7 @@ function rDealOne(id){
     +'</div></div>'
     +'<div class="card"><div class="bd">'+dealDetail(d)+'</div></div>';
   $('#dlOne').innerHTML=x;
+  pageFoot($('#dlOneTasks'));
   wireDealProgress();
   /* ทุกปุ่มทำงานแล้ววาดหน้าเดิมใหม่ผ่าน refreshAll() ที่อยู่ในตัวทำงานเอง — ไม่มีการข้ามหน้า */
   $('#dlBack').onclick=()=>{ DEAL_SEL=''; rDeal(); window.scrollTo(0,0); };
@@ -7601,7 +7637,7 @@ function rDealList(){
 
   /* งานติดตามที่ถึงกำหนด — กดชื่อแล้วเข้าดีลของคนนั้นเลย */
   /* v1.47: เลิกตัดข้อมูลที่ 20 ตรงนี้ — ให้ cap ของ tbl คุมการ "วาด" แทน
-     ปุ่มดูทั้งหมดจะได้เห็นครบจริง ไม่ใช่เห็นครบแค่ 20 รายการแรก */
+     แบ่งหน้าจากข้อมูลครบทั้งหมด ไม่ใช่จาก 20 รายการแรก */
   const due=TASKS.filter(t=>!t.done&&inScope(t.branch)).sort((a,b)=>a.due.localeCompare(b.due));
   $('#dlTaskCnt').textContent=TASKS.filter(t=>!t.done&&inScope(t.branch)&&t.due<=TODAY).length+' ถึงกำหนดแล้ว';
   const tRow=t=>{ const c=CUSTOMERS.find(x=>x.id===t.custId), dd=days(t.due,TODAY);
@@ -8215,11 +8251,14 @@ function rService(){
     $('#svDate').value=TODAY;
     $('#svSave').onclick=svSave;
     $('#svLine').onclick=()=>{ const r=REMIND.filter(x=>x.status==='รอถึงกำหนด'&&x.due<=addDays(TODAY,7));
-      openModal('รายการส่ง LINE ('+r.length+' คน)',''
-        +'<div class="tw"><table><thead><tr><th>ลูกค้า</th><th>เบอร์</th><th class="n">รอบ (กม.)</th><th>ครบกำหนด</th></tr></thead><tbody>'
-        +r.slice(0,25).map(x=>{ const c=CUSTOMERS.find(y=>y.id===x.custId);
-          return '<tr><td>'+esc(c?c.name:'—')+'</td><td>'+esc(c?c.phone:'')+'</td><td class="n">'+fmt(x.km)+'</td><td>'+thDate(x.due)+'</td></tr>'; }).join('')
-        +'</tbody></table></div>'); };
+      openModal('รายการส่ง LINE ('+r.length+' คน)','<div class="tw"><table id="svLineTable"></table></div>');
+      const draw=()=>{
+        tbl($('#svLineTable'),['ลูกค้า','เบอร์',{t:'รอบ (กม.)',n:1},'ครบกำหนด'],
+          pageSlice('svLineTable',r,10).map(x=>{const c=CUSTOMERS.find(y=>y.id===x.custId);
+            return '<tr><td>'+esc(c?c.name:'—')+'</td><td>'+esc(c?c.phone:'')+'</td><td class="n">'+fmt(x.km)+'</td><td>'+thDate(x.due)+'</td></tr>'; }),
+          'ไม่มีรายการถึงกำหนด');
+        pageFoot($('#svLineTable'),draw);
+      };draw(); };
     $('#expSv').onclick=()=> csvMoney('ใบงานซ่อม',['เลขที่','วันที่','ลูกค้า','เลขเครื่อง','ประเภท','เลขไมล์','ค่าแรง','ค่าอะไหล่','รวม','สถานะ'],
       SERVICE.filter(s=>inScope(s.branch)).map(s=>{ const c=CUSTOMERS.find(x=>x.id===s.custId);
         return [s.no,s.at,c?c.name:'',s.engine,s.type,s.km,s.labor,s.parts,s.labor+s.parts,s.status]; }), [6,7,8]);
@@ -8243,18 +8282,18 @@ function rService(){
   $$('[data-sv]').forEach(b=> b.onclick=()=> svDeliver(b.dataset.sv));
   const rr=REMIND.filter(r=>r.status==='รอถึงกำหนด').sort((a,b)=>a.due.localeCompare(b.due));
   tbl($('#svRemind'), ['ลูกค้า','เบอร์','รุ่น',{t:'รอบ (กม.)',n:1},'ครบกำหนด','สถานะ'],
-    rr.slice(0,30).map(r=>{ const c=CUSTOMERS.find(x=>x.id===r.custId), u=UNITS.find(x=>x.id===r.unitId);
+    rr.map(r=>{ const c=CUSTOMERS.find(x=>x.id===r.custId), u=UNITS.find(x=>x.id===r.unitId);
       const d=days(r.due,TODAY);
       return '<tr><td><b>'+esc(c?c.name:'—')+'</b></td><td>'+esc(c?c.phone:'')+'</td><td>'+esc(u?u.model:'—')+'</td>'
         +'<td class="n">'+fmt(r.km)+'</td><td>'+thDate(r.due)+'</td>'
         +'<td>'+(d>0?pill('ถึงกำหนดแล้ว','warn'):pill('อีก '+(-d)+' วัน','mut'))+'</td></tr>'; }),
     'ยังไม่มีรายการเตือน',
-    rr.slice(0,30).map(r=>{ const c=CUSTOMERS.find(x=>x.id===r.custId), u=UNITS.find(x=>x.id===r.unitId);
+    rr.map(r=>{ const c=CUSTOMERS.find(x=>x.id===r.custId), u=UNITS.find(x=>x.id===r.unitId);
       const d=days(r.due,TODAY);
       return crow('',
         esc(c?c.name:'—'),
         (d>0?pill('ถึงกำหนดแล้ว','warn'):pill('อีก '+(-d)+' วัน','mut')),
-        esc(c?c.phone:'')+' · '+esc(u?u.model:'—')+' · รอบ '+fmt(r.km)+' กม. · '+thDate(r.due)); }));
+        esc(c?c.phone:'')+' · '+esc(u?u.model:'—')+' · รอบ '+fmt(r.km)+' กม. · '+thDate(r.due)); }), 10);
 }
 function svLookup(){
   const q=$('#svSearch').value.trim().toLowerCase();
@@ -8529,14 +8568,14 @@ function rPlate(){
         esc(x.u?x.u.model:'—')+' · <span class="mono">'+esc(x.u&&x.u.frame||'—')+'</span> · '+esc(bName(x.r.branch)),
         (dd>0? pill('เลย '+dd+' วัน','warn')+' ':'')+inpCell(x)+' '+btnCell(x)); }));
   tbl($('#plDone'), ['ลูกค้า','รถ','เลขทะเบียน','วันได้ป้าย',''],
-    doneAll.slice(0,20).map(x=>'<tr><td><b>'+esc(x.c.name)+'</b></td>'
+    doneAll.map(x=>'<tr><td><b>'+esc(x.c.name)+'</b></td>'
       +'<td>'+esc(x.u?x.u.model:'—')+'</td><td class="mono">'+esc(x.r.plate||'—')+'</td>'
       +'<td>'+thDate(plateAt(x.r))+'</td>'
       +'<td class="noprint">'+(edit? '<button class="lnk" data-plb="'+x.r.id+'">ถอยกลับ</button>':'')+'</td></tr>'),
     'ยังไม่มีคันที่ได้ป้าย',
-    doneAll.slice(0,20).map(x=>crow('', esc(x.c.name), '<span class="mono">'+esc(x.r.plate||'—')+'</span>',
+    doneAll.map(x=>crow('', esc(x.c.name), '<span class="mono">'+esc(x.r.plate||'—')+'</span>',
       esc(x.u?x.u.model:'—')+' · ได้ป้าย '+thDate(plateAt(x.r)),
-      edit? '<button class="lnk" data-plb="'+x.r.id+'">ถอยกลับ</button>':'')));
+      edit? '<button class="lnk" data-plb="'+x.r.id+'">ถอยกลับ</button>':'')), 10);
   $$('#s-plate [data-plc]').forEach(b=> b.onclick=()=>{
     const el=$('#s-plate [data-plin="'+b.dataset.plc+'"]');
     regPlateClose(b.dataset.plc, el? el.value : ''); });
@@ -10336,13 +10375,13 @@ function rReview(ym){
                           : 'บันทึกว่าใครตรวจและตรวจเมื่อไหร่');
     rHr(); refreshAll(); };
   tbl($('#rvDone'), ['พนักงาน','วันที่','ผล','ผู้ตรวจ','หมายเหตุ'],
-    done.slice(0,30).map(x=>'<tr><td><b>'+esc(x.s.nick)+'</b></td><td>'+thShort(x.a.date)+'</td>'
+    done.map(x=>'<tr><td><b>'+esc(x.s.nick)+'</b></td><td>'+thShort(x.a.date)+'</td>'
       +'<td>'+pill(x.a.review.status==='ok'?'ยืนยัน':'ติดปัญหา', x.a.review.status==='ok'?'good':'bad')+'</td>'
       +'<td>'+esc(x.a.review.by)+'</td><td class="tsub">'+esc(x.a.review.note||'—')+'</td></tr>'),
     'ยังไม่มีรายการที่ตรวจแล้ว',
-    done.slice(0,30).map(x=>crow('', esc(x.s.nick),
+    done.map(x=>crow('', esc(x.s.nick),
       pill(x.a.review.status==='ok'?'ยืนยัน':'ติดปัญหา', x.a.review.status==='ok'?'good':'bad'),
-      thShort(x.a.date)+' · ตรวจโดย '+esc(x.a.review.by)+(x.a.review.note?' · '+esc(x.a.review.note):''))));
+      thShort(x.a.date)+' · ตรวจโดย '+esc(x.a.review.by)+(x.a.review.note?' · '+esc(x.a.review.note):''))), 10);
 }
 
 /* ============================= 18. เงินเดือน ============================= */
@@ -10604,11 +10643,20 @@ function impCheck(){
   $('#impGo').disabled = false;
   $('#impPrev').innerHTML='<div class="note g">'+ic('check','i i-sm')+'<span>'+rows.length+' แถว · เข้าใหม่ '+(rows.length-dup)+' · ซ้ำ '+dup+'</span></div>'
     +warn.map(w=>'<div class="note w">'+ic('alert','i i-sm')+'<span>'+w+'</span></div>').join('')
-    +'<div class="tw"><table><thead><tr><th>รุ่น</th><th>เลขเครื่อง</th><th>สาขา</th><th class="n">ต้นทุน</th><th>ราคาขาย</th></tr></thead><tbody>'
-    +rows.slice(0,6).map(r=>'<tr><td>'+esc(r[5])+' <span class="tsub">'+esc(r[4])+'</span></td><td class="mono">'+esc(r[6])+'</td>'
-      +'<td>'+esc(bName(r[0]))+'</td><td class="n">'+fmt(r[9])+'</td>'
-      +'<td>'+(PRICE[r[1]]? fmt(PRICE[r[1]].retail) : '<span style="color:var(--attn)">รอกำหนด</span>')+'</td></tr>').join('')
-    +'</tbody></table></div>'+(rows.length>6?'<div class="tsub">แสดง 6 จาก '+rows.length+' แถว</div>':'');
+    +'<div class="tw"><table id="impPreview"></table></div>';
+  delete LIST_PAGES.impPreview;
+  const draw=()=>{
+    tbl($('#impPreview'),['รุ่น','เลขเครื่อง','สาขา',{t:'ต้นทุน',n:1},'ราคาขาย'],
+      rows.map(r=>'<tr data-import-engine="'+esc(r[6])+'"><td>'+esc(r[5])+' <span class="tsub">'+esc(r[4])+'</span></td><td class="mono">'+esc(r[6])+'</td>'
+        +'<td>'+esc(bName(r[0]))+'</td><td class="n">'+fmt(r[9])+'</td>'
+        +'<td>'+(PRICE[r[1]]? fmt(PRICE[r[1]].retail) : '<span style="color:var(--attn)">รอกำหนด</span>')+'</td></tr>'),
+      'ไม่มีรายการในไฟล์',
+      rows.map(r=>crow('data-import-engine="'+esc(r[6])+'"',esc(r[5]),'ต้นทุน '+fmt(r[9]),
+        esc(r[4])+' · '+esc(bName(r[0]))+'<br><span class="mono">'+esc(r[6])+'</span>',
+        'ราคาขาย '+(PRICE[r[1]]?fmt(PRICE[r[1]].retail):'รอกำหนดราคา'))),6);
+    pageFoot($('#impPreview'),draw);
+  };
+  draw();
 }
 
 /* ============================= 20a. ศูนย์แจ้งเตือน (บรีฟรอบ 1 · J1-J2) =============================

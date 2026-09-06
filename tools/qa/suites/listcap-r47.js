@@ -2,11 +2,11 @@
    คำสั่งเจ้าของ 28 ส.ค. 2569: "ตอนนี้จะมีหลายส่วนที่ยาวเกินไป เช่นช่องข้อมูลที่ให้เลื่อนเลือกลูกค้า
    หรือส่วนเลื่อนเลือกรถ ยาวจนผมเลื่อนไม่ไหว หรือแม้แต่ส่วนการ์ดในแต่ละหน้าที่มีหลายการ์ดจนทำให้
    หน้ายาวขึ้นเยอะก็ตาม ... คิด solution ที่จะแก้ไขได้ เพื่อเพิ่ม ux"
-   เจ้าของเลือก: **แผงค้นหา + แสดงบางส่วน + ดูทั้งหมด**
+   v1.55 เจ้าของเปลี่ยนเป็น **แผงค้นหา + แบ่งหน้า 1 2 3**
    ล็อก:
    [1] แปลงคำบ่นเป็นตัวเลข — ที่ 390 หน้าที่เคยยาวสุดต้องสูงไม่เกิน 3.5 เท่าของจอ
-   [2] ตารางที่ใส่ cap วาดไม่เกินจำนวนที่ตั้ง และมีปุ่มบอก "ซ่อนอยู่กี่รายการ" เป็นข้อความ
-   [3] กด "ดูทั้งหมด" → เห็นครบทุกแถว · กด "ย่อ" → กลับมาเท่าเดิม
+   [2] ตารางวาดไม่เกินจำนวนต่อหน้า และบอกจำนวนทั้งหมดพร้อมเลขหน้า
+   [3] เดินครบทุกหน้าได้ครบทุกแถว · ย้อนหน้าแรกได้ข้อมูลเดิม
    [4] หน้ากากเลือกคันรถบอก "คันที่เลือกอยู่" + "กี่คันให้เลือก" เป็นข้อความ ไม่ใช่สีล้วน
    [5] **<select> ตัวจริงยังมี option ครบทุกตัว และ .value ยังเป็นค่าที่ฟังก์ชันบันทึกอ่านได้**
        (สัญญาที่ picker-r33 / modelsug-r40 / booking-r37 / money-r16 พึ่งอยู่)
@@ -15,6 +15,7 @@
    [8] ไฟล์ส่งออกยังครบทุกแถว แม้จอจะถูก cap อยู่ (ตัดที่การวาด ไม่ได้ตัดข้อมูล)
    [9] ที่ 390 ไม่ล้นข้าง และปุ่มหน้ากากสูงพอให้นิ้วแตะ (≥44px) */
 const { chromium, EXE, BASE } = require('./env');
+const {installPages}=require('../helpers/pages');
 
 /* หน้าที่วัดความสูง — ตัวเลขคือเพดาน "กี่เท่าของความสูงจอ" */
 const TALL = [['stock', 3.5], ['deal', 3.5], ['hr', 3.5], ['payroll', 3.5], ['attend', 3.5]];
@@ -40,16 +41,17 @@ const PICKS = [
   const p = await ctx.newPage();
   p.on('pageerror', e => errors.push('PAGEERROR ' + e.message));
   await p.goto(BASE + '/index.html', { waitUntil: 'domcontentloaded' });
+    await installPages(p);
   await p.click('#lgUsers [data-id="ST1"]'); await p.click('#lgGo'); await p.waitForTimeout(400);
   await p.evaluate(() => { window.__F = []; csv = (n, h, r) => window.__F.push({ n: n, h: h, rows: r }); });
 
   const api = await p.evaluate(() => {
     const m = [];
-    if (typeof capFoot !== 'function') m.push('capFoot');
-    if (typeof capSlice !== 'function') m.push('capSlice');
+    if (typeof pageFoot !== 'function') m.push('pageFoot');
+    if (typeof pageSlice !== 'function') m.push('pageSlice');
     if (typeof upickOpen !== 'function') m.push('upickOpen');
     if (typeof upickSync !== 'function') m.push('upickSync');
-    if (typeof CAP_OPEN !== 'object') m.push('CAP_OPEN');
+    if (typeof LIST_PAGES !== 'object') m.push('LIST_PAGES');
     return m;
   });
   if (api.length) {
@@ -57,72 +59,25 @@ const PICKS = [
     await b.close(); console.log('FAILS:'); fails.forEach(f => console.log(f)); process.exit(1);
   }
 
-  /* ---------- [2][3] cap ทำงาน + ปุ่มบอกจำนวนจริง + กางแล้วเห็นครบ ---------- */
-  const g2 = await p.evaluate(() => {
-    const out = [];
-    const check = (page, tid, sub) => {
-      go(page, sub || undefined);
-      const t = document.getElementById(tid);
-      if (!t) { out.push({ tid, missing: 1 }); return; }
-      const rows = () => [...t.querySelectorAll('tbody tr')].filter(r => !r.querySelector('.empty')).length;
-      const cap = rows();
-      const foot = document.querySelector('.capmore[data-cap="' + tid + '"]');
-      if (!foot) { out.push({ tid, cap, nofoot: 1 }); return; }
-      const txt = foot.textContent;
-      const nums = (txt.match(/\d+/g) || []).map(Number);
-      CAP_OPEN[tid] = true; refreshAll();
-      const full = rows();
-      const foot2 = document.querySelector('.capmore[data-cap="' + tid + '"]');
-      /* อ่านข้อความทันที — ย่อกลับแล้วปุ่มเดิมจะเปลี่ยนข้อความ อ่านทีหลังได้ของผิด */
-      const txt2 = foot2 ? foot2.textContent : '';
-      CAP_OPEN[tid] = false; refreshAll();
-      const back = rows();
-      out.push({ tid, cap, full, back, txt: txt.trim(),
-        saysTotal: nums.indexOf(full) >= 0, saysHidden: nums.indexOf(full - cap) >= 0,
-        canFold: /ย่อ/.test(txt2) });
-    };
-    check('stock', 'stTable', 'table');
-    check('stock', 'stGrp', 'grp');
-    check('deal', 'dlTable');
-    check('deal', 'dlTasks');
-    check('hr', 'attTable');
-    check('payroll', 'prTable');
-    go('stock', 'gal');
-    return out;
+  /* [2][3] v1.55: จำนวนต่อหน้าคงเดิม แต่เดินผ่านทุกหน้าแทนการกางทั้งหมด */
+  const pageChecks=await p.evaluate(()=>{
+    const bad=[];
+    for(const [screen,id,sub] of [['stock','stTable','table'],['stock','stGrp','grp'],['deal','dlTable'],['deal','dlTasks'],['hr','attTable'],['payroll','prTable']]){
+      go(screen,sub);const selector='#'+id+' tbody tr';
+      const first=[...document.querySelectorAll(selector)].map(e=>e.textContent);
+      const all=qaPageRows(id,selector),state=LIST_PAGES[id];
+      if(!state||state.pages<2)bad.push(id+' ไม่มีเลขหน้าทั้งที่ข้อมูลหลายหน้า');
+      if(all.length!==state.total||new Set(all.map(e=>e.outerHTML)).size!==all.length)bad.push(id+' ข้อมูลซ้ำ/ขาด');
+      if(first.join('|')!==[...document.querySelectorAll(selector)].map(e=>e.textContent).join('|'))bad.push(id+' ย้อนหน้าแรกไม่ตรง');
+      const text=document.querySelector('[data-list="'+id+'"]')?.textContent||'';
+      if(!text.includes('จาก '+all.length+' รายการ'))bad.push(id+' ไม่บอกจำนวนทั้งหมด');
+    }
+    go('stock','gal');const cards=qaPageRows('stGal','#stGal .gcard');
+    if(cards.reduce((n,c)=>n+(+c.querySelector('.gqty').textContent),0)!==stList().length)bad.push('รถรวมทุกหน้าไม่ตรง');
+    if(document.querySelectorAll('#stGal .gcard').length!==6)bad.push('แกลเลอรีไม่ได้กลับหน้าแรก');
+    return bad;
   });
-  g2.forEach(r => {
-    if (r.missing) { bad('[2] ไม่มีตาราง #' + r.tid); return; }
-    if (r.nofoot) { bad('[2] #' + r.tid + ' วาด ' + r.cap + ' แถว แต่ไม่มีปุ่ม "ดูทั้งหมด"'); return; }
-    if (r.full <= r.cap) bad('[2] #' + r.tid + ': ข้อมูลไม่ยาวพอจะพิสูจน์ cap (' + r.full + ' แถว)');
-    if (!r.saysTotal) bad('[2] #' + r.tid + ': ปุ่มไม่บอกจำนวนทั้งหมด (' + r.full + ') — "' + r.txt + '"');
-    if (!r.saysHidden) bad('[2] #' + r.tid + ': ปุ่มไม่บอกจำนวนที่ซ่อน (' + (r.full - r.cap) + ') — "' + r.txt + '"');
-    if (r.back !== r.cap) bad('[3] #' + r.tid + ': กางแล้วย่อกลับไม่เท่าเดิม (' + r.cap + ' → ' + r.back + ')');
-    if (!r.canFold) bad('[3] #' + r.tid + ': กางแล้วไม่มีปุ่มย่อกลับ');
-  });
-
-  /* ---------- [2b] แกลเลอรีสต๊อก (การ์ด ไม่ใช่ตาราง) ---------- */
-  const g2b = await p.evaluate(() => {
-    go('stock', 'gal');
-    const n = () => document.querySelectorAll('#stGal .gcard').length;
-    const cap = n();
-    const f = document.querySelector('.capmore[data-cap="stGal"]');
-    const txt = f ? f.textContent.trim() : '';
-    CAP_OPEN['stGal'] = true; refreshAll();
-    const full = n();
-    /* สัญญาที่เจ้าของสั่งเอง (mcolor-r31 ข้อ 11): กางครบแล้วผลรวมต้องเท่ากับจำนวนรถจริงเป๊ะ */
-    const sum = [...document.querySelectorAll('#stGal .gqty')].reduce((t, x) => t + (+x.textContent), 0);
-    const want = stList().length;
-    CAP_OPEN['stGal'] = false; refreshAll();
-    return { cap, full, txt, sum, want, back: n() };
-  });
-  if (!g2b.txt) bad('[2] แกลเลอรีสต๊อกไม่มีปุ่ม "ดูทั้งหมด"');
-  else {
-    if (g2b.full <= g2b.cap) bad('[2] แกลเลอรีมีการ์ดไม่พอจะพิสูจน์ cap (' + g2b.full + ' ใบ)');
-    if (g2b.txt.indexOf(String(g2b.full)) < 0) bad('[2] ปุ่มแกลเลอรีไม่บอกจำนวนทั้งหมด — "' + g2b.txt + '"');
-    if (g2b.back !== g2b.cap) bad('[3] แกลเลอรี: ย่อกลับไม่เท่าเดิม');
-  }
-  if (g2b.sum !== g2b.want)
-    bad('[2] กางแกลเลอรีครบแล้วผลรวมจำนวนรถ ' + g2b.sum + ' ไม่เท่ากับสต๊อกจริง ' + g2b.want + ' — รถนับเบิ้ล/หาย');
+  pageChecks.forEach(bad);
 
   /* ---------- [4][5] หน้ากาก + option ยังครบ ---------- */
   const g4 = await p.evaluate(PICKS_ => {
