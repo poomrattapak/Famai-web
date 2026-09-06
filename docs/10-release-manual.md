@@ -30,7 +30,15 @@ node tools/brief/build.js
 
 ## เว็บจริง
 
-รอบก่อน production คือ a9055ff534a386c1b62c83bd2dfd2d0684009474 บน branch claude/start-b18xi3 เว็บ https://famai-web.vercel.app สถานะการตรวจหลังเผยแพร่จะบันทึกเพิ่มเติมเมื่อ Vercel พร้อม
+รอบก่อน production คือ a9055ff534a386c1b62c83bd2dfd2d0684009474 บน branch claude/start-b18xi3 เว็บ https://famai-web.vercel.app เผยแพร่ commit `3867ad11f1f247d45d1c567be1338e335848ca35` สำเร็จ Vercel deployment `dpl_7fuKkEFB5qLYF1W7cfApztpC78sM` เป็น READY และ alias ชี้ production แล้ว
+
+ดาวน์โหลด index.html จากเว็บจริงแล้ว SHA-256 ตรงกับไฟล์ที่ผ่านด่าน: `6cc890c663062a83a674a07278cbc93327ad056e6ccf10c3d442d2410a529475`
+
+ตรวจจาก HTTPS production โดยตรงผ่าน 9/9 ชุดในโหมดสาธิต: ลูกค้า/แจ้งเตือน, เส้นทางขาย, ผลยืนยันขาย, ใบเสนอ/ค่างวด, บริการรถนอก, การบันทึกบริการเมื่อเครือข่ายขัดข้อง, สิทธิ์, โหลดข้อมูลกลับ และบริษัทไฟแนนซ์ ไม่มีการเขียนข้อมูลลูกค้าจริง
+
+เดินงานบริการบนเว็บจริงที่มือถือ 390px ด้วยบทบาทฝ่ายบริการ: ลูกค้า 16 → 17, ใบงาน 7 → 8, ประวัติดูแล 5 → 6; บันทึกบริการ 2,000 บาทและนัดถัดไปได้ 2 task (ประวัติเสร็จแล้ว 1 + นัดค้าง 1) แจ้งเตือนอ่านแล้วจางและเปิด task ตรงรายการ ติ๊กบริการแล้วงานค้าง 1 → 0 ไม่มี pageerror หรือการล้นแนวนอน ตัวเลขนี้เป็นข้อมูลสาธิตในเบราว์เซอร์
+
+เครื่องมือรวม run.js รองรับ preflight HTTP เฉพาะ localhost จึงเรียก suite เดิมผ่าน Node ทีละ process สำหรับ HTTPS production โดยไม่แก้ด่านหรือหน้าเว็บ หลักฐานทั้งผลก่อนแก้ fixture, ผลตรวจซ้ำ และผล production เก็บใน [release-evidence.json](brief/release-evidence.json)
 
 ## ข้อสังเกตเดิมของ Security Advisor
 

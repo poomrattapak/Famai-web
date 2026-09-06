@@ -141,5 +141,96 @@
     "33_permission_guards": "20260906200937",
     "34_service_bundle": "20260906200941"
   },
-  "production_employee_login_tested": false
+  "production_employee_login_tested": false,
+  "production_verification": {
+    "verified_at_utc": "2026-09-06T20:19:36.368373+00:00",
+    "url": "https://famai-web.vercel.app",
+    "code_commit": "3867ad11f1f247d45d1c567be1338e335848ca35",
+    "deployment_id": "dpl_7fuKkEFB5qLYF1W7cfApztpC78sM",
+    "state": "READY",
+    "downloaded_index_matches": true,
+    "demo_suites": [
+      {
+        "suite": "customers-brief-r56",
+        "pass": true,
+        "output": "ALL_CHECKS_PASS\nNO_PAGE_ERRORS\n"
+      },
+      {
+        "suite": "sales-brief-r56",
+        "pass": true,
+        "output": "ALL_CHECKS_PASS ยื่นก่อนขาย / ผู้บริหารจัดสรร / การเงินก่อนส่งมอบ (14 ข้อ)\n"
+      },
+      {
+        "suite": "sales-ack-r56",
+        "pass": true,
+        "output": "ALL_CHECKS_PASS ผลไฟแนนซ์ยืนยัน / ใบจองตามเจตนา / เลขทะเบียน (8 ข้อ)\n"
+      },
+      {
+        "suite": "quote-brief-r56",
+        "pass": true,
+        "output": "ผ่าน · รหัสยืดหยุ่น/ชื่อรุ่น · ใบเสนอเงินสด+ผ่อน · ผู้ขายและ snapshot · ตารางตามไฟแนนซ์ · 1440/390\n"
+      },
+      {
+        "suite": "care-brief-r56",
+        "pass": true,
+        "output": "ALL_CHECKS_PASS\nNO_PAGE_ERRORS\n"
+      },
+      {
+        "suite": "care-ack-r57",
+        "pass": true,
+        "output": "ALL_CHECKS_PASS · บริการรอ ACK ล้มเหลวไม่หาย ลองใหม่ไม่ซ้ำ ปิดงานตามฐาน\n"
+      },
+      {
+        "suite": "permissions-brief-r56",
+        "pass": true,
+        "output": "ผ่าน [1] ครบหกหมวดเดียวกับเมนูจริง\nผ่าน [2] หน้าเลือกไม่เห็น/ดู/แก้ไขได้ชัดเจน\nผ่าน [3] แม่แบบดูอย่างเดียวเป็นแบบร่างและไม่เพิ่มสิทธิ์เงิน\nผ่าน [4] ปรับแม่แบบรายข้อได้ก่อนบันทึก\nผ่าน [5] บันทึกระดับดูยังเข้าหน้าได้แต่ไม่มีสิทธิ์เขียน\nผ่าน [6] ดูอย่างเดียวเรียกปิดงานซ่อมตรง ๆ ไม่ได้ เปิดแก้ไขคืนแล้วทำได้\nผ่าน [7] กันผู้ไม่ใช่แอดมิน การแก้บทบาทแอดมิน และค่าที่ผิดประเภทในฟังก์ชันจริง\nผ่าน [8] หลายบทบาทรวมระดับสูงสุด และค่าเริ่มต้นไม่ให้เซลล์จัดสรรรถเอง\nผ่าน [9] ฐานข้อมูลปฏิเสธแล้วสิทธิ์เดิมคงอยู่และแบบร่างลองใหม่ได้\nผ่าน [10] ยกเลิกแบบร่างคืนค่าที่บันทึกไว้จริง\nผ่าน [13] หน้าดูอย่างเดียวกันการกระทำแฝง แต่สิทธิ์อ่านแท็บเดิมยังอยู่\nผ่าน [14] เรียกเพิ่มอะไหล่ตรง ๆ ด้วยสิทธิ์ดูไม่ได้ แต่เปิดแก้ไขแล้วเพิ่มได้\nผ่าน [15] callback บันทึกตั้งค่าตรวจระดับแก้ไข ณ เวลาบันทึก\nผ่าน [11] สิทธิ์ไม่ล้นกรอบ 1440px ธีมlight\nผ่าน [11] สิทธิ์ไม่ล้นกรอบ 1440px ธีมdark\nผ่าน [11] สิทธิ์ไม่ล้นกรอบ 390px ธีมlight\nผ่าน [11] สิทธิ์ไม่ล้นกรอบ 390px ธีมdark\nผ่าน [12] ไม่มีข้อผิดพลาด JavaScript\nALL_CHECKS_PASS\n"
+      },
+      {
+        "suite": "hydrate-brief-r56",
+        "pass": true,
+        "output": "ALL_CHECKS_PASS\nNO_PAGE_ERRORS\n"
+      },
+      {
+        "suite": "finance-company-r56",
+        "pass": true,
+        "output": "ALL_CHECKS_PASS (finance-company-r56)\nNO_PAGE_ERRORS\n"
+      }
+    ],
+    "service_journey": {
+      "mode": "demo",
+      "role": "care",
+      "before": {
+        "customers": 16,
+        "services": 7,
+        "care": 5
+      },
+      "after": {
+        "customers": 17,
+        "services": 8,
+        "care": 6
+      },
+      "added": {
+        "customers": 1,
+        "services": 1,
+        "care": 1
+      },
+      "serviceAmount": 2000,
+      "createdTasks": 2,
+      "saved": true,
+      "notification": {
+        "unread": true,
+        "routed": true,
+        "taskOpened": true,
+        "markedRead": true,
+        "faded": true
+      },
+      "completion": {
+        "completed": true,
+        "pendingBefore": 1,
+        "pendingAfter": 0
+      },
+      "noHorizontalOverflow": true,
+      "pageerrors": []
+    }
+  }
 }
