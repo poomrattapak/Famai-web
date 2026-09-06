@@ -4,7 +4,7 @@
    [1] FIN_STAGES = ส่งเรื่อง → รอผลพิจารณา → อนุมัติแล้ว (3 ขั้น) · ชื่อเก่า normalize ได้
    [2] regDeliver: ด่านต้องอยู่ในฟังก์ชัน — ไฟแนนซ์ยังไม่อนุมัติ/งานถูกพัก ส่งมอบไม่ได้
    [3] regDeliver เก็บ กล่องส่งมอบ (วันที่/สถานที่/ผู้ส่งมอบ/หมายเหตุ) และกระโดดขั้นภายในให้
-   [4] ขั้นย่อยใต้แถบ: ขั้นไฟแนนซ์โชว์ 3 ขั้นย่อยพร้อมสถานะ · ไม่มีปุ่มใน .substeps
+   [4] ขั้นย่อยอยู่ใต้ขั้นหลักของตัวเอง: ไฟแนนซ์มีรายละเอียดครบ · ไม่มีปุ่มใน .substeps
    [5] อนิเมชันเส้นวิ่ง/วงเต้นมีจริง และปิดเมื่อ prefers-reduced-motion
    [6] คอลัมน์อัพเดทในตาราง + touch ประทับเวลา (มี ชม.:นาที) เมื่อขั้นไฟแนนซ์ขยับ */
 const { chromium, EXE, BASE } = require('./env');
@@ -76,7 +76,7 @@ const { chromium, EXE, BASE } = require('./env');
     const d = dealAll().find(x => x.k === 'fin' && !x.off && x.fc);
     if (!d) return { skip: true };
     DEAL_SEL = d.c.id; rDeal();
-    const box = document.querySelector('#dlOne .substeps');
+    const box = document.querySelector('#dlOne [data-step="fin"] .substeps');
     const r = { has: !!box,
       rows: box ? box.querySelectorAll('.substep').length : 0,
       hasNow: box ? !!box.querySelector('.substep.now') : false,
@@ -87,7 +87,7 @@ const { chromium, EXE, BASE } = require('./env');
   });
   if (g4.skip) bad('[4] ไม่มีดีลขั้นไฟแนนซ์ให้ทดสอบ');
   else {
-    if (!g4.has || g4.rows !== 3) bad('[4] ขั้นย่อยไฟแนนซ์ได้ ' + g4.rows + ' แถว ควรเป็น 3');
+    if (!g4.has || g4.rows !== 4) bad('[4] ขั้นย่อยไฟแนนซ์ได้ ' + g4.rows + ' แถว ควรเป็น 4');
     if (!g4.hasNow) bad('[4] ไม่มีขั้นย่อยที่ถูกทำเครื่องหมายว่ากำลังทำอยู่');
     if (g4.btns) bad('[4] มีปุ่มใน .substeps — แถบเป็นตัวบอกสถานะ ห้ามเป็นปุ่ม (§9f)');
   }

@@ -828,18 +828,22 @@ textarea.inp{ height:auto; padding:var(--s1) var(--s2); resize:vertical; line-he
   .pstep .pl.on.cur{ animation:none; background:linear-gradient(90deg, var(--pos-wash), var(--pos)); }
   .pstep .pn.now{ animation:none; }
 }
-/* v1.34 (บรีฟข้อ 5): ขั้นตอนย่อยใต้แถบ — เฉพาะขั้นที่กำลังทำอยู่ แนวตั้ง คั่นด้วยเส้น
-   ไม่มีพื้น/มุมโค้ง/ระยะขอบข้าง (กฎกล่อง ≤2 ชั้น §9c) และไม่มีปุ่ม (แถบเป็นตัวบอกสถานะ §9f) */
-.substeps{ margin-top:var(--s1); }
-.substep{ display:flex; align-items:center; gap:var(--s1); padding:5px 0;
-  border-top:1px solid var(--hairline); font-size:12px; color:var(--muted); }
-.substep:first-child{ border-top:0; }
-.substep .sdot{ width:8px; height:8px; border-radius:var(--r-pill); background:var(--hairline-2); flex:0 0 8px; }
-.substep.done{ color:var(--ink-soft); }
-.substep.done .sdot{ background:var(--pos); }
-.substep.now{ color:var(--ink); font-weight:600; }
-.substep.now .sdot{ background:var(--pos); box-shadow:0 0 0 3px var(--pos-wash); }
-.substep .sdt{ margin-left:auto; font-size:11px; color:var(--muted); font-weight:400; white-space:nowrap; }
+/* ขั้นย่อยของดีล — คอลัมน์เดียวกับวงของตัวเอง ใช้เส้นคั่นแทนกล่องซ้อน */
+.substeps{ margin:var(--s1) 0 0; padding:0; list-style:none; min-width:0; }
+.substep{ --sub-color:var(--grp6); display:flex; align-items:flex-start; gap:var(--s1);
+  padding:var(--s1) 0; border-top:1px solid var(--hairline); font-size:var(--t-table);
+  color:var(--ink-soft); line-height:1.6; }
+.substep .sdot{ width:8px; height:8px; margin-top:8px; border-radius:var(--r-pill);
+  background:var(--sub-color); flex:0 0 8px; }
+.substep.done{ --sub-color:var(--pos); }
+.substep.now{ --sub-color:var(--grp2); }
+.substep.hold{ --sub-color:var(--attn); }
+.substep.off{ --sub-color:var(--accent); }
+.substep .sbody{ min-width:0; flex:1; overflow-wrap:anywhere; }
+.substep b{ display:block; font-weight:600; color:var(--ink); }
+.substep .sstate{ display:block; color:var(--sub-color); font-size:var(--t-table); }
+.substep .sdetail{ display:block; }
+.substep .sdt{ display:block; font-size:var(--t-label); color:var(--ink-soft); }
 /* แบบมีชื่อขั้นใต้ไอคอน ใช้ตอนมีที่ว่างพอ */
 .pstep.lab{ align-items:flex-start; }
 /* ชื่อขั้นกินความกว้างเท่าที่ต้องใช้ (ไม่เกิน 88px) ที่เหลือยกให้เส้นเชื่อม
@@ -855,6 +859,27 @@ textarea.inp{ height:auto; padding:var(--s1) var(--s2); resize:vertical; line-he
 .pstep .pn.slow::after{ content:''; position:absolute; top:-3px; right:-3px; width:9px; height:9px;
   border-radius:var(--r-pill); background:var(--attn); border:2px solid var(--card); }
 .pstep.lab .pst.at em{ color:var(--ink); font-weight:600; }
+/* ใช้เฉพาะรายละเอียดดีล — แถบย่อในตารางและหน้าอื่นคงรูปแบบเดิม */
+.pstep.lab.columns{ display:grid; grid-template-columns:repeat(var(--step-count),minmax(0,1fr));
+  gap:var(--s3); }
+.pstep.lab.columns .pst{ position:relative; display:block; min-width:0; max-width:none; }
+.pstep.columns .pstage{ display:flex; flex-direction:column; align-items:center; gap:var(--s1);
+  min-height:108px; text-align:center; }
+.pstep.columns .pn{ z-index:1; }
+.pstep.lab.columns em{ font-size:var(--t-table); line-height:1.6; }
+.pstep.columns .pdt{ font-size:var(--t-label); white-space:normal; }
+.pstep.lab.columns .pl{ position:absolute; top:13px; margin:0; min-width:0;
+  left:calc(-50% - var(--s3) + 22px); width:calc(100% + var(--s3) - 44px); }
+@media (min-width:901px){ .pstep.lab.columns .pl{ top:19px; } }
+@media (min-width:601px) and (max-width:1100px){
+  .pstep.lab.columns{ grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .pstep.columns .pst:nth-child(odd) .pl{ display:none; }
+}
+@media (max-width:600px){
+  .pstep.lab.columns{ grid-template-columns:minmax(0,1fr); gap:var(--s2); }
+  .pstep.columns .pstage{ min-height:0; }
+  .pstep.lab.columns .pl{ display:none; }
+}
 /* บนจอคอมแถบขั้นตอนต้องอ่านได้จากระยะที่นั่ง ไม่ใช่ต้องเพ่ง (เจ้าของสั่ง 23 ส.ค. 2569)
    ขยายเฉพาะ ≥901px — ที่ 390px ขนาดเดิมพอดีกรอบอยู่แล้ว 5 ขั้นที่ 40px จะล้นออกข้างทันที
    ขยายแค่ตัวเลขขนาด ไม่เพิ่มพื้น/มุมโค้ง/ระยะขอบข้างให้ .pstep หรือ .pst (กฎกล่อง 2 ชั้น) */
@@ -3550,7 +3575,8 @@ function pill(txt, kind){ return '<span class="pill p-'+kind+'">'+esc(txt)+'</sp
    ขั้นที่ผ่านแล้วเปลี่ยนไอคอนเป็นเครื่องหมายถูกเสมอ — บอกว่า "จบแล้ว" โดยไม่ต้องเทียบสี */
 function steps(track, i, o){
   o=o||{};
-  return '<div class="pstep'+(o.off?' off':'')+(o.lab?' lab':'')+'">'
+  return '<div class="pstep'+(o.off?' off':'')+(o.lab?' lab':'')+(o.substeps?' columns':'')+'"'
+    +(o.substeps?' style="--step-count:'+track.length+'"':'')+'>'
     +track.map((st,ix)=>{
       const done=ix<i, now=ix===i;
       const cls='pn'+(done?' done':'')+(now?' now':'')+(now&&o.slow?' slow':'');
@@ -3560,8 +3586,11 @@ function steps(track, i, o){
       /* วันที่เล็ก ๆ ใต้แต่ละขั้น (บรีฟ) — o.dates[ix] มาจาก log จริง ไม่คำนวณใหม่ */
       const dt=o.lab && o.dates && o.dates[ix] ? '<small class="pdt">'+thShort(o.dates[ix])+'</small>' : '';
       /* เส้นที่ ix เชื่อมขั้น ix-1 กับ ix — เส้นที่เข้าขั้นปัจจุบันได้คลาส cur ไว้ไล่สี */
-      return (ix? '<i class="pl'+(ix<=i?' on':'')+(now?' cur':'')+'"></i>' : '')
-        +'<div class="pst'+(now?' at':'')+'">'+node+(o.lab?'<em>'+esc(st.t)+'</em>':'')+dt+'</div>';
+      const line=ix? '<i aria-hidden="true" class="pl'+(ix<=i?' on':'')+(now?' cur':'')+'"></i>' : '';
+      const head=node+(o.lab?'<em>'+esc(st.t)+'</em>':'')+dt;
+      if(o.substeps) return '<div class="pst'+(now?' at':'')+'" data-step="'+esc(st.k)+'">'
+        +line+'<div class="pstage">'+head+'</div>'+o.substeps[st.k]+'</div>';
+      return line+'<div class="pst'+(now?' at':'')+'">'+head+'</div>';
     }).join('')+'</div>';
 }
 /* สองบรรทัดเหนือแถบ — แบบเดียวกับที่แอปส่งของใช้ ("กำลังไปหาคุณ / ถึงแล้ว")
@@ -6977,25 +7006,90 @@ function dealHead(d){
     sub:no+(d.rg&&d.rg.plate? ' · ทะเบียน '+d.rg.plate:'')
       +(d.owe>0? ' · ยังค้างรับ '+money(d.owe) : '')};
 }
-/* v1.34 (บรีฟข้อ 5): ขั้นตอนย่อยใต้แถบ — อ่านจากระเบียนจริงเท่านั้น ไม่สร้างลิสต์ที่สอง (กฎข้อ 8)
-   ขั้นไฟแนนซ์ = FIN_STAGES + วันที่จาก log ของเคส · ขั้นส่งมอบ = วันขาย/วันนัด ที่มีบันทึกอยู่แล้ว
-   ขั้นอื่นไม่มีขั้นย่อยจริงในระบบ — ไม่ประดิษฐ์ (ติ๊กสิ่งที่ไม่เกิดขึ้นจริงคือโกหกบนจอ §9i) */
+/* รายละเอียดงานใต้แต่ละขั้น — อ่านระเบียนเดิมทุกครั้ง ไม่เก็บสถานะขั้นย่อยเพิ่ม
+   ข้อมูลที่ยังไม่มีแสดงสิ่งที่ต้องเติม ไม่ถือว่าทำครบเพียงเพราะแถบหลักเดินผ่านแล้ว */
 function dealSubsteps(d){
-  const row=(t,state,dt)=>'<div class="substep'+(state?' '+state:'')+'"><span class="sdot"></span>'
-    +'<span>'+esc(t)+'</span>'+(dt?'<span class="sdt">'+esc(dt)+'</span>':'')+'</div>';
-  let rows='';
-  if(d.k==='fin' && d.fc && !d.off){
-    const cur=FIN_LEGACY[d.fc.status]||d.fc.status;
-    const ci=FIN_STAGES.indexOf(cur);
-    rows=FIN_STAGES.map((st,i)=>{
-      const l=(d.fc.log||[]).find(x=>String(x.to).indexOf(st)===0 || (FIN_LEGACY[String(x.to).split(' ')[0]]===st));
-      return row(st, i<ci?'done': i===ci?'now':'', (i<=ci&&l&&l.at)? thShort(l.at):'');
+  const c=d.c, s=d.s, fc=d.fc, rg=d.rg;
+  const labels={done:'เสร็จแล้ว', now:'กำลังดำเนินการ', wait:'รอดำเนินการ',
+    hold:'รอข้อมูลเพิ่มเติม', off:'ต้องแก้ไข'};
+  const row=(t,state,detail,dt,label)=>'<li class="substep '+state+'"><span class="sdot" aria-hidden="true"></span>'
+    +'<div class="sbody"><b>'+esc(t)+'</b><span class="sstate">'+esc(label||labels[state])+'</span>'
+    +'<span class="sdetail">'+esc(detail)+'</span>'
+    +(dt?'<small class="sdt">'+esc(dt)+'</small>':'')+'</div></li>';
+  const pending=k=>d.off?'wait':d.k===k?'now':'wait';
+  const missing=[['ชื่อ-นามสกุล',c.name],['เบอร์โทร',c.phone],['ที่อยู่',c.addr],['เลขบัตรประชาชน',c.idNo]]
+    .filter(x=>!String(x[1]||'').trim()).map(x=>x[0]);
+  const model=d.u?d.u.model:(PRICE[c.variant]?PRICE[c.variant].m:c.variant);
+  const pay=dealPay(d), payKnown=pay!=='ยังไม่ระบุ';
+  const owner=(s&&s.sales&&s.sales!=='—'?s.sales:c.owner)||'';
+  const saleOpen=!!s && (d.cash || !!fc && fc.status==='อนุมัติแล้ว');
+  const dates=dealStepDates(d), saleAt=dates[d.track.findIndex(st=>st.k==='sale')];
+  const finState=fc?(FIN_LEGACY[fc.status]||fc.status):'';
+  const ci=FIN_STAGES.indexOf(finState);
+  const logAt=st=>{
+    const entries=fc?(fc.log||[]):[];
+    const l=entries.slice().reverse().find(x=>String(x.to).indexOf(st)===0
+      || FIN_LEGACY[String(x.to).split(' ')[0]]===st);
+    return l&&l.at;
+  };
+  const columns={};
+  columns.lead=row('ข้อมูลลูกค้าสำหรับทำรายการ',missing.length?'hold':'done',
+      missing.length?'ยังขาด '+missing.join(' · '):'มีชื่อ เบอร์โทร ที่อยู่ และเลขบัตรสำหรับใช้ทำเอกสาร',
+      c.createdAt?'เพิ่มลูกค้า '+thDate(c.createdAt):'')
+    +row('รุ่นรถและวิธีชำระ',model&&payKnown?'done':pending('lead'),
+      (model?'สนใจ '+model:'ยังไม่ได้เลือกรุ่นรถ')+' · '+(payKnown?pay:'รอระบุเงินสดหรือเงินผ่อน'))
+    +row('ผู้ดูแลและการติดตาม',owner?'done':pending('lead'),
+      owner?'เซลล์ผู้ดูแล '+owner:'ยังไม่ได้ระบุเซลล์ผู้ดูแล',null,owner?'ระบุผู้ดูแลแล้ว':null)
+    +row('การจองและงานที่ต้องติดตาม',d.bk?'done':pending('lead'),
+      d.bk?bkUnitText(d.bk)+(d.bk.deposit>0?' · มัดจำ '+money(d.bk.deposit):' · ไม่วางมัดจำ')
+        :d.tasks.length?'งานค้าง '+d.tasks.length+' รายการ · '+d.tasks[0].kind+' · กำหนด '+thDate(d.tasks[0].due)
+        :s?'ดำเนินการต่อจากข้อมูลลูกค้าแล้ว':'ยังไม่มีการจองหรืองานติดตามที่บันทึกไว้',
+      d.bk?'จองเมื่อ '+thDate(d.bk.at):'',d.bk?'จองรถไว้แล้ว':d.tasks.length?'มีงานติดตาม':s?'ไปขั้นถัดไปแล้ว':'ยังไม่มีรายการ');
+  if(!d.cash){
+    columns.fin=row('ข้อมูลคำขอสินเชื่อ',fc?'done':pending('fin'),
+      fc?(d.fin?d.fin.name:'ยังไม่ได้ระบุบริษัทไฟแนนซ์')+' · ยอดจัด '+money(fc.amount)
+        +(s&&s.term?' · '+s.term+' งวด':''):'เตรียมข้อมูลลูกค้า รถที่เลือก และเงื่อนไขผ่อนเพื่อเปิดเคสสินเชื่อ');
+    columns.fin+=FIN_STAGES.map((st,i)=>{
+      const rejected=d.off && i===2;
+      /* เคสถูกปฏิเสธยืนยันได้ว่าส่งแล้ว แต่ไม่สร้างวันที่หรือผลอนุมัติที่ไม่เคยเกิด */
+      const state=rejected?'off':d.off?(i===0&&fc?'done':'wait')
+        :ci===2?'done':i<ci?'done':i===ci?'now':'wait';
+      const at=state==='done'||state==='now'?logAt(st)||(i===0&&fc?fc.at:null):null;
+      let detail=i===0?(fc?'ส่งคำขอให้ '+(d.fin?d.fin.name:'บริษัทไฟแนนซ์')+' แล้ว':'รอเปิดเคสและส่งคำขอให้บริษัทไฟแนนซ์')
+        :i===1?(d.off?'การพิจารณาสิ้นสุดแล้ว ดูผลที่ขั้นถัดไป':'ติดตามการตรวจข้อมูลและผลพิจารณาจากบริษัทไฟแนนซ์')
+        :ci===2?'อนุมัติแล้ว สามารถดำเนินการขายและเตรียมส่งมอบรถ':'เมื่ออนุมัติแล้วจึงดำเนินการขายต่อได้';
+      if(rejected) detail=(fc.rejectReason||'ยังไม่ได้ระบุเหตุผล')
+        +(fc.rejectWith?' · ติดกับ '+fc.rejectWith:'')+' · ติดต่อให้ลูกค้าแก้ไขหรือยื่นใหม่';
+      return row(i===2?'ผลพิจารณาสินเชื่อ':st,state,detail,at?'บันทึก '+thDate(at):'',
+        rejected?'ไม่ผ่านการพิจารณา':d.off&&i===1?'สิ้นสุดการพิจารณา':null);
     }).join('');
-  } else if(d.k==='deliver' && d.rg){
-    rows=row('เปิดการขายแล้ว','done', d.s? thShort(d.s.soldAt):'')
-        +row('นัดส่งมอบ — ครบกำหนด '+thDate(d.rg.due), 'now', d.late>0? 'เลย '+d.late+' วัน':'');
   }
-  return rows? '<div class="substeps">'+rows+'</div>' : '';
+  const ap=finApStatus(s), approval=s&&s.finApproval;
+  columns.sale=row('รถและเอกสารการขาย',saleOpen?'done':pending('sale'),
+      s?(saleOpen?'ใบขาย ':'ใบจอง รอไฟแนนซ์อนุมัติ · ')+(s.docNo||'ยังไม่มีเลขเอกสาร')
+        +(d.u?' · '+d.u.model+' · '+d.u.color:' · ยังไม่มีรถผูกกับรายการ')
+        :'เลือกรถคันที่ขายและบันทึกรายการขาย',saleAt?'เปิดการขาย '+thDate(saleAt):'')
+    +row('ราคาและเงื่อนไขชำระ',s?'done':pending('sale'),
+      s?'ราคาสุทธิ '+money(s.net)+' · '+pay+(d.cash?'':' · เงินดาวน์ '+money(s.down)
+        +(s.term?' · '+s.term+' งวด':'')+(s.per?' · ค่างวด '+money(s.per)+'/เดือน':''))
+        :'ระบุราคาขาย ส่วนลด และเงื่อนไขเงินสดหรือเงินผ่อน',null,s?'บันทึกเงื่อนไขแล้ว':null)
+    +row('ฝ่ายการเงินตรวจรายการ',s?(ap==='ผ่าน'?'done':ap==='ไม่ผ่าน'?'off':'hold'):'wait',
+      !s?'รอรายการขายเพื่อให้ฝ่ายการเงินตรวจสอบ':ap==='ผ่าน'?'ตรวจรายการแล้ว พร้อมออกเอกสารตามเงื่อนไขการส่งมอบ'
+        :ap==='ไม่ผ่าน'?(approval.note||'รายการถูกตีกลับ รอแก้ไขและตรวจใหม่'):'รอฝ่ายการเงินตรวจรายการก่อนออกใบกำกับภาษี',
+      approval&&approval.at?'ตรวจโดย '+(approval.by||'ฝ่ายการเงิน')+' · '+thDate(approval.at):'',s?ap:null);
+  columns.deliver=row('กำหนดส่งมอบรถ',rg&&rg.due?(d.late>0?'hold':'done'):pending('deliver'),
+      rg&&rg.due?'ครบกำหนด '+thDate(rg.due)+' · ประสานวันและสถานที่รับรถกับลูกค้า'
+        :'รอเปิดการขายเพื่อเตรียมส่งมอบและประสานลูกค้า',null,
+      rg&&rg.due?(d.late>0?'เลยกำหนด '+d.late+' วัน':'มีกำหนดส่งมอบแล้ว'):null)
+    +row('ส่งมอบรถให้ลูกค้า',d.delivered?'done':d.off?'wait':pending('deliver'),
+      d.delivered?(rg.dlvPlace?'รับรถที่ '+rg.dlvPlace:'ไม่ได้บันทึกสถานที่รับรถ')
+        +(rg.dlvBy?' · ผู้ส่งมอบ '+rg.dlvBy:' · ไม่ได้บันทึกผู้ส่งมอบ')
+        :d.off?'รอแก้ไขผลไฟแนนซ์ก่อนส่งมอบ':'เมื่อส่งรถจริง ให้บันทึกวันที่ สถานที่ ผู้ส่งมอบ และหมายเหตุ',
+      rg&&rg.deliveredAt?'ส่งมอบ '+thDate(rg.deliveredAt):'')
+    +row('ส่งต่องานทะเบียน',d.delivered?'done':'wait',
+      d.delivered?(d.waitPlate?'จบงานขายแล้ว ฝ่ายทะเบียนติดตามป้ายจริงต่อ':'งานทะเบียนเรียบร้อย'+(rg.plate?' · '+rg.plate:''))
+        :'เมื่อส่งมอบแล้ว ดีลจบและติดตามงานป้ายต่อในหน้าทะเบียนรถ',null,d.delivered?'จบงานขายแล้ว':null);
+  return Object.fromEntries(d.track.map(st=>[st.k,'<ul class="substeps" aria-label="ขั้นตอนย่อย: '+esc(st.t)+'">'+columns[st.k]+'</ul>']));
 }
 /* ชื่อขั้นที่ใช้ในตัวกรองและป้ายในรายการ — ตกรางถือเป็นสถานะหนึ่งที่กรองได้ */
 const dealStageName = d => d.off? 'ไม่ผ่าน' : (d.track[d.i]? d.track[d.i].t : 'จบครบแล้ว');
@@ -7188,8 +7282,7 @@ function rDealOne(id){
              +' · จองเมื่อ '+thDate(d.bk.at)+'</span>' : '')
       +'</div>'
     +stepHead(h.head, esc(h.sub), d.off)
-    +steps(d.track, d.i, {off:d.off, lab:1, dates:dealStepDates(d), slow:d.slow})
-    +dealSubsteps(d)
+    +steps(d.track, d.i, {off:d.off, lab:1, dates:dealStepDates(d), slow:d.slow, substeps:dealSubsteps(d)})
     /* คำอธิบายสั้นของขั้นปัจจุบัน + สัญญาณช้า (บรีฟ) */
     /* v1.46: คำอธิบายขั้น "คุยกับลูกค้า" เขียนไว้ว่า "ยังไม่ได้จอง" — พอมีป้ายจองอยู่บนหัวเรื่อง
        สองบรรทัดนี้จะขัดกันเองบนจอเดียวกัน (กฎข้อ 9 ห้ามโกหกบนจอ) · แก้ที่การวาด ไม่แก้ DEAL_TRACK
