@@ -18,6 +18,7 @@
    ถ้าไม่ใช่ token แปลว่ายังไม่ควรมีอยู่
    -------------------- */
 :root{
+  color-scheme:light;
   /* -- Canvas -- กระดาษอุ่น ไล่สีเบา ๆ ไม่ใช่ขาวแบน -- */
   --paper:#FAFAF8;  --paper-2:#F4F3EF;  --card:#FFFFFF;  --dark:#0E0F12;
 
@@ -97,6 +98,7 @@ html[data-gcur="5"]{ --grp-cur:var(--grp5); } html[data-gcur="6"]{ --grp-cur:var
    เปลี่ยนเฉพาะ token — องค์ประกอบทุกตัวอ่าน token จึงสลับทั้งแอปจากที่เดียว
    เก็บเป็น data-theme บน <html> ต่อผู้ใช้ต่อเครื่อง (localStorage) */
 html[data-theme="dark"]{
+  color-scheme:dark;
   --paper:#131419; --paper-2:#0E0F12; --card:#1C1E25;
   --ink:#ECEDF0; --ink-soft:#C7CAD1; --muted:#9096A2;
   --hairline:rgba(236,237,240,.16); --hairline-2:rgba(236,237,240,.08);
@@ -305,7 +307,7 @@ h6[data-grp].mg6{ color:var(--grp6); border-bottom-color:var(--grp6); }
 #npBtn{ display:none; flex-shrink:0; }
 #npBtn #npLbl{ margin-left:6px; max-width:26vw; overflow:hidden; text-overflow:ellipsis;
   white-space:nowrap; font-size:var(--t-label); }
-@media (max-width:600px){
+@media (max-width:1439px){
   /* แผ่นบน ไม่ใช่แผ่นล่าง — ปุ่มที่เปิดมันอยู่บน navbar แผ่นต้องโผล่ตรงที่สายตาอยู่ (v1.26.1)
      fixed ไม่ดันเนื้อหา layout จึงไม่ขยับตอนเปิด-ปิด · เผื่อ notch ด้วย safe-area-inset-top */
   #navCtl.has{ display:none; position:fixed; left:0; right:0; top:0; z-index:60;
@@ -1172,8 +1174,12 @@ textarea.inp{ height:auto; padding:var(--s1) var(--s2); resize:vertical; line-he
   padding-top:var(--space-field); border-top:1px solid var(--hairline); flex-wrap:wrap; }
 /* การจัดการประวัติอยู่ท้ายเนื้อหา ปุ่มบันทึกฟอร์มยังใช้ savebar ของตัวเอง */
 .section-actions{ position:static; }
+.deal-scope{ display:flex; align-items:center; flex-wrap:wrap; gap:var(--s1) var(--s2); margin-bottom:var(--space-section); }
+.deal-scope label.fl{ margin:0; }
+.deal-scope .tsub{ flex:1 1 280px; }
 .care-task-row{ align-items:flex-start; padding:var(--space-field) 0; }
-.care-task-row>input{ flex:0 0 auto; width:20px; height:20px; margin:var(--s-half) 0 0; accent-color:var(--pos); }
+.care-check{ flex:0 0 20px; width:20px; height:20px; display:grid; place-items:center; margin-top:var(--s-half); cursor:pointer; }
+.care-check input{ width:20px; height:20px; margin:0; accent-color:var(--pos); }
 .care-task-body{ flex:1; min-width:0; overflow-wrap:anywhere; }
 .care-task-body>b{ display:block; margin-bottom:var(--s-half); }
 .care-completion{ margin-top:var(--s1); font-size:var(--t-label); color:var(--ink-soft); line-height:1.6; }
@@ -1310,7 +1316,7 @@ body.lock{ overflow:hidden; }
   .f3{ grid-template-columns:1fr 1fr; }
   .top,.wrap{ padding-left:var(--s4); padding-right:var(--s4); }
 }
-@media (max-width:900px){
+@media (max-width:1439px){
   :root{ --control-height:44px; }
   .side{ display:none; }
   .bnav{ display:grid; }
@@ -1425,12 +1431,95 @@ body.lock{ overflow:hidden; }
   /* เอกสารที่พิมพ์ได้เป็นกระดาษของมันเอง ไม่ต้องมี .bd หุ้มอีกชั้น */
   .card>.bd.docwrap{ padding-left:0; padding-right:0; }
 }
+/* -------------------- TABLET WORKSPACE · v1.59 --------------------
+   601–1439px: ใช้พื้นที่เต็มจอและเมนูงานตามบทบาทชุดเดียวกันทั้งสองแนว
+   แบ่งคอลัมน์ตามพื้นที่ของเนื้อหาจริง ไม่ใช้ชื่ออุปกรณ์ และไม่วาดฟอร์มใหม่ตอนหมุนจอ */
+@media (min-width:601px) and (max-width:1439px){
+  :root{ --control-height:48px; --space-panel:var(--s3); }
+  .top,.wrap{ padding-left:var(--s3); padding-right:var(--s3); }
+  .top{ gap:var(--s1) var(--s2); padding-top:var(--s2); padding-bottom:var(--s2); background:var(--paper); }
+  .top .sub{ display:none; }
+  .top h1{ font-size:var(--t-h2); }
+  .srch{ display:none; }
+  #gsBtn{ display:inline-flex; }
+  #npBtn #npLbl{ max-width:240px; }
+  #navCtl.has{ left:auto; right:var(--s3); top:calc(80px + env(safe-area-inset-top));
+    width:min(680px,calc(100vw - 48px)); padding:var(--s3); border-radius:var(--r-lg); max-height:calc(100dvh - 176px); }
+  .bnav{ padding-left:max(var(--s3),calc((100vw - 960px)/2)); padding-right:max(var(--s3),calc((100vw - 960px)/2)); }
+  .bnb,.fabc{ font-size:var(--t-label); }
+  .bnb{ min-height:64px; }
+  .fab{ width:52px; height:52px; margin-top:0; }
+  .fabc{ padding-bottom:var(--s-half); }
+  .wrap{ padding-bottom:calc(104px + env(safe-area-inset-bottom)); }
+  .g2,.g2e,.g3{ grid-template-columns:minmax(0,1fr); }
+  .g2>*,.g2e>*,.g3>*,.f2>*,.f3>*{ min-width:0; }
+  .f2,.f3{ grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .kpis{ grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--s2); }
+  .kpis.k3,.kpis.k6{ grid-template-columns:repeat(3,minmax(0,1fr)); }
+  .kpi{ padding:var(--s2); min-width:0; }
+  .kpi .v{ font-size:clamp(20px,2.3vw,28px); overflow-wrap:anywhere; }
+  .kpi .l{ letter-spacing:0; }
+  .bento{ grid-template-columns:repeat(4,minmax(0,1fr)); }
+  .bento .w2{ grid-column:span 2; }
+  .bento .w3,.bento .w4{ grid-column:1/-1; }
+  .bento .h2{ grid-row:auto; }
+  .btn.sm,.chip,.lnk,.tbtn,.tabs button,.filter-chip,.gcard .gsw .pill{ min-height:44px; }
+  .inp.ct,.tbtn{ height:44px; }
+  .btn.sm{ padding:var(--s1) var(--s2); }
+  .nb,.out{ min-height:48px; }
+  .care-check{ flex-basis:44px; width:44px; height:44px; margin-top:calc(-1 * var(--s1)); }
+  .tabs{ flex-wrap:wrap; gap:var(--s1); border-bottom:0; }
+  .tabs button{ padding:var(--s1) var(--s2); border-radius:var(--r-input); background:var(--card);
+    border:1px solid var(--hairline); white-space:normal; line-height:1.4; }
+  .tabs button.on{ background:var(--grp-cur); border-color:var(--grp-cur); color:var(--paper); }
+  .tabs button.on::after{ display:none; }
+  .card>.hd>.inp.ct,.filter-fields{ display:none; }
+  .card>.hd .fbtn{ display:inline-flex; }
+  .card>.hd .fsum{ display:block; flex:0 0 100%; color:var(--muted); font-size:var(--t-label); }
+  .card>.hd .active-filters{ display:flex; }
+  #fsBody .inp.ct{ display:block; width:100%; }
+  .drw{ width:min(720px,calc(100vw - 48px)); max-height:calc(100dvh - 64px); }
+  .mbox{ max-height:calc(100dvh - 64px); }
+  .sheet{ left:50%; right:auto; width:min(720px,calc(100vw - 48px));
+    transform:translate(-50%,102%); padding:var(--s3) var(--s3) calc(var(--s3) + env(safe-area-inset-bottom)); }
+  .sheet.on{ transform:translateX(-50%); }
+  #perCal .pcGrid{ grid-template-columns:repeat(2,minmax(0,326px)); }
+  #perCal .cday{ min-width:44px; min-height:44px; }
+  #perCal .tbtn{ min-width:44px; }
+  .tw:has(>table.cards){ container-type:inline-size; }
+  .tw table.cards{ table-layout:auto; }
+  .tw table.cards td.cwrap{ padding:0; border:0; white-space:normal; }
+  .crow{ padding:var(--s3); }
+  table:not(.cards){ table-layout:fixed; }
+  thead th,tbody td{ white-space:normal; overflow-wrap:anywhere; padding-left:var(--s2); padding-right:var(--s2); }
+  .doc table{ table-layout:auto; }
+  .doc{ overflow-x:auto; }
+  .tiers{ grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .screen .savebar{ bottom:calc(72px + env(safe-area-inset-bottom));
+    margin-left:0; margin-right:0; padding-left:0; padding-right:0; }
+  #toasts{ left:auto; right:var(--s3); max-width:420px; }
+}
+@media (min-width:1024px) and (max-width:1439px){
+  .g2{ grid-template-columns:minmax(0,1.35fr) minmax(0,1fr); }
+  .g2e,.g3{ grid-template-columns:repeat(2,minmax(0,1fr)); }
+}
+/* รายการเต็มพื้นที่เป็นสองคอลัมน์ รายการที่อยู่ในครึ่งหน้าคงหนึ่งคอลัมน์ */
+@container (min-width:840px){
+  .cards td.cwrap:not(:has(.crow.sub,.crow[data-grp])){ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .cards td.cwrap>.crow{ min-width:0; }
+  .cards td.cwrap>.crow:last-child{ border-bottom:1px solid var(--hairline-2); }
+}
+
+@media (min-width:601px) and (max-width:767px){
+  .kpis{ grid-template-columns:repeat(2,minmax(0,1fr)); }
+  #perCal .pcGrid{ grid-template-columns:minmax(0,326px); }
+}
 @media (prefers-reduced-motion:reduce){
   *,*::before,*::after{ animation-duration:.01ms !important; transition-duration:.01ms !important; }
   .screen.on>*{ animation:none; opacity:1; transform:none; }
 }
 @media print{
-  .side,.top,.tabs,.savebar,.section-actions,.noprint,#toasts,.promo{ display:none !important; }
+  .side,.bnav,.sheet,.top,.tabs,.savebar,.section-actions,.noprint,#toasts,.promo{ display:none !important; }
   .app{ display:block; } .wrap{ padding:0; max-width:none; }
   .card{ box-shadow:none; margin:0; }
   .doc{ box-shadow:none; padding:0; }
@@ -1866,7 +1955,7 @@ body.lock{ overflow:hidden; }
            ทุกปุ่มในมุมมองรายละเอียดทำงานแล้ววาดที่เดิมใหม่ ไม่มีการข้ามหน้าอีก -->
       <section class="screen" id="s-deal">
         <div id="dlList">
-          <div class="fx wrap" style="gap:var(--s2);margin-bottom:var(--s2)"><label class="fl" for="dlArchive">รายการลูกค้า</label><select class="inp ct" id="dlArchive" onchange="DEAL_SEL='';rDeal()"><option value="active">ลูกค้าที่กำลังดูแล</option><option value="archived">คลังลูกค้าสำหรับการตลาด</option></select><span class="tsub" id="dlPeriodNote"></span></div>
+          <div class="deal-scope"><label class="fl" for="dlArchive">รายการลูกค้า</label><select class="inp ct" id="dlArchive" onchange="DEAL_SEL='';rDeal()"><option value="active">ลูกค้าที่กำลังดูแล</option><option value="archived">คลังลูกค้าสำหรับการตลาด</option></select><span class="tsub" id="dlPeriodNote"></span></div>
           <div class="kpis k4" id="dlKpi"></div>
           <div class="card"><div class="hd"><h3>ลูกค้าและดีล</h3><div class="d">แตะแถวเพื่อจัดการทั้งดีลในหน้าเดียว</div><div class="sp"></div>
             <select class="inp ct" id="dlBranch"></select>
@@ -2492,8 +2581,8 @@ body.lock{ overflow:hidden; }
 </div>
 
 <div class="ov" id="ov"></div>
-<aside class="drw" id="drw"><div class="dh"><h3 id="drwT">รายละเอียด</h3><button class="x" id="drwX"><svg class="i i-sm"><use href="#i-x"/></svg></button></div><div class="db" id="drwB"></div></aside>
-<div class="modal" id="modal"><div class="mbox"><div class="mh"><h3 id="mdT">—</h3><button class="x" id="mdX"><svg class="i i-sm"><use href="#i-x"/></svg></button></div><div class="mb" id="mdB"></div></div></div>
+<aside class="drw" id="drw"><div class="dh"><h3 id="drwT">รายละเอียด</h3><button class="x" id="drwX" aria-label="ปิดรายละเอียด"><svg class="i i-sm"><use href="#i-x"/></svg></button></div><div class="db" id="drwB"></div></aside>
+<div class="modal" id="modal"><div class="mbox"><div class="mh"><h3 id="mdT">—</h3><button class="x" id="mdX" aria-label="ปิดหน้าต่าง"><svg class="i i-sm"><use href="#i-x"/></svg></button></div><div class="mb" id="mdB"></div></div></div>
 <!-- ตัวครอปรูป (v1.44) — โฮสต์ของตัวเอง ไม่ใช่ #mdB ของ openModal
      เพราะแผ่นแก้รุ่นที่เรียกใช้อยู่ข้างใต้ก็ใช้ #mdB ตัวเดียวกัน ถ้าใช้ร่วมกันการ์ดสีจะถูกเขียนทับหายทั้งใบ
      z-index 63 = เหนือ modal (62) แต่ยังต่ำกว่า #brPick/#perCal (64) และ #tip (65) -->
@@ -3588,14 +3677,9 @@ function expStaffList(){
     STAFF.filter(s=>inScope(s.branch)).map(s=>[s.name, s.nick, ROLES[s.role].name, bName(s.branch),
       s.phone, s.salary, full?s.bank:cut(s.bank), full?s.ssn:cut(s.ssn)]), [5]);
 }
-/* จอ ≤600px: ตารางที่ส่ง cards มาด้วยจะแสดงเป็นการ์ดแทนแถว — เปลี่ยนขนาดจอแล้ววาดใหม่ */
-const MQ_CARD = matchMedia('(max-width:600px)');
+/* มือถือและ tablet ≤1439px ใช้รายการอ่านง่าย หมุน tablet อยู่ในโหมดเดิมจึงไม่วาดฟอร์มใหม่ */
+const MQ_CARD = matchMedia('(max-width:1439px)');
 MQ_CARD.addEventListener('change', ()=>{ closeFilters(); if(ME) refreshAll(); });   /* คืนตัวกรองเข้าที่ก่อนสลับ layout */
-/* คัมบังใช้เส้นแบ่งเดียวกับเปลือกมือถือ (≤900) ไม่ใช่เส้นการ์ดตาราง (≤600) */
-const MQ_KAN = matchMedia('(max-width:900px)');
-MQ_KAN.addEventListener('change', ()=>{ if(ME) refreshAll(); });
-/* คัมบังบนมือถือ: ชิปเลือกขั้นตอน (บอกจำนวนงาน) + รายการเต็มความกว้าง แทนการปัดข้าง
-   card(item) คืน .kcard ที่มี data-* เดิม → โค้ดผูกคลิกที่มีอยู่จับได้ทันที */
 /* ---------- หน้ากากเลือกคันรถ (v1.47) ----------
    เจ้าของ: "ส่วนเลื่อนเลือกรถ ยาวจนผมเลื่อนไม่ไหว" — 30-35 คันในดรอปดาวน์เดียว
    ทางแก้: บัง <select> ไว้ แล้วให้ปุ่มเปิดแผงที่พิมพ์ค้นหาได้แทน
@@ -4094,7 +4178,11 @@ function brPickOpen(){
   if(!el || !btn || !btn.offsetParent) return;
   const cur = NAV_BRP!==null? NAV_BRP : $('#navBrSel').value;
   BP_CO = cur? (isCoSel(cur)? cur : (BRANCHES.find(b=>b.code===cur)||{}).co||'') : '';
-  el.style.display='block'; brPickRender();
+  el.style.display='block'; brPickRender(); brPickPlace();
+}
+function brPickPlace(){
+  const el=$('#brPick'),btn=$('#navBrBtn');
+  if(!el || !btn || !btn.offsetParent)return;
   const r=btn.getBoundingClientRect(), w=el.getBoundingClientRect();
   el.style.left=Math.max(6, Math.min(r.left, innerWidth-w.width-6))+'px';
   el.style.top =Math.max(6, Math.min(r.bottom+8, innerHeight-w.height-6))+'px';
@@ -4322,7 +4410,7 @@ function perCalMonth(ym){
 }
 function perCalRender(){
   const el=$('#perCal'); if(!el || !PC.host) return;
-  const two=innerWidth>600, m2=ymAdd(PC.ym,1);
+  const two=innerWidth>=768, m2=ymAdd(PC.ym,1);
   const foot = PC.a && PC.b
     ? 'เริ่ม <b>'+esc(thDate(PC.a))+'</b> · ถึง <b>'+esc(thDate(PC.b))+'</b> · '+(days(PC.a,PC.b)+1)+' วัน'
     : (PC.a? 'เริ่ม <b>'+esc(thDate(PC.a))+'</b> — กดวันจบอีกครั้ง' : 'กดวันเริ่มต้น แล้วกดวันจบ');
@@ -4341,7 +4429,11 @@ function perCalOpen(host, key){
   const st=perSt(key), p=perOf(key);
   PC={key, host, ym:(st.from||p.from||curDate()).slice(0,7), a:st.from||'', b:st.to||''};
   el.style.display='block';
-  perCalRender();
+  perCalRender(); perCalPlace();
+}
+function perCalPlace(){
+  const el=$('#perCal'),chip=PC.host&&PC.host.querySelector('[data-pcus]');
+  if(!el || !chip || !PC.host.offsetParent)return;
   /* มือถือ: กินเต็มความกว้างจอ (ลบขอบ) ตัวหนังสือท้ายจะได้ไม่ถูกตัด · จอกว้าง: เกาะใต้ปุ่มที่กด */
   if(innerWidth<=600){ el.style.left='6px'; el.style.width=(innerWidth-12)+'px'; }
   else { el.style.width=''; }
@@ -4350,6 +4442,16 @@ function perCalOpen(host, key){
   el.style.top =Math.max(6, Math.min(r.bottom+8, innerHeight-w.height-6))+'px';
 }
 function perCalClose(){ const el=$('#perCal'); if(el) el.style.display='none'; PC.host=null; }
+/* หมุนจอเฉพาะกล่องที่เปิดอยู่: จัดตำแหน่งใหม่ โดยไม่รีเซ็ตร่างวัน/สาขาหรือวาดฟอร์มทั้งหน้า */
+let POPOVER_RESIZE=0;
+addEventListener('resize',()=>{
+  cancelAnimationFrame(POPOVER_RESIZE);
+  POPOVER_RESIZE=requestAnimationFrame(()=>{
+    tipHide();
+    if(PC.host){ perCalRender(); perCalPlace(); }
+    if($('#brPick').style.display==='block')brPickPlace();
+  });
+});
 /* เขียนผลลัพธ์ลงช่องวันที่แล้วปล่อยให้ทางเดินเดิมทำงานต่อ (stage → รอกดยืนยัน) */
 function perCalWrite(){
   const h=PC.host; if(!h) return;
@@ -5910,7 +6012,7 @@ function finCompare(){
   const TALL=[...new Set(act.flatMap(finTerms))].sort((a,b)=>a-b); /* งวดของบริษัทที่เลือก */
   /* มือถือ: เลือกจำนวนงวดก่อน แล้วเรียงไฟแนนซ์จากค่างวดถูกสุด — ตารางเทียบเต็มยังอยู่บนเดสก์ท็อป */
   let mCards=null;
-  if(MQ_CARD.matches && !$('#fFinance').value){
+  if(innerWidth<=600 && !$('#fFinance').value){
     if(TALL.indexOf(FIN_TERM)<0) FIN_TERM=TALL[0];
     $('#fTermChips').innerHTML='<span class="tsub" style="align-self:center;margin-right:4px">จำนวนงวด</span>'
       +TALL.map(n=>'<button class="chip'+(n===FIN_TERM?' on':'')+'" data-term="'+n+'">'+n+'</button>').join('');
@@ -8849,7 +8951,7 @@ function careDrawer(careId,focusTaskId){
   pageSlice('careTaskHistory',ordered,6);
   if(focusTaskId){const ix=ordered.findIndex(t=>t.id===focusTaskId);if(ix>=0)LIST_PAGES.careTaskHistory.page=Math.floor(ix/6)+1;}
   const tk=pageSlice('careTaskHistory',ordered,6).map(t=>'<div class="frow care-task-row" id="care-task-'+t.id+'">'
-    +'<input type="checkbox" data-care-done="'+r.id+'|'+t.id+'" '+(t.done?'checked ':'')+(edit&&!t.pendingSync?'':'disabled ')+'aria-label="เสร็จแล้ว '+esc(t.title||t.kind)+'">'
+    +'<label class="care-check"><input type="checkbox" data-care-done="'+r.id+'|'+t.id+'" '+(t.done?'checked ':'')+(edit&&!t.pendingSync?'':'disabled ')+'aria-label="เสร็จแล้ว '+esc(t.title||t.kind)+'"></label>'
     +'<div class="care-task-body"><b>'+esc(t.title||t.kind)+'</b><div class="tsub">'+(t.appointmentAt?thDT(t.appointmentAt):thDate(t.due))
     +(t.amount!=null?' · '+(noMoney()?'—':baht(t.amount)):'')+(t.note?' · '+esc(t.note):'')+'</div>'
     +careCompletion(t)+'</div>'+careTaskStatus(t)+(t.pendingSync?'<button class="lnk" data-care-sync="'+r.saleId+'">โหลดงานติดตามอีกครั้ง</button>':'')+'</div>').join('');
