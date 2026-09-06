@@ -937,8 +937,7 @@ textarea.inp{ height:auto; padding:var(--s1) var(--s2); resize:vertical; line-he
 .gcard{ background:none; box-shadow:none; border:1px solid var(--hairline); border-radius:var(--r-card);
   padding:0; overflow:hidden; font:inherit; color:inherit; text-align:left; width:100%;
   display:flex; flex-direction:column; }
-/* กรอบรูปจัตุรัส (v1.44 คำสั่งเจ้าของ) — ไฟล์ที่ imgResize เก็บเป็นจัตุรัสอยู่แล้ว
-   กรอบ 4:3 เดิมจึงครอปรูปซ้ำอีกชั้น เสียหัว-ท้ายรถไปฟรี ๆ */
+/* กรอบจัตุรัสคงเดิม แต่ภาพจริงมีหลายสัดส่วน — แสดงเต็มภาพโดยไม่ครอปซ้ำ (v1.54) */
 .gcard .ph{ aspect-ratio:1; margin:var(--s2); background:var(--paper-2); border-radius:var(--r-input);
   display:grid; place-items:center; overflow:hidden;
   color:var(--muted); position:relative; transition:box-shadow var(--dur-ui) var(--ease); }
@@ -1179,10 +1178,13 @@ textarea.inp{ height:auto; padding:var(--s1) var(--s2); resize:vertical; line-he
 /* รูปรถ — เงา SVG หรือรูปจริงที่อัปโหลด · จัตุรัสเสมอ (v1.44) กำหนดแค่ความกว้าง
    ความสูงมาจาก aspect-ratio จุดที่กว้างต่างกันจึงยังจัตุรัสเหมือนกันหมด */
 .bph{ width:74px; aspect-ratio:1; flex:0 0 auto; display:grid; place-items:center;
-  background:var(--paper-2); border-radius:var(--r-input); overflow:hidden; }
-.bph svg{ width:100%; height:100%; } .bph img{ width:100%; height:100%; object-fit:cover; }
+  background:var(--paper-2); border-radius:var(--r-input); overflow:hidden; position:relative; }
+.bph svg{ width:100%; height:100%; }
 .gcard .ph svg.bike{ width:82%; height:82%; }
-.gcard .ph img.bike{ width:100%; height:100%; object-fit:cover; }
+/* วางภาพในกรอบที่คำนวณแล้ว ป้องกันขนาดไฟล์ต้นฉบับดัน grid ให้ล้นกรอบ
+   ใช้ร่วมกันทั้งสต๊อก รายละเอียดรถ ดีล งานติดตาม และหน้าตั้งค่ารุ่น */
+.bph img,.gcard .ph img.bike{ position:absolute; inset:0; display:block;
+  width:100%; height:100%; object-fit:contain; }
 /* แถวรายคันใต้กลุ่มคงเหลือ */
 tr.grp-sub td{ background:var(--paper-2); }
 /* ช่องกรอกเรตรายงวด */
@@ -1236,6 +1238,23 @@ tr.grp-sub td{ background:var(--paper-2); }
 body.lock{ overflow:hidden; }
 /* แผ่นตัวกรอง — บนเดสก์ท็อปไม่ใช้ ตัวกรองอยู่ในหัวการ์ดตามเดิม */
 .card>.hd .fbtn, .card>.hd .fsum{ display:none; }
+.filter-fields{ display:flex; flex-wrap:wrap; gap:var(--s2); flex:0 0 100%; min-width:0; }
+.filter-field{ flex:1 1 130px; min-width:0; }
+.filter-field:last-child{ flex-grow:2; }
+.filter-field .fl{ display:block; margin-bottom:var(--s-half); }
+.filter-field .inp.ct{ width:100%; min-width:0; }
+.active-filters,.card>.hd .active-filters{ display:flex; flex:0 0 100%; flex-wrap:wrap;
+  align-items:center; gap:var(--s1); min-width:0; font-size:var(--t-label); color:var(--muted); }
+.filter-chip{ display:inline-flex; align-items:center; gap:var(--s1); min-height:40px;
+  max-width:100%; border:1px solid var(--hairline); border-radius:var(--r-pill);
+  padding:var(--s1) var(--s2); background:var(--paper-2); color:var(--ink); text-align:left; }
+.filter-chip span{ min-width:0; overflow-wrap:anywhere; }
+.filter-chip .i{ flex-shrink:0; }
+.active-filters [data-filter-clear]{ margin-left:auto; white-space:normal; }
+.active-filters [data-filter-clear]:disabled{ color:var(--muted); cursor:default; }
+#plFsum{ margin-top:var(--s1); }
+#fsheet .sfoot{ display:flex; gap:var(--s2); position:sticky; bottom:0; background:var(--card); }
+#fsReset{ flex-shrink:0; }
 .fsrow{ margin-bottom:var(--s2); }
 .fsh{ display:flex; align-items:center; gap:var(--s2); }
 .fsh h6{ margin:0; font-size:var(--t-lead); font-weight:600; }
@@ -1341,9 +1360,11 @@ body.lock{ overflow:hidden; }
   .card>.hd,.card>.bd{ padding-left:var(--s2); padding-right:var(--s2); }
   /* ตัวกรองย้ายลงแผ่นล่าง — หัวการ์ดเหลือปุ่มกับบรรทัดสรุปว่ากำลังกรองอะไรอยู่ */
   .card>.hd>.inp.ct{ display:none; }
+  .filter-fields{ display:none; }
   .card>.hd .fbtn{ display:inline-flex; }
   .card>.hd .fsum{ display:block; flex:0 0 100%; margin-top:var(--s1);
     font-size:var(--t-label); color:var(--muted); overflow-wrap:anywhere; }
+  .card>.hd .active-filters{ display:flex; }
   #fsBody .inp.ct{ display:block; width:100%; height:44px; font-size:16px; }
   .kv{ grid-template-columns:96px 1fr; }
   .kv dd{ min-width:0; overflow-wrap:anywhere; }
@@ -1615,18 +1636,20 @@ body.lock{ overflow:hidden; }
         <div class="card">
         <div class="hd"><h3>สต๊อกรถ</h3><div class="sp"></div>
           <select class="inp ct" id="stBranch"></select>
-          <select class="inp ct" id="stModel"></select>
-          <select class="inp ct" id="stVariant"></select>
-          <select class="inp ct" id="stColor"></select>
-          <select class="inp ct" id="stStatus">
-            <option value="">ทุกสถานะ</option><option value="available">พร้อมขาย</option>
-            <option value="reserved">จองแล้ว</option><option value="in_transfer">กำลังโอนย้าย</option>
-            <option value="sold">ขายแล้ว</option></select>
-          <input class="inp ct" id="stQ" placeholder="ค้นหา เลขเครื่อง / เลขถัง / รุ่น / สี">
           <button class="btn sec sm fbtn noprint" id="stFilt"><svg class="i i-sm"><use href="#i-sliders"/></svg> ตัวกรอง</button>
           <button class="btn sm" id="stAdd"><svg class="i i-sm"><use href="#i-inbox"/></svg> เพิ่มรถเข้าสต๊อก</button>
           <button class="lnk noprint" id="expStock"><svg class="i i-sm"><use href="#i-download"/></svg> ส่งออก</button>
-          <div class="fsum" id="stFsum"></div>
+          <div class="filter-fields noprint">
+            <div class="filter-field"><label class="fl" for="stModel">รุ่น</label><select class="inp ct" id="stModel"></select></div>
+            <div class="filter-field"><label class="fl" for="stVariant">รหัสรุ่น</label><select class="inp ct" id="stVariant"></select></div>
+            <div class="filter-field"><label class="fl" for="stColor">สี</label><select class="inp ct" id="stColor"></select></div>
+            <div class="filter-field"><label class="fl" for="stStatus">สถานะ</label><select class="inp ct" id="stStatus">
+            <option value="">ทุกสถานะ</option><option value="available">พร้อมขาย</option>
+            <option value="reserved">จองแล้ว</option><option value="in_transfer">กำลังโอนย้าย</option>
+            <option value="sold">ขายแล้ว</option></select></div>
+            <div class="filter-field"><label class="fl" for="stQ">ค้นหาเลขเครื่อง / เลขถัง</label><input class="inp ct" id="stQ" placeholder="ค้นหา เลขเครื่อง / เลขถัง / รุ่น / สี"></div>
+          </div>
+          <div class="fsum active-filters noprint" id="stFsum" aria-label="ตัวกรองที่เลือก"></div>
         </div>
         <div class="bd" style="padding-bottom:0">
           <div class="tabs"><button class="on" data-v="gal">แกลเลอรี</button><button data-v="table">ตาราง</button><button data-v="grp">คงเหลือ</button></div>
@@ -1637,8 +1660,7 @@ body.lock{ overflow:hidden; }
         <!-- flush: การ์ดในแกลเลอรีเป็นกรอบของตัวเอง (v1.31) ถ้าตัวห่อยังมีระยะขอบในด้วย
              จะกลายเป็นกล่องซ้อนสามชั้นทันที — ขอบจอ → .card → .gcard → ตัวหนังสือ คือ 2 ชั้นพอดี -->
         <div class="bd flush" id="stGalWrap"><div class="gal" id="stGal"></div></div>
-        </div>
-      </section>
+        </div></section>
 
       <!-- ============ 5. ขายรถ ============ -->
       <section class="screen" id="s-sell">
@@ -1789,24 +1811,25 @@ body.lock{ overflow:hidden; }
         <div id="dlList">
           <div class="kpis k4" id="dlKpi"></div>
           <div class="card"><div class="hd"><h3>ลูกค้าและดีล</h3><div class="d">แตะแถวเพื่อจัดการทั้งดีลในหน้าเดียว</div><div class="sp"></div>
-            <select class="inp ct" id="dlStage"></select>
-            <select class="inp ct" id="dlPay"></select>
-            <select class="inp ct" id="dlBook"></select>
-            <select class="inp ct" id="dlSales"></select>
             <select class="inp ct" id="dlBranch"></select>
-            <input class="inp ct" id="dlQ" placeholder="ค้นหา ชื่อ / เบอร์ / เลขเครื่อง">
             <button class="btn sec sm fbtn noprint" id="dlFilt"><svg class="i i-sm"><use href="#i-sliders"/></svg> ตัวกรอง</button>
             <button class="btn sm" id="dlAdd"><svg class="i i-sm"><use href="#i-plus"/></svg> เพิ่มลูกค้า</button>
             <button class="lnk noprint" id="expDeal"><svg class="i i-sm"><use href="#i-download"/></svg> ส่งออก</button>
-            <div class="fsum" id="dlFsum"></div>
+            <div class="filter-fields noprint">
+            <div class="filter-field"><label class="fl" for="dlStage">ขั้นตอน</label><select class="inp ct" id="dlStage"></select></div>
+            <div class="filter-field"><label class="fl" for="dlPay">เงินสด / ผ่อน</label><select class="inp ct" id="dlPay"></select></div>
+            <div class="filter-field"><label class="fl" for="dlBook">การจอง</label><select class="inp ct" id="dlBook"></select></div>
+            <div class="filter-field"><label class="fl" for="dlSales">เซลล์</label><select class="inp ct" id="dlSales"></select></div>
+            <div class="filter-field"><label class="fl" for="dlQ">ค้นหาชื่อ / เบอร์ / เลขเครื่อง</label><input class="inp ct" id="dlQ" placeholder="ค้นหา ชื่อ / เบอร์ / เลขเครื่อง"></div>
+          </div>
+          <div class="fsum active-filters noprint" id="dlFsum" aria-label="ตัวกรองที่เลือก"></div>
           </div><div class="bd flush"><div class="tw"><table id="dlTable"></table></div></div></div>
           <div class="g2">
             <div class="card"><div class="hd"><h3>งานติดตามที่ถึงกำหนด</h3><div class="sp"></div><span id="dlTaskCnt" class="pill p-brand"></span></div><div class="bd flush"><div class="tw"><table id="dlTasks"></table></div></div></div>
             <div class="card"><div class="hd"><h3>ภาพรวมขั้นตอน</h3></div><div class="bd" id="dlFunnel"></div></div>
           </div>
         </div>
-        <div id="dlOne" style="display:none"></div>
-      </section>
+        <div id="dlOne" style="display:none"></div></section>
 
       <!-- ============ 8d. ใบกำกับภาษี (บรีฟรอบ 2 ข้อ 26 · v1.36) ============
            สามส่วนในหน้าเดียว: ลูกค้า (ขายปลีกที่ส่งมอบแล้ว) · ขายส่ง (ย้ายมาจากหน้าขายรถ) ·
@@ -1958,6 +1981,7 @@ body.lock{ overflow:hidden; }
         <div class="card"><div class="hd"><h3>รอป้ายจริงจากขนส่ง</h3><div class="d">กรอกเลขทะเบียนแล้วปิดงาน — ระบบส่งต่อลูกค้าให้ฝ่ายบริการทันทีที่ได้ป้าย</div><div class="sp"></div><button class="lnk noprint" id="expPlate"><svg class="i i-sm"><use href="#i-download"/></svg> ส่งออก</button></div>
           <div class="bd">
             <input class="inp mono" id="plQ" placeholder="ค้นหา เลขถัง / เลขเครื่อง / ชื่อลูกค้า / เบอร์" autocomplete="off">
+            <div class="active-filters noprint" id="plFsum" aria-label="ตัวกรองที่เลือก"></div>
             <div class="tw" style="margin-top:var(--s2)"><table id="plTable"></table></div>
           </div></div>
         <div class="card"><div class="hd"><h3>ได้ป้ายแล้วล่าสุด</h3><div class="d">ปิดงานผิดคันกดถอยกลับได้จากแถว</div></div>
@@ -2426,7 +2450,7 @@ body.lock{ overflow:hidden; }
 <div class="sheet noprint" id="fsheet">
   <div class="fsh"><h6 id="fsTitle">ตัวกรอง</h6><button class="x" id="fsX"><svg class="i i-sm"><use href="#i-x"/></svg></button></div>
   <div id="fsBody"></div>
-  <div class="sfoot"><button class="btn wide" id="fsDone">ดูผลลัพธ์</button></div>
+  <div class="sfoot"><button class="btn sec" id="fsReset" style="display:none">ล้างตัวกรอง</button><button class="btn wide" id="fsDone">ดูผลลัพธ์</button></div>
 </div>
 <div id="printArea"></div>
 <script>
@@ -3729,10 +3753,12 @@ const FILTERS = {
     f:[['rpDim','แยกตาม']] },   /* ช่วงเวลาเป็นชิปบนแถบบน (v1.24) · สาขาไปอยู่แผงขอบเขตบน navbar (v1.29) */
   hrday :{ t:'เลือกวันลงเวลา', sum:'attFsum', f:[['attDay','วันที่']] },
   payrol:{ t:'เลือกงวดเงินเดือน', sum:'prFsum', f:[['prMonth','งวดเดือน']] },
-  stock :{ t:'ตัวกรองสต๊อกรถ', sum:'stFsum',
+  stock :{ t:'ตัวกรองสต๊อกรถ', sum:'stFsum', trigger:'stFilt', clear:true, refresh:()=>rStock(),
     f:[['stModel','รุ่น'],['stVariant','รหัสรุ่น'],['stColor','สี'],['stStatus','สถานะ'],
        ['stQ','ค้นหา เลขเครื่อง / เลขถัง / รุ่น / สี']] },
-  deal  :{ t:'ตัวกรองลูกค้าและดีล', sum:'dlFsum',
+  plate :{ t:'ค้นหางานทะเบียน', sum:'plFsum', clear:true,
+    f:[['plQ','ค้นหา']], refresh:()=>{ PL_Q=$('#plQ').value; rPlate(); } },
+  deal  :{ t:'ตัวกรองลูกค้าและดีล', sum:'dlFsum', trigger:'dlFilt', clear:true, refresh:()=>rDeal(),
     f:[['dlStage','ขั้นตอน'],['dlPay','เงินสด/ผ่อน'],['dlBook','การจอง'],['dlSales','เซลล์'],
        ['dlQ','ค้นหา ชื่อ / เบอร์ / เลขเครื่อง']] }
 };
@@ -3745,19 +3771,56 @@ function fsSummary(key){
     return el.value.trim()? '“'+el.value.trim()+'”' : null;
   }).filter(Boolean).join(' · ');
 }
-function fsSync(key){ if(!FILTERS[key]) return;   /* v1.29: หน้าที่ตัวกรองเดียวคือสาขา ไม่มีแผ่นแล้ว */ const el=$('#'+FILTERS[key].sum); if(el) el.textContent=fsSummary(key); }
+/* ตัวกรองรายการใช้ค่าในช่องจริงเสมอ — ไม่มีสถานะสำเนาที่ล้างแล้วเหลือค้าง (v1.54)
+   สาขา/บริษัทและช่วงเวลาบน navbar มีตัวควบคุมของตัวเอง จึงไม่รวมในการล้างของหน้านี้ */
+function fsActive(key){
+  return FILTERS[key].f.filter(([id])=>{ const el=$('#'+id);
+    return el && el.style.display!=='none' && el.value.trim(); });
+}
+function fsClear(key,id){
+  const g=FILTERS[key]; if(!g || !g.clear) return;
+  let ids=id? [id] : g.f.map(([field])=>field);
+  // รหัสและสีที่เจาะจากการ์ดต้องไม่ค้างหลังเอารุ่นออก แต่สถานะ/คำค้นยังเป็นอิสระ
+  if(key==='stock' && id==='stModel') ids=['stModel','stVariant','stColor'];
+  if(key==='stock' && id==='stVariant') ids=['stVariant','stColor'];
+  ids.filter(field=>g.f.some(([valid])=>valid===field)).forEach(field=>$('#'+field).value='');
+  g.refresh();
+}
+function fsSync(key){
+  const g=FILTERS[key]; if(!g) return;
+  const el=$('#'+g.sum); if(!el) return;
+  if(!g.clear){ el.textContent=fsSummary(key); return; }
+  const active=fsActive(key);
+  g.f.forEach(([id,label])=>$('#'+id).setAttribute('aria-label',label));
+  el.innerHTML=(active.length? active.map(([id,label])=>{
+    const field=$('#'+id),value=field.tagName==='SELECT'?field.selectedOptions[0].text:field.value.trim();
+    return '<button type="button" class="filter-chip" data-filter-remove="'+id+'" aria-label="ล้าง '+esc(label)+' '+esc(value)+'">'
+      +'<span>'+esc(field.tagName==='SELECT'?label:'ค้นหา')+': '+esc(value)+'</span><svg class="i i-sm" aria-hidden="true"><use href="#i-x"/></svg></button>';
+  }).join('') : '<span>ยังไม่ได้เลือกตัวกรอง</span>')
+    +'<button type="button" class="lnk" data-filter-clear="'+key+'"'+(active.length?'':' disabled')+'>ล้างตัวกรองทั้งหมด</button>';
+  el.querySelectorAll('[data-filter-remove]').forEach(b=>b.onclick=()=>fsClear(key,b.dataset.filterRemove));
+  el.querySelector('[data-filter-clear]').onclick=()=>fsClear(key);
+  const trigger=g.trigger && $('#'+g.trigger);
+  if(trigger) trigger.innerHTML='<svg class="i i-sm" aria-hidden="true"><use href="#i-sliders"/></svg> ตัวกรอง'+(active.length?' ('+active.length+')':'');
+  if(FS_OPEN===key){
+    $('#fsReset').disabled=!active.length;
+    $('#fsDone').textContent=key==='stock'?'ดูรถ '+stList().length+' คัน':key==='deal'?'ดูดีล '+dealRows().length+' ราย':'ดูผลลัพธ์';
+  }
+}
 function openFilters(key){
   if(FS_OPEN) closeFilters();
   const g=FILTERS[key]; FS_OPEN=key; FS_HOME=[];
   $('#fsTitle').textContent=g.t; $('#fsBody').innerHTML='';
+  $('#fsReset').style.display=g.clear?'':'none'; $('#fsReset').onclick=()=>fsClear(key);
+  $('#fsDone').textContent='ดูผลลัพธ์';
   g.f.forEach(([id,label])=>{ const el=$('#'+id); if(!el) return;
     const mark=document.createComment('fs:'+id); el.parentNode.insertBefore(mark, el);
     const row=document.createElement('div'); row.className='fsrow';
-    row.innerHTML='<label class="fl">'+esc(label)+'</label>';
+    row.innerHTML='<label class="fl" for="'+id+'">'+esc(label)+'</label>';
     row.appendChild(el);
     if(el.style.display==='none') row.style.display='none';
     $('#fsBody').appendChild(row); FS_HOME.push({el,mark}); });
-  $('#fsheet').classList.add('on'); $('#ov').classList.add('on'); syncLock();
+  $('#fsheet').classList.add('on'); $('#ov').classList.add('on'); syncLock(); fsSync(key);
 }
 function closeFilters(){
   if(!FS_OPEN) return;
@@ -8430,6 +8493,7 @@ function rPlate(){
     $('#plQ').oninput=()=>{ PL_Q=$('#plQ').value; rPlate(); };
     $('#expPlate').onclick=expPlate; }
   if($('#plQ').value!==PL_Q) $('#plQ').value=PL_Q;
+  fsSync('plate');
   const pick=r=>{ const s=SALES.find(x=>x.id===r.saleId);
     return {r, s, c:s&&CUSTOMERS.find(x=>x.id===s.custId), u:s&&UNITS.find(x=>x.id===s.unitId)}; };
   const q=PL_Q.trim().toLowerCase();
