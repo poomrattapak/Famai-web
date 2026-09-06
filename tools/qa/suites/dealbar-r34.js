@@ -55,6 +55,8 @@ const { chromium, EXE, BASE } = require('./env');
     if (!s) return { skip: true };
     const rg = REGS.find(r => r.saleId === s.id);
     rg.stage = 'ขายแล้ว';                                 /* เงินสดเริ่มต้นทาง — ขั้นภายในต้องไม่ขวาง */
+    /* บรีฟใหม่: แม้เงินสดก็ต้องให้ฝ่ายการเงินอนุมัติก่อนส่งมอบ */
+    finApprove(s.id,true);
     const ok = regDeliver(rg.id, { date: TODAY, place: 'บ้านลูกค้า QA', by: 'คนส่ง QA', note: 'โน้ต QA' });
     const r = { ok, stage: rg.stage, place: rg.dlvPlace, by: rg.dlvBy, note: rg.dlvNote,
       delivered: rg.deliveredAt, custStage: (CUSTOMERS.find(c => c.id === s.custId) || {}).stage,

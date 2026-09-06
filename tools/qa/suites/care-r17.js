@@ -22,40 +22,18 @@ const { chromium, EXE, BASE } = require('./env');
     await page.waitForTimeout(350);
   };
 
-  /* ---- 1) ได้ป้าย → CARE เกิด + รอบติดตามนับจากวันได้ป้าย (v1.35 คำตอบเจ้าของข้อ 3) ---- */
+  /* บรีฟ 6 ก.ย. 2569 เปลี่ยนจุดเริ่มจากป้ายเป็นส่งมอบรถ — เก็บด่านส่งมอบจริงและกันซ้ำ */
   await login('ST1');
-  const t1 = await page.evaluate(() => {
-    /* v1.28: ส่งมอบมาก่อนทะเบียนจริงแล้ว — ขั้นก่อนส่งมอบคือ "อนุมัติ" ไม่ใช่ "ป้ายขาว" */
-    let rg = REGS.find(r => r.stage === 'อนุมัติ');
-    if (!rg) { rg = REGS.find(r => !r.deliveredAt);
-      if (rg) { rg.stage = 'อนุมัติ'; } }
-    if (!rg) return { skip: true };
-    const before = CARE.length;
-    regAdvance(rg.id);                                   /* อนุมัติ → ส่งมอบแล้ว */
-    const s = SALES.find(x => x.id === rg.saleId);
-    const noneAtDeliver = CARE.length === before && !careOf(s.id);
-    regAdvance(rg.id);                                   /* ส่งมอบแล้ว → รอทะเบียน */
-    regAdvance(rg.id, '1กก 7350');                        /* รอทะเบียน → ได้ทะเบียนแล้ว = จุดเกิดงาน */
-    const cr = careOf(s.id);
-    regBack(rg.id); regAdvance(rg.id, '1กก 7350');        /* ถอยแล้วปิดใหม่ต้องไม่สร้างซ้ำ */
-    return { skip: false, noneAtDeliver,
-      created: CARE.length === before + 1 && !!cr,
-      atPlate: cr ? cr.createdAt === TODAY : false,
-      nTasks: cr ? cr.tasks.length : 0,
-      days: cr ? cr.tasks.map(t => days(cr.createdAt, t.due)) : [],
-      nCheck: cr ? cr.check.length : 0,
-      dup: CARE.filter(x => x.saleId === s.id).length,
-      sid: s.id };
+  const t1=await page.evaluate(()=>{
+    const rg=REGS.find(r=>!r.deliveredAt);if(!rg)return {skip:true};
+    const s=SALES.find(x=>x.id===rg.saleId);s.finApproval={status:'ผ่าน'};
+    const fc=FINCASES.find(x=>x.saleId===s.id);if(fc)fc.status='อนุมัติแล้ว';rg.hold='';rg.stage='อนุมัติ';
+    const before=CARE.length,noneBefore=!careCreate(s);
+    const sent=regDeliver(rg.id,{date:TODAY,place:'หน้าร้าน',by:ME.nick,note:''}),cr=careOf(s.id);
+    const again=careCreate(s);return {skip:false,noneBefore,sent,created:!!cr&&CARE.length===before+1,
+      at:cr&&cr.createdAt===rg.deliveredAt,one:cr&&cr.tasks.length===1&&cr.tasks[0].due===careMonthDate(rg.deliveredAt),dup:!again};
   });
-  if (t1.skip) fails.push('หาดีลให้ส่งมอบไม่ได้ — seed เปลี่ยน?');
-  else {
-    if (!t1.noneAtDeliver) fails.push('ส่งมอบแล้ว CARE เกิดทันที — คำตอบเจ้าของข้อ 3 ให้เกิดตอนได้ป้าย');
-    if (!t1.created) fails.push('ได้ป้ายแล้ว CARE ไม่เกิด');
-    if (!t1.atPlate) fails.push('CARE ไม่ได้ตั้งต้นที่วันได้ป้าย (createdAt ผิด)');
-    if (t1.dup !== 1) fails.push('ปิดงานซ้ำสร้างงานซ้ำ: ' + t1.dup);
-    if (String(t1.days) !== '7,30,60,90,120') fails.push('รอบติดตามไม่ตรง 7/30/60/90/120 จากวันได้ป้าย: ' + t1.days);
-    if (t1.nCheck < 3) fails.push('checklist ส่งมอบน้อยผิดปกติ: ' + t1.nCheck);
-  }
+  if(t1.skip||!t1.noneBefore||!t1.sent||!t1.created||!t1.at||!t1.one||!t1.dup)fails.push('ส่งมอบ→งานติดตามหนึ่งเดือน/กันซ้ำผิด: '+JSON.stringify(t1));
 
   /* ---- 2) ด่านสิทธิ์ ---- */
   await login('ST3');                                    /* เซลล์ */
@@ -73,12 +51,12 @@ const { chromium, EXE, BASE } = require('./env');
   await login('ST10');                                   /* ฝ่ายบริการ */
   const t2b = await page.evaluate(() => {
     const cr = CARE[0]; if (!cr) return { skip: true };
-    const iv = cr.check.findIndex(c => !c.done);
-    const okTick = iv >= 0 ? careTick(cr.id, iv) : true;
+    const iv = cr.tasks.findIndex(c => !c.done);
+    const okTick = iv >= 0 ? careTask(cr.id, cr.tasks[iv].id, null, true) : true;
     const t = cr.tasks.find(x => !x.done);
     const okTask = t ? careTask(cr.id, t.id, 'ทดสอบ') : true;
     return { skip: false, okTick, okTask,
-      by: iv >= 0 ? cr.check[iv].by : 'x',
+      by: iv >= 0 ? cr.tasks[iv].by : 'x',
       noteKept: t ? cr.tasks.find(x => x.id === t.id).note === 'ทดสอบ' : true };
   });
   if (!t2b.skip && (!t2b.okTick || !t2b.okTask)) fails.push('ฝ่ายบริการติ๊กงานของตัวเองไม่ได้');

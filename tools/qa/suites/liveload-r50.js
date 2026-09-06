@@ -422,6 +422,7 @@ const { chromium, EXE, BASE } = require('./env');
   /* ---------- [14] ใบงานซ่อม/ค่าใช้จ่ายแช่ครบ (parts_cost/total · created_by) ---------- */
   const g14 = await p.evaluate(async () => {
     go('service'); rService();
+    $('#svPhone').value='0897654321'; $('#svModel').value='รถนอกรุ่นทดสอบ'; $('#svEngine').value='QA-SERVICE-ENGINE'; $('#svFrame').value='QA-SERVICE-FRAME';
     const pt = PARTS.find(x => x.id === FXU.pt1);
     if (!pt) return { sj: false, sjWhy: 'PARTS ไม่มีอะไหล่จากฐาน (ดูข้อ [8])', ex: false };
     $('#svName').value = 'QA ทุนอะไหล่'; $('#svSearch').value = 'QA-R50-SV'; $('#svKm').value = '400';
@@ -429,7 +430,7 @@ const { chromium, EXE, BASE } = require('./env');
     $('#svPart').innerHTML = '<option value="' + pt.id + '">x</option>'; $('#svPart').value = pt.id;
     const lab = num($('#svLabor').value);
     let n = REQ.length;
-    svSave();
+    await svSave();
     await __drain();
     const sj = REQ.slice(n).find(x => x.method === 'POST' && x.path.includes('/service_job?'));
     const sjWhy = sj ? '' : 'ไม่มี POST service_job — ' + ($('#toasts').textContent || '').slice(0, 80);

@@ -172,12 +172,13 @@ const { chromium, EXE, BASE } = require('./env');
   /* ---------- [5] svSave + ส่งมอบ ---------- */
   const g5 = await p.evaluate(async () => {
     go('service'); rService();
+    $('#svPhone').value='0897654321'; $('#svModel').value='รถนอกรุ่นทดสอบ'; $('#svEngine').value='QA-SERVICE-ENGINE'; $('#svFrame').value='QA-SERVICE-FRAME';
     const pt = PARTS.find(x => x.qty > 0); pt.id = uuid4(); pt.branch = ME.branch;
     $('#svName').value = 'QA ซ่อมไลฟ์'; $('#svSearch').value = 'QA-LIVE-SV'; $('#svKm').value = '450';
     $('#svDate').value = curDate();
     $('#svPart').innerHTML = '<option value="' + pt.id + '">x</option>'; $('#svPart').value = pt.id;
     const q0 = pt.qty, n = REQ.length;
-    svSave();
+    await svSave();
     await __drain();
     const job = SERVICE[SERVICE.length - 1];
     const sj = __of(n, 'service_job')[0];

@@ -5,10 +5,10 @@
    [1] B3 · เพิ่มลูกค้าใหม่โดยไม่เลือกรุ่น → c.variant ต้องว่าง ไม่ใช่รุ่นแรกของตารางราคา
    [2] ดีลไม่มีใบขาย + สนใจเงินสด → แถบไม่มีขั้นไฟแนนซ์ (3 ขั้น) · สนใจผ่อน/ไม่ระบุ → มี (4 ขั้น · v1.34)
    [3] ปุ่มขั้น lead อ่าน intent — เงินสดเห็น "เปิดการขาย" · ผ่อนเห็น "ยื่นไฟแนนซ์"
-   [4] บั๊กข้อ 27 · dealSell ลูกค้าเงินผ่อน → #sPay=finance และกล่อง #sFinBox+#sFinPay เปิดทั้งคู่
+   [4] บรีฟใหม่ · dealSell ลูกค้าเงินผ่อน → คำขอรุ่น/สีในดีล โดยไม่มีใบขายหรือคันรถ
    [5] setPay เป็นทางเดียว — จากตารางเทียบค่างวด (data-pick) กล่องทั้งสองก็ต้องเปิด
    [6] ตารางรวมมี pill เงินสด/ผ่อน + ตัวกรอง #dlPay กรองจริง
-   [7] dealProceedSave ครบทุกช่อง → บันทึกลง c.* และพาไปหน้าขายพร้อมวิธีชำระที่ถูก */
+   [7] dealProceedSave ครบทุกช่อง → บันทึกลง c.* และเปิดฟอร์มคำขอไฟแนนซ์ในดีล */
 const { chromium, EXE, BASE } = require('./env');
 const {installPages}=require('../helpers/pages');
 
@@ -65,21 +65,18 @@ const {installPages}=require('../helpers/pages');
     if (o['เงินผ่อน'].btn.indexOf('ยื่นไฟแนนซ์') < 0) bad('[3] ปุ่มลูกค้าผ่อนคือ "' + o['เงินผ่อน'].btn + '" ควรพูดถึงยื่นไฟแนนซ์');
   }
 
-  /* ---------- [4] บั๊กข้อ 27 — dealSell เงินผ่อนเปิดช่องครบ ---------- */
+  /* ---------- [4] เงินผ่อนยื่นคำขอได้โดยยังไม่เลือกคันรถ ---------- */
   const g4 = await p.evaluate(() => {
-    const c = CUSTOMERS.find(x => !SALES.some(y => y.custId === x.id && !y.void));
-    const keep = c.intent; c.intent = 'เงินผ่อน';
-    dealSell(c.id);
-    const r = { pay: document.querySelector('#sPay').value,
-      finBox: document.querySelector('#sFinBox').style.display,
-      finPay: document.querySelector('#sFinPay').style.display,
-      cust: document.querySelector('#sCust').value };
-    c.intent = keep;
-    return r;
+    const c=CUSTOMERS.find(x=>!SALES.some(y=>y.custId===x.id&&!y.void)&&!FINCASES.some(f=>f.custId===x.id));
+    if(!c)return {missing:true};
+    const keep=c.intent;c.intent='เงินผ่อน';go('deal');
+    const before={sales:SALES.length,sold:UNITS.filter(u=>u.status==='sold').length};dealSell(c.id);
+    const r={form:!!document.querySelector('#faGo'),model:!!document.querySelector('#faModel'),variant:!!document.querySelector('#faVariant'),color:!!document.querySelector('#faColor'),page:CUR,
+      unchanged:SALES.length===before.sales&&UNITS.filter(u=>u.status==='sold').length===before.sold};
+    closeModal();c.intent=keep;return r;
   });
-  if (g4.pay !== 'finance') bad('[4] dealSell ลูกค้าผ่อนแล้ว #sPay=' + g4.pay);
-  if (g4.finBox === 'none') bad('[4] กล่องไฟแนนซ์ #sFinBox ไม่เปิด — บั๊กข้อ 27 ยังอยู่');
-  if (g4.finPay === 'none') bad('[4] กล่องยอดผ่อน #sFinPay ไม่เปิด — บั๊กข้อ 27 ยังอยู่ (กล่องที่สอง)');
+  if(g4.missing||!g4.form||!g4.model||!g4.variant||!g4.color)bad('[4] เงินผ่อนต้องเปิดคำขอพร้อมรุ่น รหัสรุ่น และสี');
+  if(g4.page!=='deal'||!g4.unchanged)bad('[4] ยื่นไฟแนนซ์ต้องอยู่ในดีลและยังไม่เปิดขาย/ตัดรถ');
 
   /* ---------- [5] setPay จากตารางเทียบค่างวด ---------- */
   const g5 = await p.evaluate(() => {
@@ -139,14 +136,14 @@ const {installPages}=require('../helpers/pages');
     document.querySelector('#dpIntent').value = 'เงินผ่อน';
     const ok = dealProceedSave(c.id);
     const r = { ok, name: c.name, addr: c.addr, intent: c.intent,
-      page: CUR, pay: document.querySelector('#sPay').value };
-    Object.assign(c, keep);
+      page:CUR,application:!!document.querySelector('#faGo'),model:document.querySelector('#faModel')?.value };
+    closeModal();Object.assign(c,keep);
     return r;
   });
   if (!g7.ok) bad('[7] กรอกครบแล้ว dealProceedSave ยังไม่ผ่าน');
   if (g7.name !== 'QA สมบูรณ์' || g7.addr !== '99 หมู่ 9 ต.ทดสอบ' || g7.intent !== 'เงินผ่อน')
     bad('[7] ข้อมูลไม่ถูกบันทึกลงลูกค้า (name=' + g7.name + ')');
-  if (g7.page !== 'sell' || g7.pay !== 'finance') bad('[7] บันทึกแล้วไม่พาไปหน้าขายแบบผ่อน (page=' + g7.page + ' pay=' + g7.pay + ')');
+  if(g7.page!=='deal'||!g7.application||!g7.model)bad('[7] กรอกครบแล้วต้องเปิดคำขอไฟแนนซ์ในดีล (page='+g7.page+')');
 
   await b.close();
   if (errors.length) fails.push(...errors);

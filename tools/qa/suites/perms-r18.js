@@ -77,13 +77,13 @@ const { chromium, EXE, BASE } = require('./env');
   /* 4 · ปิดสิทธิ์ฝ่ายบริการ → careTick ปฏิเสธ · เปิดคืน → ติ๊กได้ */
   const t4 = await p.evaluate(() => {
     const r = CARE[0];
-    if (!r || !r.check.length) return { skip: 'ไม่มีงานฝ่ายบริการใน seed' };
+    if (!r || !r.tasks.length) return { skip: 'ไม่มีงานฝ่ายบริการใน seed' };
     /* seed อาจติ๊กช่องแรกไว้แล้ว — เทียบก่อน/หลังแทนการเดาว่าเริ่มจากว่าง */
-    const b0 = r.check[0].done;
+    const b0 = r.tasks[0].done;
     __set('care', 'act:care', 'none'); __imp('ST10');
-    const offBlocked = careTick(r.id, 0) === false && r.check[0].done === b0;
+    const offBlocked = careTask(r.id, r.tasks[0].id, null, !r.tasks[0].done) === false && r.tasks[0].done === b0;
     __imp('ST1'); __set('care', 'act:care', 'write'); __imp('ST10');
-    const onWorks = careTick(r.id, 0) === true && r.check[0].done !== b0;
+    const onWorks = careTask(r.id, r.tasks[0].id, null, !r.tasks[0].done) === true && r.tasks[0].done !== b0;
     __imp('ST1');
     return { offBlocked, onWorks };
   });

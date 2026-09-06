@@ -1,0 +1,44 @@
+/* บรีฟวันนี้ B03/B06/B08/B11/B12: ช่วงเวลาและตัวเลขตรงกัน, อัปเดตล่าสุดก่อน,
+   เซลล์เห็นลูกค้าตัวเอง, ย้ายลูกค้าเข้าคลังเก็บประวัติ, แจ้งเตือนรายงานและอ่านทีละรายการ */
+const {chromium,EXE,BASE}=require('./env');
+(async()=>{const b=await chromium.launch({executablePath:EXE});const p=await b.newPage({timezoneId:'Asia/Bangkok',viewport:{width:1440,height:900}});
+ const errors=[];p.on('pageerror',e=>errors.push(e.message));await p.goto(BASE+'/index.html');
+ await p.click('#lgUsers [data-id="ST1"]');await p.click('#lgGo');
+ const result=await p.evaluate(async()=>{
+  const failures=[],check=(ok,m)=>{if(!ok)failures.push(m);};
+  const admin=ME,sales=STAFF.find(x=>x.id==='ST3');go('deal');
+  const c1={id:'QAOWN1',name:'ลูกค้าทดสอบของฉัน',phone:'0812345678',branch:sales.branch,owner:sales.nick,ownerId:sales.id,intent:'เงินสด',stage:'สนใจ',createdAt:TODAY+'T01:00:00+07:00',upAt:TODAY+'T08:00:00+07:00',note:'ประวัติต้องอยู่'};
+  const c2={...c1,id:'QAOWN2',name:'ลูกค้าทดสอบของคนอื่น',ownerId:'ST4',owner:'เซลล์สนุ๊กเกอร์'};
+  CUSTOMERS.push(c1,c2);ME=sales;go('deal');
+  check(dealAll().some(d=>d.c.id===c1.id)&&!dealAll().some(d=>d.c.id===c2.id),'[1] เซลล์เห็นลูกค้าคนอื่นหรือของตนหาย');
+  check(dealOf(c2.id)===null,'[1] เปิดดีลคนอื่นด้วยรหัสตรงได้');
+  custModal(c2.id);check(!$('#cmName'),'[2] เปิดฟอร์มแก้ลูกค้าคนอื่นได้');
+  custModal(c1.id);const keep=c1.name;$('#cmName').value='แก้ข้ามสิทธิ์';ME={...sales,id:'ST4',nick:'คนอื่น'};$('#cmGo').click();
+  check(c1.name===keep,'[2] เปลี่ยนผู้ใช้ขณะเปิดฟอร์มแล้วข้ามguard');closeModal();ME=admin;go('deal');
+  const old={...c1,id:'QAOLD',name:'ลูกค้าเก่านอกช่วง',ownerId:admin.id,upAt:addDays(TODAY,-50)+'T09:00:00+07:00'};
+  CUSTOMERS.push(old);PERIOD.deal={r:1,from:TODAY,to:TODAY};
+  c2.upAt=TODAY+'T11:59:00+07:00';c2.ownerId=admin.id;fsClear('deal');rDeal();
+  let rows=dealRows();check(rows.findIndex(d=>d.c.id===c2.id)<rows.findIndex(d=>d.c.id===c1.id)&&!rows.some(d=>d.c.id===old.id),'[3] เรียงอัปเดตล่าสุดหรือช่วงเวลาผิด');
+  check(thDT(c2.upAt).includes('11:59')&&thDT(TODAY+'T23:45:00Z').includes('06:45'),'[3] เวลาไม่ตรงประเทศไทย');
+  $('#dlQ').value=c1.name;rDeal();rows=dealRows();
+  check(rows.length===1&&$('#dlKpi .kpi .s').textContent.includes('1'),'[4] KPIไม่ตามตัวกรอง');
+  check([...$('#dlFunnel').querySelectorAll('.bl b')].every(e=>+e.textContent<=1),'[4] กรวยรวมลูกค้านอกตัวกรอง');
+  const count=CUSTOMERS.length;check(await customerArchive(c1.id,false,'ยังไม่พร้อมซื้อ'),'[5] ย้ายลูกค้าเข้าคลังไม่ได้');
+  check(CUSTOMERS.length===count&&c1.note==='ประวัติต้องอยู่'&&!!c1.archivedAt,'[5] คลังทำประวัติหรือระเบียนหาย');
+  check(dealRows().some(d=>d.c.id===c1.id),'[5] คลังไม่แสดงลูกค้าที่ย้าย');
+  check(await customerArchive(c1.id,true)&&!c1.archivedAt,'[5] คืนลูกค้าไม่ได้');
+  const active=SALES.find(s=>!s.void&&!regDone(REGS.find(r=>r.saleId===s.id)));
+  if(active)check(!await customerArchive(active.custId,false,'ทดสอบ'),'[6] ย้ายลูกค้าที่มีการขายค้างได้');
+  fsClear('deal');$('#dlQ').value='ไม่ตรงชื่อใด';custModal();$('#cmName').value='ลูกค้าเพิ่มใหม่หาง่าย';$('#cmGo').click();
+  const fresh=CUSTOMERS.find(c=>c.name==='ลูกค้าเพิ่มใหม่หาง่าย');
+  check(fresh&&fresh.ownerId===admin.id&&DEAL_SEL===fresh.id&&$('#dlOne').style.display!=='none','[7] เพิ่มลูกค้าแล้วไม่เปิดรายใหม่');closeModal();
+  TASKS.push({id:'QANT1',custId:c1.id,branch:c1.branch,kind:'ติดตามทดสอบ',due:TODAY,done:false},{id:'QANT2',custId:c2.id,branch:c2.branch,kind:'ติดตามทดสอบ',due:TODAY,done:false});
+  const nt=ntfLoad();delete nt.seen['task:QANT1'];delete nt.seen['task:QANT2'];nt.mute.task=false;ntfSave(nt);
+  notifOpen();check(!ntfLoad().seen['task:QANT1']&&!ntfLoad().seen['task:QANT2'],'[8] เปิดกระดิ่งแล้วอ่านทั้งชุด');
+  check(notifNavigate('task:QANT1')&&CUR==='deal'&&DEAL_SEL===c1.id,'[9] แจ้งเตือนไม่ไปดีลที่ตรงรายการ');
+  check(!!ntfLoad().seen['task:QANT1']&&!ntfLoad().seen['task:QANT2'],'[9] ไม่แยกอ่านทีละรายการ');
+  notifOpen();check($('#drwB [data-nid="task:QANT1"]')?.classList.contains('read')&&!$('#drwB [data-nid="task:QANT2"]')?.classList.contains('read'),'[10] อ่านแล้วไม่แสดงสีจางแยกจากยังไม่อ่าน');
+  closeDrawer();return failures;
+ });
+ console.log(result.length?'FAILS:\n'+result.join('\n'):'ALL_CHECKS_PASS');console.log(errors.length?'ERRORS:\n'+errors.join('\n'):'NO_PAGE_ERRORS');await b.close();process.exit(result.length||errors.length?1:0);
+})();

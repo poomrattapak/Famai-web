@@ -49,9 +49,9 @@ const { chromium, EXE, BASE } = require('./env');
     /* [4] เขียนจริง — งานฝ่ายบริการ */
     const cr = CARE[0];
     let tick = false, tickBack = false;
-    if (cr) { const before = cr.check[0].done;
-      tick = careTick(cr.id, 0) === true && cr.check[0].done === !before;
-      tickBack = careTick(cr.id, 0) === true && cr.check[0].done === before; }
+    if (cr) { const before = cr.tasks[0].done;
+      tick = careTask(cr.id, cr.tasks[0].id, null, !cr.tasks[0].done) === true && cr.tasks[0].done === !before;
+      tickBack = careTask(cr.id, cr.tasks[0].id, null, !cr.tasks[0].done) === true && cr.tasks[0].done === before; }
     const transferStill = canTransfer();
     return { menus, bits, tick: tick && tickBack, transferStill, hasCare: !!cr };
   });

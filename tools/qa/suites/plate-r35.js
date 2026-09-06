@@ -90,7 +90,7 @@ const { chromium, EXE, BASE } = require('./env');
       && REGS.some(r => r.saleId === x.id));
     if (!s) return { skip: true };
     const fc = FINCASES.find(f => f.saleId === s.id), rg = REGS.find(r => r.saleId === s.id);
-    fc.status = 'อนุมัติแล้ว'; delete fc.rejectReason;
+    fc.status = 'อนุมัติแล้ว'; delete fc.rejectReason; s.finApproval={status:'ผ่าน'};
     rg.stage = 'อนุมัติ'; rg.hold = ''; rg.plate = ''; delete rg.deliveredAt; delete s.deliveredAt;
     const ci = CARE.findIndex(c => c.saleId === s.id); if (ci >= 0) CARE.splice(ci, 1);
     /* ส่งมอบย้อนหลัง 5 วัน — วันส่งมอบต้องต่างจากวันได้ป้าย ไม่งั้นแยกไม่ออกว่านับจากวันไหน */
@@ -100,16 +100,16 @@ const { chromium, EXE, BASE } = require('./env');
     const cr = CARE.find(c => c.saleId === s.id);
     const lg = (rg.log || []).filter(l => l.to === 'ได้ทะเบียนแล้ว').pop();
     return { skip: false, dlv, atDeliver, closed, made: !!cr,
-      atOk: cr && lg && cr.createdAt === lg.at && cr.createdAt !== rg.deliveredAt,
-      dueOk: cr && lg && cr.tasks.length && cr.tasks[0].due === addDays(lg.at, parseInt(String(CFG.careDays).split(',')[0])) };
+      atOk: cr && cr.createdAt === rg.deliveredAt,
+      dueOk: cr && cr.tasks.length===1 && cr.tasks[0].due === careMonthDate(rg.deliveredAt) };
   });
   if (g4.skip) bad('[4] ไม่มีดีลผ่อนใน seed ให้เดิน');
   else {
     if (!g4.dlv || !g4.closed) bad('[4] เดินเส้นทางส่งมอบ→ได้ป้ายไม่สำเร็จ');
-    if (g4.atDeliver) bad('[4] งานฝ่ายบริการเกิดตั้งแต่ส่งมอบ — ต้องรอวันได้ป้าย');
+    if (!g4.atDeliver) bad('[4] ส่งมอบรถแล้วงานฝ่ายบริการไม่เกิด');
     if (!g4.made) bad('[4] ได้ป้ายแล้วงานฝ่ายบริการไม่เกิด');
-    if (!g4.atOk) bad('[4] createdAt ของงานไม่ใช่วันได้ป้ายจาก log');
-    if (!g4.dueOk) bad('[4] รอบติดตามแรกไม่ได้นับจากวันได้ป้าย');
+    if (!g4.atOk) bad('[4] createdAt ของงานไม่ใช่วันส่งมอบรถ');
+    if (!g4.dueOk) bad('[4] งานหนึ่งเดือนไม่ได้นับจากวันส่งมอบ');
   }
 
   /* ---------- [5] ค้นหาด้วยเลขถัง ---------- */
@@ -146,7 +146,7 @@ const { chromium, EXE, BASE } = require('./env');
     go('aftercare');
     const live = CARE.map(r => ({ r, s: SALES.find(x => x.id === r.saleId) }))
       .filter(x => x.s && !x.s.void);
-    const wantToday = live.reduce((n, x) => n + x.r.tasks.filter(t => !t.done && t.due <= TODAY).length, 0);
+    const wantToday = live.reduce((n, x) => n + x.r.tasks.filter(t => careCurrentTask(t) && !t.done && t.due <= addDays(TODAY,7)).length, 0);
     const rows = document.querySelectorAll('#acToday tbody tr');
     const gotToday = wantToday ? rows.length : 0;
     const row = document.querySelector('#acCust [data-cdrw]');
@@ -155,14 +155,14 @@ const { chromium, EXE, BASE } = require('./env');
     row.onclick();
     const opened = $('#drw').classList.contains('on');
     const drwT = $('#drwT').textContent;
-    const ck = document.querySelector('#drwB [data-ck]');
+    const ck = document.querySelector('#drwB [data-care-done]');
     let ticked = false, by = '';
-    if (ck) { const pr = ck.dataset.ck.split('|');
+    if (ck) { const pr = ck.dataset.careDone.split('|');
       const cr = CARE.find(x => x.id === pr[0]);
-      const before = cr.check[+pr[1]].done;
-      ck.onclick();
-      ticked = cr.check[+pr[1]].done === !before; by = cr.check[+pr[1]].by;
-      if (!before && ticked) careTick(pr[0], +pr[1]);   /* คืนสภาพ */
+      const t=cr.tasks.find(x=>x.id===pr[1]),before=t.done;
+      ck.checked=!before;ck.onchange();
+      ticked=t.done===!before;by=t.by;
+      if(!before&&ticked)careTask(pr[0],pr[1],null,before);   /* คืนสภาพ */
     }
     return { wantToday, gotToday, noRow: false, opened, drwT, hasCk: !!ck, ticked, by };
   });

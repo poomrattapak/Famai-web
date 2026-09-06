@@ -1,0 +1,71 @@
+name: ตรวจเว็บตามบรีฟ r56
+
+on:
+  push:
+    branches: [work/brief-r56-validation]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: brief-qa-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  browser-qa:
+    if: github.ref == 'refs/heads/work/brief-r56-validation'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    defaults:
+      run:
+        shell: bash
+    env:
+      QA_URL: http://localhost:8123
+      QA_ARTIFACT_DIR: ${{ github.workspace }}/tmp/qa-ci
+    steps:
+      - name: อ่าน commit ที่ต้องตรวจ โดยไม่เก็บข้อมูลรับรอง Git
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: เตรียม Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '22'
+          package-manager-cache: false
+
+      - name: ตรวจไวยากรณ์ก่อนติดตั้งเบราว์เซอร์
+        run: node tools/qa/suites/syntax.js
+
+      - name: เตรียม Playwright, Chromium และฟอนต์ไทย
+        run: |
+          npm install --prefix "$RUNNER_TEMP/famai-qa" --no-audit --no-fund --ignore-scripts playwright@1.63.0 @electric-sql/pglite@0.5.8
+          "$RUNNER_TEMP/famai-qa/node_modules/.bin/playwright" install --with-deps chromium
+          sudo apt-get install -y fonts-thai-tlwg
+          printf 'QA_PLAYWRIGHT=%s\n' "$RUNNER_TEMP/famai-qa/node_modules/playwright" >> "$GITHUB_ENV"
+          printf 'PGLITE_PACKAGE=%s\n' "$RUNNER_TEMP/famai-qa/node_modules/@electric-sql/pglite" >> "$GITHUB_ENV"
+          QA_BROWSER_PATH=$(node -e 'process.stdout.write(require(process.argv[1]).chromium.executablePath())' "$RUNNER_TEMP/famai-qa/node_modules/playwright")
+          printf 'QA_CHROMIUM=%s\n' "$QA_BROWSER_PATH" >> "$GITHUB_ENV"
+          sudo mkdir -p /home/user
+          sudo ln -s "$GITHUB_WORKSPACE" /home/user/Famai-web
+          mkdir -p "$QA_ARTIFACT_DIR"
+          git rev-parse HEAD > "$QA_ARTIFACT_DIR/commit.txt"
+          node --version > "$QA_ARTIFACT_DIR/node-version.txt"
+          "$RUNNER_TEMP/famai-qa/node_modules/.bin/playwright" --version > "$QA_ARTIFACT_DIR/playwright-version.txt"
+
+      # namespace มีเพียง loopback: ด่านใช้เว็บจำลองและ fixture ตามเดิม แต่ยิง API จริงไม่ได้
+      - name: ตรวจทุกชุดและถ่ายภาพ โดยตัดเครือข่ายภายนอก
+        run: |
+          sudo --preserve-env=QA_PLAYWRIGHT,QA_CHROMIUM,QA_URL,QA_ARTIFACT_DIR,PGLITE_PACKAGE \
+            unshare --net bash tools/qa/ci-run.sh "$(command -v node)"
+
+      - name: เก็บผลตรวจและภาพไว้ใน repository เดิม
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: brief-qa-${{ github.sha }}-${{ github.run_attempt }}
+          path: tmp/qa-ci/
+          retention-days: 14
+          if-no-files-found: warn
+          include-hidden-files: false

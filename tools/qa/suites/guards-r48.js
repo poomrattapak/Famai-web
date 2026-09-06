@@ -88,6 +88,7 @@ const { chromium, EXE, BASE } = require('./env');
   /* ---------- [3] svSave ---------- */
   const g3 = await p.evaluate(() => {
     go('service'); rService();
+    $('#svPhone').value='0897654321'; $('#svModel').value='รถนอกรุ่นทดสอบ'; $('#svEngine').value='QA-SERVICE-ENGINE'; $('#svFrame').value='QA-SERVICE-FRAME';
     $('#svName').value = 'QA ด่านซ่อม'; $('#svSearch').value = 'QA-G48-SV';
     $('#svPart').value = ''; $('#svKm').value = '500'; $('#svDate').value = curDate();
     const n0 = SERVICE.length, dc0 = JSON.stringify(DOC_COUNTER);
