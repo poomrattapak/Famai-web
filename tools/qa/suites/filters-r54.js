@@ -17,7 +17,7 @@ const assert=require('node:assert/strict');
       await p.setViewportSize({width,height:1000});
       for(const view of (width===1440?['gal','grp']:['gal','sell'])){
         await p.evaluate(v=>{
-          if(v==='sell'){go('sell');sUnitSet(UNITS.find(u=>u.retail!=null&&u.status==='available').id);}
+          if(v==='sell'){go('sell','p1');sUnitSet(UNITS.find(u=>u.retail!=null&&u.status==='available').id);}
           else{go('stock');stTab(v);}
         },view);
         await p.waitForTimeout(350); // รอการเปลี่ยนขนาดและการเคลื่อนหน้าจอก่อนวัดขอบภาพ

@@ -1805,9 +1805,10 @@ body.lock{ overflow:hidden; }
 
       <!-- ============ 5. ขายรถ ============ -->
       <section class="screen" id="s-sell">
-        <div class="tabs" id="sellTabs"><button class="on" data-p="p1">เปิดการขาย</button><button data-p="p2">คำนวณค่างวด</button></div>
-        <div class="pane on" id="p1"><div class="g2">
-          <div class="card"><div class="hd"><h3>รายละเอียดการขาย</h3></div><div class="bd">
+        <div class="tabs" id="sellTabs"><button class="on" data-p="p2">คำนวณค่างวด / ยื่นไฟแนนซ์</button><button data-p="p1">เปิดการขาย (ผู้บริหาร)</button></div>
+        <div class="pane" id="p1"><div class="g2">
+          <div class="card"><div class="hd"><h3>เปิดการขายและจัดคันรถ</h3></div><div class="bd">
+            <p class="foot">ผู้บริหารเลือกคันรถในขั้นตอนนี้ · เงินผ่อนต้องมีคำขอไฟแนนซ์ที่อนุมัติแล้ว</p>
             <div class="f">
               <div class="fsh">รถ</div>
               <!-- v1.33 (บรีฟข้อ 11): เลือกรถแบบไล่ระดับ รุ่น → รหัสรุ่น → สี → คันจริง
@@ -1871,10 +1872,15 @@ body.lock{ overflow:hidden; }
             <div class="card"><div class="hd"><h3>ผลที่จะเกิดขึ้น</h3></div><div class="bd" id="sImpact"></div></div>
           </div>
         </div></div>
-        <div class="pane" id="p2"><div class="card"><div class="hd"><h3>คำนวณค่างวดสำหรับเซลล์</h3></div><div class="bd">
+        <div class="pane on" id="p2"><div class="card"><div class="hd"><h3>เลือกรุ่นรถและคำนวณค่างวด</h3></div><div class="bd">
           <div class="note w"><svg class="i i-sm"><use href="#i-alert"/></svg><span>เรตดอกเบี้ยเป็นค่าสมมุติ — แก้เรตจริง/เรตรายช่วงงวดได้ที่หน้าตั้งค่าระบบ แท็บบริษัทไฟแนนซ์</span></div>
+          <p class="foot">เลือกรุ่น รหัสรุ่น และสี แล้วเลือกค่างวดเพื่อยื่นไฟแนนซ์ให้ลูกค้า</p>
           <div class="f3" style="margin-bottom:var(--s2)">
-            <div><label class="fl">รุ่นรถ</label><select class="inp" id="fModel"></select></div>
+            <div><label class="fl" for="fVehicleModel">รุ่นรถ</label><select class="inp" id="fVehicleModel"></select></div>
+            <div><label class="fl" for="fModel">รหัสรุ่น</label><select class="inp mono" id="fModel"></select></div>
+            <div><label class="fl" for="fColor">สี</label><select class="inp" id="fColor"></select></div>
+          </div>
+          <div class="f2" style="margin-bottom:var(--s2)">
             <div><label class="fl">ราคาสุทธิ (฿)</label><input class="inp num" id="fNet"></div>
             <div><label class="fl">เงินต้นที่จัด (฿)</label><input class="inp num" id="fPrin" readonly></div>
           </div>
@@ -3379,7 +3385,7 @@ const MENU = [
   {g:'มอเตอร์ไซค์'},
   {k:'recv',     t:'รับรถเข้าสต๊อก',    s:'บันทึกรถทีละคัน',              ic:'inbox', r:['admin','manager','stock']},
   {k:'stock',    t:'สต๊อกรถ',          s:'ค้นหาและจัดการรถทุกคัน',        ic:'bike',  r:['admin','manager','stock','sales','acct']},
-  {k:'sell',     t:'ขายรถ',            s:'เปิดการขายและออกเอกสาร',        ic:'tag', r:['admin','manager','sales']},
+  {k:'sell',     t:'ขายรถ',            s:'คำนวณค่างวด ยื่นไฟแนนซ์ และเปิดการขาย',        ic:'tag', r:['admin','manager','sales']},
   {k:'transfer', t:'โอนย้ายสาขา',      s:'ย้ายรถระหว่างสาขา',            ic:'repeat', r:['admin','manager','stock']},
   {g:'ลูกค้าและการเงิน'},
   {k:'quote',    t:'ใบเสนอราคา',       s:'เทียบรถและไฟแนนซ์ให้ลูกค้า',    ic:'file', r:['admin','manager','sales']},
@@ -3696,6 +3702,7 @@ function upickFace(sel){
 }
 const upickSync = () => $$('.upick select').forEach(upickFace);
 function upickOpen(sel){
+  if(sel.id==='sUnit' && !canOpenSale()){toast('เฉพาะผู้บริหารที่มีสิทธิ์จัดคันรถ','',1);return false;}
   const opts=[...sel.options].filter(o=>o.value);
   const draw=q=>{
     const qq=String(q||'').trim().toLowerCase();
@@ -4070,7 +4077,7 @@ function go(k, sub){
   const mbtn=$('#bnav .bnb[data-more]');
   if(mbtn) mbtn.classList.toggle('on', !$('#bnav [data-s="'+k+'"]'));
   const m=menuOf(k); $('#pgT').textContent=m.t; $('#pgS').textContent=m.s;
-  render(); if(sub) goSub(k, sub); window.scrollTo(0,0);
+  render(); if(k==='sell') sellTab(sub||'p2'); else if(sub) goSub(k, sub); window.scrollTo(0,0);
 }
 
 /* ============================= RENDER ทั้งหมด ============================= */
@@ -5007,7 +5014,7 @@ function unitDrawer(id){
     acts.push('<button class="btn sec" data-clr="'+u.id+'">แก้ราคาเคลียร์</button>');
   }
   if(u.status==='available' && u.retail!=null && canSee('sell'))
-    acts.unshift('<button class="btn" data-usell="'+u.id+'">ขายคันนี้<svg class="i"><use href="#i-right"/></svg></button>');
+    acts.unshift('<button class="btn" data-usell="'+u.id+'">คำนวณค่างวดรุ่นนี้<svg class="i"><use href="#i-right"/></svg></button>');
   if(acts.length) h+='<div class="savebar">'+acts.join('')+'</div>';
   h+='<h4 class="sec">ที่มาของข้อมูล</h4><dl class="kv">'
     +'<dt>ไฟล์นำเข้า</dt><dd class="mono">'+esc(u.src)+'</dd>'
@@ -5027,8 +5034,8 @@ function unitDrawer(id){
   openDrawer(u.model+' · '+u.engine, h);
   wireSaleLinks();
   $$('[data-clr]').forEach(b=> b.onclick=()=>clearanceModal(b.dataset.clr));
-  $$('[data-usell]').forEach(b=> b.onclick=()=>{ closeDrawer(); go('sell');
-    setTimeout(()=>{ sUnitSet(b.dataset.usell); },30); });
+  $$('[data-usell]').forEach(b=> b.onclick=()=>{ const u=UNITS.find(x=>x.id===b.dataset.usell);
+    closeDrawer(); if(u)sellPrepare(u.variant,u.colorCode); });
 }
 /* ตั้งราคาเคลียร์สต๊อก — ผู้จัดการกรอกเอง ระบบไม่เดาราคาให้ */
 function clearanceModal(id){
@@ -5403,13 +5410,13 @@ function rStock(){
           '<span class="mono">'+esc(x.engine)+'</span>', ageTag(age(x)),
           '<span class="mono">'+esc(x.frame)+'</span> · '+esc(bName(x.branch))+(noMoney()?'':' · ทุน '+fmt(x.cost)),
           (x.status==='available'&&canSee('sell')
-            ? '<button class="lnk" data-sell="'+x.id+'">ขายคันนี้</button>' : statusPill(x.status)))).join('');
+            ? '<button class="lnk" data-sell="'+x.id+'">คำนวณค่างวดรุ่นนี้</button>' : statusPill(x.status)))).join('');
         return h; }), 10);
     $$('#stGrp [data-grp]').forEach(r=> r.onclick=()=>{ const k=r.dataset.grp;
       stOpen[k]=!stOpen[k]; rStock(); });
     wireUnitRows();
-    $$('#stGrp [data-sell]').forEach(b=> b.onclick=e=>{ e.stopPropagation(); go('sell');
-      setTimeout(()=>{ sUnitSet(b.dataset.sell); },30); });
+    $$('#stGrp [data-sell]').forEach(b=> b.onclick=e=>{ e.stopPropagation();
+      const u=UNITS.find(x=>x.id===b.dataset.sell); if(u)sellPrepare(u.variant,u.colorCode); });
   } else if(stView==='table'){
     /* เจ้าของสั่งว่าแท็บนี้ต้องเป็น "ตารางจริง" ทั้งบนจอเล็ก จึงไม่ส่งการ์ดเข้า tbl()
        แต่ลดเหลือ 4 คอลัมน์ให้พอดี 390px แทน — คอลัมน์ที่ตัดออกไปอยู่ในบรรทัดรองของช่องแรก */
@@ -5660,18 +5667,21 @@ function rSell(){
        จะทำให้แผงเบอร์ที่เพิ่งเปิดโดนตัวหน่วง blur ของช่องชื่อปิดทิ้งใน 150ms (เจอตอนเขียนด่าน [2]) */
     $('#sCust').onblur =()=>setTimeout(()=>{ $('#sSugN').style.display='none'; },150);
     $('#sPhone').onblur=()=>setTimeout(()=>{ $('#sSugP').style.display='none'; },150);
-    $$('#sellTabs button').forEach(b=> b.onclick=()=>{ $$('#sellTabs button').forEach(x=>x.classList.remove('on'));
-      b.classList.add('on'); $$('#s-sell .pane').forEach(p=>p.classList.toggle('on',p.id===b.dataset.p));
-      if(b.dataset.p==='p2') finCompare(); });
+    $$('#sellTabs button').forEach(b=> b.onclick=()=>sellTab(b.dataset.p));
     ['fNet','fDown'].forEach(k=> $('#'+k).oninput=finCompare);
+    $('#fVehicleModel').onchange=()=>{
+      $('#fModel').value=''; $('#fColor').value=''; finVehicleFill();
+      $('#fModel').value=$('#fModel').options[1]?.value||''; finCompare();
+    };
     $('#fModel').onchange=finCompare;
+    $('#fColor').onchange=finCompare;
   }
   /* เติมใหม่ทุกครั้ง — รับการเพิ่ม/ลบ/ปิดใช้งานไฟแนนซ์ */
   (function(){ const el=$('#sFinCo'), want=el.value, act=finActive();
     el.innerHTML= act.length? act.map(f=>'<option value="'+f.id+'">'+esc(f.name)+' ('+f.rate+'%/เดือน)</option>').join('')
       : '<option value="">ยังไม่มีไฟแนนซ์ที่เปิดใช้งาน</option>';
     if(want && act.some(f=>f.id===want)) el.value=want; })();
-  const av=vehCascadeFill(SELL_CAS, sellPool);
+  const av=canOpenSale()?vehCascadeFill(SELL_CAS, sellPool):[];
   const cur=$('#sUnit').value;
   /* บรีฟรอบ 1: ตัดราคาออกจากรายการเลือกคัน ("มันจะแอบงง") — ราคายังอยู่ในสรุปดีลด้านข้าง
      v1.33: รายการนี้ถูกกรองด้วย รุ่น/รหัสรุ่น/สี/ค้นหา ข้างบนแล้ว — โชว์เลขถังนำเพราะเป็นตัวชี้คัน */
@@ -5686,6 +5696,7 @@ function rSell(){
 }
 /* เลือกคันจากภายนอก (ดีล/ใบเสนอ/สต๊อก) — ล้างตัวกรองก่อน ไม่งั้นคันที่ส่งมาอาจโดนกรองหาย */
 function sUnitSet(id){
+  if(!canOpenSale()){toast('เฉพาะผู้บริหารที่มีสิทธิ์จัดคันรถ','',1);return false;}
   ['svQ','svModel','svVariant','svColor'].forEach(k=>{ const el=$('#'+k); if(el) el.value=''; });
   rSell(); $('#sUnit').value=id; calcSell(); upickSync();
 }
@@ -5982,19 +5993,41 @@ function sellTab(p){
   if(p==='p1' && !canOpenSale()) p='p2';
   $$('#sellTabs button').forEach(x=>x.classList.toggle('on', x.dataset.p===p));
   $$('#s-sell .pane').forEach(x=>x.classList.toggle('on', x.id===p));
+  if(p==='p2') finCompare();
+}
+/* แคตตาล็อกเป็นแหล่งตัวเลือกรุ่น/รหัส/สี ไม่ผูกกับคันที่มีในสต๊อก */
+function finVehicleFill(){
+  const model=$('#fVehicleModel'),variant=$('#fModel'),color=$('#fColor');
+  const vs=Object.keys(PRICE).filter(v=>!PRICE[v].disabled);
+  const want=vs.includes(variant.value)?variant.value:'', oldColor=color.value;
+  const names=[...new Set(vs.map(v=>PRICE[v].m))];
+  const name=want?PRICE[want].m:model.value;
+  model.innerHTML='<option value="">เลือกรุ่นรถ</option>'+names.map(m=>'<option value="'+esc(m)+'">'+esc(m)+'</option>').join('');
+  if(names.includes(name))model.value=name;
+  const options=vs.filter(v=>!model.value||PRICE[v].m===model.value);
+  variant.innerHTML='<option value="">เลือกรหัสรุ่น</option>'+options.map(v=>'<option value="'+esc(v)+'">'+esc(v)+'</option>').join('');
+  if(options.includes(want))variant.value=want;
+  const colors=PRICE[variant.value]?.c||{}, keys=Object.keys(colors);
+  color.innerHTML=keys.length?keys.map(k=>'<option value="'+esc(k)+'">'+esc(colors[k].name)+'</option>').join(''):'<option value="">เลือกรหัสรุ่นก่อน</option>';
+  if(color.dataset.variant===variant.value && keys.includes(oldColor))color.value=oldColor;
+  color.dataset.variant=variant.value;
+}
+/* ทางลัดจากสต๊อกส่งเพียงสเปกรุ่นให้เซลล์เตรียมคำขอ ผู้บริหารจัดคันภายหลัง */
+function sellPrepare(variant,colorCode){
+  if(!canSee('sell'))return false;
+  go('sell');
+  $('#fVehicleModel').value=''; $('#fModel').value=''; finVehicleFill();
+  $('#fModel').value=variant; finCompare();
+  if(PRICE[variant]?.c?.[colorCode])$('#fColor').value=colorCode;
+  return true;
 }
 /* เลือกรุ่น + ดาวน์ → เทียบค่างวดทุกไฟแนนซ์ที่เปิดใช้ ทุกช่วงงวด ทันที
    ดาวน์ต่ำกว่าขั้นต่ำของเจ้าไหน คอลัมน์เจ้านั้นถูกขีดออกพร้อมเหตุผล */
 function finCompare(){
-  /* dropdown รุ่น — เติมใหม่ทุกครั้ง รับรุ่นที่เพิ่มจากหน้าตั้งค่า */
-  (function(){ const el=$('#fModel'), want=el.value, vs=Object.keys(PRICE);
-    el.innerHTML='<option value="">— กรอกราคาเอง —</option>'
-      +vs.map(v=>'<option value="'+v+'">'+esc(PRICE[v].m)+' · '+v+' — '+fmt(PRICE[v].retail)+' ฿</option>').join('');
-    if(want && (want===''||PRICE[want])) el.value=want; })();
-  const u=curUnit(), mv=$('#fModel').value;
+  finVehicleFill();
+  const mv=$('#fModel').value;
   if(mv && $('#fModel').dataset.priceModel!==mv) $('#fNet').value=fmt(PRICE[mv].retail);
   $('#fModel').dataset.priceModel=mv;
-  if(!mv && !$('#fNet').value && u) $('#fNet').value=fmt(u.retail-num($('#sDisc').value));
   const net=num($('#fNet').value), down=num($('#fDown').value), prin=Math.max(0,net-down);
   $('#fPrin').value=fmt(prin);
   const downPct = net>0? down/net*100 : 0;
@@ -6046,15 +6079,9 @@ function finCompare(){
             +'<div class="tsub" style="color:var(--accent)">ใช้ตัวเลือกนี้</div></td>').join('')
         +(act.length>1?'<td>'+(bi>=0?pill(act[bi].name,'good'):'—')+'</td>':'')+'</tr>';
     }), 'กรอกราคาสุทธิก่อน', mCards);
-  /* แตะค่างวดที่ถูกใจ → เงื่อนไขทั้งชุด (ไฟแนนซ์/งวด/ดาวน์) ไหลกลับเข้าฟอร์มขายให้เอง */
+  /* ทุกบทบาทส่งเงื่อนไขไปคำขอไฟแนนซ์ ก่อนผู้บริหารเปิดการขายและจัดคัน */
   $$('#finCmp [data-pick]').forEach(td=> td.onclick=()=>{
-    const pk=td.dataset.pick.split('|'), f=FIN_CO.find(x=>x.id===pk[0]);
-    if(typeof canOpenSale==='function'&&!canOpenSale()){finCalcApply(pk[0],+pk[1]);return;}
-    setPay('finance');
-    $('#sFinCo').value=pk[0]; $('#sTerm').value=pk[1];
-    $('#sDown').value=num($('#fDown').value);
-    sellTab('p1'); calcSell();
-    toast('คัดลอกเงื่อนไขผ่อนแล้ว', (f?f.name+' · ':'')+pk[1]+' งวด · ดาวน์ '+fmt(num($('#fDown').value))+' ฿');
+    const pk=td.dataset.pick.split('|'); finCalcApply(pk[0],+pk[1]);
   });
   /* บรีฟรอบ 1: เอาหัวข้อ "เงินดาวน์ขั้นต่ำ" ออกจากหน้าจอขาย — ช่องที่ใช้ไม่ได้ถูกขีดฆ่าในตารางอยู่แล้ว
      เกณฑ์ยังทำงานตามเดิม (ตั้งได้ที่ตั้งค่า > บริษัทไฟแนนซ์ และด่านใน saveSale ยังเตือนก่อนบันทึก) */
@@ -6066,7 +6093,9 @@ function finCalcApply(finId,term){
   if(!permW('page:deal')){toast('คุณมีสิทธิ์ดูดีลเท่านั้น','',1);return;}
   const variant=$('#fModel').value;
   if(!variant){toast('เลือกรุ่นรถก่อนยื่นไฟแนนซ์','เลือกรุ่นด้านบนตารางค่างวด',1);return;}
-  const preset={variant,finId,term,list:num($('#fNet').value),down:num($('#fDown').value)};
+  const colorCode=$('#fColor').value;
+  if(!PRICE[variant] || PRICE[variant].disabled || !PRICE[variant].c?.[colorCode]){toast('เลือกรุ่นและสีที่พร้อมใช้งานก่อน','',1);return;}
+  const preset={variant,colorCode,finId,term,list:num($('#fNet').value),down:num($('#fDown').value)};
   const list=CUSTOMERS.filter(c=>customerVisible(c)&&!c.archivedAt&&!SALES.some(s=>s.custId===c.id&&!s.void));
   const proceed=c=>{closeModal();dealGo(c.id);finApplyModal(c.id,preset);};
   openModal('ใช้เงื่อนไขค่างวดกับลูกค้า','<div class="f"><label class="fl">ลูกค้าของคุณ</label><select class="inp" id="fApplyCust">'
@@ -6083,7 +6112,8 @@ function finComparePrint(){
   const act=finActive().filter(f=>!$('#fFinance').value || f.id===$('#fFinance').value); if(!act.length){ toast('ยังไม่มีไฟแนนซ์ที่เปิดใช้งาน','',1); return; }
   if(down<0 || down>net){ toast('เงินดาวน์ต้องอยู่ระหว่าง 0 ถึงราคาสุทธิ','',1); return; }
   const TALL=[...new Set(act.flatMap(finTerms))].sort((a,b)=>a-b);
-  const mv=$('#fModel').value, mname=mv&&PRICE[mv]? PRICE[mv].m+' ('+mv+')' : 'ตามที่ตกลง';
+  const mv=$('#fModel').value, color=PRICE[mv]?.c?.[$('#fColor').value]?.name;
+  const mname=mv&&PRICE[mv]? PRICE[mv].m+' ('+mv+')'+(color?' · '+color:'') : 'ตามที่ตกลง';
   const rows=TALL.map(n=>'<tr><td><b>'+n+' งวด</b></td>'
     +act.map(f=> down/net*100 < (f.minDownPct||0) ? '<td class="n">ดาวน์ไม่ถึงเกณฑ์</td>' : finTerms(f).indexOf(n)>=0
       ? '<td class="n">'+fmt(installment(prin, finRate(f,n), n))+'<div class="tsub">'+finRate(f,n)+'%/เดือน</div></td>'
@@ -12363,8 +12393,8 @@ function gsIndex(){
   PT_TABS.filter(x=>inRoles(x.r)).forEach(x=> tab('parts', x.n, ()=>go('parts',x.p)));
   [['gal','สต๊อกรถ — แกลเลอรี'],['table','สต๊อกรถ — ตาราง'],['grp','สต๊อกรถ — คงเหลือรายรุ่น']]
     .forEach(([v,t])=> tab('stock', t, ()=>go('stock',v)));
-  [['p1','เปิดการขาย'],['p2','คำนวณค่างวด'],['p3','ขายส่ง (B2B)']]
-    .forEach(([pn,t])=> tab('sell', t, ()=>go('sell',pn)));
+  $$('#sellTabs button').filter(b=>b.dataset.p!=='p1'||canOpenSale())
+    .forEach(b=> tab('sell', b.textContent.trim(), ()=>go('sell',b.dataset.p)));
   tab('cal','ปฏิทินบริษัท', ()=>go('cal','#calTabs [data-c="veh"]'));
   tab('cal','ปฏิทินผู้บริหาร', ()=>go('cal','#calExecTab'));
   [['v1','เปิดใบงานซ่อม'],['v2','ใบงานซ่อมทั้งหมด'],['v3','เตือนเช็กระยะ']]

@@ -39,7 +39,7 @@ const { chromium, EXE, BASE } = require('./env');
   function FIN_TERMS_STR(){ return '12,18,24,30,36,42,48,60'; }
 
   /* ---- 2+3) ยอดกู้เปลี่ยนตามไฟแนนซ์/งวด · ยอดชำระ = ดาวน์−ส่วนลด ---- */
-  await page.evaluate(() => { go('sell'); });
+  await page.evaluate(() => { go('sell','p1'); });
   await page.waitForTimeout(250);
   const t2 = await page.evaluate(() => {
     $('#sPay').value='finance'; $('#sPay').onchange();
@@ -78,7 +78,7 @@ const { chromium, EXE, BASE } = require('./env');
   if (t8.sellBtns>0) fails.push('ตารางสต๊อกยังมีปุ่มขายคันนี้ '+t8.sellBtns+' ปุ่ม (K11)');
 
   /* ---- 4+6) saveSale: confirm ก่อน · ของแถมหลายชิ้น+นอกคลัง · ตัดสต๊อกตามจำนวน ---- */
-  await page.evaluate(() => go('sell'));
+  await page.evaluate(() => go('sell','p1'));
   await page.waitForTimeout(200);
   const t4 = await page.evaluate(() => {
     $('#sCust').value='คุณทดสอบ ระบบดี'; $('#sPhone').value='089-000-1234';

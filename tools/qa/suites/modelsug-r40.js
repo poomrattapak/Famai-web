@@ -25,7 +25,7 @@ const { chromium, EXE, BASE } = require('./env');
   await p.click('#lgUsers [data-id="ST1"]'); await p.click('#lgGo'); await p.waitForTimeout(400);
 
   /* ---------- [1] คลิกช่องค้นหา → แผงรายชื่อรุ่นโชว์ครบ ---------- */
-  await p.evaluate(() => go('sell')); await p.waitForTimeout(250);
+  await p.evaluate(() => go('sell','p1')); await p.waitForTimeout(250);
   const has = await p.evaluate(() => !!document.getElementById('svQSug'));
   if (!has) bad('[1] ไม่มีแผง #svQSug ในหน้าขาย');
   else {

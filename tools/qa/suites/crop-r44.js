@@ -50,7 +50,7 @@ const PNG = Buffer.from(
     };
     await p.evaluate(() => { go('stock'); stTab('grp'); }); await p.waitForTimeout(300); await scan('stock/grp');
     await p.evaluate(() => stTab('gal')); await p.waitForTimeout(300); await scan('stock/gal');
-    await p.evaluate(() => { go('sell'); const u = sellPool()[0]; if (u) sUnitSet(u.id); });
+    await p.evaluate(() => { go('sell','p1'); const u = sellPool()[0]; if (u) sUnitSet(u.id); });
     await p.waitForTimeout(300); await scan('sell');
     await p.evaluate(() => { go('deal'); const s = SALES.find(x => !x.void); if (s) { DEAL_SEL = s.custId; rDeal(); } });
     await p.waitForTimeout(300); await scan('deal/one');

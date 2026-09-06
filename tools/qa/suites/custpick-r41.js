@@ -24,7 +24,7 @@ const { chromium, EXE, BASE } = require('./env');
   p.on('pageerror', e => errors.push('PAGEERROR ' + e.message));
   await p.goto(BASE + '/index.html');
   await p.click('#lgUsers [data-id="ST1"]'); await p.click('#lgGo'); await p.waitForTimeout(400);
-  await p.evaluate(() => go('sell')); await p.waitForTimeout(250);
+  await p.evaluate(() => go('sell','p1')); await p.waitForTimeout(250);
 
   /* ตัวเรียง zero-state — mirror จากแอป ใช้ร่วมหลายข้อ */
   const RECENT = `CUSTOMERS.filter(c=>customerVisible(c)&&!c.archivedAt).slice()

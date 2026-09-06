@@ -13,7 +13,7 @@ const {chromium,EXE,BASE}=require('./env');
    const button=$('#dlArchiveGo'),parent=button?.parentElement;
    check(!!button&&getComputedStyle(parent).position==='static'&&!parent.classList.contains('savebar'),'[1] ปุ่มย้ายลูกค้าต้องอยู่ท้ายรายละเอียดแบบไม่ติดจอ');
    const card=parent?.closest('.card');check(card&&card.contains(button),'[1] ปุ่มต้องอยู่ในรายละเอียดเดิม');
-   go('sell');const input=$('#sDown'),buttonSave=$('#sSave');
+   go('sell','p1');const input=$('#sDown'),buttonSave=$('#sSave');
    check(getComputedStyle(input).height===getComputedStyle(buttonSave).height,'[2] ช่องกรอกกับปุ่มต้องสูงเท่ากันในฟอร์ม');
    const cards=[...document.querySelectorAll('.g2>.card,.g2e>.card,.g3>.card')];
    check(cards.length>0&&cards.every(c=>parseFloat(getComputedStyle(c).marginBottom)===0),'[2] การ์ดใน grid ต้องใช้ช่องไฟเดียวไม่บวกระยะซ้ำ');

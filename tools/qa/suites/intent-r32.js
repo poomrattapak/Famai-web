@@ -6,7 +6,7 @@
    [2] ดีลไม่มีใบขาย + สนใจเงินสด → แถบไม่มีขั้นไฟแนนซ์ (3 ขั้น) · สนใจผ่อน/ไม่ระบุ → มี (4 ขั้น · v1.34)
    [3] ปุ่มขั้น lead อ่าน intent — เงินสดเห็น "เปิดการขาย" · ผ่อนเห็น "ยื่นไฟแนนซ์"
    [4] บรีฟใหม่ · dealSell ลูกค้าเงินผ่อน → คำขอรุ่น/สีในดีล โดยไม่มีใบขายหรือคันรถ
-   [5] setPay เป็นทางเดียว — จากตารางเทียบค่างวด (data-pick) กล่องทั้งสองก็ต้องเปิด
+   [5] setPay เปิด/ปิดกล่องครบ · เลือกค่างวดส่งรุ่น สี และเงื่อนไขไปคำขอ โดยยังไม่เปิดใบขาย
    [6] ตารางรวมมี pill เงินสด/ผ่อน + ตัวกรอง #dlPay กรองจริง
    [7] dealProceedSave ครบทุกช่อง → บันทึกลง c.* และเปิดฟอร์มคำขอไฟแนนซ์ในดีล */
 const { chromium, EXE, BASE } = require('./env');
@@ -78,27 +78,41 @@ const {installPages}=require('../helpers/pages');
   if(g4.missing||!g4.form||!g4.model||!g4.variant||!g4.color)bad('[4] เงินผ่อนต้องเปิดคำขอพร้อมรุ่น รหัสรุ่น และสี');
   if(g4.page!=='deal'||!g4.unchanged)bad('[4] ยื่นไฟแนนซ์ต้องอยู่ในดีลและยังไม่เปิดขาย/ตัดรถ');
 
-  /* ---------- [5] setPay จากตารางเทียบค่างวด ---------- */
+  /* ---------- [5] กล่องวิธีชำระ + ส่งเงื่อนไขจากค่างวดไปคำขอ ---------- */
   const g5 = await p.evaluate(() => {
-    go('sell'); setPay('cash');                       /* ตั้งต้นเงินสด กล่องต้องปิด */
-    const before = document.querySelector('#sFinPay').style.display;
-    document.querySelector('#sellTabs [data-p="p2"]').click();
-    document.querySelector('#fNet').value = 60000;
-    document.querySelector('#fDown').value = 15000;   /* ดาวน์ 25% — พ้นขั้นต่ำทุกเจ้า ให้มีช่องเลือกจริง */
-    document.querySelector('#fNet').dispatchEvent(new Event('input'));
-    finCompare();
-    const cell = document.querySelector('#finCmp [data-pick]');
-    if (!cell) return { noCell: true, before };
+    go('sell','p1');setPay('cash');
+    const cashClosed=$('#sFinBox').style.display==='none'&&$('#sFinPay').style.display==='none';
+    setPay('finance');
+    const financeOpened=$('#sPay').value==='finance'&&$('#sFinBox').style.display!=='none'&&$('#sFinPay').style.display!=='none';
+    setPay('cash');go('sell');
+    const variant=Object.keys(PRICE).find(v=>!PRICE[v].disabled&&Object.keys(PRICE[v].c||{}).length);
+    const color=Object.keys(PRICE[variant].c).slice(-1)[0];
+    $('#fVehicleModel').value=PRICE[variant].m;$('#fVehicleModel').onchange();
+    $('#fModel').value=variant;$('#fModel').onchange();$('#fColor').value=color;$('#fColor').onchange();
+    $('#fNet').value=60000;$('#fDown').value=15000;finCompare();
+    const cell=$('#finCmp [data-pick]');
+    if(!cell)return {noCell:true,cashClosed,financeOpened};
+    const pick=cell.dataset.pick.split('|'),counts={sales:SALES.length,sold:UNITS.filter(u=>u.status==='sold').length};
+    const c={id:'QA_INTENT_R32_PICK',name:'ลูกค้าทดสอบส่งเงื่อนไข',phone:'0800000032',addr:'เชียงใหม่',idNo:'1234567890123',
+      branch:ME.branch,owner:ME.nick,ownerId:ME.id,intent:'เงินผ่อน',variant,stage:'สนใจ',createdAt:TODAY};CUSTOMERS.push(c);
     cell.click();
-    return { before, pay: document.querySelector('#sPay').value,
-      finBox: document.querySelector('#sFinBox').style.display,
-      finPay: document.querySelector('#sFinPay').style.display };
+    const choose=!!$('#fApplyCust'),opening=$('#p1').classList.contains('on');
+    if(!choose)return {cashClosed,financeOpened,choose,opening};
+    $('#fApplyCust').value=c.id;$('#fApplyGo').click();
+    const r={cashClosed,financeOpened,choose,opening,page:CUR,form:!!$('#faGo'),
+      fields:$('#faModel')?.value===PRICE[variant].m&&$('#faVariant')?.value===variant&&$('#faColor')?.value===color,
+      terms:$('#faFin')?.value===pick[0]&&$('#faTerm')?.value===pick[1]&&num($('#faList')?.value)===60000&&num($('#faDown')?.value)===15000,
+      unallocated:!$('#faUnit')&&SALES.length===counts.sales&&UNITS.filter(u=>u.status==='sold').length===counts.sold};
+    closeModal();return r;
   });
-  if (g5.noCell) bad('[5] ตารางเทียบค่างวดไม่มีช่องให้เลือก');
+  if(!g5.cashClosed)bad('[5] setPay(cash) ต้องปิดกล่องผ่อนทั้งสอง');
+  if(!g5.financeOpened)bad('[5] setPay(finance) ต้องเปิดกล่องผ่อนทั้งสอง');
+  if(g5.noCell)bad('[5] ตารางเทียบค่างวดไม่มีช่องให้เลือก');
+  else if(!g5.choose||g5.opening||g5.page!=='deal'||!g5.form)bad('[5] เลือกค่างวดต้องไปคำขอในดีล โดยไม่เปิดใบขาย');
   else {
-    if (g5.before !== 'none') bad('[5] ตั้งต้นเงินสดแล้วกล่องผ่อนยังเปิด — setPay(cash) ไม่ปิดกล่อง');
-    if (g5.pay !== 'finance' || g5.finBox === 'none' || g5.finPay === 'none')
-      bad('[5] เลือกค่างวดแล้วกล่องไม่เปิดครบ (pay=' + g5.pay + ' box=' + g5.finBox + ' pay2=' + g5.finPay + ')');
+    if(!g5.fields)bad('[5] คำขอต้องรับรุ่น รหัสรุ่น และสีครบ');
+    if(!g5.terms)bad('[5] คำขอต้องรับราคา เงินดาวน์ บริษัทและงวดครบ');
+    if(!g5.unallocated)bad('[5] คำขอห้ามเลือกคันหรือเปลี่ยนจำนวนใบขาย/รถขายแล้ว');
   }
 
   /* ---------- [6] pill + ตัวกรองในตารางรวม ---------- */

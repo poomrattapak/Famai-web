@@ -100,7 +100,7 @@ const { chromium, EXE, BASE } = require('./env');
   /* ---------- [4] หน้าขาย: cascade กรอง #sUnit ---------- */
   await login('ST1');
   const g4 = await p.evaluate(() => {
-    go('sell');
+    go('sell','p1');
     const pool = sellPool();
     const multi = (() => { const m = {};
       pool.forEach(u => { (m[u.model] = m[u.model] || new Set()).add(u.variant); });
@@ -123,7 +123,7 @@ const { chromium, EXE, BASE } = require('./env');
 
   /* ---------- [5] ค้นหาแล้ว back-fill ---------- */
   const g5 = await p.evaluate(() => {
-    go('sell');
+    go('sell','p1');
     const u = sellPool()[0];
     const q = $('#svQ'); q.value = u.frame; q.oninput();
     const r = { m: $('#svModel').value, v: $('#svVariant').value, c: $('#svColor').value,
@@ -137,7 +137,7 @@ const { chromium, EXE, BASE } = require('./env');
 
   /* ---------- [6] sUnitSet ล้างตัวกรองก่อนเลือก ---------- */
   const g6 = await p.evaluate(() => {
-    go('sell');
+    go('sell','p1');
     const pool = sellPool();
     const a = pool[0], z = pool.find(u => u.model !== a.model) || pool[pool.length - 1];
     $('#svModel').value = a.model; $('#svModel').onchange();     /* กรองไว้คนละรุ่นกับ z */

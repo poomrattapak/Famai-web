@@ -23,7 +23,7 @@ const TALL = [['stock', 3.5], ['deal', 3.5], ['hr', 3.5], ['payroll', 3.5], ['at
    นิพจน์สุดท้ายคือหัวใจของข้อ [5] — ถ้าใครเผลอตัด option ให้สั้นลงเพื่อให้ดรอปดาวน์สั้น
    ค่าที่ฟังก์ชันบันทึกอ่านจะหายไปเงียบ ๆ ทั้งที่หน้าตาดูดี */
 const PICKS = [
-  ['sell', 'sUnit', null, 'vehCascadeFill(SELL_CAS, sellPool).length'],
+  ['sell', 'sUnit', 'p1', 'vehCascadeFill(SELL_CAS, sellPool).length'],
   ['booking', 'bkUnit', null, 'vehCascadeFill(BK_CAS, bookPool).length'],
   ['transfer', 'tUnit', null, "UNITS.filter(u=>u.status==='available'&&inScope(u.branch)).length"],
   ['invoice', 'wsUnit', '#ivTabs [data-p="iv2"]',
@@ -132,7 +132,7 @@ const pageFixtures = async p => p.evaluate(() => {
 
   /* ---------- [6] เปิดแผง → พิมพ์กรอง → เลือก แล้วแอปรู้เรื่อง ---------- */
   const g6 = await p.evaluate(() => {
-    go('sell');
+    go('sell','p1');
     const sel = document.getElementById('sUnit');
     const opts = [...sel.options].filter(o => o.value);
     if (opts.length < 2) return { skip: 1 };
@@ -219,7 +219,7 @@ const pageFixtures = async p => p.evaluate(() => {
       const d = document.body.scrollWidth - innerWidth;
       if (d > 1) over.push(page + ' ' + d + 'px');
     });
-    go('sell');
+    go('sell','p1');
     const btn = document.querySelector('#sUnit').closest('.upick').querySelector('.upbtn');
     return { h: btn.offsetHeight, w: btn.offsetWidth, over };
   }, PICKS);

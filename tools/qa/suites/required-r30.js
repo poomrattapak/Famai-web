@@ -47,8 +47,8 @@ const CASES = [
   { id:'rFrame',  open: scr('recv'), fill:{ rEngine:'E9TEST-000001' },   save:'saveRecv()', want:'กรอกเลขเครื่องและเลขถัง' },
 
   /* ---- ขาย · เทียบค่างวด · ขายส่ง ---- */
-  { id:'sCust',     open: scr('sell'), save:'saveSale(false)', want:'กรอกชื่อลูกค้า' },
-  { id:'gxName',    open: seq(scr('sell'), tap('#sFreeAdd')), save:'#gxGo', want:'กรอกชื่อของแถม' },
+  { id:'sCust',     open: seq(scr('sell'), js(`sellTab('p1')`)), save:'saveSale(false)', want:'กรอกชื่อลูกค้า' },
+  { id:'gxName',    open: seq(scr('sell'), js(`sellTab('p1')`), tap('#sFreeAdd')), save:'#gxGo', want:'กรอกชื่อของแถม' },
   { id:'fNet',      open: seq(scr('sell'), tap('#sellTabs [data-p="p2"]')), save:'finComparePrint()', want:'กรอกราคาสุทธิ' },
   /* v1.36: แท็บขายส่งย้ายไปหน้าใบกำกับภาษี */
   { id:'wsPartner', open: seq(scr('invoice'), tap('#ivTabs [data-p="iv2"]')), save:'wsSave()', want:'เลือกบริษัทผู้ซื้อ' },
