@@ -37,6 +37,10 @@
   /* -- Spacing -- 8-point (--s-half ใช้เฉพาะช่องไฟในคอนโทรลเล็ก) -- */
   --s-half:4px; --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s5:48px; --s6:64px;
 
+  /* ระยะตามหน้าที่ขององค์ประกอบ — ใช้ร่วมกันทั้งหน้า ฟอร์ม และรายละเอียด */
+  --space-panel:var(--s3); --space-section:var(--s3); --space-field:var(--s2);
+  --space-label:var(--s1); --control-height:40px;
+
   /* -- Radii -- ตามขนาดองค์ประกอบ ไม่มีมุมคม -- */
   --r-input:8px; --r-card:12px; --r-lg:16px; --r-btn:24px; --r-pill:999px;
 
@@ -363,17 +367,20 @@ h6[data-grp].mg6{ color:var(--grp6); border-bottom-color:var(--grp6); }
 
 /* -------------------- CARD — fill + shadow ไม่มีเส้นขอบ -------------------- */
 .card{ background:var(--card); border-radius:var(--r-card); box-shadow:var(--sh-sm);
-  margin-bottom:var(--s3); min-width:0; }
-.card>.hd{ padding:var(--s3) var(--s3) 0; display:flex; align-items:baseline;
+  margin-bottom:var(--space-section); min-width:0; }
+.card>.hd{ padding:var(--space-panel) var(--space-panel) 0; display:flex; align-items:baseline;
   gap:var(--s2); flex-wrap:wrap; }
 .card>.hd .d{ font-size:var(--t-label); color:var(--muted); }
 .card>.hd .sp{ flex:1; }
-.card>.bd{ padding:var(--s3); }
+.card>.bd{ padding:var(--space-panel); }
+.card>.hd + .bd{ padding-top:var(--space-field); }
 .card>.bd.flush{ padding:var(--s2) 0 0; }
 .g2{ display:grid; grid-template-columns:1.5fr 1fr; gap:var(--s3); align-items:start; }
 .g2e{ display:grid; grid-template-columns:1fr 1fr; gap:var(--s3); align-items:start; }
 .g3{ display:grid; grid-template-columns:repeat(3,1fr); gap:var(--s3); align-items:start; }
 .g2>*,.g2e>*,.g3>*,.kpis>*{ min-width:0; }
+.g2,.g2e,.g3{ gap:var(--space-section); margin-bottom:var(--space-section); }
+.g2>.card,.g2e>.card,.g3>.card{ margin-bottom:0; }
 /* ---------- ภาพรวมการเข้างาน ----------
    ยึดรูปแบบ "กระดานเวลา" แบบป้ายบอกเวลาที่สนามบิน — เวลาเป็นตัวเอกอยู่ซ้ายสุด ตัวใหญ่
    แถบสีข้างซ้ายบอกสถานะโดยไม่ต้องอ่านตัวหนังสือ อ่านออกจากระยะหนึ่งเมตร ไม่ต้องมีใครสอน */
@@ -507,8 +514,8 @@ h6[data-grp].mg6{ color:var(--grp6); border-bottom-color:var(--grp6); }
 .kpi .s{ font-size:var(--t-label); color:var(--muted); margin-top:var(--s-half); }
 .kpi .dt{ font-size:var(--t-label); font-weight:600; margin-top:var(--s-half); }
 .up{ color:var(--pos); } .dn{ color:var(--accent); }
-h4.sec{ margin:var(--s4) 0 var(--s2); font-size:var(--t-label); font-weight:600;
-  letter-spacing:.08em; color:var(--muted); font-family:var(--f-body); }
+h4.sec{ margin:var(--space-section) 0 var(--space-field); font-size:var(--t-table); font-weight:600;
+  letter-spacing:.01em; line-height:1.5; color:var(--ink-soft); font-family:var(--f-body); }
 h4.sec:first-child{ margin-top:0; }
 
 /* -------------------- TABLE — hairline อย่างเดียว ไม่มีพื้นหัวตาราง -------------------- */
@@ -562,15 +569,17 @@ tfoot th.n{ text-align:right; }
 .p-brand{ color:var(--accent); border-color:rgba(230,0,18,.24); }
 
 /* -------------------- FORM -------------------- */
-.f{ display:grid; gap:var(--s2); }
+.f{ display:grid; gap:var(--space-field); }
+/* label ที่อยู่ใน grid โดยตรงไม่บวกช่องไฟซ้ำกับระยะของ field */
+.f>label.fl{ margin-bottom:calc(var(--space-label) - var(--space-field)); }
 .f2{ display:grid; grid-template-columns:1fr 1fr; gap:var(--s2); }
 .f3{ display:grid; grid-template-columns:repeat(3,1fr); gap:var(--s2); }
-label.fl{ display:block; font-size:var(--t-label); color:var(--muted); margin-bottom:var(--s-half); }
+label.fl{ display:block; font-size:var(--t-label); color:var(--ink-soft); margin-bottom:var(--space-label); line-height:1.5; }
 /* ดอกจันแดง = ช่องนี้เว้นว่างแล้วกดบันทึกไม่ผ่าน (เจ้าของสั่ง 23 ส.ค. 2569)
    เป็น "สัญลักษณ์ + สี" ไม่ใช่สีล้วน — ปรินต์ขาวดำหรือตาบอดสีก็ยังเห็นดอกจัน (กฎข้อ 3)
    ตัวที่กันจริงคือ if(...) return ในฟังก์ชันบันทึก ดอกจันเป็นป้ายบอกทางเท่านั้น (§9b) */
 .rq{ color:var(--accent); font-weight:700; margin-left:2px; }
-.inp,select.inp,textarea.inp{ width:100%; height:40px; padding:0 var(--s2);
+.inp,select.inp,textarea.inp{ width:100%; height:var(--control-height); padding:0 var(--s2);
   border:1px solid var(--hairline); border-radius:var(--r-input); background:var(--card);
   font-size:var(--t-table); transition:border-color var(--dur-ui) var(--ease); }
 textarea.inp{ height:auto; padding:var(--s1) var(--s2); resize:vertical; line-height:1.5; }
@@ -623,7 +632,7 @@ textarea.inp{ height:auto; padding:var(--s1) var(--s2); resize:vertical; line-he
 .page-btn:disabled{ color:var(--muted); opacity:.45; cursor:default; }
 .hint{ font-size:var(--t-label); color:var(--muted); margin-top:var(--s-half); }
 
-.btn{ height:40px; padding:0 var(--s3); border-radius:var(--r-btn);
+.btn{ height:var(--control-height); padding:0 var(--s3); border-radius:var(--r-btn);
   background:var(--ink); color:var(--paper); font-size:var(--t-table); font-weight:500;
   display:inline-flex; align-items:center; justify-content:center; gap:var(--s1);
   box-shadow:var(--sh-sm);
@@ -1000,7 +1009,7 @@ textarea.inp{ height:auto; padding:var(--s1) var(--s2); resize:vertical; line-he
   transition:border-color var(--dur-ui) var(--ease), color var(--dur-ui) var(--ease); }
 @media (hover:hover){ .drop:hover{ border-color:var(--accent); color:var(--accent); } }
 .flist{ margin-top:var(--s1); display:grid; gap:var(--s-half); }
-.frow{ display:flex; align-items:center; gap:var(--s1); padding:var(--s1) 0;
+.frow{ display:flex; align-items:center; gap:var(--space-field); padding:var(--s1) 0;
   border-bottom:1px solid var(--hairline-2); font-size:var(--t-table); }
 .frow:last-child{ border-bottom:0; }
 .frow .fx{ margin-left:auto; color:var(--muted); transition:color var(--dur-ui) var(--ease); }
@@ -1021,13 +1030,13 @@ textarea.inp{ height:auto; padding:var(--s1) var(--s2); resize:vertical; line-he
   transition:transform var(--dur-ui) var(--ease), opacity var(--dur-ui) var(--ease); }
 .drw:not(.on){ visibility:hidden; }
 .drw.on{ transform:translate(-50%,-50%) scale(1); opacity:1; visibility:visible; }
-.drw .dh{ position:sticky; top:0; background:var(--card); padding:var(--s3);
+.drw .dh{ position:sticky; top:0; background:var(--card); padding:var(--space-panel);
   display:flex; align-items:center; gap:var(--s2); border-bottom:1px solid var(--hairline); }
 .drw .dh .x,.mbox .mh .x{ margin-left:auto; color:var(--muted);
   transition:color var(--dur-ui) var(--ease); }
 @media (hover:hover){ .drw .dh .x:hover,.mbox .mh .x:hover{ color:var(--ink); } }
-.drw .db{ padding:var(--s3) var(--s3) var(--s6); }
-.kv{ display:grid; grid-template-columns:132px 1fr; gap:var(--s1) var(--s2); font-size:var(--t-table); }
+.drw .db{ padding:var(--space-panel); }
+.kv{ display:grid; margin:0; grid-template-columns:132px 1fr; gap:var(--s1) var(--s2); font-size:var(--t-table); }
 .kv dt{ color:var(--muted); } .kv dd{ margin:0; }
 /* v1.26: modal ได้ฉากหลังทึบเหมือน drawer (ค่าเดียวกับ .ov) — เดิมลอยโดดไม่มีฉาก ขัด "แนวทางเดียวกันหมด" */
 .modal{ position:fixed; z-index:62; inset:0; display:none; align-items:center;
@@ -1039,8 +1048,8 @@ textarea.inp{ height:auto; padding:var(--s1) var(--s2); resize:vertical; line-he
 .modal.on .mbox{ animation:popin var(--dur-ui) var(--ease); }
 .mbox{ background:var(--card); border-radius:var(--r-lg); box-shadow:var(--sh-lg);
   width:min(720px,100%); max-height:86vh; max-height:86dvh; overflow-y:auto; }
-.mbox .mh{ padding:var(--s3); border-bottom:1px solid var(--hairline); display:flex; align-items:center; }
-.mbox .mb{ padding:var(--s3); }
+.mbox .mh{ padding:var(--space-panel); border-bottom:1px solid var(--hairline); display:flex; align-items:center; }
+.mbox .mb{ padding:var(--space-panel); }
 /* -------------------- ตัวครอปรูป (v1.44) --------------------
    เวทีเป็นจัตุรัส = กรอบครอบพอดี ๆ รูปเลื่อน/ซูมอยู่ข้างใต้แล้วถูกตัดที่ขอบเวที
    (แบบเดียวกับตัวครอปรูปโปรไฟล์ของแอปทั่วโลก — คนไทยที่ใช้มือถือเคยเห็นมาแล้วทุกคน)
@@ -1159,8 +1168,16 @@ textarea.inp{ height:auto; padding:var(--s1) var(--s2); resize:vertical; line-he
   background:var(--card); border-radius:var(--r-pill); transition:transform var(--dur-ui) var(--ease); }
 .sw input:checked + i{ background:var(--ink); }
 .sw input:checked + i:before{ transform:translateX(16px); }
-.savebar{ display:flex; gap:var(--s2); align-items:center; margin-top:var(--s3);
-  padding-top:var(--s3); border-top:1px solid var(--hairline); flex-wrap:wrap; }
+.savebar,.section-actions{ display:flex; gap:var(--space-field); align-items:center; margin-top:var(--space-section);
+  padding-top:var(--space-field); border-top:1px solid var(--hairline); flex-wrap:wrap; }
+/* การจัดการประวัติอยู่ท้ายเนื้อหา ปุ่มบันทึกฟอร์มยังใช้ savebar ของตัวเอง */
+.section-actions{ position:static; }
+.care-task-row{ align-items:flex-start; padding:var(--space-field) 0; }
+.care-task-row>input{ flex:0 0 auto; width:20px; height:20px; margin:var(--s-half) 0 0; accent-color:var(--pos); }
+.care-task-body{ flex:1; min-width:0; overflow-wrap:anywhere; }
+.care-task-body>b{ display:block; margin-bottom:var(--s-half); }
+.care-completion{ margin-top:var(--s1); font-size:var(--t-label); color:var(--ink-soft); line-height:1.6; }
+.care-completion time{ display:block; color:var(--muted); }
 /* ตารางสิทธิ์แบ่งตามกลุ่มเมนู ใช้เส้นคั่นภายในแทนกล่องซ้อน */
 .pm-tools{ padding:var(--s3) 0; border-bottom:1px solid var(--hairline); }
 .pm-tools p{ margin:var(--s1) 0; }
@@ -1294,6 +1311,7 @@ body.lock{ overflow:hidden; }
   .top,.wrap{ padding-left:var(--s4); padding-right:var(--s4); }
 }
 @media (max-width:900px){
+  :root{ --control-height:44px; }
   .side{ display:none; }
   .bnav{ display:grid; }
   .top,.wrap{ padding-left:var(--s3); padding-right:var(--s3); }
@@ -1320,6 +1338,10 @@ body.lock{ overflow:hidden; }
     left:var(--s2); right:var(--s2); max-width:none; }
 }
 @media (max-width:600px){
+  :root{ --space-panel:var(--s2); }
+  .care-task-row{ flex-wrap:wrap; }
+  .care-task-body{ flex-basis:calc(100% - 20px - var(--space-field)); }
+  .care-task-row>.pill{ margin-left:calc(20px + var(--space-field)); }
   /* ตัวเลขสรุป — เลิกใส่กรอบ ใช้เส้นคั่นแทน ช่องละ 159px แทน 127px ตัวเลขเงินจึงไม่ถูกตัดท้าย */
   .kpis,.kpis.k3,.kpis.k6{ grid-template-columns:repeat(2,1fr); gap:0 var(--s3); }
   .kpi{ background:none; box-shadow:none; border-radius:0; padding:var(--s2) 0;
@@ -1408,7 +1430,7 @@ body.lock{ overflow:hidden; }
   .screen.on>*{ animation:none; opacity:1; transform:none; }
 }
 @media print{
-  .side,.top,.tabs,.savebar,.noprint,#toasts,.promo{ display:none !important; }
+  .side,.top,.tabs,.savebar,.section-actions,.noprint,#toasts,.promo{ display:none !important; }
   .app{ display:block; } .wrap{ padding:0; max-width:none; }
   .card{ box-shadow:none; margin:0; }
   .doc{ box-shadow:none; padding:0; }
@@ -7634,7 +7656,7 @@ function rDealOne(id){
       +(d.slow? ' · <b style="color:var(--attn)">ค้างเกินเกณฑ์ ต้องแจ้งแล้ว</b>':'')+'</p>')
     +(acts? '<h4 class="sec">ต้องทำต่อ</h4><div class="dlact">'+acts+'</div>' : '')
     +(d.c.archivedAt?'<div class="note">อยู่ในคลังลูกค้าสำหรับการตลาด · '+esc(d.c.archiveReason||'')+'</div>':'')
-    +(customerArchiveAllowed(d.c)?'<div class="savebar"><button class="btn ghost" id="dlArchiveGo">'+(d.c.archivedAt?'คืนสู่รายการดูแล':'ย้ายออกจากรายการดูแล')+'</button></div>':'')
+    +(customerArchiveAllowed(d.c)?'<div class="section-actions"><button class="btn ghost" id="dlArchiveGo">'+(d.c.archivedAt?'คืนสู่รายการดูแล':'ย้ายออกจากรายการดูแล')+'</button></div>':'')
     +'</div></div>'
     +'<div class="card"><div class="bd">'+dealDetail(d)+'</div></div>';
   $('#dlOne').innerHTML=x;
@@ -8691,10 +8713,10 @@ function careCreate(s){
 async function careSyncSale(saleId){
   if(!LIVE)return true;
   try{
-    const rows=await sbFetch('/rest/v1/follow_up_task?sale_id=eq.'+encodeURIComponent(saleId)+'&task_source=eq.delivery_month&select=id,due_at,done_at,note,title');
+    const rows=await sbFetch('/rest/v1/follow_up_task?sale_id=eq.'+encodeURIComponent(saleId)+'&task_source=eq.delivery_month&select=id,due_at,done_at,done_by,note,title');
     const row=rows&&rows[0],r=careOf(saleId);if(!row||!r)throw new Error('งานติดตามยังไม่พร้อม กรุณาลองโหลดอีกครั้ง');
     const t=r.tasks.find(x=>x.source==='delivery_month');if(!t)return false;
-    Object.assign(t,{id:row.id,pendingSync:false,due:row.due_at,done:!!row.done_at,doneAt:row.done_at||'',note:row.note||'',title:row.title||t.title});
+    Object.assign(t,{id:row.id,pendingSync:false,due:row.due_at,done:!!row.done_at,doneAt:row.done_at||'',doneBy:row.done_at?row.done_by||null:null,by:'',note:row.note||'',title:row.title||t.title});
     refreshAll();return true;
   }catch(e){toast('ยังโหลดงานติดตามไม่ได้',e.message,1);return false;}
 }
@@ -8711,7 +8733,7 @@ function careTask(careId,taskId,note,done=true){
   const t=r.tasks.find(x=>x.id===taskId); if(!t) return false;
   if(t.pendingSync){toast('กำลังรอยืนยันงานจากระบบ','กดโหลดงานติดตามอีกครั้งก่อนบันทึก',1);return false;}
   if(LIVE)return careTaskLive(r,t,note,done);
-  t.done=!!done;t.doneAt=t.done?punchNow().toISOString():'';t.by=t.done?ME.nick:'';
+  t.done=!!done;t.doneAt=t.done?punchNow().toISOString():'';t.doneBy=t.done?ME.id:null;t.by=t.done?(ME.name||ME.nick):'';
   if(note!=null)t.note=String(note).trim();
   dbPatch('follow_up_task',t.id,{done_at:t.doneAt||null,note:t.note||null,done_by:t.done&&isUuid(ME.id)?ME.id:null});
   toast(t.done?'บันทึกว่าให้บริการแล้ว':'เปิดงานอีกครั้ง',t.title||t.kind);refreshAll();return true;
@@ -8725,7 +8747,7 @@ async function careTaskLive(r,t,note,done){
       headers:{Prefer:'return=representation'},body:JSON.stringify({done_at:done?punchNow().toISOString():null,
         note:note==null?t.note||null:String(note).trim()||null,done_by:done?ME.id:null})});
     if(!rows||!rows[0])throw new Error('ไม่ได้รับข้อมูลยืนยันจากฐานข้อมูล');
-    const row=rows[0];Object.assign(t,{done:!!row.done_at,doneAt:row.done_at||'',note:row.note||'',by:row.done_at?ME.nick:''});
+    const row=rows[0];Object.assign(t,{done:!!row.done_at,doneAt:row.done_at||'',note:row.note||'',doneBy:row.done_at?row.done_by||null:null,by:''});
     toast(t.done?'บันทึกว่าให้บริการแล้ว':'เปิดงานอีกครั้ง',t.title||t.kind);refreshAll();return true;
   }catch(e){toast('ยังบันทึกงานไม่สำเร็จ',e.message,1);return false;}
   finally{delete t.saving;}
@@ -8736,6 +8758,15 @@ function dealTaskDone(tid){
   if(!inScope(t.branch)||!customerCanWrite(c)){toast('ไม่มีสิทธิ์ปิดงานติดตามลูกค้าคนนี้','ต้องมีสิทธิ์แก้ไขดีลของลูกค้า',1);return false;}
   t.done=true;dbPatch('follow_up_task',t.id,{done_at:TODAY,done_by:isUuid(ME.id)?ME.id:null});
   toast('ปิดงานติดตามแล้ว');refreshAll();return true;
+}
+function careDoneBy(t){
+  const person=t.doneBy&&STAFF.find(s=>s.id===t.doneBy);
+  return person?(person.name||person.nick):t.by||'';
+}
+function careCompletion(t){
+  if(!t.done)return '';
+  return '<div class="care-completion">ทำเสร็จโดย '+esc(careDoneBy(t)||'ไม่ระบุผู้ทำรายการ')
+    +(t.doneAt?'<time datetime="'+esc(t.doneAt)+'">'+thDT(t.doneAt)+'</time>':'')+'</div>';
 }
 function careTaskStatus(t,today=TODAY){
   if(t.done)return pill('เสร็จแล้ว','good');
@@ -8817,11 +8848,11 @@ function careDrawer(careId,focusTaskId){
   const ordered=r.tasks.slice().sort((a,b)=>a.due.localeCompare(b.due));
   pageSlice('careTaskHistory',ordered,6);
   if(focusTaskId){const ix=ordered.findIndex(t=>t.id===focusTaskId);if(ix>=0)LIST_PAGES.careTaskHistory.page=Math.floor(ix/6)+1;}
-  const tk=pageSlice('careTaskHistory',ordered,6).map(t=>'<div class="frow" id="care-task-'+t.id+'">'
+  const tk=pageSlice('careTaskHistory',ordered,6).map(t=>'<div class="frow care-task-row" id="care-task-'+t.id+'">'
     +'<input type="checkbox" data-care-done="'+r.id+'|'+t.id+'" '+(t.done?'checked ':'')+(edit&&!t.pendingSync?'':'disabled ')+'aria-label="เสร็จแล้ว '+esc(t.title||t.kind)+'">'
-    +'<div style="flex:1;min-width:0"><b>'+esc(t.title||t.kind)+'</b><div class="tsub">'+(t.appointmentAt?thDT(t.appointmentAt):thDate(t.due))
+    +'<div class="care-task-body"><b>'+esc(t.title||t.kind)+'</b><div class="tsub">'+(t.appointmentAt?thDT(t.appointmentAt):thDate(t.due))
     +(t.amount!=null?' · '+(noMoney()?'—':baht(t.amount)):'')+(t.note?' · '+esc(t.note):'')+'</div>'
-    +(t.done?'<div class="tsub">เสร็จเมื่อ '+thDT(t.doneAt)+'</div>':'')+'</div>'+careTaskStatus(t)+(t.pendingSync?'<button class="lnk" data-care-sync="'+r.saleId+'">โหลดงานติดตามอีกครั้ง</button>':'')+'</div>').join('');
+    +careCompletion(t)+'</div>'+careTaskStatus(t)+(t.pendingSync?'<button class="lnk" data-care-sync="'+r.saleId+'">โหลดงานติดตามอีกครั้ง</button>':'')+'</div>').join('');
   const legacy=(r.check||[]).map((x,i)=>'<div class="frow"><button class="lnk" data-ck="'+r.id+'|'+i+'" '+(edit?'':'disabled')+'>'+(x.done?'☑':'☐')+'</button><span>'+esc(x.t)+'</span></div>').join('');
   openDrawer('ดูแลหลังการขาย — '+(c?c.name:''),'<div class="tsub">'+esc(c?c.phone||'—':'—')+' · '+esc(v.model)+' · '+esc(bName(r.branch))+'</div>'
     +'<div class="tsub mono">เลขเครื่อง '+esc(v.engine||'—')+' · เลขถัง '+esc(v.frame||'—')+'</div>'
@@ -8894,7 +8925,7 @@ async function careServiceSave(){
   let r=CARE.find(x=>x.custId===c.id&&x.branch===branch&&careSameVehicle(x,engine,frame));
   if(!r){r={id:nid('CA'),saleId:null,custId:c.id,branch,createdAt:TODAY,note:'',check:[],tasks:[]};CARE.push(r);}
   r.vehicle={engine:engine||(r.vehicle&&r.vehicle.engine)||'',frame:frame||(r.vehicle&&r.vehicle.frame)||'',model};
-  const t={id:LIVE?dbId():nid('CT'),source:'manual',title:detail,kind:detail,amount,due:TODAY,done:true,doneAt:at,note:'',serviceJobId:job.id};
+  const t={id:LIVE?dbId():nid('CT'),source:'manual',title:detail,kind:detail,amount,due:TODAY,done:true,doneAt:at,doneBy:ME.id,by:ME.name||ME.nick,note:'',serviceJobId:job.id};
   r.tasks.push(t);careSaveTask(r,t);
   if(appointmentAt){const next={id:LIVE?dbId():nid('CT'),source:'service_next',title:'นัดบริการครั้งถัดไป · '+detail,kind:'นัดบริการครั้งถัดไป',amount:null,due:rawAt.slice(0,10),appointmentAt,done:false,doneAt:'',note:'',parentTaskId:t.id,serviceJobId:job.id};r.tasks.push(next);careSaveTask(r,next);}
   closeModal();toast('บันทึกบริการแล้ว',appointmentAt?'สร้างงานนัดถัดไปและเตือนล่วงหน้า 7 วัน':'เก็บประวัติของลูกค้าแล้ว');refreshAll();return true;
@@ -8928,7 +8959,7 @@ async function careServiceLive(input){
     if(!r){r={id:nid('CA'),saleId:null,custId:customer.id,branch,createdAt:TODAY,note:'',check:[],tasks:[]};CARE.push(r);}
     r.vehicle={engine,frame,model};
     for(const t of tasks){const local={id:t.id,source:t.task_source,title:t.title,kind:t.title,amount:t.amount==null?null:+t.amount,
-      due:t.due_at,done:!!t.done_at,doneAt:t.done_at||'',note:t.note||'',appointmentAt:t.appointment_at||null,
+      due:t.due_at,done:!!t.done_at,doneAt:t.done_at||'',doneBy:t.done_at?t.done_by||null:null,by:'',note:t.note||'',appointmentAt:t.appointment_at||null,
       parentTaskId:t.parent_task_id||null,serviceJobId:t.service_job_id};
       const ti=r.tasks.findIndex(x=>x.id===t.id);if(ti<0)r.tasks.push(local);else r.tasks[ti]=local;}
     closeModal();toast('บันทึกบริการแล้ว',appointmentAt?'สร้างงานนัดถัดไปและเตือนล่วงหน้า 7 วัน':'เก็บประวัติของลูกค้าแล้ว');refreshAll();return true;
@@ -12554,7 +12585,7 @@ async function liveHydrate(me,brs,mvs,empId){
         q2000('finance_case','id,branch_id,sale_id,customer_id,company_id,status,amount,submitted_at,decided_at,reject_reason,reject_with,reject_note,stage_log,variant_id,variant_code,model_name,color_code,color_name,list_price,discount,down_payment,term_months,rate_pct,monthly_installment,loan_total,pay_now,note,created_at,updated_at'),
         q2000('receivable','id,branch_id,sale_id,kind,payer_finance_id,amount_due,amount_paid,due_at'),
         q2000('receipt_payment','id,receivable_id,paid_at,amount,method'),
-        q2000('follow_up_task','id,branch_id,customer_id,sale_id,kind,due_at,done_at,note,task_source,title,amount,appointment_at,parent_task_id,service_job_id,created_at'),
+        q2000('follow_up_task','id,branch_id,customer_id,sale_id,kind,due_at,done_at,done_by,note,task_source,title,amount,appointment_at,parent_task_id,service_job_id,created_at'),
         q2000('service_reminder','id,customer_id,unit_id,target_km,due_date,status'),
         q2000('service_job','id,branch_id,job_no,customer_id,unit_id,engine_no,frame_no,odometer_km,service_type,symptom,checked_in_at,status,labor_cost,parts_cost,model_name,next_appointment_at'),
         q2000('part','id,branch_id,code,name,cost,price,qty_on_hand,min_qty'),
@@ -12654,7 +12685,7 @@ async function liveHydrate(me,brs,mvs,empId){
             {engine:vehicle.engine_no||rec.vehicle?.engine||'',frame:vehicle.frame_no||rec.vehicle?.frame||'',model:vehicle.model_name||rec.vehicle?.model||''});}
           rec.tasks.push({id:r.id,source:r.task_source||'legacy',kind:r.title||String(r.kind).replace(/^care /,''),title:r.title||'',
             amount:r.amount==null?null:+r.amount,appointmentAt:r.appointment_at||'',due:r.due_at,done:!!r.done_at,
-            doneAt:r.done_at||'',note:r.note||'',parentTaskId:r.parent_task_id||null,serviceJobId:r.service_job_id||null});
+            doneAt:r.done_at||'',doneBy:r.done_at?r.done_by||null:null,by:'',note:r.note||'',parentTaskId:r.parent_task_id||null,serviceJobId:r.service_job_id||null});
         });
       }
       if(rms) REMIND = rms.map(r=>({ id:r.id, custId:r.customer_id, unitId:r.unit_id,
