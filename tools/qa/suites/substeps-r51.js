@@ -1,6 +1,6 @@
-/* เจ้าของ: ขั้นตอนย่อยต้องบอกว่าทำอะไรอยู่ และเรียงเป็นคอลัมน์ตรงใต้วงของตัวเอง
-   ตรวจคอลัมน์/รายละเอียด · เงินสด · ไฟแนนซ์ค้าง/ชื่อเก่า/ปฏิเสธ · ส่งมอบจริง · สิทธิ์และการ escape
-   รวมตำแหน่งจริงบนจอ 1440/900/390 ทั้งสว่างและมืด */
+/* เจ้าของแก้บรีฟ v1.52: ต้องเห็นแถบ 4 ขั้นรวมกันด้านบน ไม่กระจายจนต้องเลื่อนยาว
+   รายละเอียดเดิมครบ แต่เปิดดูทีละขั้น · ตรวจสถานะจริง เงินสด ไฟแนนซ์ ส่งมอบ สิทธิ์และการ escape
+   รวมตำแหน่ง 1440/900/390/320 สองธีม และการเลือกแท็บที่ต้องไม่เปลี่ยนข้อมูลดีล */
 const { chromium, EXE, BASE } = require('./env');
 (async () => {
   const b=await chromium.launch({executablePath:EXE});
@@ -20,14 +20,15 @@ const { chromium, EXE, BASE } = require('./env');
       k:'fin',i:1,off:false,cash:false,late:0,delivered:false,waitPlate:false});
     const draw=d=>{
       const box=document.createElement('div');
-      box.innerHTML=steps(d.track,d.i,{lab:1,off:d.off,dates:dealStepDates(d),substeps:dealSubsteps(d)});
+      box.innerHTML=dealProgress(d);
       return box;
     };
     let d=fixture(), before=JSON.stringify(d), box=draw(d);
     check(JSON.stringify(d)===before,'[1] การวาดเปลี่ยนข้อมูลดีล');
-    check(box.querySelectorAll('.pst[data-step]').length===4,'[1] ต้องมีคอลัมน์ครบ 4 ขั้น');
-    check([...box.querySelectorAll('.pst')].every(el=>el.querySelector('.pn')&&el.querySelector('.substeps')),
-      '[1] ขั้นย่อยไม่ได้อยู่ในคอลัมน์เดียวกับวง');
+    check(box.querySelectorAll('.pstep .pn').length===4,'[1] ต้องมีแถบภาพรวมครบ 4 ขั้น');
+    check(box.querySelectorAll('.dl-step-panel').length===4&&box.querySelectorAll('.dl-step-panel:not([hidden])').length===1,
+      '[1] ต้องเก็บรายละเอียดครบทุกขั้นและเปิดทีละขั้น');
+    check(box.querySelector('.dl-step-panel:not([hidden])')?.dataset.step==='fin','[1] ต้องเปิดรายละเอียดขั้นปัจจุบันให้อัตโนมัติ');
     check(box.querySelectorAll('.substep').length===14,'[1] รายละเอียดขั้นย่อยไม่ครบ 14 งาน');
     check([...box.querySelectorAll('.substep')].every(el=>el.querySelector('.sstate')?.textContent&&el.querySelector('.sdetail')?.textContent),
       '[1] ขั้นย่อยต้องมีทั้งสถานะและรายละเอียด');
@@ -66,24 +67,44 @@ const { chromium, EXE, BASE } = require('./env');
     return bad;
   });
   fails.push(...checks);
-  for(const width of [1440,900,390])for(const theme of ['', 'dark']){
+  for(const width of [1440,900,390,320])for(const theme of ['', 'dark']){
     await p.setViewportSize({width,height:1000});
     await p.evaluate(t=>{document.documentElement.dataset.theme=t;},theme);
     const layout=await p.evaluate(()=>{
-      const cols=[...document.querySelectorAll('#dlOne .columns .pst')];
-      return {n:cols.length,aligned:cols.every(el=>{
-        const node=el.querySelector('.pn'),list=el.querySelector('.substeps');
-        if(!node||!list)return false;
-        const n=node.getBoundingClientRect(),s=list.getBoundingClientRect();
-        return Math.abs((n.left+n.right-s.left-s.right)/2)<2&&s.top>=n.bottom;
-      }),overflow:document.documentElement.scrollWidth>innerWidth+1,
-      rows:cols.map(el=>Math.round(el.getBoundingClientRect().top))};
+      const nodes=[...document.querySelectorAll('#dlOne .pstep .pn')],bar=document.querySelector('#dlOne .pstep');
+      const panels=[...document.querySelectorAll('#dlOne .dl-step-panel')].filter(el=>el.getClientRects().length);
+      return {n:nodes.length,overflow:document.documentElement.scrollWidth>innerWidth+1,
+        rows:nodes.map(el=>Math.round(el.getBoundingClientRect().top)),
+        barHeight:bar?.getBoundingClientRect().height,visiblePanels:panels.length,
+        detailHeight:panels[0]?.getBoundingClientRect().height};
     });
-    if(layout.n!==4||!layout.aligned||layout.overflow)fails.push('[11] คอลัมน์ไม่ตรงวงหรือล้นจอ '+width+' '+theme+' '+JSON.stringify(layout));
-    if(width===1440&&new Set(layout.rows).size!==1)fails.push('[11] จอคอมต้องเห็น 4 คอลัมน์แถวเดียว');
-    if(width===390&&new Set(layout.rows).size!==4)fails.push('[11] มือถือต้องเรียงทีละขั้นโดยไม่เลื่อนแนวนอน');
+    if(layout.n!==4||new Set(layout.rows).size!==1||layout.barHeight>120||layout.overflow)
+      fails.push('[11] แถบ 4 ขั้นต้องอยู่แถวเดียวครบทุกจอ '+width+' '+theme+' '+JSON.stringify(layout));
+    if(layout.visiblePanels!==1||layout.detailHeight>700)fails.push('[11] รายละเอียดต้องกระชับและเปิดทีละขั้น '+JSON.stringify(layout));
   }
+  const interaction=await p.evaluate(()=>{
+    const bad=[],snapshot=JSON.stringify(dealOf(DEAL_SEL));
+    const tabs=[...document.querySelectorAll('#dlOne [data-dlstep]')];
+    const current=()=>[...document.querySelectorAll('#dlOne .pn')].findIndex(n=>n.classList.contains('now'));
+    const original=current();
+    for(const tab of tabs){
+      tab.click();
+      const visible=[...document.querySelectorAll('#dlOne .dl-step-panel')].filter(p=>!p.hidden);
+      if(visible.length!==1||visible[0].dataset.step!==tab.dataset.dlstep)bad.push('[12] เลือกแท็บแล้วรายละเอียดไม่ตรงขั้น');
+      if(document.querySelectorAll('#dlOne [aria-selected="true"]').length!==1||tab.tabIndex!==0)
+        bad.push('[12] สถานะการเลือกแท็บไม่ถูกต้อง');
+      if(current()!==original||JSON.stringify(dealOf(DEAL_SEL))!==snapshot)bad.push('[12] การดูรายละเอียดเปลี่ยนความคืบหน้าจริง');
+    }
+    tabs[0].focus();tabs[0].dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowRight',bubbles:true}));
+    if(document.activeElement!==tabs[1]||tabs[1].getAttribute('aria-selected')!=='true')bad.push('[12] คีย์บอร์ดเปลี่ยนแท็บไม่ได้');
+    tabs[1].dispatchEvent(new KeyboardEvent('keydown',{key:'End',bubbles:true}));
+    if(document.activeElement!==tabs[tabs.length-1])bad.push('[12] ปุ่ม End ไม่ไปแท็บสุดท้าย');
+    rDeal();
+    if(document.querySelector('#dlOne .dl-step-panel:not([hidden])')?.dataset.step!=='fin')bad.push('[12] เปิดดีลใหม่ต้องกลับมาที่ขั้นปัจจุบัน');
+    return bad;
+  });
+  fails.push(...interaction);
   await b.close();
   if(fails.length){console.log('FAILS:\n'+fails.join('\n'));process.exit(1);}
-  console.log('ALL_CHECKS_PASS (substeps-r51: 11 ข้อ)');
+  console.log('ALL_CHECKS_PASS (substeps-r51: 12 ข้อ รวมรูปแบบ v1.52)');
 })().catch(e=>{console.error('SUITE_CRASH',e);process.exit(2);});

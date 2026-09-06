@@ -828,7 +828,7 @@ textarea.inp{ height:auto; padding:var(--s1) var(--s2); resize:vertical; line-he
   .pstep .pl.on.cur{ animation:none; background:linear-gradient(90deg, var(--pos-wash), var(--pos)); }
   .pstep .pn.now{ animation:none; }
 }
-/* ขั้นย่อยของดีล — คอลัมน์เดียวกับวงของตัวเอง ใช้เส้นคั่นแทนกล่องซ้อน */
+/* ขั้นย่อยของดีล — ดูทีละขั้นใต้แถบภาพรวม ใช้เส้นคั่นแทนกล่องซ้อน */
 .substeps{ margin:var(--s1) 0 0; padding:0; list-style:none; min-width:0; }
 .substep{ --sub-color:var(--grp6); display:flex; align-items:flex-start; gap:var(--s1);
   padding:var(--s1) 0; border-top:1px solid var(--hairline); font-size:var(--t-table);
@@ -859,27 +859,22 @@ textarea.inp{ height:auto; padding:var(--s1) var(--s2); resize:vertical; line-he
 .pstep .pn.slow::after{ content:''; position:absolute; top:-3px; right:-3px; width:9px; height:9px;
   border-radius:var(--r-pill); background:var(--attn); border:2px solid var(--card); }
 .pstep.lab .pst.at em{ color:var(--ink); font-weight:600; }
-/* ใช้เฉพาะรายละเอียดดีล — แถบย่อในตารางและหน้าอื่นคงรูปแบบเดิม */
-.pstep.lab.columns{ display:grid; grid-template-columns:repeat(var(--step-count),minmax(0,1fr));
-  gap:var(--s3); }
-.pstep.lab.columns .pst{ position:relative; display:block; min-width:0; max-width:none; }
-.pstep.columns .pstage{ display:flex; flex-direction:column; align-items:center; gap:var(--s1);
-  min-height:108px; text-align:center; }
-.pstep.columns .pn{ z-index:1; }
-.pstep.lab.columns em{ font-size:var(--t-table); line-height:1.6; }
-.pstep.columns .pdt{ font-size:var(--t-label); white-space:normal; }
-.pstep.lab.columns .pl{ position:absolute; top:13px; margin:0; min-width:0;
-  left:calc(-50% - var(--s3) + 22px); width:calc(100% + var(--s3) - 44px); }
-@media (min-width:901px){ .pstep.lab.columns .pl{ top:19px; } }
-@media (min-width:601px) and (max-width:1100px){
-  .pstep.lab.columns{ grid-template-columns:repeat(2,minmax(0,1fr)); }
-  .pstep.columns .pst:nth-child(odd) .pl{ display:none; }
-}
-@media (max-width:600px){
-  .pstep.lab.columns{ grid-template-columns:minmax(0,1fr); gap:var(--s2); }
-  .pstep.columns .pstage{ min-height:0; }
-  .pstep.lab.columns .pl{ display:none; }
-}
+/* แถบภาพรวมอยู่แถวเดียวทุกจอ ส่วนรายละเอียดเปิดทีละขั้นโดยไม่เปลี่ยนสถานะดีล */
+.dl-step-tabs{ display:grid; grid-template-columns:repeat(var(--step-count),minmax(0,1fr));
+  margin-top:var(--s2); border-bottom:1px solid var(--hairline); }
+.dl-step-tabs button{ min-width:0; min-height:48px; padding:var(--s1) var(--s-half);
+  border-bottom:3px solid transparent; font-size:var(--t-table); line-height:1.5;
+  color:var(--ink-soft); overflow-wrap:anywhere; }
+.dl-step-tabs button[aria-selected="true"]{ color:var(--grp2); border-bottom-color:var(--grp2); font-weight:600; }
+.dl-step-panel{ min-width:0; padding-top:var(--s2); }
+.dl-step-panel[hidden]{ display:none; }
+.dl-step-title{ display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap;
+  gap:var(--s1); font-size:var(--t-table); }
+.dl-step-panel .substeps{ margin-top:var(--s1); }
+.dl-step-panel .substep{ padding:var(--s1) 0; }
+.dl-step-panel .sbody{ display:grid; grid-template-columns:minmax(0,1fr) auto; column-gap:var(--s1); }
+.dl-step-panel .sstate{ text-align:right; }
+.dl-step-panel .sdetail,.dl-step-panel .sdt{ grid-column:1/-1; }
 /* บนจอคอมแถบขั้นตอนต้องอ่านได้จากระยะที่นั่ง ไม่ใช่ต้องเพ่ง (เจ้าของสั่ง 23 ส.ค. 2569)
    ขยายเฉพาะ ≥901px — ที่ 390px ขนาดเดิมพอดีกรอบอยู่แล้ว 5 ขั้นที่ 40px จะล้นออกข้างทันที
    ขยายแค่ตัวเลขขนาด ไม่เพิ่มพื้น/มุมโค้ง/ระยะขอบข้างให้ .pstep หรือ .pst (กฎกล่อง 2 ชั้น) */
@@ -3575,8 +3570,7 @@ function pill(txt, kind){ return '<span class="pill p-'+kind+'">'+esc(txt)+'</sp
    ขั้นที่ผ่านแล้วเปลี่ยนไอคอนเป็นเครื่องหมายถูกเสมอ — บอกว่า "จบแล้ว" โดยไม่ต้องเทียบสี */
 function steps(track, i, o){
   o=o||{};
-  return '<div class="pstep'+(o.off?' off':'')+(o.lab?' lab':'')+(o.substeps?' columns':'')+'"'
-    +(o.substeps?' style="--step-count:'+track.length+'"':'')+'>'
+  return '<div class="pstep'+(o.off?' off':'')+(o.lab?' lab':'')+'">'
     +track.map((st,ix)=>{
       const done=ix<i, now=ix===i;
       const cls='pn'+(done?' done':'')+(now?' now':'')+(now&&o.slow?' slow':'');
@@ -3588,8 +3582,6 @@ function steps(track, i, o){
       /* เส้นที่ ix เชื่อมขั้น ix-1 กับ ix — เส้นที่เข้าขั้นปัจจุบันได้คลาส cur ไว้ไล่สี */
       const line=ix? '<i aria-hidden="true" class="pl'+(ix<=i?' on':'')+(now?' cur':'')+'"></i>' : '';
       const head=node+(o.lab?'<em>'+esc(st.t)+'</em>':'')+dt;
-      if(o.substeps) return '<div class="pst'+(now?' at':'')+'" data-step="'+esc(st.k)+'">'
-        +line+'<div class="pstage">'+head+'</div>'+o.substeps[st.k]+'</div>';
       return line+'<div class="pst'+(now?' at':'')+'">'+head+'</div>';
     }).join('')+'</div>';
 }
@@ -7091,6 +7083,39 @@ function dealSubsteps(d){
         :'เมื่อส่งมอบแล้ว ดีลจบและติดตามงานป้ายต่อในหน้าทะเบียนรถ',null,d.delivered?'จบงานขายแล้ว':null);
   return Object.fromEntries(d.track.map(st=>[st.k,'<ul class="substeps" aria-label="ขั้นตอนย่อย: '+esc(st.t)+'">'+columns[st.k]+'</ul>']));
 }
+/* แสดงเส้นทางครบในแถวเดียว แล้วเปิดรายละเอียดของขั้นปัจจุบันเป็นค่าเริ่มต้น
+   การเลือกแท็บเปลี่ยนเฉพาะสิ่งที่อ่าน ไม่เลื่อนขั้นหรือเขียนข้อมูลธุรกรรม */
+function dealProgress(d){
+  const active=(d.track[d.i]||d.track[d.track.length-1]).k, details=dealSubsteps(d);
+  return '<div class="dl-progress">'
+    +steps(d.track,d.i,{off:d.off,lab:1,dates:dealStepDates(d),slow:d.slow})
+    +'<div class="dl-step-tabs" role="tablist" aria-label="เลือกดูรายละเอียดขั้นตอน" style="--step-count:'+d.track.length+'">'
+    +d.track.map(st=>'<button type="button" role="tab" id="dlStepTab-'+st.k+'" data-dlstep="'+st.k+'"'
+      +' aria-controls="dlStepPanel-'+st.k+'" aria-selected="'+(st.k===active)+'" tabindex="'+(st.k===active?'0':'-1')+'">'
+      +esc(st.t)+'</button>').join('')+'</div>'
+    +d.track.map((st,i)=>'<section class="dl-step-panel" data-step="'+st.k+'" id="dlStepPanel-'+st.k+'"'
+      +' role="tabpanel" aria-labelledby="dlStepTab-'+st.k+'" tabindex="0"'+(st.k===active?'':' hidden')+'>'
+      +'<div class="dl-step-title"><b>รายละเอียด · '+esc(st.t)+'</b>'
+      +pill(i===d.i?(d.off?'รอแก้ไข':'ขั้นปัจจุบัน'):i<d.i?'ผ่านขั้นนี้แล้ว':'ยังไม่ถึงขั้นนี้',
+        i===d.i?(d.off?'bad':'info'):i<d.i?'good':'mut')+'</div>'+details[st.k]+'</section>').join('')+'</div>';
+}
+function wireDealProgress(){
+  const tabs=$$('#dlOne [data-dlstep]'), panels=$$('#dlOne .dl-step-panel');
+  const select=key=>{
+    tabs.forEach(tab=>{ const chosen=tab.dataset.dlstep===key;
+      tab.setAttribute('aria-selected',String(chosen));tab.tabIndex=chosen?0:-1; });
+    panels.forEach(panel=>{ panel.hidden=panel.dataset.step!==key; });
+  };
+  tabs.forEach((tab,i)=>{
+    tab.onclick=()=>select(tab.dataset.dlstep);
+    tab.onkeydown=e=>{
+      const next=e.key==='ArrowRight'?(i+1)%tabs.length:e.key==='ArrowLeft'?(i+tabs.length-1)%tabs.length
+        :e.key==='Home'?0:e.key==='End'?tabs.length-1:null;
+      if(next===null)return;
+      e.preventDefault();select(tabs[next].dataset.dlstep);tabs[next].focus();
+    };
+  });
+}
 /* ชื่อขั้นที่ใช้ในตัวกรองและป้ายในรายการ — ตกรางถือเป็นสถานะหนึ่งที่กรองได้ */
 const dealStageName = d => d.off? 'ไม่ผ่าน' : (d.track[d.i]? d.track[d.i].t : 'จบครบแล้ว');
 
@@ -7282,7 +7307,7 @@ function rDealOne(id){
              +' · จองเมื่อ '+thDate(d.bk.at)+'</span>' : '')
       +'</div>'
     +stepHead(h.head, esc(h.sub), d.off)
-    +steps(d.track, d.i, {off:d.off, lab:1, dates:dealStepDates(d), slow:d.slow, substeps:dealSubsteps(d)})
+    +dealProgress(d)
     /* คำอธิบายสั้นของขั้นปัจจุบัน + สัญญาณช้า (บรีฟ) */
     /* v1.46: คำอธิบายขั้น "คุยกับลูกค้า" เขียนไว้ว่า "ยังไม่ได้จอง" — พอมีป้ายจองอยู่บนหัวเรื่อง
        สองบรรทัดนี้จะขัดกันเองบนจอเดียวกัน (กฎข้อ 9 ห้ามโกหกบนจอ) · แก้ที่การวาด ไม่แก้ DEAL_TRACK
@@ -7295,6 +7320,7 @@ function rDealOne(id){
     +'</div></div>'
     +'<div class="card"><div class="bd">'+dealDetail(d)+'</div></div>';
   $('#dlOne').innerHTML=x;
+  wireDealProgress();
   /* ทุกปุ่มทำงานแล้ววาดหน้าเดิมใหม่ผ่าน refreshAll() ที่อยู่ในตัวทำงานเอง — ไม่มีการข้ามหน้า */
   $('#dlBack').onclick=()=>{ DEAL_SEL=''; rDeal(); window.scrollTo(0,0); };
   const on=(sel,fn)=> $$('#dlOne ['+sel+']').forEach(b=> b.onclick=()=>fn(b.dataset[sel.replace('data-','')]));
