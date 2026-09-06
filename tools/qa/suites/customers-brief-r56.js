@@ -20,6 +20,9 @@ const {chromium,EXE,BASE}=require('./env');
   c1.upAt=TODAY+'T05:30:00Z';c2.upAt=TODAY+'T11:59:00+07:00';c2.ownerId=admin.id;fsClear('deal');rDeal();
   let rows=dealRows();check(rows.findIndex(d=>d.c.id===c1.id)<rows.findIndex(d=>d.c.id===c2.id)&&!rows.some(d=>d.c.id===old.id),'[3] เรียงอัปเดตล่าสุดหรือช่วงเวลาผิด');
   check(thDT(c2.upAt).includes('11:59')&&thDT(TODAY+'T23:45:00Z').includes('06:45'),'[3] เวลาไม่ตรงประเทศไทย');
+  check(thShort('2026-09-06')==='6 ก.ย.'&&thShort('2026-09-06T09:00:00+07:00')==='6 ก.ย.'
+    &&thShort('2026-09-30T23:45:00Z')==='1 ต.ค.'&&thShort('')==='—'&&thShort('ไม่ใช่วัน')==='—'
+    &&thShort('2026-02-30')==='—','[11] วันที่ใต้แถบขั้นตอนไม่รองรับ timestamp/วันไทย/ค่าว่าง');
   $('#dlQ').value=c1.name;rDeal();rows=dealRows();
   check(rows.length===1&&$('#dlKpi .kpi .s').textContent.includes('1'),'[4] KPIไม่ตามตัวกรอง');
   check([...$('#dlFunnel').querySelectorAll('.bl b')].every(e=>+e.textContent<=1),'[4] กรวยรวมลูกค้านอกตัวกรอง');

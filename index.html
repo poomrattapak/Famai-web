@@ -2524,7 +2524,16 @@ const baht = n => fmt(n)+' ฿';
 const num  = v => { const n=parseFloat(String(v).replace(/,/g,'')); return isNaN(n)?0:n; };
 function thDate(s){ if(!s) return '—'; const d=new Date(s+'T00:00:00'); if(isNaN(d)) return s;
   return d.getDate()+' '+TH_M[d.getMonth()]+' '+(d.getFullYear()+543); }
-function thShort(s){ const d=new Date(s+'T00:00:00'); return d.getDate()+' '+TH_M[d.getMonth()]; }
+function thShort(s){
+  if(!s)return '—';
+  /* ประวัติใหม่มีเวลาในค่าเดียวกัน: แปลงเป็นวันไทยก่อนแสดงใต้แถบขั้นตอน */
+  const dateOnly=/^\d{4}-\d{2}-\d{2}$/.test(s), d=new Date(dateOnly?s+'T00:00:00+07:00':s);
+  if(isNaN(d))return '—';
+  const p=Object.fromEntries(new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Bangkok',
+    year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(d).map(x=>[x.type,x.value]));
+  if(dateOnly&&p.year+'-'+p.month+'-'+p.day!==s)return '—';
+  return Number(p.day)+' '+TH_M[Number(p.month)-1];
+}
 function days(a,b){ return Math.round((new Date(b+'T00:00:00')-new Date(a+'T00:00:00'))/864e5); }
 function addDays(s,n){ const d=new Date(s+'T00:00:00'); d.setDate(d.getDate()+n); return iso(d); }
 /* วันที่ ณ ตอนเรียก — TODAY ถูกคำนวณครั้งเดียวตอนเปิดแอป ถ้าเปิดค้างข้ามเที่ยงคืนจะเพี้ยน */
@@ -7916,7 +7925,7 @@ function rDealList(){
     'ไม่พบลูกค้าตามเงื่อนไข',
     rows.map(d=>crow('data-deal="'+d.c.id+'"', esc(d.c.name), dealPayPill(d)+dealBookPill(d)+badge(d),
       veh(d)+' · '+esc((d.s?d.s.sales:d.c.owner)||'—'),
-      bar(d)+'<span class="pslab'+(d.off?' off':'')+'">'+esc(dealHead(d).head)+'</span><span class="tsub">อัปเดต '+esc(thDT(dealUpdatedAt(d)))+'</span>')), MQ_CARD.matches?6:8);
+      bar(d)+'<span class="pslab'+(d.off?' off':'')+'">'+esc(dealHead(d).head)+'</span><span class="tsub">อัปเดต '+esc(thDT(dealUpdatedAt(d)))+'</span>')), MQ_CARD.matches?5:8);
   $$('#dlTable [data-deal]').forEach(r=> r.onclick=()=>{ DEAL_SEL=r.dataset.deal; rDeal(); window.scrollTo(0,0); });
 
   /* งานติดตามที่ถึงกำหนด — กดชื่อแล้วเข้าดีลของคนนั้นเลย */

@@ -95,8 +95,19 @@ const { chromium, EXE, BASE } = require('./env');
       }
 
       /* กดปฏิเสธต้องถามเหตุผลก่อนเสมอ และบังคับกรอกให้ครบ */
-      const cid = await p.evaluate(() => { const d = dealAll().find(x => x.k === 'fin' && !x.off && x.fc);
-        if (d) dealGo(d.c.id); return d ? d.c.id : null; });
+      /* บรีฟ B13-B14: ยื่นก่อนมีใบขาย จึงทดสอบปฏิเสธ/ยื่นใหม่บนคำขอที่ยังไม่ผูกคันรถ */
+      const cid = await p.evaluate(async () => {
+        const c={id:'QA-R11-PRESALE',name:'ทดสอบเหตุผลไฟแนนซ์',phone:'0811112233',addr:'99 เชียงใหม่',
+          idNo:'1234567890123',branch:ME.branch,ownerId:ME.id,owner:ME.nick,variant:Object.keys(PRICE)[0],
+          intent:'เงินผ่อน',stage:'สนใจ',createdAt:TODAY+'T09:00:00+07:00'};
+        CUSTOMERS.push(c);
+        if(!finApplyModal(c.id))return null;
+        $('#faDown').value=10000;
+        if(!await finApplySave(c.id))return null;
+        const f=FINCASES.find(x=>x.custId===c.id);
+        if(!f||f.saleId||SALES.some(x=>x.custId===c.id))return null;
+        dealGo(c.id);return c.id;
+      });
       if (!cid) bad(tag + ' [ข้อ9]: ไม่มีเคสสินเชื่อที่ยังไม่จบใน seed');
       else {
         await p.waitForTimeout(300);

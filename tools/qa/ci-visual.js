@@ -100,6 +100,12 @@ async function waitForServer() {
               await page.locator('#dlTable [data-deal]').first().click();
             } else {
               await page.locator('#cfTabs [data-p="cf7"]').click();
+              /* แผงที่เพิ่งแสดงมี animation พร้อม delay ต้องรอเห็นเนื้อหาก่อนถ่าย */
+              await page.waitForFunction(() => {
+                const pane=document.querySelector('#cf7'), row=pane?.querySelector('[data-pmk]');
+                return pane?.classList.contains('on')&&getComputedStyle(pane).opacity==='1'
+                  &&row?.getBoundingClientRect().height>0;
+              });
             }
             const detail = screen === 'deal' ? 'deal-detail' : 'settings-permissions';
             const detailName = `${staff}-${detail}-${width}-${theme}.png`;
