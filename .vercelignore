@@ -4,6 +4,11 @@
 *
 !index.html
 !vercel.json
+!assets/
+assets/*
+!assets/motorcycles/
+assets/motorcycles/*
+!assets/motorcycles/*.webp
 !docs/
 docs/*
 !docs/manual/
