@@ -131,7 +131,8 @@ const { chromium, EXE, BASE } = require('./env');
   /* ---------- 6 · bikeArt เลือกตามลำดับ URL → dataURL → เงารถ ----------
      v1.31: รูปผูกกับ "สี" ไม่ใช่ "รุ่น" — ลำดับเดิมทั้งหมด แค่ย้ายที่เก็บลงไปอยู่ในสี */
   const art = await p.evaluate(() => {
-    const v = Object.keys(PRICE)[0], p0 = PRICE[v];
+    /* ใช้รุ่นสมมติที่ไม่มีภาพแคตตาล็อก เพื่อพิสูจน์ fallback และลำดับรูปอัปโหลดเดิม */
+    const v = 'QA_PHOTO', p0 = PRICE[v] = JSON.parse(JSON.stringify(PRICE[Object.keys(PRICE)[0]]));
     const cc = Object.keys(p0.c)[0], e = p0.c[cc], nm = e.name;
     const keepU = e.imgUrl, keepI = e.img;
     delete e.imgUrl; delete e.img;
@@ -145,6 +146,7 @@ const { chromium, EXE, BASE } = require('./env');
     const otherArt = other ? bikeArt(v, p0.c[other].name, other) : '<svg';
     if (keepU) e.imgUrl = keepU; else delete e.imgUrl;
     if (keepI) e.img = keepI; else delete e.img;
+    delete PRICE[v];
     return { svg, dataUrl, url, otherArt, nOther: other ? 1 : 0 };
   });
   if (!/<svg/.test(art.svg))                       fails.push('ไม่มีรูปเลยต้องวาดเงารถ');

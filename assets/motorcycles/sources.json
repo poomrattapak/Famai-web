@@ -1,0 +1,362 @@
+{
+  "checkedAt": "2026-09-06",
+  "publisher": "Thai Yamaha Motor",
+  "note": "ภาพผลิตภัณฑ์จากผู้ผลิต ใช้แสดงรุ่นและสี ไม่ใช่ภาพสภาพรถรายคัน",
+  "codeReferences": [
+    "reference/deck/yamaha-price-list-2569-03-05.png",
+    "https://www.ehongmd.com/product_motorcycle?brand=YAMAHA",
+    "https://www.psmd.co.th/product-detail/2507-new-finn115-ล้อแม็คสตาร์ทมือ-2026.html"
+  ],
+  "images": [
+    {
+      "variant": "B6FS00",
+      "year": 2567,
+      "colorCode": "010A",
+      "color": "ดำ",
+      "label": "สี FINN [2024] ล้อซี่ลวด / สตาร์ทมือ / ดรัมเบรก สีดำ",
+      "sourcePage": "https://www.yamaha-motor.co.th/commuter/finn-2024/overview",
+      "sourceImage": "https://storagetym.blob.core.windows.net/www2021/images/product-2021/commuter/model-year-2024/finn-2024/lineup-360-black-drum/2.png?sfvrsn=444d02fd_2",
+      "path": "assets/motorcycles/B6FS00-010A.webp"
+    },
+    {
+      "variant": "B6FT00",
+      "year": 2567,
+      "colorCode": "010A",
+      "color": "ดำ",
+      "label": "สี FINN [2024] ล้อซี่ลวด / สตาร์ทมือ สีดำ",
+      "sourcePage": "https://www.yamaha-motor.co.th/commuter/finn-2024/overview",
+      "sourceImage": "https://storagetym.blob.core.windows.net/www2021/images/product-2021/commuter/model-year-2024/finn-2024/lineup-360-black-disk/2.png?sfvrsn=c40b1851_2",
+      "path": "assets/motorcycles/B6FT00-010A.webp"
+    },
+    {
+      "variant": "B6FT00",
+      "year": 2567,
+      "colorCode": "010B",
+      "color": "แดง",
+      "label": "สี FINN [2024] ล้อซี่ลวด / สตาร์ทมือ สีแดง",
+      "sourcePage": "https://www.yamaha-motor.co.th/commuter/finn-2024/overview",
+      "sourceImage": "https://storagetym.blob.core.windows.net/www2021/images/product-2021/commuter/model-year-2024/finn-2024/lineup-360-red/2.png?sfvrsn=4b28a60_2",
+      "path": "assets/motorcycles/B6FT00-010B.webp"
+    },
+    {
+      "variant": "B6FU00",
+      "year": 2567,
+      "colorCode": "010A",
+      "color": "น้ำเงิน",
+      "label": "สี FINN [2024] ล้อแม็ก / สตาร์ทมือ สีน้ำเงิน",
+      "sourcePage": "https://www.yamaha-motor.co.th/commuter/finn-2024/overview",
+      "sourceImage": "https://storagetym.blob.core.windows.net/www2021/images/product-2021/commuter/model-year-2024/finn-2024/lineup-360-dark-blue/2.png?sfvrsn=18b21849_2",
+      "path": "assets/motorcycles/B6FU00-010A.webp"
+    },
+    {
+      "variant": "B6FU00",
+      "year": 2567,
+      "colorCode": "010B",
+      "color": "เขียว",
+      "label": "สี FINN [2024] ล้อแม็ก / สตาร์ทมือ สีเขียว",
+      "sourcePage": "https://www.yamaha-motor.co.th/commuter/finn-2024/overview",
+      "sourceImage": "https://storagetym.blob.core.windows.net/www2021/images/product-2021/commuter/model-year-2024/finn-2024/lineup-360-green/2.png?sfvrsn=e5e4d910_2",
+      "path": "assets/motorcycles/B6FU00-010B.webp"
+    },
+    {
+      "variant": "B6FU00",
+      "year": 2567,
+      "colorCode": "010C",
+      "color": "ฟ้า",
+      "label": "สี FINN [2024] ล้อแม็ก / สตาร์ทมือ สีฟ้า",
+      "sourcePage": "https://www.yamaha-motor.co.th/commuter/finn-2024/overview",
+      "sourceImage": "https://storagetym.blob.core.windows.net/www2021/images/product-2021/commuter/model-year-2024/finn-2024/lineup-360-light-blue/2.png?sfvrsn=cb710baf_2",
+      "path": "assets/motorcycles/B6FU00-010C.webp"
+    },
+    {
+      "variant": "B6FV00",
+      "year": 2567,
+      "colorCode": "010A",
+      "color": "ดำ",
+      "label": "สี FINN [2024] UBS Version สีดำ",
+      "sourcePage": "https://www.yamaha-motor.co.th/commuter/finn-2024/overview",
+      "sourceImage": "https://storagetym.blob.core.windows.net/www2021/images/product-2021/commuter/model-year-2024/finn-2024/lineup-360-black-ubs/2.png?sfvrsn=977f4aaf_2",
+      "path": "assets/motorcycles/B6FV00-010A.webp"
+    },
+    {
+      "variant": "B6FV00",
+      "year": 2567,
+      "colorCode": "010B",
+      "color": "เขียว",
+      "label": "สี FINN [2024] UBS Version สีเขียว",
+      "sourcePage": "https://www.yamaha-motor.co.th/commuter/finn-2024/overview",
+      "sourceImage": "https://storagetym.blob.core.windows.net/www2021/images/product-2021/commuter/model-year-2024/finn-2024/lineup-360-green-ubs/2.png?sfvrsn=37bb5c14_2",
+      "path": "assets/motorcycles/B6FV00-010B.webp"
+    },
+    {
+      "variant": "B6FV00",
+      "year": 2567,
+      "colorCode": "010C",
+      "color": "เทา",
+      "label": "สี FINN [2024] UBS Version สีเทา",
+      "sourcePage": "https://www.yamaha-motor.co.th/commuter/finn-2024/overview",
+      "sourceImage": "https://storagetym.blob.core.windows.net/www2021/images/product-2021/commuter/model-year-2024/finn-2024/lineup-360-grey-ubs/2.png?sfvrsn=e1677183_2",
+      "path": "assets/motorcycles/B6FV00-010C.webp"
+    },
+    {
+      "variant": "BJKC00",
+      "year": 2569,
+      "colorCode": "010A",
+      "color": "เขียว",
+      "label": "สี GRAND FILANO HYBRID [สีเขียว Matcha Latte]",
+      "sourcePage": "https://www.yamaha-motor.co.th/commuter/grand-filano-hybrid-2026/overview",
+      "sourceImage": "https://storagetym.blob.core.windows.net/www2021/images/product-2021/commuter/model-year-2026/grand-filano-hybrid-2026/lineup-360-std-macha-latte/2.png?sfvrsn=c90854d2_2",
+      "path": "assets/motorcycles/BJKC00-010A.webp"
+    },
+    {
+      "variant": "BJKC00",
+      "year": 2569,
+      "colorCode": "010B",
+      "color": "ดำ",
+      "label": "สี GRAND FILANO HYBRID [สีดำ Obsidian Black]",
+      "sourcePage": "https://www.yamaha-motor.co.th/commuter/grand-filano-hybrid-2026/overview",
+      "sourceImage": "https://storagetym.blob.core.windows.net/www2021/images/product-2021/commuter/model-year-2026/grand-filano-hybrid-2026/lineup-360-std-obsidian-black/2.png?sfvrsn=8a8d2365_2",
+      "path": "assets/motorcycles/BJKC00-010B.webp"
+    },
+    {
+      "variant": "BJKC00",
+      "year": 2569,
+      "colorCode": "010C",
+      "color": "น้ำเงิน",
+      "label": "สี GRAND FILANO HYBRID [สีน้ำเงิน Dark Blue]",
+      "sourcePage": "https://www.yamaha-motor.co.th/commuter/grand-filano-hybrid-2026/overview",
+      "sourceImage": "https://storagetym.blob.core.windows.net/www2021/images/product-2021/commuter/model-year-2026/grand-filano-hybrid-2026/lineup-360-std-dark-blue/2.png?sfvrsn=d96979cc_2",
+      "path": "assets/motorcycles/BJKC00-010C.webp"
+    },
+    {
+      "variant": "BJKC00",
+      "year": 2569,
+      "colorCode": "010D",
+      "color": "เทา",
+      "label": "สี GRAND FILANO HYBRID [สีเทา Solid Gray]",
+      "sourcePage": "https://www.yamaha-motor.co.th/commuter/grand-filano-hybrid-2026/overview",
+      "sourceImage": "https://storagetym.blob.core.windows.net/www2021/images/product-2021/commuter/model-year-2026/grand-filano-hybrid-2026/lineup-360-std-solid-gray/2.png?sfvrsn=4a31c878_2",
+      "path": "assets/motorcycles/BJKC00-010D.webp"
+    },
+    {
+      "variant": "BJKD00",
+      "year": 2569,
+      "colorCode": "010A",
+      "color": "ฟ้า",
+      "label": "สี GRAND FILANO HYBRID ABS [สีฟ้า Iron Blue]",
+      "sourcePage": "https://www.yamaha-motor.co.th/commuter/grand-filano-hybrid-2026/overview",
+      "sourceImage": "https://storagetym.blob.core.windows.net/www2021/images/product-2021/commuter/model-year-2026/grand-filano-hybrid-2026/lineup-360-abs-iron-blue/2.png?sfvrsn=3a11658f_2",
+      "path": "assets/motorcycles/BJKD00-010A.webp"
+    },
+    {
+      "variant": "BJKD00",
+      "year": 2569,
+      "colorCode": "010B",
+      "color": "ฟ้า/ดำ",
+      "label": "สี GRAND FILANO HYBRID ABS [สีฟ้า-ดำ Digital Lavender]",
+      "sourcePage": "https://www.yamaha-motor.co.th/commuter/grand-filano-hybrid-2026/overview",
+      "sourceImage": "https://storagetym.blob.core.windows.net/www2021/images/product-2021/commuter/model-year-2026/grand-filano-hybrid-2026/lineup-360-abs-digital-lavender/2.png?sfvrsn=ad03bec2_2",
+      "path": "assets/motorcycles/BJKD00-010B.webp"
+    },
+    {
+      "variant": "BJKD00",
+      "year": 2569,
+      "colorCode": "010C",
+      "color": "ม่วง",
+      "label": "สี GRAND FILANO HYBRID ABS [สีม่วง Brown Berry]",
+      "sourcePage": "https://www.yamaha-motor.co.th/commuter/grand-filano-hybrid-2026/overview",
+      "sourceImage": "https://storagetym.blob.core.windows.net/www2021/images/product-2021/commuter/model-year-2026/grand-filano-hybrid-2026/lineup-360-abs-brown-berry/2.png?sfvrsn=27d68cf9_2",
+      "path": "assets/motorcycles/BJKD00-010C.webp"
+    },
+    {
+      "variant": "BJKD00",
+      "year": 2569,
+      "colorCode": "010F",
+      "color": "น้ำเงิน",
+      "label": "สี GRAND FILANO HYBRID ABS [สีน้ำเงิน Bluish Gray]",
+      "sourcePage": "https://www.yamaha-motor.co.th/commuter/grand-filano-hybrid-2026/overview",
+      "sourceImage": "https://storagetym.blob.core.windows.net/www2021/images/product-2021/commuter/model-year-2026/grand-filano-hybrid-2026/lineup-360-abs-bluish-gray/2.png?sfvrsn=65bac865_2",
+      "path": "assets/motorcycles/BJKD00-010F.webp"
+    },
+    {
+      "variant": "BTF200",
+      "year": 2569,
+      "colorCode": "010C",
+      "color": "ขาว",
+      "label": "สี NMAX STANDARD [2026] สีขาว Glossy White",
+      "sourcePage": "https://www.yamaha-motor.co.th/commuter/nmax-2026/overview",
+      "sourceImage": "https://storagetym.blob.core.windows.net/www2021/images/product-2021/commuter/model-year-2025/all-new-nmax-2025/lineup-360-glossy-white/2.png?sfvrsn=5c3887b0_2",
+      "path": "assets/motorcycles/BTF200-010C.webp"
+    },
+    {
+      "variant": "BTF200",
+      "year": 2569,
+      "colorCode": "010D",
+      "color": "ดำ",
+      "label": "สี NMAX STANDARD [2026] สีดำ Vivid Black",
+      "sourcePage": "https://www.yamaha-motor.co.th/commuter/nmax-2026/overview",
+      "sourceImage": "https://storagetym.blob.core.windows.net/www2021/images/product-2021/commuter/model-year-2025/all-new-nmax-2025/lineup-360-vivid-black/2.png?sfvrsn=8f349838_2",
+      "path": "assets/motorcycles/BTF200-010D.webp"
+    },
+    {
+      "variant": "BTF200",
+      "year": 2569,
+      "colorCode": "010E",
+      "color": "แดง",
+      "label": "สี NMAX STANDARD [2026] สีแดง Super Red",
+      "sourcePage": "https://www.yamaha-motor.co.th/commuter/nmax-2026/overview",
+      "sourceImage": "https://storagetym.blob.core.windows.net/www2021/images/product-2021/commuter/model-year-2025/all-new-nmax-2025/lineup-360-super-red/2.png?sfvrsn=67277c17_2",
+      "path": "assets/motorcycles/BTF200-010E.webp"
+    },
+    {
+      "variant": "BTF200",
+      "year": 2569,
+      "colorCode": "010F",
+      "color": "น้ำเงิน",
+      "label": "สี NMAX STANDARD [2026] สีน้ำเงิน Racing Blue",
+      "sourcePage": "https://www.yamaha-motor.co.th/commuter/nmax-2026/overview",
+      "sourceImage": "https://storagetym.blob.core.windows.net/www2021/images/product-2021/commuter/model-year-2026/nmax-2026/lineup-360-racing-blue/2.png?sfvrsn=2dd7bdc6_2",
+      "path": "assets/motorcycles/BTF200-010F.webp"
+    },
+    {
+      "variant": "BTF300",
+      "year": 2569,
+      "colorCode": "010A",
+      "color": "ดำ/เทา",
+      "label": "สี NMAX [25th ANNIVERSARY] MAX Black",
+      "sourcePage": "https://www.yamaha-motor.co.th/commuter/nmax-2026/overview",
+      "sourceImage": "https://storagetym.blob.core.windows.net/www2021/images/product-2021/commuter/model-year-2026/nmax-2026/lineup-360-nmax-25th-anniversary/2.png?sfvrsn=2ba58efa_2",
+      "path": "assets/motorcycles/BTF300-010A.webp"
+    },
+    {
+      "variant": "D18100",
+      "year": 2568,
+      "colorCode": "010A",
+      "color": "ฟ้า",
+      "label": "สี PG-1 [2025] Blue Glacier",
+      "sourcePage": "https://www.yamaha-motor.co.th/commuter/pg-1-2025/overview",
+      "sourceImage": "https://storagetym.blob.core.windows.net/www2021/images/product-2021/commuter/model-year-2025/pg-1-2025/lineup-360-blue-gracier/2.png?sfvrsn=fe2be3cf_2",
+      "path": "assets/motorcycles/D18100-010A.webp"
+    },
+    {
+      "variant": "D18100",
+      "year": 2568,
+      "colorCode": "010B",
+      "color": "แดง",
+      "label": "สี PG-1 [2025] Red Twilight",
+      "sourcePage": "https://www.yamaha-motor.co.th/commuter/pg-1-2025/overview",
+      "sourceImage": "https://storagetym.blob.core.windows.net/www2021/images/product-2021/commuter/model-year-2025/pg-1-2025/lineup-360-red-twilight/2.png?sfvrsn=b0d5cc3c_2",
+      "path": "assets/motorcycles/D18100-010B.webp"
+    },
+    {
+      "variant": "D18100",
+      "year": 2568,
+      "colorCode": "010C",
+      "color": "เทา",
+      "label": "สี PG-1 [2025] Gray Misty",
+      "sourcePage": "https://www.yamaha-motor.co.th/commuter/pg-1-2025/overview",
+      "sourceImage": "https://storagetym.blob.core.windows.net/www2021/images/product-2021/commuter/model-year-2025/pg-1-2025/lineup-360-gray-misty/2.png?sfvrsn=440f9ce7_2",
+      "path": "assets/motorcycles/D18100-010C.webp"
+    },
+    {
+      "variant": "D18100",
+      "year": 2568,
+      "colorCode": "010D",
+      "color": "น้ำตาล",
+      "label": "สี PG-1 [2025] Brown Rockstone",
+      "sourcePage": "https://www.yamaha-motor.co.th/commuter/pg-1-2025/overview",
+      "sourceImage": "https://storagetym.blob.core.windows.net/www2021/images/product-2021/commuter/model-year-2025/pg-1-2025/lineup-360-brown-rockstone/2.png?sfvrsn=da0483e8_2",
+      "path": "assets/motorcycles/D18100-010D.webp"
+    },
+    {
+      "variant": "DR9200",
+      "year": 2569,
+      "colorCode": "010A",
+      "color": "ดำ/เทา",
+      "label": "สี XMAX STANDARD [2026] ดำเทา Shadow Gray",
+      "sourcePage": "https://www.yamaha-motor.co.th/commuter/xmax-2026/overview",
+      "sourceImage": "https://storagetym.blob.core.windows.net/www2021/images/product-2021/commuter/model-year-2026/xmax-2026/lineup-360-xmax-std-shadow-gray/2.png?sfvrsn=56726e11_2",
+      "path": "assets/motorcycles/DR9200-010A.webp"
+    },
+    {
+      "variant": "DR9200",
+      "year": 2569,
+      "colorCode": "010B",
+      "color": "เทา",
+      "label": "สี XMAX STANDARD [2026] เทา Smoky Gray",
+      "sourcePage": "https://www.yamaha-motor.co.th/commuter/xmax-2026/overview",
+      "sourceImage": "https://storagetym.blob.core.windows.net/www2021/images/product-2021/commuter/model-year-2026/xmax-2026/lineup-360-xmax-std-smoky-gray/2.png?sfvrsn=ebe9fec0_2",
+      "path": "assets/motorcycles/DR9200-010B.webp"
+    },
+    {
+      "variant": "DR9200",
+      "year": 2569,
+      "colorCode": "010C",
+      "color": "น้ำเงิน",
+      "label": "สี XMAX STANDARD [2026] น้ำเงิน Icon Blue",
+      "sourcePage": "https://www.yamaha-motor.co.th/commuter/xmax-2026/overview",
+      "sourceImage": "https://storagetym.blob.core.windows.net/www2021/images/product-2021/commuter/model-year-2026/xmax-2026/lineup-360-xmax-std-icon-blue/2.png?sfvrsn=fa2df198_2",
+      "path": "assets/motorcycles/DR9200-010C.webp"
+    },
+    {
+      "variant": "DR9200",
+      "year": 2569,
+      "colorCode": "010D",
+      "color": "แดง",
+      "label": "สี XMAX STANDARD [2026] แดง Hyper Red",
+      "sourcePage": "https://www.yamaha-motor.co.th/commuter/xmax-2026/overview",
+      "sourceImage": "https://storagetym.blob.core.windows.net/www2021/images/product-2021/commuter/model-year-2026/xmax-2026/lineup-360-xmax-std-hyper-red/2.png?sfvrsn=ef758f70_2",
+      "path": "assets/motorcycles/DR9200-010D.webp"
+    },
+    {
+      "variant": "DR9400",
+      "year": 2569,
+      "colorCode": "010A",
+      "color": "ดำ",
+      "label": "สี XMAX [25th ANNIVERSARY] MAX Black",
+      "sourcePage": "https://www.yamaha-motor.co.th/commuter/xmax-2026/overview",
+      "sourceImage": "https://storagetym.blob.core.windows.net/www2021/images/product-2021/commuter/model-year-2026/xmax-2026/xmax-25th-anniversary-lineup-360/2.png?sfvrsn=d606b069_2",
+      "path": "assets/motorcycles/DR9400-010A.webp"
+    },
+    {
+      "variant": "DA6200",
+      "year": 2569,
+      "colorCode": "010A",
+      "color": "ดำ",
+      "label": "สี FINN [2026] STANDARD CAST WHEELS Version สีดำ",
+      "sourcePage": "https://www.yamaha-motor.co.th/commuter/finn-2026/overview",
+      "sourceImage": "https://storagetym.blob.core.windows.net/www2021/images/product-2021/commuter/model-year-2026/finn-2026/line-up-standard-cast-wheels-(da62-a)/2.png?sfvrsn=a7c7f421_2",
+      "path": "assets/motorcycles/DA6200-010A.webp"
+    },
+    {
+      "variant": "DA6200",
+      "year": 2569,
+      "colorCode": "010B",
+      "color": "แดง",
+      "label": "สี FINN [2026] STANDARD CAST WHEELS Version สีแดง",
+      "sourcePage": "https://www.yamaha-motor.co.th/commuter/finn-2026/overview",
+      "sourceImage": "https://storagetym.blob.core.windows.net/www2021/images/product-2021/commuter/model-year-2026/finn-2026/line-up/line-up-standard-cast-wheels-(da62-b)/2.png?sfvrsn=b6cb6d37_2",
+      "path": "assets/motorcycles/DA6200-010B.webp"
+    },
+    {
+      "variant": "BJKE00",
+      "year": 2569,
+      "colorCode": "010A",
+      "color": "น้ำตาล",
+      "label": "สี GRAND FILANO HYBRID SPECIAL EDITION [2026] สีน้ำตาล",
+      "sourcePage": "https://www.yamaha-motor.co.th/commuter/grand-filano-hybrid-special-edition-2026/overview",
+      "sourceImage": "https://storagetym.blob.core.windows.net/www2021/images/product-2021/commuter/model-year-2026/outdoor-fashion-yamaha-grand-filano/line-up/2.png?sfvrsn=bb4eb043_2",
+      "path": "assets/motorcycles/BJKE00-010A.webp"
+    },
+    {
+      "variant": "D13100",
+      "year": 2569,
+      "colorCode": "010A",
+      "color": "น้ำเงิน",
+      "label": "สี All New Yamaha AEROX SP [2026] สีน้ำเงิน DARK VOLCANO",
+      "sourcePage": "https://www.yamaha-motor.co.th/commuter/all-new-aerox-sp-2026/overview",
+      "sourceImage": "https://storagetym.blob.core.windows.net/www2021/images/product-2021/commuter/model-year-2026/aerox-2026/lineup-360/dark-volcano/2.png?sfvrsn=90bcf693_2",
+      "path": "assets/motorcycles/D13100-010A.webp"
+    }
+  ]
+}

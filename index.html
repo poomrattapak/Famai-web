@@ -2512,8 +2512,22 @@ const NO_PRICE = ['DA6200','BJKE00','D13100'];
 const COLOR_HEX = {'ดำ':'#1A1A1A','แดง':'#D62828','น้ำเงิน':'#1B4F9C','ฟ้า':'#4FA3D9','เขียว':'#2E9E5B',
   'เทา':'#8A8F94','น้ำตาล':'#7A5230','ดำ-เทา':'#3A4045','ดำ/เทา':'#3A4045','ขาว':'#EDEDED','ม่วง':'#6B3FA0','ฟ้า/ดำ':'#2C5F8A'};
 
+/* รูปผลิตภัณฑ์ Yamaha ที่ตรวจรุ่น/ปี/สีแล้ว — หลักฐานอยู่ assets/motorcycles/sources.json
+   เป็นค่าแสดงผลสำรอง ไม่เขียนทับรูปที่ร้านอัปโหลดหรือข้อมูลราคา/ธุรกรรม */
+const BIKE_CATALOG = {"B6FS00":{"yr":2567,"c":{"010A":"ดำ"}},"B6FT00":{"yr":2567,"c":{"010A":"ดำ","010B":"แดง"}},"B6FU00":{"yr":2567,"c":{"010A":"น้ำเงิน","010B":"เขียว","010C":"ฟ้า"}},"B6FV00":{"yr":2567,"c":{"010A":"ดำ","010B":"เขียว","010C":"เทา"}},"BJKC00":{"yr":2569,"c":{"010A":"เขียว","010B":"ดำ","010C":"น้ำเงิน","010D":"เทา"}},"BJKD00":{"yr":2569,"c":{"010A":"ฟ้า","010B":"ฟ้า/ดำ","010C":"ม่วง","010F":"น้ำเงิน"}},"BTF200":{"yr":2569,"c":{"010C":"ขาว","010D":"ดำ","010E":"แดง","010F":"น้ำเงิน"}},"BTF300":{"yr":2569,"c":{"010A":"ดำ/เทา"}},"D18100":{"yr":2568,"c":{"010A":"ฟ้า","010B":"แดง","010C":"เทา","010D":"น้ำตาล"}},"DR9200":{"yr":2569,"c":{"010A":"ดำ/เทา","010B":"เทา","010C":"น้ำเงิน","010D":"แดง"}},"DR9400":{"yr":2569,"c":{"010A":"ดำ"}},"DA6200":{"yr":2569,"c":{"010A":"ดำ","010B":"แดง"}},"BJKE00":{"yr":2569,"c":{"010A":"น้ำตาล"}},"D13100":{"yr":2569,"c":{"010A":"น้ำเงิน"}}};
+function catalogPhoto(variant, colorName, colorCode, model){
+  const ref=BIKE_CATALOG[variant], p=model===undefined?PRICE[variant]:model;
+  if(!ref || (p && +p.yr!==ref.yr)) return null;
+  const cc=colorCode || Object.keys(ref.c).find(k=>ref.c[k]===colorName);
+  const same=(a,b)=>typeof a==='string' && typeof b==='string' && a.replace(/-/g,'/')===b.replace(/-/g,'/');
+  if(!cc || !same(ref.c[cc],colorName)) return null;
+  /* สีที่แก้ในฐานหรือในแผ่นตั้งค่าแล้วต้องไม่เผลอใช้รูปสีเดิม */
+  if(p && p.c && (!p.c[cc] || !same(p.c[cc].name,colorName))) return null;
+  return 'assets/motorcycles/'+variant+'-'+cc+'.webp';
+}
+
 /* ---------- รูปรถ ----------
-   ไม่มีรูปจริง → วาดเงารถตามประเภท tint ด้วยสีจริงของคัน
+   ใช้รูปที่ร้านอัปโหลดก่อนภาพแคตตาล็อกตรงรุ่น/สี หากยังยืนยันไม่ได้จึงวาดเงารถ
    อัปโหลดรูปจริงต่อรุ่นได้ที่ ตั้งค่าระบบ → รุ่นรถและสี (เก็บ dataURL เฉพาะเซสชันสาธิต) */
 function bikeSVG(cat, cc, hex){
   hex = hex || '#8A8F94';
@@ -2539,7 +2553,7 @@ function bikeSVG(cat, cc, hex){
   }
   return '<svg class="bike" viewBox="0 0 120 62" aria-hidden="true">'+body+seat+bar+wheels+'</svg>';
 }
-/* รูปของรุ่น — รูปจริงที่อัปโหลดมาก่อน ไม่มีก็วาดเงา */
+/* รูปของรุ่น — รูปที่ร้านอัปโหลด → ภาพแคตตาล็อกตรงสี → เงารถ */
 /* รูปผูกกับ "สี" ไม่ใช่ "รุ่น" (v1.31 — คำสั่งเจ้าของ: ใส่รูปต้องตรงสี)
    หาสีจากรหัสก่อนเสมอ เพราะรุ่นเดียวมีชื่อสีซ้ำกันได้ (BJKD00 มีทั้ง 'ฟ้า' และ 'ฟ้า/ดำ')
    ผู้เรียกที่มีแต่ชื่อสีในมือ (เช่นหน้ารายการรุ่น) ค่อยตกมาเทียบด้วยชื่อ */
@@ -2552,6 +2566,8 @@ function bikeArt(variant, colorName, colorCode){
   /* ลำดับ: รูปที่เก็บถาวรบน Storage → รูปที่เพิ่งเลือกในเซสชันนี้ (โหมดสาธิต) → เงารถที่วาดเอง */
   if(e && e.imgUrl) return '<img class="bike" src="'+esc(e.imgUrl)+'" alt="" loading="lazy">';
   if(e && e.img) return '<img class="bike" src="'+e.img+'" alt="">';
+  const photo=catalogPhoto(variant, colorName, colorCode);
+  if(photo) return '<img class="bike" src="'+esc(photo)+'" alt="'+esc((p?p.m:variant)+' สี'+colorName)+'" loading="lazy" decoding="async">';
   return bikeSVG(p?p.cat:'Automatic', p?p.cc:0, COLOR_HEX[colorName]||'#8A8F94');
 }
 
@@ -11061,7 +11077,7 @@ function colorStrip(v){
       +'<span class="bph">'+bikeArt(v, e.name, cc)+'</span>'
       +'<span class="vmcn"><span class="dot" style="background:'+(COLOR_HEX[e.name]||'#ccc')+'"></span>'+esc(e.name)+'</span>'
       +'<span class="vmck mono">'+esc(cc)+'</span>'
-      +((e.imgUrl||e.img)? '' : '<span class="vmck">ยังไม่มีรูป</span>')+'</span>'; }).join('')+'</div>';
+      +((e.imgUrl||e.img||catalogPhoto(v,e.name,cc))? '' : '<span class="vmck">ยังไม่มีรูป</span>')+'</span>'; }).join('')+'</div>';
 }
 function rModels(){
   tbl($('#vmTable'), ['โมเดล','รหัสรุ่น','สีและรูป',{t:'ทุน',n:1},{t:'ราคาขาย',n:1},{t:'ในสต๊อก',n:1},''],
@@ -11119,9 +11135,12 @@ function modelModal(code){
     : [{ code:'010A', name:'ดำ', pack:null, note:'' }];
   let pick = -1;   /* การ์ดที่กำลังรอไฟล์จากช่องเลือกรูปตัวเดียวที่ใช้ร่วมกัน */
 
+  const vmCatalog=r=>catalogPhoto(code,r.name,r.code,{yr:num($('#vmYr').value)});
   function vmPrev(r){
     if(r.imgUrl) return '<img class="bike" src="'+esc(r.imgUrl)+'" alt="">';
     if(r.img)    return '<img class="bike" src="'+r.img+'" alt="">';
+    const photo=vmCatalog(r);
+    if(photo) return '<img class="bike" src="'+esc(photo)+'" alt="'+esc(r.name)+'">';
     /* ยังไม่มีรูป → เงารถที่ระบายด้วยสีที่พิมพ์ไว้ เห็นทันทีว่าการ์ดนี้คือสีอะไร */
     return bikeSVG($('#vmCat').value, num($('#vmCc').value), COLOR_HEX[r.name]||'#8A8F94');
   }
@@ -11136,9 +11155,9 @@ function modelModal(code){
         +'<div><label class="fl">ชื่อสี</label><input class="inp" data-vcn="'+i+'" value="'+esc(r.name||'')+'" placeholder="ดำ"></div>'
       +'</div>'
       +'<div class="vmb"><button type="button" class="btn sec sm" data-vcp="'+i+'">'
-        +ic('clip','i i-sm')+' '+((r.img||r.imgUrl)?'เปลี่ยนรูป':'เลือกรูป')+'</button>'
+        +ic('clip','i i-sm')+' '+((r.img||r.imgUrl||vmCatalog(r))?'เปลี่ยนรูป':'เลือกรูป')+'</button>'
       +(rows.length>1? '<button type="button" class="lnk q" data-vcx="'+i+'">เอาออก</button>':'')+'</div>'
-      +'<div class="vmst tsub">'+esc(r.note || ((r.img||r.imgUrl)? 'มีรูปแล้ว' : 'ยังไม่มีรูป'))+'</div>'
+      +'<div class="vmst tsub">'+esc(r.note || ((r.img||r.imgUrl)? 'มีรูปแล้ว' : vmCatalog(r)? 'ภาพรุ่นและสีจาก Yamaha' : 'ยังไม่มีรูป'))+'</div>'
       +'</div>').join('');
     $$('#vmColorList [data-vcc]').forEach(el=> el.oninput=()=>{ rows[+el.dataset.vcc].code=el.value.trim().toUpperCase(); });
     $$('#vmColorList [data-vcn]').forEach(el=> el.oninput=()=>{ rows[+el.dataset.vcn].name=el.value.trim(); });
@@ -11633,11 +11652,14 @@ function pubModel(code){
   const n=UNITS.filter(u=>u.variant===code && u.status==='available').length;
   /* รูปปกของรุ่น = รูปของสีแรก (เรียงตามรหัสสี) ที่อัปไว้แล้ว — คีย์ photo/photoFull ต้องคงอยู่
      เพราะเว็บขายรถรุ่นเก่ายังอ่านคีย์นี้ · รูปรายสีอยู่ใน colors[] ให้เว็บใหม่เลือกใช้ */
-  const cover=Object.keys(p.c||{}).sort().map(cc=>p.c[cc]).find(x=>x && x.imgUrl);
+  const colors=Object.keys(p.c||{}).sort().map(cc=>{
+    const e=p.c[cc], photo=e.imgUrl||catalogPhoto(code,e.name,cc);
+    return {code:cc,name:e.name,photo:photo?new URL(photo,location.href).href:null,photoFull:e.imgFullUrl||(photo?new URL(photo,location.href).href:null)};
+  });
+  const cover=colors.find(c=>c.photo)||{};
   return { code, model:p.m, modelTh:p.th||'', cat:p.cat||'', cc:p.cc||null, year:p.yr||null,
-    retail:p.retail||null, photo:(cover||{}).imgUrl||null, photoFull:(cover||{}).imgFullUrl||null,
-    colors:Object.keys(p.c||{}).sort().map(cc=>({ code:cc, name:p.c[cc].name,
-      photo:p.c[cc].imgUrl||null, photoFull:p.c[cc].imgFullUrl||null })),
+    retail:p.retail||null, photo:cover.photo||null, photoFull:cover.photoFull||null,
+    colors,
     availability:pubAvail(n) };
 }
 const pubModels = () => Object.keys(PRICE).sort().map(pubModel).filter(Boolean);

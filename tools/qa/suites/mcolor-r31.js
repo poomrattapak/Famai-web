@@ -4,7 +4,7 @@
 
    หัวใจของด่านนี้คือข้อ 3: **ใส่รูปให้สีหนึ่ง แล้วสีอื่นในรุ่นเดียวกันต้องไม่ได้รูปนั้นไปใช้**
    ถ้าข้อนี้เขียวโดยที่โค้ดยังผูกรูปกับรุ่น แปลว่าด่านอ่อน ไม่ใช่ว่าโค้ดถูก
-   จึงตรวจทั้งฝั่งที่ "ควรมีรูป" และฝั่งที่ "ต้องไม่มีรูป" คู่กันทุกข้อ */
+   v1.53: สีอื่นมีภาพแคตตาล็อกแล้ว จึงตรวจ URL ของสีนั้นตรง ๆ ว่าไม่ถูกภาพอัปโหลดทับ */
 const { chromium, EXE, BASE } = require('./env');
 
 /* PNG 1x1 — เล็กที่สุดที่ imgPrepare ยังทำงานได้จริง ไม่ต้องพึ่งไฟล์ในรีโป */
@@ -85,13 +85,13 @@ const PNG = Buffer.from(
 
     const inSheet = await p.evaluate(() => {
       const rows = [...document.querySelectorAll('#vmColorList .vmrow')];
-      return rows.map(r => ({ img: !!r.querySelector('.bph img'), svg: !!r.querySelector('.bph svg'),
+      return rows.map(r => ({ src:r.querySelector('.bph img')?.getAttribute('src'), code:r.querySelector('[data-vcc]').value, img: !!r.querySelector('.bph img'), svg: !!r.querySelector('.bph svg'),
                               note: (r.querySelector('.vmst') || {}).textContent || '' }));
     });
     if (!inSheet[0] || !inSheet[0].img) bad(tag + ': ใส่รูปให้การ์ดแรกแล้วการ์ดแรกยังไม่โชว์รูป');
     inSheet.slice(1).forEach((r, i) => {
-      if (r.img) bad(tag + ': ใส่รูปให้การ์ดแรก แต่การ์ดที่ ' + (i + 2) + ' ได้รูปนั้นไปด้วย — รูปไม่ได้ผูกกับสี');
-      if (!/ยังไม่มีรูป/.test(r.note)) bad(tag + ': การ์ดที่ ' + (i + 2) + ' ไม่มีรูปแต่ไม่ได้เขียนบอก ("' + r.note.trim() + '")');
+      if (r.src !== 'assets/motorcycles/BTF200-'+r.code+'.webp') bad(tag + ': รูปแคตตาล็อกของสีอื่นถูกแทนที่');
+      if (!/Yamaha/.test(r.note)) bad(tag + ': ภาพแคตตาล็อกต้องระบุแหล่งภาพ');
     });
 
     /* ---------- 4 · บันทึกแล้วรูปต้องอยู่กับสีนั้นสีเดียวใน PRICE ---------- */
@@ -112,7 +112,7 @@ const PNG = Buffer.from(
                without: bikeArt('BTF200', c[k[1]].name, k[1]) };
     });
     if (!/<img/.test(art.withImg)) bad(tag + ': bikeArt ของสีที่มีรูป ไม่ได้คืนรูป');
-    if (!/<svg/.test(art.without)) bad(tag + ': bikeArt ของสีที่ยังไม่มีรูป ไปหยิบรูปของสีอื่นมาใช้');
+    if (!art.without.includes('assets/motorcycles/BTF200-010D.webp')) bad(tag + ': bikeArt ของสีที่ยังไม่มีรูป ไปหยิบรูปของสีอื่นมาใช้');
 
     /* ---------- 6 · หน้าสต๊อกหยิบรูปตามสีของรถคันนั้น ---------- */
     const stock = await p.evaluate(() => {
@@ -136,7 +136,7 @@ const PNG = Buffer.from(
     else if (stock.ebHasImg) bad(tag + ': สีเทียบ (' + stock.cb + ') มีรูปอยู่แล้ว เทียบไม่ได้');
     else {
       if (!/<img/.test(stock.a)) bad(tag + ' ' + stock.v + '/' + stock.ca + ': คันที่สีมีรูป กลับได้เงารถ');
-      if (!/<svg/.test(stock.b)) bad(tag + ' ' + stock.v + '/' + stock.cb + ': คันที่สียังไม่มีรูป กลับได้รูปของสีอื่น');
+      if (!stock.b.includes('assets/motorcycles/'+stock.v+'-'+stock.cb+'.webp')) bad(tag + ' ' + stock.v + '/' + stock.cb + ': คันที่สียังไม่มีรูป กลับได้รูปของสีอื่น');
     }
 
     /* ---------- 7 · แถบสีในหน้ารายการรุ่น = สีละช่อง ---------- */
@@ -283,9 +283,9 @@ const PNG = Buffer.from(
       const aImg = !!card.querySelector('.ph img');
       const aOn = sw(ccs[0]).classList.contains('on');
       sw(ccs[1]).click();
-      const bSvg = !!card.querySelector('.ph svg');
+      const bSvg = card.querySelector('.ph img')?.getAttribute('src')==='assets/motorcycles/'+v+'-'+ccs[1]+'.webp';
       const others = [...document.querySelectorAll('#stGal .gcard')]
-        .filter(x => x !== card && x.querySelector('.ph img')).length;
+        .filter(x => x !== card && x.querySelector('.ph img')?.getAttribute('src')==='data:image/jpeg;base64,AAAA').length;
       if (keep) e.img = keep; else delete e.img;
       rStock();
       return { skip: false, v, aImg, aOn, bSvg, others };
