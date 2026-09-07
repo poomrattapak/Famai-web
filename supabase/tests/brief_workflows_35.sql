@@ -39,7 +39,7 @@ select pg_temp.expect_error('ทำใบเสนอให้ลูกค้า
  '[{"slot":1,"price":100}]'::jsonb)$$,'42501');
 select pg_temp.expect_error('ตัวเลือกผิดต้องย้อนคืนหัวใบเสนอด้วย',
  $$select public.quote_save(jsonb_build_object('id',pg_temp.fx('badquote35'),'branch_id',pg_temp.fx('branch'),
- 'customer_name','ทดสอบย้อนคืน','doc_no','ROLLBACK35','quote_date',current_date,'pay_method','cash'),
+ 'customer_id',pg_temp.fx('customer35'),'customer_name','ทดสอบย้อนคืน','doc_no','ROLLBACK35','quote_date',current_date,'pay_method','cash'),
  jsonb_build_array(jsonb_build_object('slot',1,'variant_id',gen_random_uuid(),'price',100)))$$,'23503');
 select pg_temp.assert_ok('ไม่เหลือหัวใบเสนอที่ตัวเลือกบันทึกไม่สำเร็จ',
  not exists(select 1 from public.quotation where id=pg_temp.fx('badquote35')));

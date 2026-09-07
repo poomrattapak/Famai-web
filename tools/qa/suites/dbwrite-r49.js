@@ -231,14 +231,15 @@ const {installLiveWriteAck}=require('../helpers/live-write-ack');
   const g9 = await p.evaluate(async () => {
     go('quote'); qSavedNo = null;
     const v1 = Object.keys(PRICE)[0], v2 = Object.keys(PRICE)[1];
-    $('#qV1').value = v1; $('#qV2').value = v2; $('#qName').value = 'QA ใบเสนอไลฟ์';
+    const customer={id:uuid4(),name:'QA ใบเสนอไลฟ์',phone:'0810004962',branch:ME.branch,ownerId:ME.id,owner:ME.nick};CUSTOMERS.push(customer);quoteSelectCustomer(customer.id);
+    $('#qV1').value = v1; $('#qV2').value = v2;
     const n = REQ.length;
     const q = await saveQuote();
     await __drain();
     const rpc = __of(n, 'quote_save')[0];
     const ins = rpc && {body:rpc.body.p_quote};
     const ops = (rpc?.body.p_options||[]).map(body=>({body}));
-    return { ins: !!ins && ins.body.doc_no === q.no && ins.body.customer_name === 'QA ใบเสนอไลฟ์',
+    return { ins: !!ins && ins.body.doc_no === q.no && ins.body.customer_name === 'QA ใบเสนอไลฟ์' && ins.body.customer_id===customer.id,
       ops: ops.length === 2 && ops.every(o => /^[0-9a-f]{8}-/.test(o.body.variant_id || '') && o.body.price > 0)
         && ops.map(o => o.body.slot).sort().join() === '1,2' };
   });

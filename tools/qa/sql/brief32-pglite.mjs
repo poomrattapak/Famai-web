@@ -75,12 +75,17 @@ mutations.push(
 mutations.push(...[
   ['staff-own', 'p_user is distinct from auth.uid()', 'false', 'เซลล์แก้เบอร์พนักงานคนอื่นไม่ได้'],
   ['staff-write', 'set phone=contact where', 'set phone=phone where', 'บันทึกเบอร์ตนเองในประวัติพนักงาน'],
-  ['quote-owner', 'new.seller_id:=coalesce(c.owner_id,auth.uid());', 'new.seller_id:=auth.uid();', 'ใบเสนอดึงเซลล์เจ้าของดีลและเบอร์จากประวัติ'],
+  ['quote-owner', 'new.seller_id:=coalesce(c.owner_id,auth.uid());', 'new.seller_id:=coalesce(auth.uid(),c.owner_id);', 'ใบเสนอดึงเซลล์เจ้าของดีลและเบอร์จากประวัติ'],
   ['quote-contact', 'new.seller_phone:=seller.phone;', 'new.seller_phone:=new.seller_phone;', 'ใบเสนอดึงเซลล์เจ้าของดีลและเบอร์จากประวัติ'],
   ['quote-freeze', 'if row(new.seller_id,new.seller_name,new.seller_phone,new.customer_id)', 'if false and row(new.seller_id,new.seller_name,new.seller_phone,new.customer_id)', 'แก้ผู้ขายบนใบเก่าตรงไม่ได้'],
   ['quote-page', "if not famai_private.allowed('page:quote',true) or", 'if false or', 'ใบเสนออ่านอย่างเดียวเรียกบันทึกไม่ได้'],
   ['sale-seller', 'new.salesperson_id:=coalesce((select owner_id from public.customer where id=new.customer_id),new.salesperson_id,auth.uid());', 'new.salesperson_id:=new.salesperson_id;', 'ผู้บริหารเปิดขายคงรหัสเซลล์เจ้าของลูกค้า']
 ].map(m=>[...m,false,'_35_staff_quote_identity']));
+mutations.push(...[
+ ['quote-customer-required', 'create trigger quotation_aa_customer_guard before insert on public.quotation\nfor each row execute function famai_private.quote_customer_guard();', '', 'ใบเสนอใหม่ไม่มีลูกค้าอ้างอิงบันทึกตรงไม่ได้'],
+ ['quote-customer-name', 'new.customer_name:=c.full_name;', 'new.customer_name:=new.customer_name;', 'ใบเสนอยืนยันรหัสและข้อมูลลูกค้าจากฐาน'],
+ ['quote-customer-phone', 'new.customer_phone:=c.phone;', 'new.customer_phone:=new.customer_phone;', 'ใบเสนอยืนยันรหัสและข้อมูลลูกค้าจากฐาน']
+].map(m=>[...m,false,'_36_quote_requires_customer']));
 async function run(mutation=null){
 const db=new PGlite({extensions:{pgcrypto}});
 let step='โครงทดสอบ Supabase';
@@ -114,7 +119,7 @@ try{
     let sql=await fs.readFile(path.join(repo,'supabase/migrations',file),'utf8');
     if(mutation && file.includes(mutation[5]||'_32_brief_workflows')){
       if(!sql.includes(mutation[1])) throw Error('หาจุด mutation ไม่พบ: '+mutation[0]);
-      sql=mutation[4]?sql.replaceAll(mutation[1],mutation[2]):sql.replace(mutation[1],mutation[2]);
+      sql=mutation[4]?sql.replaceAll(mutation[1],()=>mutation[2]):sql.replace(mutation[1],()=>mutation[2]);
     }
     await db.exec(sql);
   }

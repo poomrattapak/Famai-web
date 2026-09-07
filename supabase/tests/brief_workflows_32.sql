@@ -73,8 +73,8 @@ values(pg_temp.fx('reg2'),pg_temp.fx('sale2'),pg_temp.fx('branch'),'ขายแ
 alter table public.registration disable trigger registration_brief_guard;
 update public.registration set stage='รอทะเบียน' where id=pg_temp.fx('reg2');
 alter table public.registration enable trigger registration_brief_guard;
-insert into public.quotation(id,branch_id,doc_no,quote_date,customer_name,seller_id,pay_method)
-values(pg_temp.fx('quote2'),pg_temp.fx('branch'),'QA-QUOTE2',current_date,'ลูกค้าทดสอบสอง',pg_temp.fx('sales2'),'cash');
+insert into public.quotation(id,branch_id,doc_no,quote_date,customer_id,customer_name,seller_id,pay_method)
+values(pg_temp.fx('quote2'),pg_temp.fx('branch'),'QA-QUOTE2',current_date,pg_temp.fx('customer2'),'ลูกค้าทดสอบสอง',pg_temp.fx('sales2'),'cash');
 insert into public.follow_up_task(id,branch_id,customer_id,kind,due_at)
 values(pg_temp.fx('task2'),pg_temp.fx('branch'),pg_temp.fx('customer2'),'งานทดสอบ',current_date);
 
@@ -112,8 +112,8 @@ update public.booking set status='ยกเลิก' where customer_id=pg_temp.
 update public.finance_case set status='อนุมัติแล้ว' where id=pg_temp.fx('case1');
 select pg_temp.expect_error('เซลล์เรียกเปิดขาย RPC ตรงไม่ได้',
   $$select public.create_sale_bundle(null,'{}','{}',null,null,'[]')$$,'42501');
-insert into public.quotation(id,branch_id,doc_no,quote_date,customer_name,seller_id,seller_name,seller_phone,pay_method,snapshot)
-values(pg_temp.fx('quote1'),pg_temp.fx('branch'),'QA-QUOTE1',current_date,'ลูกค้าทดสอบหนึ่ง',pg_temp.fx('sales1'),'QA เซลล์','0000000000','cash','{"price":100000}');
+insert into public.quotation(id,branch_id,doc_no,quote_date,customer_id,customer_name,seller_id,seller_name,seller_phone,pay_method,snapshot)
+values(pg_temp.fx('quote1'),pg_temp.fx('branch'),'QA-QUOTE1',current_date,pg_temp.fx('customer1'),'ลูกค้าทดสอบหนึ่ง',pg_temp.fx('sales1'),'QA เซลล์','0000000000','cash','{"price":100000}');
 select pg_temp.assert_ok('ใบเสนอเงินสดเก็บผู้เสนอและsnapshot',(select seller_id=auth.uid() and seller_name=(select full_name from public.app_user where id=auth.uid()) and snapshot->>'price'='100000' from public.quotation where id=pg_temp.fx('quote1')));
 reset role;
 

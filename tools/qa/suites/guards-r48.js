@@ -174,7 +174,8 @@ const { chromium, EXE, BASE } = require('./env');
   const g8 = await p.evaluate(() => {
     go('quote');
     qSavedNo = null;
-    $('#qV1').value = Object.keys(PRICE)[0]; $('#qName').value = 'QA ด่านใบเสนอ';
+    quoteSelectCustomer(CUSTOMERS.find(c=>customerVisible(c)&&!c.archivedAt).id);
+    $('#qV1').value = Object.keys(PRICE)[0];
     const nq0 = QUOTES.length, dc0 = JSON.stringify(DOC_COUNTER);
     __imp('ST7'); const r = saveQuote();
     const blocked = r === null && QUOTES.length === nq0;

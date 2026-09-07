@@ -17,7 +17,7 @@ const {chromium,EXE,BASE}=require('./env');
   const other={...c,id:'QA61-OTHER',ownerId:'ST4'};CUSTOMERS.push(c,other);go('deal');
   ok(customerVisible(c)&&!customerVisible(other)&&dealRows().some(d=>d.c.id===c.id),'[2] ลูกค้าเก่าในสาขาที่ได้รับสิทธิ์ต้องไม่หาย');
   PERIOD.deal={r:30,from:'',to:''};rDeal();ok(!dealRows().some(d=>d.c.id===c.id),'[2] เลือก 30 วันแล้วต้องกรองตามจริง');delete PERIOD.deal;
-  ME=self;go('quote');$('#qName').value='ลูกค้าใหม่ไม่ซ้ำ';$('#qPhone').value='0810006161';qDraw();
+  ME=self;go('quote');quoteAddCustomer();$('#cmName').value='ลูกค้าใหม่ไม่ซ้ำ';$('#cmPhone').value='0810006161';await $('#cmGo').onclick();
   const standalone=await saveQuote();ok(standalone?.sellerId===self.id&&standalone.sellerPhone===self.phone,'[3] เซลล์สร้างใบเสนอใหม่ต้องใช้บัญชีตนเองทันที');
   const oldPhone=self.phone;self.phone='';qDraw();ok(saveQuote()===null&&!!$('#qContact'),'[3] ไม่มีเบอร์ในประวัติต้องมีทางแก้โปรไฟล์และไม่พิมพ์เบอร์ปลอม');self.phone=oldPhone;
   ME=admin;go('quote');ok(!$('#qSeller')&&!$('#qSellerPhone'),'[3] ใบเสนอไม่ต้องเลือกเซลล์หรือกรอกเบอร์ซ้ำ');

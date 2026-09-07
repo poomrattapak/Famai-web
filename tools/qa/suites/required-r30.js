@@ -55,7 +55,7 @@ const CASES = [
 
   /* ---- โอนย้าย · ใบเสนอราคา · เคลียร์สต๊อก ---- */
   { id:'tUnit',   open: scr('transfer'), save:'#tSave', want:'เลือกรถก่อน' },
-  { id:'qV1',     open: scr('quote'),    save:'saveQuote()', want:'เลือกรุ่นรถก่อน' },
+  { id:'qV1',     open: seq(scr('quote'),js(`quoteSelectCustomer(CUSTOMERS.find(c=>customerVisible(c)&&!c.archivedAt).id)`)),    save:'saveQuote()', want:'เลือกรุ่นรถก่อน' },
   { id:'clPrice', open: seq(scr('stock'), OPEN.clPrice), save:'#clGo', want:'กรอกราคาก่อน' },
 
   /* ---- ลูกค้าและดีล ---- */

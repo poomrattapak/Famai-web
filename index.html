@@ -591,6 +591,13 @@ textarea.inp{ height:auto; padding:var(--s1) var(--s2); resize:vertical; line-he
 .inp:disabled,.inp[readonly]{ background:var(--paper-2); color:var(--ink-soft); }
 .inp.ct{ height:34px; width:auto; font-size:var(--t-label); }
 /* รายชื่อลูกค้าแนะนำใต้ช่องกรอก — ป้องกันสร้างลูกค้าซ้ำ */
+.quote-customer-row{ display:flex; flex-wrap:wrap; gap:var(--s2); align-items:flex-end; }
+.quote-customer-picker{ position:relative; flex:1 1 240px; min-width:0; }
+#qCustomerHint{ margin:var(--s1) 0 var(--s3); }
+#qCustomerList .si{ min-height:48px; }
+#qCustomerList .si[aria-selected="true"]{ background:var(--paper-2); }
+#qCustomerList .si span{ min-width:0; overflow-wrap:anywhere; }
+#qCustomerList .q-customer-phone{ display:block; font-size:var(--t-label); color:var(--muted); }
 .sug{ position:absolute; top:100%; left:0; right:0; z-index:20; background:var(--card);
   border:1px solid var(--hairline); border-radius:var(--r-input); box-shadow:var(--sh-md);
   max-height:220px; overflow-y:auto; }
@@ -1929,9 +1936,17 @@ body.lock{ overflow:hidden; }
       <!-- ============ 7. ใบเสนอราคา ============ -->
       <section class="screen" id="s-quote">
         <div class="card"><div class="hd"><h3>สร้างใบเสนอราคา</h3><div class="sp"></div><button class="btn sm noprint" id="qSave"><svg class="i i-sm"><use href="#i-check"/></svg> บันทึกใบเสนอ</button><button class="btn sec sm noprint" id="qPrint"><svg class="i i-sm"><use href="#i-print"/></svg> พิมพ์</button></div><div class="bd">
+          <div class="quote-customer-row">
+            <div class="quote-customer-picker"><label class="fl" for="qCustomerSearch">เลือกลูกค้าในระบบ</label>
+              <input class="inp" id="qCustomerSearch" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="qCustomerList" autocomplete="off" placeholder="ค้นหาชื่อหรือเบอร์โทรลูกค้า">
+              <div class="sug" id="qCustomerList" role="listbox" aria-label="ลูกค้าที่เลือกได้"></div>
+            </div>
+            <button class="btn sec" id="qCustomerAdd" type="button"><svg class="i i-sm"><use href="#i-plus"/></svg> เพิ่มลูกค้า</button>
+          </div>
+          <p class="tsub" id="qCustomerHint">เลือกลูกค้าที่กำลังดูแล หรือเพิ่มลูกค้าใหม่ได้จากหน้านี้</p>
           <div class="f3">
-            <div><label class="fl">ชื่อลูกค้า</label><input class="inp" id="qName" value="คุณสมชาย ใจดี"></div>
-            <div><label class="fl">เบอร์โทร</label><input class="inp" id="qPhone" value="081-234-5678"></div>
+            <div><label class="fl" for="qName">ชื่อลูกค้า</label><input class="inp" id="qName" readonly placeholder="เติมเมื่อเลือกลูกค้า"></div>
+            <div><label class="fl" for="qPhone">เบอร์โทร</label><input class="inp" id="qPhone" readonly placeholder="เบอร์จากข้อมูลลูกค้า"></div>
             <div><label class="fl">ยืนราคาถึง</label><input class="inp" type="date" id="qUntil"></div>
           </div>
           <div class="f2" style="margin-top:var(--s2)">
@@ -7083,12 +7098,47 @@ const quoteManagers=()=> (ME.roles&&ME.roles.length?ME.roles:[ME.role]).some(r=>
 /* ผู้รับผิดชอบมาจากดีล/การขายเดิม หรือบัญชีที่สร้างใบเสนอใหม่ ไม่อ่านจากช่องเลือกผู้ขาย */
 let qCustomerId='';
 const quoteVisible=q=>inScope(q.branch)&&(quoteManagers()||!(ME.roles||[ME.role]).includes('sales')||q.sellerId===ME.id||(!q.sellerId&&q.by===ME.nick));
+/* ต้องเลือกด้วยรหัสลูกค้า ไม่จับคู่โดยเดาชื่อ/เบอร์ ซึ่งอาจซ้ำกัน */
 function quoteCustomer(){
-  const phone=$('#qPhone').value.replace(/\D/g,''),name=$('#qName').value.trim();
-  const linked=CUSTOMERS.find(c=>c.id===qCustomerId&&customerVisible(c)&&!c.archivedAt);
-  if(linked&&linked.name===name&&(linked.phone||'').replace(/\D/g,'')===phone)return linked;
-  const matches=phone?CUSTOMERS.filter(c=>customerVisible(c)&&!c.archivedAt&&(c.phone||'').replace(/\D/g,'')===phone):[];
-  return matches.length===1?matches[0]:null;
+  return CUSTOMERS.find(c=>c.id===qCustomerId&&customerVisible(c)&&!c.archivedAt)||null;
+}
+const quoteCustomerLabel=c=>c.name+(c.phone?' · '+c.phone:'');
+function quotePickerClose(){
+  $('#qCustomerList').style.display='none';$('#qCustomerSearch').setAttribute('aria-expanded','false');
+  $('#qCustomerSearch').removeAttribute('aria-activedescendant');
+}
+function quoteCustomerSync(saved){
+  const c=saved?{name:saved.name,phone:saved.phone}:quoteCustomer();
+  $('#qName').value=c?.name||'';$('#qPhone').value=c?.phone||'';
+  if(c)$('#qCustomerSearch').value=quoteCustomerLabel(c);
+  $('#qCustomerAdd').disabled=!!qSaving||!permW('page:quote')||!permW('page:deal');
+  $('#qCustomerSearch').disabled=!!qSaving||!permW('page:quote');
+  $('#qCustomerHint').textContent=saved?'ข้อมูลลูกค้า ณ วันที่บันทึกใบเสนอ เลือกลูกค้าอีกครั้งเมื่อต้องการสร้างใบใหม่'
+    :c?'บันทึกลูกค้าในระบบแล้ว · ชื่อ เบอร์ และเซลล์เติมให้อัตโนมัติ':'เลือกลูกค้าที่กำลังดูแล หรือเพิ่มลูกค้าใหม่ได้จากหน้านี้';
+}
+function quoteSelectCustomer(id){
+  const c=CUSTOMERS.find(c=>c.id===id&&customerVisible(c)&&!c.archivedAt);
+  if(!c||qSaving||!permW('page:quote'))return false;
+  qCustomerId=c.id;qSavedNo=null;quotePickerClose();quoteCustomerSync();qDraw();return true;
+}
+function quoteCustomerSuggest(){
+  if(qSaving||!permW('page:quote')){quotePickerClose();return;}
+  const field=$('#qCustomerSearch'),selected=quoteCustomer(),raw=field.value.trim(),query=selected&&raw===quoteCustomerLabel(selected)?'':raw.toLowerCase(),digits=query.replace(/\D/g,'');
+  const list=CUSTOMERS.filter(c=>customerVisible(c)&&!c.archivedAt&&(!query||c.name.toLowerCase().includes(query)
+    ||(digits&&/^[+0-9 ()-]+$/.test(query)&&(c.phone||'').replace(/\D/g,'').includes(digits))))
+    .sort((a,b)=>String(b.upAt||b.createdAt||'').localeCompare(String(a.upAt||a.createdAt||''))||a.name.localeCompare(b.name,'th'));
+  const host=$('#qCustomerList');
+  host.innerHTML=list.map((c,i)=>'<button type="button" class="si" role="option" tabindex="-1" id="qCustomerOption'+i+'" aria-selected="false" data-qcustomer="'+esc(c.id)+'">'
+    +'<span><b>'+esc(c.name)+'</b><span class="q-customer-phone">'+esc(c.phone||'ยังไม่มีเบอร์โทร')+' · '+esc(bName(c.branch))+'</span></span></button>').join('')
+    ||'<div class="empty"><b>ไม่พบลูกค้า</b><span>เพิ่มข้อมูลลูกค้าได้จากหน้านี้</span><button class="btn sec" type="button" id="qCustomerEmptyAdd">เพิ่มลูกค้า</button></div>';
+  if($('#qCustomerEmptyAdd')){$('#qCustomerEmptyAdd').disabled=!permW('page:deal');$('#qCustomerEmptyAdd').onclick=quoteAddCustomer;}
+  host.querySelectorAll('[data-qcustomer]').forEach(el=>el.onclick=()=>quoteSelectCustomer(el.dataset.qcustomer));
+  host.style.display='block';field.setAttribute('aria-expanded','true');field.removeAttribute('aria-activedescendant');
+}
+function quoteAddCustomer(){
+  if(qSaving||!permW('page:quote')||!permW('page:deal'))return false;
+  quotePickerClose();
+  custModal(null,c=>{if(CUR==='quote')quoteSelectCustomer(c.id);});return true;
 }
 function quoteSeller(){
   const c=quoteCustomer(),id=c?.ownerId||ME.id;
@@ -7097,8 +7147,8 @@ function quoteSeller(){
 function quoteForCustomer(id){
   const c=CUSTOMERS.find(c=>c.id===id&&customerVisible(c)&&!c.archivedAt);
   if(!c||!permW('page:quote'))return false;
-  qSavedNo=null;qCustomerId=c.id;go('quote');
-  $('#qName').value=c.name;$('#qPhone').value=c.phone||'';
+  if(qSaving)return false;
+  qSavedNo=null;go('quote');quoteSelectCustomer(c.id);
   if(c.variant&&PRICE[c.variant])$('#qV1').value=c.variant;
   $('#qV2').value='';$('#qPay').value=c.intent==='เงินผ่อน'?'finance':'cash';qDraw();return true;
 }
@@ -7115,8 +7165,24 @@ function rQuote(){
     $('#qV1').innerHTML=vs.map(v=>'<option value="'+esc(v)+'">'+esc(PRICE[v].m)+' · '+esc(v)+' — '+fmt(PRICE[v].retail)+' ฿</option>').join('');
     $('#qV2').innerHTML='<option value="">ไม่เทียบคันที่ 2</option>'+vs.map(v=>'<option value="'+esc(v)+'">'+esc(PRICE[v].m)+' · '+esc(v)+' — '+fmt(PRICE[v].retail)+' ฿</option>').join('');
     $('#qUntil').value=addDays(TODAY,7);
-    ['qName','qPhone','qUntil','qV1','qV2','qF1','qF2','qDown','qPay'].forEach(k=> $('#'+k).oninput=qDraw);
+    ['qUntil','qV1','qV2','qF1','qF2','qDown','qPay'].forEach(k=> $('#'+k).oninput=qDraw);
     ['qV1','qV2','qF1','qF2','qPay'].forEach(k=> $('#'+k).onchange=qDraw);
+    const picker=$('#qCustomerSearch');
+    picker.onfocus=()=>quoteCustomerSuggest();picker.onclick=()=>quoteCustomerSuggest();
+    picker.oninput=()=>{qCustomerId='';qSavedNo=null;quoteCustomerSync();qDraw();quoteCustomerSuggest();};
+    picker.onblur=()=>setTimeout(()=>{if(document.activeElement!==picker&&!$('#qCustomerList').contains(document.activeElement))quotePickerClose();},150);
+    picker.onkeydown=e=>{
+      if(e.key==='Escape'){quotePickerClose();e.stopPropagation();return;}
+      if(!['ArrowDown','ArrowUp','Enter'].includes(e.key))return;
+      e.preventDefault();if(picker.getAttribute('aria-expanded')!=='true')quoteCustomerSuggest();
+      const opts=[...$('#qCustomerList').querySelectorAll('[data-qcustomer]')],active=picker.getAttribute('aria-activedescendant');
+      let i=opts.findIndex(o=>o.id===active);
+      if(e.key==='Enter'){if(i>=0)quoteSelectCustomer(opts[i].dataset.qcustomer);return;}
+      i=e.key==='ArrowDown'?Math.min(i+1,opts.length-1):Math.max(i-1,0);
+      opts.forEach((o,j)=>o.setAttribute('aria-selected',String(i===j)));
+      if(opts[i]){picker.setAttribute('aria-activedescendant',opts[i].id);opts[i].scrollIntoView({block:'nearest'});}
+    };
+    $('#qCustomerAdd').onclick=quoteAddCustomer;
     $('#qSave').onclick=saveQuote;
     /* พิมพ์ต้องใช้ snapshot ที่บันทึกพร้อมเลขจริงเสมอ */
     $('#qPrint').onclick=async()=>{ const q=qSavedNo?QUOTES.find(x=>x.no===qSavedNo):await saveQuote();if(q){qDraw(q.no);printHTML($('#qDoc').innerHTML);} };
@@ -7142,16 +7208,18 @@ function saveQuote(){
   if(qSaving)return qSaving;
   if(!permW('page:quote')){toast('บทบาทของคุณบันทึกใบเสนอราคาไม่ได้','ต้องมีสิทธิ์เขียนของหน้า "ใบเสนอราคา"',1);return null;}
   if(qSavedNo){toast('บันทึกแล้ว',qSavedNo);return QUOTES.find(q=>q.no===qSavedNo)||null;}
+  const customer=quoteCustomer();
+  if(!customer){toast('เลือกลูกค้าในระบบก่อน','ค้นหาลูกค้าหรือกดเพิ่มลูกค้าจากหน้านี้',1);return null;}
   if(!$('#qV1').value||!PRICE[$('#qV1').value]){toast('เลือกรุ่นรถก่อน','',1);return null;}
   const pay=$('#qPay').value==='cash'?'cash':'finance',snapshot=quoteSnapshot(pay),down=pay==='cash'?0:num($('#qDown').value);
-  const seller=quoteSeller(),customer=quoteCustomer();
+  const seller=quoteSeller();
   if(!seller){toast('ไม่พบข้อมูลเซลล์ผู้รับผิดชอบ','ให้ผู้ดูแลตรวจประวัติพนักงานของลูกค้ารายนี้',1);return null;}
   const sellerPhone=(seller.phone||'').trim(),branch=customer?.branch||seller.branch;
   if(!sellerPhone){toast('เพิ่มเบอร์ติดต่อในประวัติพนักงานก่อน','บันทึกครั้งเดียว แล้วใบเสนอใหม่จะเติมให้อัตโนมัติ',1);return null;}
   if(snapshot.slots.some(s=>!(s.price>0))){toast('รุ่นนี้ยังไม่มีราคาขาย','กำหนดราคาที่ตั้งค่าระบบก่อนเสนอราคา',1);return null;}
   if(pay==='finance'&&(!snapshot.finances.length||down<0||snapshot.slots.some(s=>down>s.price))){toast('ตรวจบริษัทไฟแนนซ์และเงินดาวน์','เงินดาวน์ต้องอยู่ระหว่าง 0 ถึงราคาของแต่ละคัน',1);return null;}
   const q={id:LIVE?dbId():nid('QT'),no:nextDocNo(branch,'QUOTE'),at:TODAY,branch,custId:customer?.id||'',
-    name:$('#qName').value.trim()||'—',phone:$('#qPhone').value.trim(),until:$('#qUntil').value,
+    name:customer.name,phone:customer.phone||'',until:$('#qUntil').value,
     v1:$('#qV1').value,v2:$('#qV2').value,f1:pay==='finance'?$('#qF1').value:'',f2:pay==='finance'?$('#qF2').value:'',down,
     pay,sellerId:seller.id,sellerName:seller.name,sellerPhone,by:seller.nick||seller.name,snapshot};
   const body={id:q.id,branch_id:BR_IDS[q.branch],doc_no:q.no,quote_date:q.at,valid_until:q.until||null,
@@ -7161,16 +7229,16 @@ function saveQuote(){
     id:dbId(),quotation_id:q.id,slot,variant_id:VARIANT_IDS[v],price:snapshot.slots.find(s=>s.variant===v).price,
     finance_id:pay==='finance'?(finById(f)||{}).dbId||null:null,down_payment:down}));
   const finish=row=>{
-    if(row){q.sellerId=row.seller_id;q.sellerName=row.seller_name;q.sellerPhone=row.seller_phone;}
+    if(row){q.sellerId=row.seller_id;q.sellerName=row.seller_name;q.sellerPhone=row.seller_phone;q.custId=row.customer_id;q.name=row.customer_name;q.phone=row.customer_phone||'';}
     QUOTES.unshift(q);qSavedNo=q.no;qDraw(q.no);rQuoteList();toast('บันทึกใบเสนอแล้ว',q.no+' · '+q.name);return q;
   };
   if(!LIVE){dbUp('quotation',body);options.forEach(o=>dbUp('quotation_option',o));return finish();}
   if(qSaving)return qSaving;
-  $('#qSave').disabled=true;$('#qPrint').disabled=true;
+  $('#qSave').disabled=true;$('#qPrint').disabled=true;$('#qCustomerSearch').disabled=true;$('#qCustomerAdd').disabled=true;
   qSaving=sbFetch('/rest/v1/rpc/quote_save',{method:'POST',body:JSON.stringify({p_quote:body,p_options:options})})
     .then(row=>{if(!row?.id)throw Error('ไม่ได้รับเลขอ้างอิงใบเสนอราคา');return finish(row);})
     .catch(e=>{toast('บันทึกใบเสนอไม่สำเร็จ',e.message,1);return null;})
-    .finally(()=>{qSaving=null;$('#qSave').disabled=false;$('#qPrint').disabled=false;});
+    .finally(()=>{qSaving=null;$('#qSave').disabled=false;$('#qPrint').disabled=false;quoteCustomerSync(qSavedNo?QUOTES.find(q=>q.no===qSavedNo):null);});
   return qSaving;
 }
 let qSaving=null;
@@ -7201,13 +7269,9 @@ function quoteView(id){
 /* ใบเสนอเป็นข้อมูลตั้งต้นของดีล เงินผ่อนต้องยื่นเรื่องก่อน ผู้บริหารจึงเลือกรถจริงตอนเปิดขาย */
 async function quoteToSale(qid){
   const q=QUOTES.find(x=>x.id===qid);if(!q||!quoteVisible(q)||!permW('page:deal'))return false;
-  if(!q.phone||!q.name||q.name==='—'){toast('เติมชื่อและเบอร์ลูกค้าในใบเสนอก่อน','',1);return false;}
-  const pd=q.phone.replace(/\D/g,'');
-  let c=CUSTOMERS.find(x=>customerVisible(x)&&!x.archivedAt&&(x.phone||'').replace(/\D/g,'')===pd);
-  if(!c){const now=new Date().toISOString();c={id:LIVE?dbId():nid('CU'),name:q.name,phone:q.phone,branch:q.branch,
-    ownerId:q.sellerId||ME.id,owner:q.by||ME.nick,createdAt:now,upAt:now,src:'ใบเสนอราคา',stage:'ใหม่',variant:q.v1,intent:q.pay==='cash'?'เงินสด':'เงินผ่อน'};
-    if(!await custPersist(c))return false;CUSTOMERS.push(c);
-  }
+  const c=CUSTOMERS.find(c=>c.id===q.custId&&customerVisible(c)&&!c.archivedAt);
+  if(!c){toast('เลือกลูกค้าในระบบและบันทึกใบเสนอใหม่ก่อน','ใบเสนอนี้ยังไม่มีลูกค้าที่กำลังดูแลให้ทำรายการต่อ',1);return false;}
+  if(!c.phone||!c.name){toast('เติมชื่อและเบอร์ในข้อมูลลูกค้าก่อน','แก้ข้อมูลลูกค้าได้จากหน้าลูกค้าและดีล',1);return false;}
   if(SALES.some(s=>s.custId===c.id&&!s.void)){dealGo(c.id);toast('ลูกค้ามีการขายอยู่แล้ว','เปิดดีลเดิมเพื่อติดตามงานต่อ');return false;}
   const intent=q.pay==='cash'?'เงินสด':'เงินผ่อน';
   if(c.intent!==intent){const next={...c,intent,variant:q.v1};if(!await custPersist(next))return false;Object.assign(c,next);}
@@ -7223,8 +7287,10 @@ function fillFin(el,prefer){
 function qDraw(no){
   if(typeof no!=='string'){no=null;qSavedNo=null;}
   const saved=no?QUOTES.find(q=>q.no===no):null;if(saved&&!quoteVisible(saved)){$('#qDoc').innerHTML='';qSavedNo=null;return;}if(saved)qSavedNo=saved.no;
+  quoteCustomerSync(saved);
   const pay=saved?saved.pay||'finance':$('#qPay').value;
   $('#qFinanceBox').style.display=pay==='cash'?'none':'';
+  if(!saved&&!quoteCustomer()){$('#qSellerInfo').textContent='เติมเมื่อเลือกลูกค้า';$('#qDoc').innerHTML='<div class="empty"><b>เลือกลูกค้าเพื่อเริ่มใบเสนอราคา</b><span>ค้นหาลูกค้าในระบบ หรือกดเพิ่มลูกค้าจากหน้านี้</span></div>';return;}
   const legacy=!!(saved&&!(saved.snapshot&&saved.snapshot.slots));
   const snap=legacy?quoteSnapshot(pay):saved?saved.snapshot:quoteSnapshot(pay);
   const down=pay==='cash'?0:saved?saved.down:num($('#qDown').value),seller=quoteSeller()||ME;
@@ -7383,7 +7449,9 @@ function custModal(id, after){
   const more=$('#cmMoreBtn');
   if(more) more.onclick=()=>{ $('#cmMore').style.display='contents'; more.remove(); };
   const ownerEl=ownerPick? $('#cmOwner') : null;   /* ไม่มีสิทธิ์ = ไม่มีตัวแปรนี้ ไม่ว่า DOM จะมีอะไร */
+  let cmSaving=false,cmNewId='';
   $('#cmGo').onclick=async()=>{
+    if(cmSaving)return;
     if(!permW('page:deal')||(id&&!customerCanWrite(c))){toast('ไม่มีสิทธิ์แก้ไขลูกค้า','',1);return;}
     const n=$('#cmName').value.trim();
     if(!n){ toast('กรอกชื่อลูกค้า','',1); return; }
@@ -7393,14 +7461,17 @@ function custModal(id, after){
       if(idEdit) o.idNo=$('#cmIdNo').value.trim();
       if(ownerEl){ o.ownerId=ownerEl.value; o.owner=customerOwnerLabel(o.ownerId); } };
     const now=new Date().toISOString();
-    const saved=c?Object.assign({},c):{id:LIVE?dbId():nid('CU'),stage:'เข้ามาดูรถ',branch:ME.branch,
+    const saved=c?Object.assign({},c):{id:cmNewId||(cmNewId=LIVE?dbId():nid('CU')),stage:'เข้ามาดูรถ',branch:ME.branch,
       owner:ME.nick,ownerId:ME.id,createdAt:now,upAt:now};
     put(saved);saved.upAt=now;
+    const button=$('#cmGo');cmSaving=true;button.disabled=true;
+    try{
     if(LIVE && !await custPersist(saved,{setOwner:!!ownerEl}))return;
     if(c)Object.assign(c,saved);else CUSTOMERS.push(saved);
     if(!c){fsClear('deal');$('#dlArchive').value='active';DEAL_SEL=saved.id;}
     toast(c?'บันทึกแล้ว':'เพิ่มลูกค้าแล้ว',n);
-    closeModal(); if(after) after(saved); refreshAll(); };
+    closeModal(); if(after) after(saved); refreshAll();
+    }finally{cmSaving=false;if(button.isConnected)button.disabled=false;} };
 }
 /* ค่าที่เก็บใน c.stage: เข้ามาดูรถ · สนใจ · จอง · ผ่าน · ไม่ผ่าน · รับรถสำเร็จ
    ตั้งแต่ v1.11 ฟิลด์นี้ไม่ได้เป็นตัวขับแถบความคืบหน้าอีกแล้ว — หน้าดีลคำนวณขั้นจากระเบียนจริง
