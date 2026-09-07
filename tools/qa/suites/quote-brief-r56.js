@@ -46,7 +46,7 @@ const assert=require('node:assert/strict');
   assert.equal(models.selected,'QA-SAME','[คงรุ่น] เปิดแก้ต้องรักษา variant เดิม');
   const cash=await p.evaluate(()=>{
    go('quote');$('#qPay').value='cash';$('#qPay').onchange();$('#qName').value='ลูกค้าเงินสด';$('#qPhone').value='0810000091';
-   const seller=STAFF.find(s=>s.role==='sales');$('#qSeller').value=seller.id;$('#qSeller').onchange();
+   const seller=STAFF.find(s=>s.role==='sales');const c={id:'QA-QUOTE-OWNER',name:$('#qName').value,phone:$('#qPhone').value,branch:seller.branch,ownerId:seller.id,owner:seller.nick};CUSTOMERS.push(c);quoteForCustomer(c.id);
    const active=FIN_CO.map(f=>f.active);FIN_CO.forEach(f=>f.active=false);qDraw();
    const q=saveQuote(),html=$('#qDoc').innerHTML;
    FIN_CO.forEach((f,i)=>f.active=active[i]);
@@ -55,7 +55,7 @@ const assert=require('node:assert/strict');
   assert.ok(cash.q,'[เงินสด] ต้องบันทึกได้แม้ไม่มีบริษัทไฟแนนซ์');
   assert.equal(cash.q.pay,'cash','[เงินสด] ต้องบันทึกวิธีชำระเงินสด');
   assert.ok(!cash.html.includes('ยอดจัดไฟแนนซ์')&&cash.html.includes('ยอดชำระเงินสด'),'[ไม่พึ่งไฟแนนซ์] เงินสดพิมพ์ได้เมื่อไม่มีไฟแนนซ์');
-  assert.equal(cash.q.sellerName,cash.seller.name,'[ผู้ขาย] ต้องเก็บผู้ขายที่เลือกแทนผู้ดูแลที่พิมพ์');
+  assert.equal(cash.q.sellerName,cash.seller.name,'[ผู้ขาย] ต้องเก็บผู้ขายเจ้าของดีลแทนผู้ดูแลที่พิมพ์');
   assert.ok(cash.html.includes(cash.seller.phone),'[เบอร์เซลล์] ใบเสนอต้องมีเบอร์ผู้ขาย');
   const written=await p.evaluate(()=>{
    $('#qName').value='ทดสอบหัวใบเสนอ';qDraw();const writes=[],original=dbUp;

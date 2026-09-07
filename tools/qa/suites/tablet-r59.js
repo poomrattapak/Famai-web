@@ -87,8 +87,8 @@ const {chromium,EXE,BASE}=require('./env');
    const ok=await p.evaluate(()=>$('#sCust').value==='ร่างลูกค้าระหว่างหมุนจอ'&&$('#sNote').value==='ยังไม่บันทึกการขาย'&&Number($('#sDown').value.replace(/,/g,''))===12345);
    if(!ok)fails.push('[7] ร่างชื่อ หมายเหตุ และเงินดาวน์ต้องคงเดิมเมื่อหมุนไป '+width);
   }
-  await p.evaluate(()=>{go('quote');$('#qSellerPhone').value='0891234599';$('#qSellerPhone').oninput();});
-  for(const width of [1180,820]){await rotate(width);if(await p.inputValue('#qSellerPhone')!=='0891234599')fails.push('[8] เบอร์เซลล์ในร่างใบเสนอราคาต้องคงเดิมเมื่อหมุนไป '+width);}
+  await p.evaluate(()=>{go('quote');$('#qPhone').value='0891234599';$('#qPhone').oninput();});
+  for(const width of [1180,820]){await rotate(width);if(await p.inputValue('#qPhone')!=='0891234599')fails.push('[8] เบอร์ลูกค้าในร่างใบเสนอราคาต้องคงเดิมเมื่อหมุนไป '+width);}
   const staged=await p.evaluate(()=>{
    go('dash');if(!$('#navCtl').classList.contains('on'))$('#npBtn').click();
    const pick=[...$('#navBrSel').options].find(o=>o.value&&o.value!==$('#dBranch').value);

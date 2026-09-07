@@ -36,6 +36,7 @@ const {installLiveWriteAck}=require('../helpers/live-write-ack');
     Object.keys(PRICE).forEach(v => { VARIANT_IDS[v] = VARIANT_IDS[v] || uuid4(); });
     window.__staffFixture=Object.fromEntries(STAFF.map(s=>[s.id,s]));
     STAFF.forEach(s=>{s.id=uuid4();});
+    CUSTOMERS.forEach(c=>{c.ownerId=__staffFixture[c.ownerId]?.id||c.ownerId;});
     window.__imp = id => { const st = __staffFixture[id];
       ME = { id: st.id, name: st.name, nick: st.nick, role: st.role, branch: st.branch }; };
     __imp('ST1');
@@ -232,16 +233,17 @@ const {installLiveWriteAck}=require('../helpers/live-write-ack');
     const v1 = Object.keys(PRICE)[0], v2 = Object.keys(PRICE)[1];
     $('#qV1').value = v1; $('#qV2').value = v2; $('#qName').value = 'QA ใบเสนอไลฟ์';
     const n = REQ.length;
-    const q = saveQuote();
+    const q = await saveQuote();
     await __drain();
-    const ins = __of(n, 'quotation')[0];
-    const ops = __of(n, 'quotation_option');
+    const rpc = __of(n, 'quote_save')[0];
+    const ins = rpc && {body:rpc.body.p_quote};
+    const ops = (rpc?.body.p_options||[]).map(body=>({body}));
     return { ins: !!ins && ins.body.doc_no === q.no && ins.body.customer_name === 'QA ใบเสนอไลฟ์',
       ops: ops.length === 2 && ops.every(o => /^[0-9a-f]{8}-/.test(o.body.variant_id || '') && o.body.price > 0)
         && ops.map(o => o.body.slot).sort().join() === '1,2' };
   });
-  if (!g9.ins) bad('[9] บันทึกใบเสนอไม่ insert quotation');
-  if (!g9.ops) bad('[9] ใบเสนอไม่ insert quotation_option ครบสองคัน (slot/variant_id uuid/price)');
+  if (!g9.ins) bad('[9] บันทึกใบเสนอไม่ส่งหัวผ่าน quote_save');
+  if (!g9.ops) bad('[9] ใบเสนอไม่ส่งตัวเลือกผ่านธุรกรรมเดียวครบสองคัน (slot/variant_id uuid/price)');
 
   /* ---------- [10] ปิดงานติดตาม + careTask ---------- */
   const g10 = await p.evaluate(async (ids) => {

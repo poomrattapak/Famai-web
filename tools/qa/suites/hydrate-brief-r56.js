@@ -13,7 +13,7 @@ const {chromium,EXE,BASE}=require('./env');
   const job=(id,engine,frame)=>({id,branch_id:branch.id,customer_id:customer.id,engine_no:engine,frame_no:frame,model_name:'รถนอกชื่อพิมพ์เอง',job_no:id,checked_in_at:TODAY+'T01:00:00Z',status:'ส่งมอบแล้ว',next_appointment_at:TODAY+'T12:30:00Z'});
   const task=(id,source,jobId)=>({id,branch_id:branch.id,customer_id:customer.id,task_source:source,service_job_id:jobId,
     kind:'care '+source,title:'รายละเอียด '+id,due_at:TODAY,amount:null,appointment_at:source==='service_next'?TODAY+'T12:30:00Z':null});
-  const data={app_user:[{id:me.id,full_name:'ผู้บริหารจริง',app_user_role:me.app_user_role,app_user_branch:me.app_user_branch}],
+  const data={app_user:[{phone:'0810000061',id:me.id,full_name:'ผู้บริหารจริง',app_user_role:me.app_user_role,app_user_branch:me.app_user_branch}],
     employee:[{id:'employee-qa',user_id:me.id,branch_id:branch.id,base_salary:28000}],
     customer:[customer,...Array.from({length:1000},(_,i)=>({...customer,id:'other-'+i,archived_at:null}))],
     finance_case:[{id:'case-qa',customer_id:customer.id,branch_id:branch.id,sale_id:null,company_id:null,status:'ปฏิเสธ',variant_id:variant.id,
@@ -38,7 +38,7 @@ const {chromium,EXE,BASE}=require('./env');
     check(CARE.length===2&&CARE.find(r=>r.vehicle?.engine==='ENGINE-A')?.tasks.length===3&&TASKS.length===0,'[6] งานใหม่ปนงานเซลล์หรือรถหลายคันรวมกัน');
     check(CARE.flatMap(r=>r.tasks).find(t=>t.id==='task-2')?.appointmentAt===TODAY+'T12:30:00Z'&&CARE.flatMap(r=>r.tasks).every(t=>t.amount===null),'[6] เวลานัดหรือราคาoptionalหาย');
     check(QUOTES[0]?.sellerName==='เซลล์คนเดิม'&&QUOTES[0]?.sellerPhone==='0812345678'&&QUOTES[0]?.pay==='cash'&&QUOTES[0]?.snapshot?.keep==='ราคา ณ วันที่เสนอ','[7] ใบเสนอไม่คืนผู้ขายหรือsnapshot');
-    check(!!LIVE_SEEN[me.id]?.['care:task-2']&&STAFF.find(s=>s.id===me.id)?.salary===28000,'[8] อ่านแล้วหรือข้อมูลพนักงานจริงไม่คืน');
+    check(!!LIVE_SEEN[me.id]?.['care:task-2']&&STAFF.find(s=>s.id===me.id)?.salary===28000&&STAFF.find(s=>s.id===me.id)?.phone==='0810000061','[8] อ่านแล้วหรือข้อมูลพนักงานจริงไม่คืน');
     const current=CUSTOMERS;let touched=false;
     sbSelect=async(t,params)=>{if(t==='customer'&&!touched){touched=true;DB_REV++;}return (data[t]||[]).slice(+params?.offset||0,(+params?.offset||0)+1000);};
     check(!await liveHydrate(me,[branch],[variant],'employee-qa')&&CUSTOMERS===current,'[9] คำตอบเก่าทับสถานะหลังเริ่มบันทึก');

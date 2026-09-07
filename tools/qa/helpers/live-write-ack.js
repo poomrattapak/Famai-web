@@ -9,6 +9,7 @@ function installLiveWriteAck(){
       const id=new URLSearchParams(path.split('?')[1]).get('sale_id').replace(/^eq\./,'');
       return autoTasks.has(id)?[autoTasks.get(id)]:[];
     }
+    if(method==='POST'&&path.includes('/rpc/quote_save'))return {...body.p_quote};
     if(method==='POST'&&path.includes('/rpc/create_sale_bundle'))return {sale:{...body.p_sale},registration:{...body.p_registration}};
     if(method==='POST'&&/^\/rest\/v1\/(customer|finance_case)(\?|$)/.test(path))return [{...body,created_at:punchNow().toISOString(),updated_at:punchNow().toISOString()}];
     if(method==='PATCH'&&path.includes('/registration?')&&body.delivered_at){

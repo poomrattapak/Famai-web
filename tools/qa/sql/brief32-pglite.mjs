@@ -72,6 +72,15 @@ mutations.push(
   ['care-past', 'if appointment is not null and appointment<=at_time then', 'if false then', 'บริการห้ามนัดย้อนหลัง', false, '_34_service_bundle'],
   ['care-retry', 'or previous.symptom is distinct from detail', 'or false', 'คำขอซ้ำเปลี่ยนข้อมูลไม่ได้', false, '_34_service_bundle']
 );
+mutations.push(...[
+  ['staff-own', 'p_user is distinct from auth.uid()', 'false', 'เซลล์แก้เบอร์พนักงานคนอื่นไม่ได้'],
+  ['staff-write', 'set phone=contact where', 'set phone=phone where', 'บันทึกเบอร์ตนเองในประวัติพนักงาน'],
+  ['quote-owner', 'new.seller_id:=coalesce(c.owner_id,auth.uid());', 'new.seller_id:=auth.uid();', 'ใบเสนอดึงเซลล์เจ้าของดีลและเบอร์จากประวัติ'],
+  ['quote-contact', 'new.seller_phone:=seller.phone;', 'new.seller_phone:=new.seller_phone;', 'ใบเสนอดึงเซลล์เจ้าของดีลและเบอร์จากประวัติ'],
+  ['quote-freeze', 'if row(new.seller_id,new.seller_name,new.seller_phone,new.customer_id)', 'if false and row(new.seller_id,new.seller_name,new.seller_phone,new.customer_id)', 'แก้ผู้ขายบนใบเก่าตรงไม่ได้'],
+  ['quote-page', "if not famai_private.allowed('page:quote',true) or", 'if false or', 'ใบเสนออ่านอย่างเดียวเรียกบันทึกไม่ได้'],
+  ['sale-seller', 'new.salesperson_id:=coalesce((select owner_id from public.customer where id=new.customer_id),new.salesperson_id,auth.uid());', 'new.salesperson_id:=new.salesperson_id;', 'ผู้บริหารเปิดขายคงรหัสเซลล์เจ้าของลูกค้า']
+].map(m=>[...m,false,'_35_staff_quote_identity']));
 async function run(mutation=null){
 const db=new PGlite({extensions:{pgcrypto}});
 let step='โครงทดสอบ Supabase';

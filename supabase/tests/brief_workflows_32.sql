@@ -45,6 +45,7 @@ from brief32_fixture where k in ('manager','acct','care','sales1','sales2');
 insert into public.app_user(id,username,full_name,nickname,all_branch)
 select id,'qa32-'||id,'ทดสอบบรีฟฐานข้อมูล '||k,'QA '||k,k in ('manager','acct','care')
 from brief32_fixture where k in ('manager','acct','care','sales1','sales2');
+update public.app_user set phone='0000000000' where username like 'qa32-%';
 insert into public.app_user_role(user_id,role_id)
 select f.id,r.id from brief32_fixture f join public.role r
 on r.code=case when f.k like 'sales%' then 'sales' else f.k end
@@ -113,7 +114,7 @@ select pg_temp.expect_error('เซลล์เรียกเปิดขาย
   $$select public.create_sale_bundle(null,'{}','{}',null,null,'[]')$$,'42501');
 insert into public.quotation(id,branch_id,doc_no,quote_date,customer_name,seller_id,seller_name,seller_phone,pay_method,snapshot)
 values(pg_temp.fx('quote1'),pg_temp.fx('branch'),'QA-QUOTE1',current_date,'ลูกค้าทดสอบหนึ่ง',pg_temp.fx('sales1'),'QA เซลล์','0000000000','cash','{"price":100000}');
-select pg_temp.assert_ok('ใบเสนอเงินสดเก็บผู้เสนอและsnapshot',(select seller_id=auth.uid() and seller_name='QA เซลล์' and snapshot->>'price'='100000' from public.quotation where id=pg_temp.fx('quote1')));
+select pg_temp.assert_ok('ใบเสนอเงินสดเก็บผู้เสนอและsnapshot',(select seller_id=auth.uid() and seller_name=(select full_name from public.app_user where id=auth.uid()) and snapshot->>'price'='100000' from public.quotation where id=pg_temp.fx('quote1')));
 reset role;
 
 -- สิทธิ์ read ของหน้าต้องกัน API เขียน แม้ action ยังเป็น write

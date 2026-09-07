@@ -258,7 +258,7 @@ h6[data-grp].mg6{ color:var(--grp6); border-bottom-color:var(--grp6); }
 .nb.on .bdg{ color:var(--accent); }
 .side-foot{ border-top:1px solid var(--hairline); padding:var(--s2); }
 .me{ display:flex; align-items:center; gap:var(--s2); padding:var(--s1) 0 var(--s2); }
-.me .av{ width:32px; height:32px; border-radius:var(--r-pill); background:var(--ink); color:var(--card);
+.me .av{ width:44px; height:44px; min-width:44px; padding:0; border:0; cursor:pointer; border-radius:var(--r-pill); background:var(--ink); color:var(--card);
   display:grid; place-items:center; font-size:var(--t-label); font-weight:600; flex:0 0 32px; }
 .me b{ display:block; font-size:var(--t-table); font-weight:600; line-height:1.3; }
 .me span{ display:block; font-size:var(--t-label); color:var(--muted); }
@@ -1637,7 +1637,7 @@ body.lock{ overflow:hidden; }
     <div class="brand">FAMAI <b>MOTOR</b></div>
     <nav class="nav" id="nav"></nav>
     <div class="side-foot">
-      <div class="me"><div class="av" id="meAv">?</div><div style="min-width:0"><b id="meName">—</b><span id="meRole">—</span></div></div>
+      <div class="me"><button class="av" id="meAv" type="button" aria-label="ข้อมูลติดต่อของฉัน" title="ข้อมูลติดต่อของฉัน" onclick="staffContactModal(ME.id)">?</button><div style="min-width:0"><b id="meName">—</b><span id="meRole">—</span></div></div>
       <button class="out" id="btnOut"><svg class="i i-sm"><use href="#i-logout"/></svg> ออกจากระบบ</button>
     </div>
   </aside>
@@ -1940,7 +1940,7 @@ body.lock{ overflow:hidden; }
           </div>
           <div class="f2" style="margin-top:var(--s2)">
             <div><label class="fl">วิธีชำระ</label><select class="inp" id="qPay"><option value="cash">เงินสด</option><option value="finance">เงินผ่อน (ไฟแนนซ์)</option></select></div>
-            <div><label class="fl">เซลล์ผู้ดูแล</label><select class="inp" id="qSeller"></select><label class="fl" style="margin-top:var(--s1)">เบอร์ติดต่อเซลล์</label><input class="inp" id="qSellerPhone" inputmode="tel" placeholder="เบอร์โทรของผู้ขาย"></div>
+            <div><label class="fl">เซลล์ผู้ดูแล · เติมอัตโนมัติ</label><div id="qSellerInfo" role="status"></div></div>
           </div>
           <div class="f3" id="qFinanceBox" style="margin-top:var(--s2)">
             <div><label class="fl">ไฟแนนซ์ A</label><select class="inp" id="qF1"></select></div>
@@ -3045,7 +3045,8 @@ function seedDemo(){
   const sellable = UNITS.filter(u=>u.retail!=null && !u.clearance);   /* รถเคลียร์สต๊อกไม่เอาไปสร้างยอดขายสาธิต */
   DEMO_BUYERS.forEach((b,i)=>{
     const [name,phone,src,spIdx,pay,finId,ago] = b;
-    const u = sellable[i*3 % sellable.length];
+    const seller=STAFF.find(x=>x.nick===pick(SALESPEOPLE,spIdx));
+    const u = sellable.find(u=>u.branch===seller?.branch && u.status==='available');
     if(!u || u.status==='sold') return;
     const cust = {id:nid('CU'), name, phone, src, stage:'จอง', branch:u.branch,
       variant:u.variant, owner:pick(SALESPEOPLE,spIdx), demo:true};   /* stage จริงคิดท้ายรอบจากทะเบียน/ไฟแนนซ์ */
@@ -3126,9 +3127,9 @@ function seedDemo(){
         labor:300, parts:150, tech:'ช่างเอก', demo:true});
     }
   });
-  LEADS.forEach(l=> CUSTOMERS.push({id:nid('CU'), name:l[0], phone:l[1], src:l[2], stage:l[3],
-    branch:'FMG01', variant:l[4], owner:pick(SALESPEOPLE,0), ownerId:STAFF.find(x=>x.nick===pick(SALESPEOPLE,0))?.id||'',
-    createdAt:TODAY+'T09:00:00+07:00',upAt:TODAY+'T09:00:00+07:00',demo:true}));
+  LEADS.forEach((l,i)=>{const seller=STAFF.find(x=>x.nick===pick(SALESPEOPLE,i));CUSTOMERS.push({id:nid('CU'), name:l[0], phone:l[1], src:l[2], stage:l[3],
+    branch:seller.branch, variant:l[4], owner:seller.nick, ownerId:seller.id,
+    createdAt:TODAY+'T09:00:00+07:00',upAt:TODAY+'T09:00:00+07:00',demo:true});});
   /* v1.37: การจองสาธิต 2 ราย — "คุณแนน สุดา" (stage จอง อยู่แล้ว) วางมัดจำ · อีกรายไม่วาง
      รถสองคันติดสถานะจองแล้ว ตัวกรอง "จองแล้ว" ในสต๊อกจึงมีของจริงให้เห็น (B4) */
   (function(){
@@ -3372,7 +3373,7 @@ const rolePerm = () => {
 };
 const noMoney  = () => !permR('data:money');   /* อ่านจากตารางสิทธิ์ (J3) — ค่าเริ่มต้นตามบิต money เดิม */
 const money    = v => noMoney() ? '—' : baht(v);
-const myBranches = () => rolePerm().allBranch ? BRANCHES.map(b=>b.code) : [ME.branch];
+const myBranches = () => rolePerm().allBranch || ME.allBranch ? BRANCHES.map(b=>b.code) : [...new Set([ME.branch,...(ME.branches||[])])];
 const inScope = c => myBranches().indexOf(c) >= 0;
 
 /* ---------- เมนู + สิทธิ์ ---------- */
@@ -4102,6 +4103,7 @@ const NAV_PER={dash:'dash',report:'report',transfer:'transfer',quote:'quote',exp
 const NAV_BR ={dash:'dBranch',stock:'stBranch',deal:'dlBranch',attend:'abBranch',report:'rpBranch'};
 function perLbl(key){
   const st=perSt(key), p=perOf(key);
+  if(p.all)return 'ทั้งหมด';
   if(p.custom) return thShort(p.from)+' – '+thShort(p.to);
   const pr=PER_PRESETS.find(x=>x[0]===st.r); return pr? pr[1] : st.r+' วัน';
 }
@@ -4304,7 +4306,7 @@ const sScoped = () => SALES.filter(s=>!s.void && inScope(s.branch) && customerVi
 const PER_PRESETS=[[1,'วันนี้'],[7,'7 วัน'],[15,'15 วัน'],[30,'1 เดือน'],
                    [90,'3 เดือน'],[180,'6 เดือน'],[365,'1 ปี']];
 const PERIOD={};
-const perSt = key => PERIOD[key] || (PERIOD[key]={r:30, from:'', to:''});
+const perSt = key => PERIOD[key] || (PERIOD[key]={r:key==='deal'?0:30,from:'',to:''});
 function perOf(key){
   /* เลือกวันเองมาก่อนปุ่มลัด · สลับให้ถ้ากรอกกลับด้าน · กรอกด้านเดียวถือว่าเปิดปลาย */
   const s=perSt(key);
@@ -4312,14 +4314,15 @@ function perOf(key){
     const a=s.from||s.to, b=s.to||s.from;
     return a<=b? {from:a, to:b, custom:true} : {from:b, to:a, custom:true};
   }
+  if(key==='deal'&&s.r===0)return {from:addDays(TODAY,-29),to:TODAY,custom:false,all:true};
   return {from:addDays(TODAY, -(s.r-1)), to:TODAY, custom:false};
 }
 /* วันที่ของระเบียนมาหลายรูปแบบ (บางที่มีเวลาต่อท้าย) — ตัดเหลือ 10 ตัวก่อนเทียบเสมอ */
 const inPer = (key,d) => { const p=perOf(key), x=String(d||'').slice(0,10);
-  return !!x && x>=p.from && x<=p.to; };
-const perText = key => { const p=perOf(key);
+  return !!p.all || (!!x && x>=p.from && x<=p.to); };
+const perText = key => { const p=perOf(key);if(p.all)return 'ทั้งหมด';
   return p.from===p.to? thDate(p.from) : thDate(p.from)+' – '+thDate(p.to); };
-const perFile = key => { const p=perOf(key);
+const perFile = key => { const p=perOf(key);if(p.all)return 'ทั้งหมด';
   return p.from===p.to? p.from : p.from+'_ถึง_'+p.to; };
 /* เดือนทั้งหมดที่ช่วงนี้แตะ — ใช้กับของที่คิดเป็นงวดเดือนโดยธรรมชาติ (เงินเดือน) */
 function perMonths(key){
@@ -4346,7 +4349,7 @@ function perSync(host, key){
      ยังไม่ยืนยัน = บอกด้วย "ข้อความ" ไม่ใช่แค่สี (กฎข้อ 3) */
   const sum=host.querySelector('[data-psum]');
   if(sum) sum.innerHTML='<i></i>'+(host.dataset.dirty? 'ยังไม่ได้ใช้ · ':'')
-    +esc(perText(key))+' · '+(days(p.from,p.to)+1)+' วัน';
+    +esc(perText(key))+(p.all?'':' · '+(days(p.from,p.to)+1)+' วัน');
   const ok=host.querySelector('[data-pok]');
   if(ok) ok.disabled = !host.dataset.dirty;      /* ไม่มีอะไรให้ใช้ = ปุ่มต้องกดไม่ได้ ไม่ใช่ปุ่มตาย */
   if(host.id==='navPerBox') navSync();
@@ -4357,7 +4360,7 @@ function perBar(hostId, key, onChange, tail){
   if(!host.dataset.per){
     host.dataset.per=key; host.classList.add('perbar');
     host.innerHTML='<div class="chips"><span class="perlab">ช่วงเวลา</span>'
-      +PER_PRESETS.map(([r,t])=>'<button class="chip" data-pr="'+r+'">'+esc(t)+'</button>').join('')
+      +(key==='deal'?[[0,'ทั้งหมด'],...PER_PRESETS]:PER_PRESETS).map(([r,t])=>'<button class="chip" data-pr="'+r+'">'+esc(t)+'</button>').join('')
       +'<button class="chip" data-pcus>กำหนดเอง</button><span class="perflex"></span>'
       +'<span class="psum" data-psum></span>'
       +'<button class="btn sec sm" data-pclr>ล้าง</button>'
@@ -5606,6 +5609,9 @@ function sCustExtras(c){                                  /* c=null ได้ = 
 function sCustFill(c){
   sCustSel=c.id; $('#sCust').value=c.name; $('#sPhone').value=c.phone||'';
   sCustExtras(c);
+  const seller=STAFF.find(s=>s.id===c.ownerId);
+  $('#sSales').disabled=!!seller;
+  if(seller){let option=[...$('#sSales').options].find(o=>o.dataset.staffId===seller.id);if(!option){option=new Option(seller.name+' · '+seller.nick,seller.nick);option.dataset.staffId=seller.id;$('#sSales').add(option);}option.selected=true;}
 }
 /* กติการถที่ขายได้ + ผังช่องของหน้าขาย — ใช้ซ้ำใน sUnitSet/ปุ่มภายนอกที่จะเลือกคันให้ */
 const SELL_CAS={q:'svQ', model:'svModel', variant:'svVariant', color:'svColor', unit:'sUnit'};
@@ -5617,8 +5623,16 @@ const bkUnitText = b => { const u=UNITS.find(x=>x.id===b.unitId)||{};
   return (u.model||'—')+(u.color? ' · '+u.color : '')+(u.frame? ' · '+u.frame : ''); };
 const sellPool=()=>uAvail().filter(u=>(u.status==='available'||(u.status==='reserved'&&bookOf(u.id)))&&u.retail!=null);
 function rSell(){
+  const selectedSeller=$('#sSales').selectedOptions[0]?.dataset.staffId,wantSeller=$('#sSales').value;
+  const customer=CUSTOMERS.find(c=>c.id===sCustSel);
+  const sellers=STAFF.filter(s=>(s.roles||[s.role]).includes('sales')||s.id===customer?.ownerId);
+  $('#sSales').innerHTML=(sellers.length?sellers:[ME]).map(s=>'<option data-staff-id="'+esc(s.id)+'" value="'+esc(s.nick)+'">'+esc(s.name)+' · '+esc(s.nick)+'</option>').join('');
+  const selectedOption=[...$('#sSales').options].find(o=>selectedSeller?o.dataset.staffId===selectedSeller:o.value===wantSeller);
+  if(selectedOption)selectedOption.selected=true;
+  $('#sSales').disabled=!!customer?.ownerId;
+  if(customer?.ownerId){const owned=[...$('#sSales').options].find(o=>o.dataset.staffId===customer.ownerId);if(owned)owned.selected=true;}
   if(!$('#sUnit').dataset.init){ $('#sUnit').dataset.init=1;
-    $('#sSales').innerHTML=SALESPEOPLE.map(s=>'<option>'+esc(s)+'</option>').join('');
+
     /* ตัวเลือกงวดตามเจ้าไฟแนนซ์ที่เลือก — เติมจริงใน calcSell เพราะแต่ละเจ้าเปิดงวดไม่เท่ากัน */
     $('#sTerm').innerHTML=FIN_TERMS.map(t=>'<option>'+t+'</option>').join('');
     $('#sPay').onchange=()=>{ const fin=$('#sPay').value==='finance';
@@ -5659,8 +5673,8 @@ function rSell(){
         if(c) sCustFill(c);                             /* เติมทุกช่องที่มีข้อมูล — ไม่ใช่แค่ชื่อ/เบอร์ */
         sugHide(); });
     };
-    $('#sCust').oninput =()=>{ sCustSel=''; custSugDraw($('#sCust'),$('#sSugN')); };   /* แก้ข้อความ = ยังไม่ยืนยันตัวตน */
-    $('#sPhone').oninput=()=>{ sCustSel=''; custSugDraw($('#sPhone'),$('#sSugP')); };
+    $('#sCust').oninput =()=>{ sCustSel=''; $('#sSales').disabled=false; custSugDraw($('#sCust'),$('#sSugN')); };   /* แก้ข้อความ = ยังไม่ยืนยันตัวตน */
+    $('#sPhone').oninput=()=>{ sCustSel=''; $('#sSales').disabled=false; custSugDraw($('#sPhone'),$('#sSugP')); };
     $('#sCust').onfocus =$('#sCust').onclick =()=>custSugDraw($('#sCust'),$('#sSugN'));
     $('#sPhone').onfocus=$('#sPhone').onclick=()=>custSugDraw($('#sPhone'),$('#sSugP'));
     /* blur ปิดเฉพาะแผงของช่องตัวเอง — ถ้าปิดทั้งคู่ การคลิกย้ายจากช่องชื่อไปช่องเบอร์
@@ -5909,7 +5923,7 @@ function saveSale(force, confirmed){
   if(!c) c=CUSTOMERS.find(x=>x.name===name);
   const originalCustomer=c;
   if(!c){ c={id: LIVE? dbId() : nid('CU'),name,phone,src:'เดินเข้าร้าน',stage:'จอง',
-    branch:u.branch,variant:u.variant,owner:$('#sSales').value,ownerId:(()=>{const selected=STAFF.find(x=>x.nick===$('#sSales').value);return !LIVE&&selected?selected.id:selected&&isUuid(selected.id)?selected.id:ME.id;})(),createdAt:punchNow().toISOString()}; }
+    branch:u.branch,variant:u.variant,owner:$('#sSales').value,ownerId:(()=>{const selected=STAFF.find(x=>x.id===$('#sSales').selectedOptions[0]?.dataset.staffId)||STAFF.find(x=>x.nick===$('#sSales').value);return !LIVE&&selected?selected.id:selected&&isUuid(selected.id)?selected.id:ME.id;})(),createdAt:punchNow().toISOString()}; }
   else{
     c=Object.assign({},c);
     if(phone && !c.phone) c.phone=phone;
@@ -5920,7 +5934,9 @@ function saveSale(force, confirmed){
   if(pay==='finance') c.intent='เงินผ่อน';else c.intent='เงินสด';
   /* ข้อมูลออกใบกำกับ (B9) — เติมให้ลูกค้าคนเดิมด้วยถ้ากรอกมา ไม่ทับของเดิมด้วยค่าว่าง */
   if(birth) c.birth=birth; if(idNo) c.idNo=idNo; if(addr) c.addr=addr;
-  const s={id: LIVE? dbId() : nid('SA'),branch:u.branch,unitId:u.id,custId:c.id,sales:$('#sSales').value,soldAt:TODAY,
+  const seller=STAFF.find(x=>x.id===c.ownerId)||STAFF.find(x=>x.id===$('#sSales').selectedOptions[0]?.dataset.staffId)||STAFF.find(x=>x.nick===$('#sSales').value)||ME;
+  if(!c.ownerId){c.ownerId=seller.id;c.owner=seller.nick;}
+  const s={id: LIVE? dbId() : nid('SA'),branch:u.branch,unitId:u.id,custId:c.id,sales:seller.nick,salesId:seller.id,soldAt:TODAY,
     /* v1.50: คนไม่มีสิทธิ์เงินเห็น cost เป็น null (วิว unit_v ตัดมา) — gp ต้องเป็น null ไม่ใช่
        net-null=net (ทุนศูนย์) · ฝั่งฐาน trigger sale_fill_cost เติมทุนจริง ณ วันขายให้ (mig 30 §9i) */
     list,disc,net,cost:u.cost,freeCost,gp: u.cost==null? null : net-u.cost-freeCost,pay,
@@ -5940,7 +5956,7 @@ function saveSale(force, confirmed){
   s.docs={};   /* เอกสารทุกประเภทออกเลขครั้งแรกที่พิมพ์จริง (docNoFor) — ไม่จองเลขล่วงหน้า */
   const rg={id:dbId()||nid('RG'),saleId:s.id,branch:s.branch,stage:pay==='finance'?'อนุมัติ':'ขายแล้ว',due:addDays(TODAY,CFG.regDays),plate:'',log:[{to:pay==='finance'?'อนุมัติ':'ขายแล้ว',at:TODAY}]};
   const arRow=pay==='finance'?{id:dbId()||nid('AR'),saleId:s.id,branch:s.branch,kind:'finance',finId:s.finId,due:request.amount,paid:0,dueAt:addDays(TODAY,15),pays:[]}:null;
-  const saleBody={id:s.id,branch_id:BR_IDS[s.branch],unit_id:s.unitId,customer_id:c.id,salesperson_id:(()=>{const selected=STAFF.find(x=>x.nick===s.sales);return selected&&isUuid(selected.id)?selected.id:isUuid(c.ownerId)?c.ownerId:ME.id;})(),
+  const saleBody={id:s.id,branch_id:BR_IDS[s.branch],unit_id:s.unitId,customer_id:c.id,salesperson_id:s.salesId,
     sold_at:s.soldAt,list_price:s.list,discount:s.disc,net_price:s.net,cost:s.cost,freebie_cost:s.freeCost,gross_profit:s.gp,pay_method:s.pay,
     down_payment:s.down,term_months:s.term,note:s.note||null,finance_id:(finById(s.finId)||{}).dbId||null,finance_case_id:s.financeCaseId,
     doc_no:s.docNo,public_token:s.pubToken,rate_pct:s.rate,monthly_installment:s.per,loan_total:s.loan,pay_now:s.payNow,gifts:s.gifts,fin_approval:s.finApproval};
@@ -6815,7 +6831,7 @@ function bookSave(){
     const pd=phone.replace(/\D/g,'');
     let c = CUSTOMERS.find(x=>(x.phone||'').replace(/\D/g,'')===pd) || CUSTOMERS.find(x=>x.name===name);
     if(!c){ c={id: LIVE? dbId() : nid('CU'), name, phone, src:'จองรถ', stage:'จอง',
-      branch:u.branch, variant:u.variant, owner:ME.nick, createdAt:TODAY}; CUSTOMERS.push(c); }
+      branch:u.branch, variant:u.variant, owner:ME.nick, ownerId:ME.id, createdAt:TODAY}; CUSTOMERS.push(c); }
     else if(c.stage!=='รับรถสำเร็จ') c.stage='จอง';
     c.upAt=new Date().toISOString();
     const b={ id: LIVE? dbId() : nid('BK'), name, phone, custId:c.id, unitId:u.id,
@@ -6826,7 +6842,7 @@ function bookSave(){
     u.status='reserved';
     if(LIVE){
       dbUp('customer', { id:c.id, branch_id:BR_IDS[c.branch]||null, full_name:c.name,
-        phone:c.phone||null, source:c.src||null, stage:c.stage });
+        phone:c.phone||null, source:c.src||null, stage:c.stage, owner_id:c.ownerId||ME.id });
       dbUp('booking', { id:b.id, branch_id:BR_IDS[u.branch], customer_id:c.id, unit_id:u.id,
         name:b.name, phone:b.phone, deposit:b.deposit, deposit_no:b.depositNo||null,
         status:b.status, booked_at:b.at, note:b.note||null });
@@ -7064,17 +7080,34 @@ function rTransfer(){
 
 /* ============================= 7. ใบเสนอราคา ============================= */
 const quoteManagers=()=> (ME.roles&&ME.roles.length?ME.roles:[ME.role]).some(r=>r==='admin'||r==='manager');
-const quoteSellerPool=()=>{
-  const known=STAFF.find(s=>s.id===ME.id),self={...known,...ME,phone:ME.phone||known?.phone||''};
-  return quoteManagers()?[self,...STAFF.filter(s=>s.id!==ME.id&&(!LIVE||isUuid(s.id))&&(s.roles||[s.role]).includes('sales')&&inScope(s.branch))]:[self];
-};
+/* ผู้รับผิดชอบมาจากดีล/การขายเดิม หรือบัญชีที่สร้างใบเสนอใหม่ ไม่อ่านจากช่องเลือกผู้ขาย */
+let qCustomerId='';
 const quoteVisible=q=>inScope(q.branch)&&(quoteManagers()||!(ME.roles||[ME.role]).includes('sales')||q.sellerId===ME.id||(!q.sellerId&&q.by===ME.nick));
-function quoteSellerFill(){
-  const el=$('#qSeller'),want=el.value||ME.id,list=quoteSellerPool();
-  el.innerHTML=list.map(s=>'<option value="'+esc(s.id)+'">'+esc(s.name)+' · '+esc(bName(s.branch))+'</option>').join('');
-  if(list.some(s=>s.id===want))el.value=want;
-  const seller=list.find(s=>s.id===el.value)||ME;
-  $('#qSellerPhone').value=seller.phone||'';
+function quoteCustomer(){
+  const phone=$('#qPhone').value.replace(/\D/g,''),name=$('#qName').value.trim();
+  const linked=CUSTOMERS.find(c=>c.id===qCustomerId&&customerVisible(c)&&!c.archivedAt);
+  if(linked&&linked.name===name&&(linked.phone||'').replace(/\D/g,'')===phone)return linked;
+  const matches=phone?CUSTOMERS.filter(c=>customerVisible(c)&&!c.archivedAt&&(c.phone||'').replace(/\D/g,'')===phone):[];
+  return matches.length===1?matches[0]:null;
+}
+function quoteSeller(){
+  const c=quoteCustomer(),id=c?.ownerId||ME.id;
+  return STAFF.find(s=>s.id===id)||(!c||id===ME.id?ME:null);
+}
+function quoteForCustomer(id){
+  const c=CUSTOMERS.find(c=>c.id===id&&customerVisible(c)&&!c.archivedAt);
+  if(!c||!permW('page:quote'))return false;
+  qSavedNo=null;qCustomerId=c.id;go('quote');
+  $('#qName').value=c.name;$('#qPhone').value=c.phone||'';
+  if(c.variant&&PRICE[c.variant])$('#qV1').value=c.variant;
+  $('#qV2').value='';$('#qPay').value=c.intent==='เงินผ่อน'?'finance':'cash';qDraw();return true;
+}
+function quoteSellerFill(saved){
+  const seller=saved?{id:saved.sellerId,name:saved.sellerName||saved.by,phone:saved.sellerPhone}:quoteSeller();
+  $('#qSellerInfo').innerHTML='<b>'+esc(seller?.name||'ยังไม่ระบุผู้รับผิดชอบ')+'</b><div class="tsub">'
+    +esc(seller?.phone||'ยังไม่มีเบอร์ติดต่อในประวัติพนักงาน')+'</div>'
+    +(!saved&&seller&&!seller.phone&&staffContactCanEdit(seller.id)?'<button class="lnk" id="qContact">เพิ่มเบอร์ในประวัติพนักงาน</button>':'');
+  if($('#qContact'))$('#qContact').onclick=()=>staffContactModal(seller.id);
 }
 function rQuote(){
   if(!$('#qV1').dataset.init){ $('#qV1').dataset.init=1;
@@ -7082,12 +7115,11 @@ function rQuote(){
     $('#qV1').innerHTML=vs.map(v=>'<option value="'+esc(v)+'">'+esc(PRICE[v].m)+' · '+esc(v)+' — '+fmt(PRICE[v].retail)+' ฿</option>').join('');
     $('#qV2').innerHTML='<option value="">ไม่เทียบคันที่ 2</option>'+vs.map(v=>'<option value="'+esc(v)+'">'+esc(PRICE[v].m)+' · '+esc(v)+' — '+fmt(PRICE[v].retail)+' ฿</option>').join('');
     $('#qUntil').value=addDays(TODAY,7);
-    ['qName','qPhone','qUntil','qV1','qV2','qF1','qF2','qDown','qPay','qSellerPhone'].forEach(k=> $('#'+k).oninput=qDraw);
+    ['qName','qPhone','qUntil','qV1','qV2','qF1','qF2','qDown','qPay'].forEach(k=> $('#'+k).oninput=qDraw);
     ['qV1','qV2','qF1','qF2','qPay'].forEach(k=> $('#'+k).onchange=qDraw);
-    $('#qSeller').onchange=()=>{const seller=quoteSellerPool().find(s=>s.id===$('#qSeller').value);$('#qSellerPhone').value=seller?seller.phone||'':'';qDraw();};
     $('#qSave').onclick=saveQuote;
     /* พิมพ์ต้องใช้ snapshot ที่บันทึกพร้อมเลขจริงเสมอ */
-    $('#qPrint').onclick=()=>{ const q=qSavedNo?QUOTES.find(x=>x.no===qSavedNo):saveQuote();if(q){qDraw(q.no);printHTML($('#qDoc').innerHTML);} };
+    $('#qPrint').onclick=async()=>{ const q=qSavedNo?QUOTES.find(x=>x.no===qSavedNo):await saveQuote();if(q){qDraw(q.no);printHTML($('#qDoc').innerHTML);} };
     fillFin($('#qF1'));fillFin($('#qF2'),'F2');
     quoteSellerFill();
   }
@@ -7102,36 +7134,47 @@ function quoteSnapshot(pay){
     const p=PRICE[v];return {variant:v,model:p.m,detail:[p.th,p.cc?p.cc+' cc':'',p.yr?'ปี พ.ศ. '+p.yr:''].filter(Boolean).join(' · '),price:p.retail};
   });
   const finances=pay==='finance'?[...new Set([$('#qF1').value,$('#qF2').value])].map(finById).filter(Boolean).map(f=>({id:f.id,name:f.name,minDownPct:f.minDownPct||0,terms:finTerms(f).map(term=>({term,rate:finRate(f,term)}))})):[];
-  const branch=(quoteSellerPool().find(s=>s.id===$('#qSeller').value)||ME).branch;
+  const branch=quoteCustomer()?.branch||(quoteSeller()||ME).branch;
   const co=coOf(branch);
   return {slots,finances,company:{name:co.name||CFG.company,address:co.addr||CFG.address,phone:co.phone||CFG.phone},branchName:bName(branch)};
 }
 function saveQuote(){
+  if(qSaving)return qSaving;
   if(!permW('page:quote')){toast('บทบาทของคุณบันทึกใบเสนอราคาไม่ได้','ต้องมีสิทธิ์เขียนของหน้า "ใบเสนอราคา"',1);return null;}
   if(qSavedNo){toast('บันทึกแล้ว',qSavedNo);return QUOTES.find(q=>q.no===qSavedNo)||null;}
   if(!$('#qV1').value||!PRICE[$('#qV1').value]){toast('เลือกรุ่นรถก่อน','',1);return null;}
   const pay=$('#qPay').value==='cash'?'cash':'finance',snapshot=quoteSnapshot(pay),down=pay==='cash'?0:num($('#qDown').value);
-  const seller=quoteSellerPool().find(s=>s.id===$('#qSeller').value);
-  if(!seller){toast('เลือกเซลล์ผู้ดูแลที่มีสิทธิ์','',1);return null;}
-  const sellerPhone=$('#qSellerPhone').value.trim();
-  if(!sellerPhone){toast('กรอกเบอร์ติดต่อเซลล์ผู้ดูแล','เพื่อให้ลูกค้าติดต่อผู้ขายบนใบเสนอได้',1);return null;}
+  const seller=quoteSeller(),customer=quoteCustomer();
+  if(!seller){toast('ไม่พบข้อมูลเซลล์ผู้รับผิดชอบ','ให้ผู้ดูแลตรวจประวัติพนักงานของลูกค้ารายนี้',1);return null;}
+  const sellerPhone=(seller.phone||'').trim(),branch=customer?.branch||seller.branch;
+  if(!sellerPhone){toast('เพิ่มเบอร์ติดต่อในประวัติพนักงานก่อน','บันทึกครั้งเดียว แล้วใบเสนอใหม่จะเติมให้อัตโนมัติ',1);return null;}
   if(snapshot.slots.some(s=>!(s.price>0))){toast('รุ่นนี้ยังไม่มีราคาขาย','กำหนดราคาที่ตั้งค่าระบบก่อนเสนอราคา',1);return null;}
   if(pay==='finance'&&(!snapshot.finances.length||down<0||snapshot.slots.some(s=>down>s.price))){toast('ตรวจบริษัทไฟแนนซ์และเงินดาวน์','เงินดาวน์ต้องอยู่ระหว่าง 0 ถึงราคาของแต่ละคัน',1);return null;}
-  const q={id:LIVE?dbId():nid('QT'),no:nextDocNo(seller.branch,'QUOTE'),at:TODAY,branch:seller.branch,
+  const q={id:LIVE?dbId():nid('QT'),no:nextDocNo(branch,'QUOTE'),at:TODAY,branch,custId:customer?.id||'',
     name:$('#qName').value.trim()||'—',phone:$('#qPhone').value.trim(),until:$('#qUntil').value,
     v1:$('#qV1').value,v2:$('#qV2').value,f1:pay==='finance'?$('#qF1').value:'',f2:pay==='finance'?$('#qF2').value:'',down,
     pay,sellerId:seller.id,sellerName:seller.name,sellerPhone,by:seller.nick||seller.name,snapshot};
-  QUOTES.unshift(q);qSavedNo=q.no;
-  dbUp('quotation',{id:q.id,branch_id:BR_IDS[q.branch],doc_no:q.no,quote_date:q.at,valid_until:q.until||null,
-    customer_name:q.name,customer_phone:q.phone||null,seller_id:isUuid(q.sellerId)?q.sellerId:null,
-    seller_name:q.sellerName,seller_phone:q.sellerPhone,pay_method:q.pay,snapshot:q.snapshot});
-  [[1,q.v1,q.f1],[2,q.v2,q.f2]].forEach(([slot,v,f])=>{
-    if(!v||!VARIANT_IDS[v])return;
-    dbUp('quotation_option',{id:dbId(),quotation_id:q.id,slot,variant_id:VARIANT_IDS[v],price:snapshot.slots.find(s=>s.variant===v).price,
-      finance_id:pay==='finance'?(finById(f)||{}).dbId||null:null,down_payment:down});
-  });
-  qDraw(q.no);rQuoteList();toast('บันทึกใบเสนอแล้ว',q.no+' · '+q.name);return q;
+  const body={id:q.id,branch_id:BR_IDS[q.branch],doc_no:q.no,quote_date:q.at,valid_until:q.until||null,
+    customer_id:isUuid(q.custId)?q.custId:null,customer_name:q.name,customer_phone:q.phone||null,seller_id:isUuid(q.sellerId)?q.sellerId:null,
+    seller_name:q.sellerName,seller_phone:q.sellerPhone,pay_method:q.pay,snapshot:q.snapshot};
+  const options=[[1,q.v1,q.f1],[2,q.v2,q.f2]].filter(([,v])=>v&&VARIANT_IDS[v]).map(([slot,v,f])=>({
+    id:dbId(),quotation_id:q.id,slot,variant_id:VARIANT_IDS[v],price:snapshot.slots.find(s=>s.variant===v).price,
+    finance_id:pay==='finance'?(finById(f)||{}).dbId||null:null,down_payment:down}));
+  const finish=row=>{
+    if(row){q.sellerId=row.seller_id;q.sellerName=row.seller_name;q.sellerPhone=row.seller_phone;}
+    QUOTES.unshift(q);qSavedNo=q.no;qDraw(q.no);rQuoteList();toast('บันทึกใบเสนอแล้ว',q.no+' · '+q.name);return q;
+  };
+  if(!LIVE){dbUp('quotation',body);options.forEach(o=>dbUp('quotation_option',o));return finish();}
+  if(qSaving)return qSaving;
+  $('#qSave').disabled=true;$('#qPrint').disabled=true;
+  qSaving=sbFetch('/rest/v1/rpc/quote_save',{method:'POST',body:JSON.stringify({p_quote:body,p_options:options})})
+    .then(row=>{if(!row?.id)throw Error('ไม่ได้รับเลขอ้างอิงใบเสนอราคา');return finish(row);})
+    .catch(e=>{toast('บันทึกใบเสนอไม่สำเร็จ',e.message,1);return null;})
+    .finally(()=>{qSaving=null;$('#qSave').disabled=false;$('#qPrint').disabled=false;});
+  return qSaving;
 }
+let qSaving=null;
+
 function rQuoteList(){
   perBar('quotePer','quote',rQuoteList);$('#expQuote').onclick=expQuotes;
   const qs=QUOTES.filter(q=>quoteVisible(q)&&inPer('quote',q.at));
@@ -7153,8 +7196,7 @@ function quoteView(id){
   $('#qName').value=q.name;$('#qPhone').value=q.phone||'';$('#qUntil').value=q.until||'';
   $('#qV1').value=q.v1;$('#qV2').value=q.v2||'';$('#qPay').value=q.pay||'finance';fillFin($('#qF1'));fillFin($('#qF2'));
   if(q.f1)$('#qF1').value=q.f1;if(q.f2)$('#qF2').value=q.f2;$('#qDown').value=q.down||0;
-  quoteSellerFill();if(q.sellerId&&quoteSellerPool().some(s=>s.id===q.sellerId))$('#qSeller').value=q.sellerId;
-  $('#qSellerPhone').value=q.sellerPhone||'';qDraw(q.no);window.scrollTo(0,0);
+  qCustomerId=q.custId||'';qDraw(q.no);window.scrollTo(0,0);
 }
 /* ใบเสนอเป็นข้อมูลตั้งต้นของดีล เงินผ่อนต้องยื่นเรื่องก่อน ผู้บริหารจึงเลือกรถจริงตอนเปิดขาย */
 async function quoteToSale(qid){
@@ -7185,15 +7227,16 @@ function qDraw(no){
   $('#qFinanceBox').style.display=pay==='cash'?'none':'';
   const legacy=!!(saved&&!(saved.snapshot&&saved.snapshot.slots));
   const snap=legacy?quoteSnapshot(pay):saved?saved.snapshot:quoteSnapshot(pay);
-  const down=pay==='cash'?0:saved?saved.down:num($('#qDown').value),seller=quoteSellerPool().find(s=>s.id===$('#qSeller').value)||ME;
+  const down=pay==='cash'?0:saved?saved.down:num($('#qDown').value),seller=quoteSeller()||ME;
+  quoteSellerFill(saved);
   const sellerName=saved?saved.sellerName||saved.by||'ไม่ระบุในเอกสารเดิม':seller.name;
-  const sellerPhone=saved?saved.sellerPhone||'ไม่ระบุในเอกสารเดิม':$('#qSellerPhone').value;
+  const sellerPhone=saved?saved.sellerPhone||'ไม่ระบุในเอกสารเดิม':seller.phone||'';
   if(pay==='finance'&&!snap.finances.length){$('#qDoc').innerHTML='<div class="empty"><b>ยังไม่มีบริษัทไฟแนนซ์ที่เปิดใช้งาน</b><span>เพิ่มได้ที่ตั้งค่าระบบ หรือเลือกใบเสนอเงินสด</span></div>';return;}
   const co=snap.company;
   let h='<div class="doc"><h2>'+esc(co.name)+'</h2><div class="dsub">'+esc(co.address)+' · โทร '+esc(co.phone)+'</div>'
     +'<h2 style="margin-top:var(--s2)">ใบเสนอราคา · '+(pay==='cash'?'เงินสด':'เงินผ่อน')+'</h2>'
     +'<div class="co"><div><b>เรียน</b> '+esc(saved?saved.name:$('#qName').value)+'<br>โทร '+esc(saved?saved.phone:$('#qPhone').value)+'</div>'
-    +'<div style="text-align:right"><b>เลขที่</b> <span class="mono">'+esc(no||peekDocNo(seller.branch,'QUOTE'))+'</span>'+(no?'':' <span class="tsub">(จะออกเมื่อบันทึก)</span>')+'<br>'
+    +'<div style="text-align:right"><b>เลขที่</b> <span class="mono">'+esc(no||peekDocNo(quoteCustomer()?.branch||seller.branch,'QUOTE'))+'</span>'+(no?'':' <span class="tsub">(จะออกเมื่อบันทึก)</span>')+'<br>'
     +'<b>วันที่</b> '+thDate(saved?saved.at:TODAY)+'<br><b>ยืนราคาถึง</b> '+thDate(saved?saved.until:$('#qUntil').value)+'</div></div>';
   snap.slots.forEach((s,i)=>{
     const prin=Math.max(0,s.price-down);
@@ -7625,6 +7668,7 @@ function dealActions(d){
   /* v1.36 (บรีฟข้อ 25): ปุ่มใบเสร็จบนแถบ — โชว์เฉพาะคนที่พิมพ์ได้ ด่านจริงอยู่ใน printCurrentDoc */
   if(d.s && !d.s.void && canPrintDoc())
     b.push('<button class="btn sec" data-dlrcpt="'+d.s.id+'">'+ic('print')+' พิมพ์ใบเสร็จ</button>');
+  if(permW('page:quote')&&!d.c.archivedAt)b.push('<button class="btn sec" data-dlquote="'+d.c.id+'">'+ic('file')+' สร้างใบเสนอราคา</button>');
   let h=b.join('');
   if(d.s && !d.s.void && !d.delivered && canVoidSale())
     h+='</div><div class="dlact dlrisk">'
@@ -7797,6 +7841,7 @@ function rDealOne(id){
   wireDealProgress();
   /* ทุกปุ่มทำงานแล้ววาดหน้าเดิมใหม่ผ่าน refreshAll() ที่อยู่ในตัวทำงานเอง — ไม่มีการข้ามหน้า */
   $('#dlBack').onclick=()=>{ DEAL_SEL=''; rDeal(); window.scrollTo(0,0); };
+  $$('#dlOne [data-dlquote]').forEach(b=>b.onclick=()=>quoteForCustomer(b.dataset.dlquote));
   const on=(sel,fn)=> $$('#dlOne ['+sel+']').forEach(b=> b.onclick=()=>fn(b.dataset[sel.replace('data-','')]));
   on('data-dlsell', dealSell);
   on('data-dlgo', dealProceed);
@@ -11133,6 +11178,35 @@ function staffRolesModal(staffId){
     if(staffSetRoles(staffId, rs)) closeModal();
   };
 }
+function staffFromRow(a,employees,homeBranch){
+  const employee=employees.find(e=>e.user_id===a.id),branches=(a.app_user_branch||[]).map(x=>x.branch?.code).filter(Boolean);
+  return {id:a.id,name:a.full_name,nick:a.nickname||a.full_name,phone:a.phone||'',allBranch:!!a.all_branch,branches,
+    roles:(a.app_user_role||[]).map(x=>x.role?.code).filter(Boolean),role:a.app_user_role?.[0]?.role?.code||'sales',
+    branch:branches[0]||homeBranch,empId:employee?.id||'',salary:employee?.base_salary==null?null:+employee.base_salary,
+    bank:employee?.bank_account||'',ssn:employee?.ssn_no||''};
+}
+const staffContactCanEdit=id=>!!ME&&(id===ME.id||(rolePerm().admin&&permW('page:users')));
+async function staffContactSave(id,phone){
+  if(!staffContactCanEdit(id)){toast('ไม่มีสิทธิ์แก้ข้อมูลพนักงานคนนี้','',1);return false;}
+  const s=STAFF.find(s=>s.id===id);phone=String(phone||'').trim();
+  if(!s||!/^\+?[0-9 ()-]{8,24}$/.test(phone)||(phone.replace(/\D/g,'').length<8||phone.replace(/\D/g,'').length>15)){toast('ตรวจเบอร์ติดต่อพนักงาน','กรอกหมายเลขโทรศัพท์ให้ครบ',1);return false;}
+  try{
+    const row=LIVE?await sbFetch('/rest/v1/rpc/staff_set_contact',{method:'POST',body:JSON.stringify({p_user:id,p_phone:phone})}):{id,phone};
+    if(row?.id!==id||!row.phone)throw Error('ไม่ได้รับข้อมูลพนักงานที่บันทึก');
+    s.phone=row.phone;if(ME.id===id)ME.phone=row.phone;
+    if(CUR==='quote')qDraw(qSavedNo||undefined);if(CUR==='users')rUsers();
+    toast('บันทึกข้อมูลติดต่อแล้ว','ใบเสนอใหม่จะใช้เบอร์นี้อัตโนมัติ');return true;
+  }catch(e){toast('บันทึกข้อมูลติดต่อไม่สำเร็จ',e.message,1);return false;}
+}
+function staffContactModal(id){
+  const s=STAFF.find(s=>s.id===id);if(!s||!staffContactCanEdit(id))return;
+  openModal('ข้อมูลติดต่อพนักงาน','<p class="tsub">'+esc(s.name)+' · '+esc(s.nick)+'</p>'
+    +'<label class="fl" for="staffPhone">เบอร์ติดต่อสำหรับลูกค้า</label><input class="inp" id="staffPhone" type="tel" autocomplete="tel" value="'+esc(s.phone||'')+'">'
+    +'<p class="tsub">บันทึกครั้งเดียวเพื่อใช้ในใบเสนอราคาใหม่ เอกสารที่บันทึกแล้วจะเก็บเบอร์เดิม</p>'
+    +'<div class="savebar"><button class="btn" id="staffContactSave">บันทึกข้อมูลติดต่อ</button></div>');
+  $('#staffContactSave').onclick=async()=>{const btn=$('#staffContactSave');if(btn.disabled)return;btn.disabled=true;
+    const saved=await staffContactSave(id,$('#staffPhone').value);if(saved)closeModal();else btn.disabled=false;};
+}
 function rUsers(){
   $('#expStaff').onclick=expStaffList;
   /* v1.31 (B12): หน้านี้เคยอ่านบิตจาก ROLES (ค่าเริ่มต้น) — แอดมินแก้ตารางสิทธิ์ (J3) แล้ว
@@ -11151,7 +11225,7 @@ function rUsers(){
       +(mayEdit? ' <button class="lnk noprint" data-uroles="'+s.id+'">แก้ตำแหน่ง</button>':''); };
   tbl($('#uTable'), ['ชื่อ','ชื่อเล่น','ตำแหน่ง','สาขา','เห็นทุกสาขา','เห็นตัวเงิน','อนุมัติได้'],
     STAFF.map(s=>{ const e=effOf(s);
-      return '<tr><td><b>'+esc(s.name)+'</b></td><td>'+esc(s.nick)+'</td><td>'+rolesCell(s)+'</td>'
+      return '<tr><td><b>'+esc(s.name)+'</b><div class="tsub">'+esc(s.phone||'ยังไม่มีเบอร์ติดต่อ')+'</div>'+(staffContactCanEdit(s.id)?'<button class="lnk" data-ucontact="'+s.id+'">แก้ข้อมูลติดต่อ</button>':'')+'</td><td>'+esc(s.nick)+'</td><td>'+rolesCell(s)+'</td>'
         +'<td>'+esc(bName(s.branch))+'</td>'
         +'<td>'+(e.allBranch?pill('ใช่','good'):pill('เฉพาะสาขาตัวเอง','mut'))+'</td>'
         +'<td>'+(e.money?pill('เห็น','good'):pill('ซ่อน','mut'))+'</td>'
@@ -11159,10 +11233,11 @@ function rUsers(){
     'ไม่มีผู้ใช้',
     STAFF.map(s=>{ const e=effOf(s);
       return crow('', esc(s.name), rolesCell(s),
-        esc(s.nick)+' · '+esc(bName(s.branch)),
+        esc(s.nick)+' · '+esc(bName(s.branch))+'<br>'+esc(s.phone||'ยังไม่มีเบอร์ติดต่อ')+(staffContactCanEdit(s.id)?' · <button class="lnk" data-ucontact="'+s.id+'">แก้ข้อมูลติดต่อ</button>':''),
         (e.allBranch?pill('ทุกสาขา','good'):pill('เฉพาะสาขาตัวเอง','mut'))+' '
         +(e.money?pill('เห็นตัวเงิน','good'):pill('ซ่อนตัวเงิน','mut'))+' '
         +(e.approve?pill('อนุมัติได้','good'):'')); }));
+  $$('#s-users [data-ucontact]').forEach(el=>el.onclick=()=>staffContactModal(el.dataset.ucontact));
   $$('#s-users [data-uroles]').forEach(el=> el.onclick=e2=>{ e2.stopPropagation(); staffRolesModal(el.dataset.uroles); });
   const keys=Object.keys(ROLES);
   tbl($('#roleTable'), ['บทบาท','เห็นตัวเงิน','เห็นทุกสาขา','อนุมัติ','จัดการระบบ','เมนูที่เข้าถึงได้ (สิทธิ์ที่ตั้งไว้จริง)'],
@@ -12709,7 +12784,7 @@ async function liveHydrate(me,brs,mvs,empId){
       }catch(e){console.warn('โหลด '+t+' ไม่สำเร็จ',e.message);return null;}};
       const [aus, cus, sls, bks, rgs, fca, ars, pmt, tks, rms, jbs, prt, pmv, gfs, xps,
              qts, qos, wss, wsi, ods, trs, lvs, ofs, dcs, seenRows, unitRows, employees] = await Promise.all([
-        q2000('app_user','id,full_name,nickname,app_user_role(role(code)),app_user_branch(branch(code))',{limit:'500'}),
+        q2000('app_user','id,full_name,nickname,phone,all_branch,app_user_role(role(code)),app_user_branch(branch(code))',{limit:'500'}),
         q2000('customer','id,branch_id,full_name,phone,address,tax_id,source,stage,created_at,birth_date,owner_id,updated_at,archived_at,archived_by,archived_reason,purchase_intent,interested_variant_id,note,finance_history'),
         q2000('sale','id,branch_id,unit_id,customer_id,finance_case_id,salesperson_id,sold_at,list_price,discount,net_price,cost,freebie_cost,gross_profit,pay_method,down_payment,term_months,note,finance_id,doc_no,voided_at,public_token,rate_pct,monthly_installment,loan_total,pay_now,gifts,fin_approval',{order:'created_at'}),
         q2000('booking','id,branch_id,customer_id,unit_id,name,phone,deposit,deposit_no,status,booked_at,sale_id,canceled_at,cancel_reason,refunded,note,updated_at'),
@@ -12724,7 +12799,7 @@ async function liveHydrate(me,brs,mvs,empId){
         q2000('part_movement','id,part_id,branch_id,kind,qty,job_id,at'),
         q2000('freebie','id,branch_id,name,cost,price,qty_on_hand,min_qty'),
         q2000('expense','id,branch_id,category,spent_at,amount,vendor,tax_invoice_no,has_receipt,note,created_by,approval'),
-        q2000('quotation','id,branch_id,doc_no,quote_date,valid_until,customer_name,customer_phone,customer_address,created_by,seller_id,seller_name,seller_phone,pay_method,snapshot'),
+        q2000('quotation','id,branch_id,doc_no,quote_date,valid_until,customer_name,customer_phone,customer_address,customer_id,created_by,seller_id,seller_name,seller_phone,pay_method,snapshot'),
         q2000('quotation_option','id,quotation_id,slot,variant_id,finance_id,down_payment,price,terms'),
         q2000('wholesale_sale','id,branch_id,partner_id,sold_at,doc_no,total,note,fin_approval,voided_at,voided_reason,voided_by,tax_no,bill_no,dest_branch_id'),
         q2000('wholesale_sale_item','id,ws_id,unit_id,price'),
@@ -12747,10 +12822,7 @@ async function liveHydrate(me,brs,mvs,empId){
       /* ชื่อคนจาก uuid — app_user เปิดอ่านทุกคนที่ล็อกอิน (policy app_user_read ตั้งแต่ mig 06) */
       const NAMES={}; (aus||[]).forEach(a2=>{ NAMES[a2.id]=a2.nickname||a2.full_name; });
       const nameOf = id => (id && NAMES[id])||'—';
-      if(aus)STAFF=aus.map(a=>{const employee=(employees||[]).find(e=>e.user_id===a.id);return {id:a.id,name:a.full_name,nick:a.nickname||a.full_name,
-        roles:(a.app_user_role||[]).map(x=>x.role&&x.role.code).filter(Boolean),
-        role:(a.app_user_role||[])[0]?.role?.code||'sales',branch:(a.app_user_branch||[])[0]?.branch?.code||homeBranch,phone:'',
-        empId:employee?.id||'',salary:employee?.base_salary==null?null:+employee.base_salary,bank:employee?.bank_account||'',ssn:employee?.ssn_no||''};});
+      if(aus)STAFF=aus.map(a=>staffFromRow(a,employees||[],homeBranch));
       if(seenRows)LIVE_SEEN[me.id]=Object.fromEntries(seenRows.map(n=>[n.notification_id,n.seen_at]));
       if(cus) CUSTOMERS = cus.map(r=>({ id:r.id, name:r.full_name, phone:r.phone||'',
         src:r.source||'',stage:r.stage||'สนใจ',branch:brc(r.branch_id),variant:VC[r.interested_variant_id]||'',
@@ -12843,7 +12915,7 @@ async function liveHydrate(me,brs,mvs,empId){
       if(qts){ QUOTES = qts.map(r=>({ id:r.id, no:r.doc_no, at:r.quote_date,
         branch:brc(r.branch_id), name:r.customer_name||'—', phone:r.customer_phone||'',
         until:r.valid_until||'',v1:'',v2:'',f1:'',f2:'',down:0,by:r.seller_name||nameOf(r.created_by),addr:r.customer_address||'',
-        sellerId:r.seller_id||r.created_by||'',sellerName:r.seller_name||'',sellerPhone:r.seller_phone||'',pay:r.pay_method||'finance',snapshot:r.snapshot||null }));
+        custId:r.customer_id||'',sellerId:r.seller_id||r.created_by||'',sellerName:r.seller_name||'',sellerPhone:r.seller_phone||'',pay:r.pay_method||'finance',snapshot:r.snapshot||null }));
         (qos||[]).forEach(o=>{ const q=QUOTES.find(x=>x.id===o.quotation_id); if(!q) return;
           const v=VC[o.variant_id]||'';
           if(o.slot===1){q.v1=v;q.f1=finByDb(o.finance_id);q.down=+o.down_payment||0;q.price1=+o.price||0;q.terms1=o.terms||[];}
@@ -12921,7 +12993,7 @@ async function liveLogin(){
 
     /* ตัวตนและสิทธิ์ — RLS คัดข้อมูลตามผู้ใช้คนนี้ให้เอง */
     const meRows = await sbSelect('app_user', {
-      select:'id,full_name,nickname,all_branch,app_user_role(role(code,name)),app_user_branch(branch(code,name))',
+      select:'id,full_name,nickname,phone,all_branch,app_user_role(role(code,name)),app_user_branch(branch(code,name))',
       id:'eq.'+auth.user.id });
     const me = meRows && meRows[0];
     if(!me) throw new Error('ไม่พบผู้ใช้ในระบบ');
@@ -13044,7 +13116,7 @@ async function liveLogin(){
     LIVE_CTX={me,brs,mvs,empId};
     LIVE = true;
     ME = { id:me.id, name:me.full_name, nick:me.nickname||me.full_name.slice(0,2),
-           role:roleCode,roles:(me.app_user_role||[]).map(x=>x.role&&x.role.code).filter(Boolean),branch:homeBranch,phone:'',salary:0,bank:'',ssn:'',empId };
+           role:roleCode,roles:(me.app_user_role||[]).map(x=>x.role&&x.role.code).filter(Boolean),branch:homeBranch,branches:(me.app_user_branch||[]).map(x=>x.branch?.code).filter(Boolean),allBranch:!!me.all_branch,phone:me.phone||'',salary:0,bank:'',ssn:'',empId };
     $('#login').classList.add('off'); $('#app').classList.remove('off');
     $('#meAv').textContent = ME.nick.slice(0,2);
     $('#meName').textContent = ME.name;
