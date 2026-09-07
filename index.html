@@ -7231,17 +7231,35 @@ const customerOwnOnly = () => inRoles(['sales']) && !inRoles(['admin','manager',
 const customerVisible = c => !!c && inScope(c.branch) && (!customerOwnOnly()
   || (c.ownerId? c.ownerId===ME.id : !LIVE && c.owner===ME.nick));
 const customerCanWrite = c => permW('page:deal') && customerVisible(c) && !c.archivedAt;
-async function custPersist(c){
+/* migration 32 ตั้งใจปล่อย owner_id ว่างไว้ "ให้ผู้บริหารจัดสรร" แต่เดิมไม่มีหน้าจอให้จัดสรร
+   ด่านจริงคือ customer_guard ที่ยอมเฉพาะ admin/manager ที่มี page:deal — สองบรรทัดนี้
+   เปิดช่องให้ตรงกับที่ฐานข้อมูลยอมรับอยู่แล้ว ไม่ได้ขยายสิทธิ์ใหม่ (.claude/issues/005) */
+const customerOwnerAssignAllowed = () => permW('page:deal') && inRoles(['admin','manager']);
+const customerOwnerPool = current => {
+  const list=STAFF.filter(s=>(!LIVE||isUuid(s.id))&&(s.roles||[s.role]).includes('sales')&&inScope(s.branch));
+  /* เจ้าของเดิมและตัวผู้บันทึกต้องอยู่ในรายการเสมอ ไม่งั้น select จะเด้งไปค่าอื่นเงียบ ๆ */
+  [current, ME.id].forEach(id=>{ if(id && !list.some(s=>s.id===id)){
+    const keep=STAFF.find(s=>s.id===id); if(keep) list.push(keep); } });
+  return list;
+};
+const customerOwnerLabel = id => { const s=STAFF.find(x=>x.id===id); return s? (s.nick||s.name) : '—'; };
+async function custPersist(c, opts){
   if(!LIVE) return true;
   try{
     const body={id:c.id,branch_id:BR_IDS[c.branch]||null,full_name:c.name,phone:c.phone||null,
       address:c.addr||null,tax_id:c.idNo||null,birth_date:c.birth||null,source:c.src||null,
       stage:c.stage||'เข้ามาดูรถ',purchase_intent:c.intent==='ยังไม่ระบุ'?null:c.intent||null,
-      interested_variant_id:VARIANT_IDS[c.variant]||null,owner_id:c.ownerId||ME.id,note:c.note||null};
+      interested_variant_id:VARIANT_IDS[c.variant]||null,note:c.note||null};
+    /* แนบ owner_id เฉพาะตอนผู้บริหารตั้งใจกำหนดเท่านั้น เดิมส่ง c.ownerId||ME.id ทุกครั้ง
+       ทำให้ acct ที่แค่แก้เบอร์โทรของลูกค้าที่ยังไม่มีเจ้าของโดนฐานข้อมูลปฏิเสธ 42501
+       และผู้บริหารยึดเจ้าของเงียบ ๆ · ไม่ส่ง = ลูกค้าใหม่ให้ trigger เติม auth.uid() เอง
+       ส่วนลูกค้าเดิม upsert จะไม่แตะคอลัมน์นี้เลย */
+    if(opts && opts.setOwner) body.owner_id=c.ownerId||null;
     const rows=await sbFetch('/rest/v1/customer?on_conflict=id',{method:'POST',
       headers:{Prefer:'resolution=merge-duplicates,return=representation'},body:JSON.stringify(body)});
     if(!rows||!rows[0]) throw new Error('ไม่ได้รับข้อมูลยืนยันจากฐานข้อมูล');
-    c.ownerId=rows[0].owner_id; c.createdAt=rows[0].created_at; c.upAt=rows[0].updated_at;
+    c.ownerId=rows[0].owner_id||''; c.owner=customerOwnerLabel(c.ownerId);
+    c.createdAt=rows[0].created_at; c.upAt=rows[0].updated_at;
     return true;
   }catch(e){toast('ยังบันทึกลูกค้าไม่สำเร็จ',e.message,1);return false;}
 }
@@ -7289,6 +7307,9 @@ function custModal(id, after){
      ช่องที่เหลือพับใต้ "กรอกเพิ่มเติม" (แก้ลูกค้าเก่ากางเต็ม เพราะเข้ามาเพื่อดู/แก้ข้อมูล)
      ใช้ display:contents ให้ช่องที่พับยังเรียงในกริด .f เดิม ไม่เกิดกล่องซ้อนชั้นใหม่ (§9c) */
   const brief=!c;
+  /* ช่องผู้ดูแลโผล่เฉพาะผู้บริหาร — เซลล์แก้ DOM เองก็ไม่มีผล เพราะ custPersist ส่ง owner_id
+     ก็ต่อเมื่อช่องนี้มีจริง และ customer_guard กันซ้ำที่ฐานข้อมูลอีกชั้น (.claude/issues/005) */
+  const ownerPick=customerOwnerAssignAllowed(), ownerCur=c? (c.ownerId||'') : ME.id;
   openModal(c? 'แก้ไข '+c.name : 'เพิ่มลูกค้า',
     '<div class="f"><div class="f2">'
     +'<div><label class="fl">ชื่อ</label><input class="inp" id="cmName" value="'+esc(c?c.name:'')+'"></div>'
@@ -7299,6 +7320,11 @@ function custModal(id, after){
     +'<div><label class="fl">รุ่นที่สนใจ</label><select class="inp" id="cmModel"><option value="">ยังไม่ระบุ</option>'
     +custModelOptions(c?c.variant:'')+'</select></div>'
     +'<div><label class="fl">สนใจแบบ</label><select class="inp" id="cmIntent">'+opt(['ยังไม่ระบุ','เงินสด','เงินผ่อน'], c?c.intent||'ยังไม่ระบุ':'ยังไม่ระบุ')+'</select></div></div>'
+    +(ownerPick? '<div><label class="fl" for="cmOwner">ผู้ดูแล</label><select class="inp" id="cmOwner">'
+      +'<option value="">ยังไม่กำหนด — รอผู้บริหารจัดสรร</option>'
+      +customerOwnerPool(ownerCur).map(s=>'<option value="'+esc(s.id)+'"'+(s.id===ownerCur?' selected':'')
+        +'>'+esc(s.nick||s.name)+' · '+esc(bName(s.branch))+'</option>').join('')
+      +'</select><p class="tsub">เซลล์เห็นเฉพาะลูกค้าที่ตัวเองดูแล · เปลี่ยนผู้ดูแลได้เฉพาะผู้บริหาร</p></div>':'')
     +(brief? '<button class="lnk" id="cmMoreBtn" type="button">'+ic('plus','i i-sm')+' กรอกเพิ่มเติม — วันเกิด · เลขบัตร · ที่อยู่ · อื่น ๆ</button>':'')
     +'<div id="cmMore" style="display:'+(brief?'none':'contents')+'">'
     +'<div class="f2">'
@@ -7313,6 +7339,7 @@ function custModal(id, after){
     +'<div class="savebar"><button class="btn" id="cmGo">'+(c?'บันทึก':'เพิ่มลูกค้า')+'<svg class="i"><use href="#i-check"/></svg></button></div>');
   const more=$('#cmMoreBtn');
   if(more) more.onclick=()=>{ $('#cmMore').style.display='contents'; more.remove(); };
+  const ownerEl=ownerPick? $('#cmOwner') : null;   /* ไม่มีสิทธิ์ = ไม่มีตัวแปรนี้ ไม่ว่า DOM จะมีอะไร */
   $('#cmGo').onclick=async()=>{
     if(!permW('page:deal')||(id&&!customerCanWrite(c))){toast('ไม่มีสิทธิ์แก้ไขลูกค้า','',1);return;}
     const n=$('#cmName').value.trim();
@@ -7320,12 +7347,13 @@ function custModal(id, after){
     const put=o=>{ o.name=n; o.phone=$('#cmPhone').value.trim(); o.addr=$('#cmAddr').value.trim();
       o.birth=$('#cmBirth').value; o.src=$('#cmSrc').value; o.intent=$('#cmIntent').value;
       o.variant=$('#cmModel').value; o.note=$('#cmNote').value.trim();
-      if(idEdit) o.idNo=$('#cmIdNo').value.trim(); };
+      if(idEdit) o.idNo=$('#cmIdNo').value.trim();
+      if(ownerEl){ o.ownerId=ownerEl.value; o.owner=customerOwnerLabel(o.ownerId); } };
     const now=new Date().toISOString();
     const saved=c?Object.assign({},c):{id:LIVE?dbId():nid('CU'),stage:'เข้ามาดูรถ',branch:ME.branch,
       owner:ME.nick,ownerId:ME.id,createdAt:now,upAt:now};
     put(saved);saved.upAt=now;
-    if(LIVE && !await custPersist(saved))return;
+    if(LIVE && !await custPersist(saved,{setOwner:!!ownerEl}))return;
     if(c)Object.assign(c,saved);else CUSTOMERS.push(saved);
     if(!c){fsClear('deal');$('#dlArchive').value='active';DEAL_SEL=saved.id;}
     toast(c?'บันทึกแล้ว':'เพิ่มลูกค้าแล้ว',n);
@@ -8011,6 +8039,11 @@ const thDT = iso => { if(!iso) return '—';
   if(String(iso).length<=10)return thShort(iso)+' · ไม่ได้บันทึกเวลา';
   const d=new Date(iso);if(!Number.isFinite(d.getTime()))return '—';
   return thShort(d.toLocaleDateString('sv-SE',{timeZone:'Asia/Bangkok'}))+' '+d.toLocaleTimeString('th-TH',{timeZone:'Asia/Bangkok',hour:'2-digit',minute:'2-digit',hour12:false}); };
+/* ลูกค้าที่ยังไม่มีเจ้าของเคยขึ้นเป็นตัวเลือก "—" ในตัวกรองเซลล์ ซึ่งอ่านไม่ออกว่าหมายถึงอะไร
+   ตั้งชื่อให้ชัดเพื่อให้ผู้บริหารกรองมาจัดสรรเป็นชุดได้ (.claude/issues/005)
+   ใช้กับตัวกรองและไฟล์ส่งออกเท่านั้น ตารางยังแสดง "—" ตามเดิม ความกว้างคอลัมน์จึงไม่เปลี่ยน */
+const OWNER_NONE='ยังไม่มีผู้ดูแล';
+const dealOwnerName = d => { const n=(d.s?d.s.sales:d.c.owner)||''; return (!n||n==='—')? OWNER_NONE : n; };
 function dealRows(){
   const g=id=>{ const el=$('#'+id); return el? el.value : ''; };
   const q=g('dlQ').trim().toLowerCase(), st=g('dlStage'), sp=g('dlSales'), br=g('dlBranch'), py=g('dlPay');
@@ -8021,7 +8054,7 @@ function dealRows(){
    && (!py || dealPay(d)===py)
    && (!bkf || (bkf==='จองอยู่' ? !!d.bk : !d.bk))
    && brMatch(br, d.c.branch)
-   && (!sp || ((d.s?d.s.sales:d.c.owner)||'')===sp)
+   && (!sp || dealOwnerName(d)===sp)
    && (!q  || (d.c.name+(d.c.phone||'')+(d.u?d.u.engine:'')).toLowerCase().indexOf(q)>=0))
     .sort((a,b)=>(Date.parse(dealUpdatedAt(b))||0)-(Date.parse(dealUpdatedAt(a))||0)
       ||a.c.id.localeCompare(b.c.id));
@@ -8036,7 +8069,10 @@ function rDealList(){
   fill($('#dlStage'), DEAL_TRACK_N.concat(['ไม่ผ่าน']), 'ทุกขั้นตอน');
   fill($('#dlPay'), ['เงินสด','เงินผ่อน','ยังไม่ระบุ'], 'เงินสด+ผ่อน');
   fill($('#dlBook'), ['จองอยู่','ไม่มีการจอง'], 'ทุกการจอง');
-  fill($('#dlSales'), [...new Set(all.map(d=>(d.s?d.s.sales:d.c.owner)||'').filter(Boolean))].sort(), 'ทุกเซลล์');
+  /* "ยังไม่มีผู้ดูแล" ปักไว้บนสุด เพราะเป็นกองเดียวที่ต้องลงมือจัดสรร ไม่ใช่แค่ดู */
+  (function(){ const names=[...new Set(all.map(dealOwnerName))].sort();
+    const none=names.includes(OWNER_NONE);
+    fill($('#dlSales'), (none?[OWNER_NONE]:[]).concat(names.filter(x=>x!==OWNER_NONE)), 'ทุกเซลล์'); })();
   (function(){ const el=$('#dlBranch'), want=el.value;
     el.innerHTML=brFilterHTML('ทุกสาขาที่ดูแล');
     if(want) el.value=want; })();
@@ -8048,7 +8084,7 @@ function rDealList(){
     $('#expDeal').onclick=()=> csv('ลูกค้าและดีล',
       ['ลูกค้า','เบอร์','เงินสด/ผ่อน','การจอง','สาขา','เซลล์','รถ','เลขเครื่อง','ขั้นตอน','สิ่งที่ต้องทำต่อ',
        'เหตุผลที่ไม่ผ่าน','ติดไฟแนนซ์เจ้าไหน','ครบกำหนดทะเบียน','ทะเบียน','อัพเดทล่าสุด'],
-      dealRows().map(d=>[d.c.name,d.c.phone||'',dealPay(d),d.bk?'จองอยู่':'',bName(d.c.branch),(d.s?d.s.sales:d.c.owner)||'',
+      dealRows().map(d=>[d.c.name,d.c.phone||'',dealPay(d),d.bk?'จองอยู่':'',bName(d.c.branch),dealOwnerName(d),
         d.u?d.u.model:'', d.u?d.u.engine:'', dealStageName(d), dealHead(d).head,
         d.fc&&d.fc.rejectReason||'', d.fc&&d.fc.rejectWith||'',
         d.rg?d.rg.due:'', d.rg?d.rg.plate:'', d.c.upAt? thDT(d.c.upAt):'']));
