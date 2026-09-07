@@ -9,6 +9,7 @@
    [5] โหมดจริง: บัญชีบันทึกลูกค้าไร้เจ้าของได้ และคำขอต้องไม่มี owner_id เลย
    [6] โหมดจริง: ผู้บริหารเปิดมาแก้เฉย ๆ ต้องไม่ยึดเจ้าของ
    [7] โหมดจริง: ผู้บริหารตั้งใจจัดสรร → ส่ง owner_id และฐานบันทึกจริง · คืนกองกลางได้
+   [8] โฟลว์จองรถต้องไม่แนบ owner_id ทับเจ้าของลูกค้า (regression จาก 97fe84c)
    ตัว stub จำลองด่าน customer_guard ตามของจริง คำขอที่ผิดกติกาจะถูกปฏิเสธเหมือนฐานจริง */
 const {chromium,EXE,BASE}=require('./env');
 (async()=>{
@@ -102,10 +103,30 @@ const {chromium,EXE,BASE}=require('./env');
   check(await custPersist(fresh),'[5] เพิ่มลูกค้าใหม่โดยไม่ระบุเจ้าของไม่สำเร็จ');
   check(!('owner_id' in REQ[REQ.length-1].body),'[5] ลูกค้าใหม่ยังแนบ owner_id ไปเอง');
   check(OWNERS['QAOWN-NEW']===acct.id&&fresh.ownerId===acct.id,'[5] ลูกค้าใหม่ไม่ได้เจ้าของจาก trigger');
+
+  /* ---------- [8] โฟลว์จองรถ ต้องไม่ทับเจ้าของลูกค้า ----------
+     กันไม่ให้แพตเทิร์น owner_id:c.ownerId||ME.id กลับมาทางอื่นอีก
+     ดัก dbUp ไว้ที่ตัวมันเอง จึงตรวจได้ว่า "โฟลว์จองส่งอะไร" โดยไม่ติดด่าน uuid ภายใน */
+  ME=sales;go('booking');
+  const UP=[],realUp=dbUp;dbUp=(t,b)=>{UP.push({t,b});};
+  const unit=UNITS.find(x=>x.status==='available'&&inScope(x.branch));
+  const walkin=mkCust('QAOWN-BOOK',{phone:'0866554433',branch:unit.branch});   /* ownerId ว่างจาก mkCust */
+  CUSTOMERS.push(walkin);
+  rBooking();
+  $('#bkName').value=walkin.name;$('#bkPhone').value=walkin.phone;
+  $('#bkUnit').innerHTML='<option value="'+unit.id+'">x</option>';$('#bkUnit').value=unit.id;
+  $('#bkDeposit').value='0';$('#bkNote').value='';
+  bookSave();if($('#cfmGo'))$('#cfmGo').onclick();
+  dbUp=realUp;
+  const custUp=UP.find(x=>x.t==='customer');
+  check(!!UP.find(x=>x.t==='booking'),'[8] จองไม่สำเร็จ ชุดตรวจนี้จึงพิสูจน์อะไรไม่ได้');
+  check(!!custUp,'[8] จองแล้วไม่ได้อัปเดตลูกค้าเลย');
+  check(custUp&&!('owner_id' in custUp.b),'[8] โฟลว์จองยังแนบ owner_id ทับเจ้าของลูกค้า (regression 97fe84c)');
+  check(walkin.ownerId==='','[8] การจองเปลี่ยนเจ้าของลูกค้าในหน้าจอ');
   return failures;
  });
 
- console.log(result.length?'FAILS:\n'+result.join('\n'):'ALL_CHECKS_PASS (owner-r61: 7 กลุ่ม)');
+ console.log(result.length?'FAILS:\n'+result.join('\n'):'ALL_CHECKS_PASS (owner-r61: 8 กลุ่ม)');
  console.log(errors.length?'ERRORS:\n'+errors.join('\n'):'NO_PAGE_ERRORS');
  await b.close();process.exit(result.length||errors.length?1:0);
 })().catch(e=>{console.error('SUITE_CRASH',e);process.exit(2);});
