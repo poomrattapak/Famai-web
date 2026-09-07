@@ -1,8 +1,13 @@
-name: ตรวจเว็บตามบรีฟ r56
+name: ตรวจเว็บอัตโนมัติ
 
+# ด่านนี้ต้องเห็นทุก commit ที่จะกลายเป็นของจริง ไม่ใช่เฉพาะสาขาตรวจรอบเดียว
+# เดิมผูกไว้กับ work/brief-r56-validation ทำให้ v1.57–v1.60 ไม่เคยผ่าน CI เลย
 on:
   push:
-    branches: [work/brief-r56-validation]
+    branches:
+      - claude/start-b18xi3   # สาขาทำงานหลัก — ทุก commit ที่ push ต้องผ่านด่าน
+      - 'work/**'             # สาขาตรวจรอบส่งงานตามเดิม
+  pull_request:
   workflow_dispatch:
 
 permissions:
@@ -14,7 +19,6 @@ concurrency:
 
 jobs:
   browser-qa:
-    if: github.ref == 'refs/heads/work/brief-r56-validation'
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     defaults:

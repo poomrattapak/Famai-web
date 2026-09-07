@@ -1,9 +1,18 @@
-# ตรวจบรีฟ r56 บน GitHub Actions
+# ตรวจเว็บอัตโนมัติบน GitHub Actions
 
-ไฟล์ `.github/workflows/brief-qa.yml` ทำงานเฉพาะ push ไป `work/brief-r56-validation`
-หรือสั่งเองบน branch นี้ ไม่ได้ตั้งขั้นตอนเผยแพร่เว็บ และไม่ได้เปิด PR
-ต้องรวมโค้ดที่ต้องการตรวจทั้งหมดลง commit เดียวกันก่อน push branch ตรวจ
+ไฟล์ `.github/workflows/brief-qa.yml` ทำงานเมื่อ push เข้าสาขาทำงานหลัก
+`claude/start-b18xi3` เมื่อ push เข้าสาขา `work/**` เมื่อเปิด pull request
+หรือสั่งเองด้วย `workflow_dispatch` บนสาขาใดก็ได้ ไม่ได้ตั้งขั้นตอนเผยแพร่เว็บ
+
+เดิมด่านนี้ผูกกับ `work/brief-r56-validation` สาขาเดียวทั้งที่ `on.push.branches`
+และ `if:` ของ job ทำให้ commit ที่ push เข้าสาขาทำงานหลักไม่เคยถูกตรวจเลย
+รอบ v1.57 ถึง v1.60 จึงมีแต่ผลรันมือบนเครื่อง ไม่มีผลจาก CI
+
+ยังควรรวมโค้ดที่ต้องการตรวจทั้งหมดลง commit เดียวกันก่อน push
 ผลด่านจึงอ้างอิง commit ที่แน่นอนได้ ดู `commit.txt` ใน artifact
+สาขาทำงานหลักตั้ง `cancel-in-progress` ไว้ การ push ถี่ ๆ จะยกเลิกรอบก่อนหน้า
+เหลือผลของ commit ล่าสุดเท่านั้น ถ้าต้องการผลของ commit กลางทางให้สั่ง
+`workflow_dispatch` บน commit นั้นแยก
 
 งานใช้สิทธิ์ `contents: read` และ checkout แบบ `persist-credentials: false`
 ไม่รับ secrets ของฐานข้อมูลหรือ deployment แพ็กเกจติดตั้งในโฟลเดอร์ชั่วคราวของ runner
@@ -46,6 +55,10 @@ Postgres WASM (`@electric-sql/pglite` 0.5.8) ก่อนด่าน browser �
 - [Playwright บน CI](https://playwright.dev/docs/ci-intro)
 
 ตัวช่วย `github_fetch_commit_workflow_runs` กรองเฉพาะ event `pull_request`
-จึงไม่เหมาะกับงานนี้ ให้เรียก API อ่าน
-`/repos/poomrattapak/Famai-web/actions/runs?branch=work%2Fbrief-r56-validation&event=push`
-แล้วตรวจ `head_sha` ให้ตรง commit ที่ต้องการก่อนอ่าน jobs และ artifacts
+จึงยังไม่ครอบรอบที่มาจาก push ให้เรียก API อ่าน
+`/repos/poomrattapak/Famai-web/actions/runs?branch=claude%2Fstart-b18xi3&event=push`
+(เปลี่ยน `branch` ตามสาขาที่ต้องการ) แล้วตรวจ `head_sha` ให้ตรง commit ที่ต้องการ
+ก่อนอ่าน jobs และ artifacts
+
+การแก้ไฟล์ใน `.github/workflows/` ต้องใช้ token ที่มีสิทธิ์ `workflow`
+ถ้า push แล้วถูกปฏิเสธ ให้รายงานข้อจำกัดนั้น ไม่ต้องย้ายด่านออกไปไว้ที่อื่น
