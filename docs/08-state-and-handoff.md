@@ -12,7 +12,9 @@
 
 หลักฐานในเครื่อง: `/tmp/famai-r61-all.log` ผ่าน 100/100 ชุดหลังการแก้หลัก; `/tmp/famai-r61-final-target.log` ตรวจ 5 ชุดที่เกี่ยวข้องซ้ำหลังปรับรายชื่อเซลล์และล็อกผู้รับผิดชอบ; `/tmp/famai-r61-mutations.json` 16/16; `/tmp/famai-r61-sql-mutations.log` 112 assertion + 43 mutation; `/tmp/famai-r61-visual/report.json` 16 บริบท / 48 ภาพจาก Chromium และ WebKit ทั้ง 4 ขนาด สองธีม
 
-Migration ใหม่: `20260907074410_35_staff_quote_identity.sql` ต้องใช้ก่อนเว็บรุ่นนี้ ต้นฉบับแอป SHA-256 `0aa41a7182f39bb5f5e31d487131c571ac31dd27888402713542f00bbebb8b4a` ลง migration 35 ในฐานจริงสำเร็จเป็นรุ่น `20260907074410` ตรวจคอลัมน์ใหม่/RLS/สิทธิ์ RPC แล้ว: authenticated เรียกได้, anon เรียกไม่ได้ สถานะการตรวจเว็บ production จะบันทึกหลังเผยแพร่
+Migration ใหม่: `20260907074410_35_staff_quote_identity.sql` ต้องใช้ก่อนเว็บรุ่นนี้ ต้นฉบับแอป SHA-256 `0aa41a7182f39bb5f5e31d487131c571ac31dd27888402713542f00bbebb8b4a` ลง migration 35 ในฐานจริงสำเร็จเป็นรุ่น `20260907074410` ตรวจคอลัมน์ใหม่/RLS/สิทธิ์ RPC แล้ว: authenticated เรียกได้, anon เรียกไม่ได้ เผยแพร่ commit `97fe84ca728731007ad8c53fd6987a524c2d657e` แล้ว Vercel `dpl_5NL5bYKzeLiFVwNii7C8ym7WFqEp` เป็น READY และไฟล์ที่ดาวน์โหลดจาก https://famai-web.vercel.app/index.html มี SHA-256 ตรงต้นฉบับ
+
+ตรวจ production ผ่านชุดที่เกี่ยวข้อง 7/7 ชุด (`/tmp/famai-r61-production-suites.json`) และขับบัญชีสาธิต ST3/ST4/ST5 จริงผ่านหน้าเข้าสู่ระบบทั้ง Chromium แนวนอน 1180 และ WebKit แนวตั้ง 820 รวม 6 บริบท (`/tmp/famai-r61-production-proof.json`): ลูกค้าก่อน/หลังเพิ่มเป็น 7→8, 5→6, 4→5 ตามลำดับ ไม่มีลูกค้าของเซลล์คนอื่น ใบเสนอได้ชื่อ/เบอร์อัตโนมัติ แก้เบอร์ประวัติแล้วใบใหม่ใช้เบอร์ใหม่และใบเก่าคงเดิม ทุกบริบทไม่มี pageerror การตรวจนี้ไม่ใช้รหัสผ่านพนักงานจริงและไม่เพิ่มธุรกรรมในฐานร้าน
 
 ตรวจ advisory หลัง DDL: `staff_set_contact` ถูกแจ้งว่า authenticated เรียก SECURITY DEFINER ได้ ซึ่งเป็นทางเข้าที่ตั้งใจเปิดและมีด่านตนเอง/ผู้ดูแลในฟังก์ชัน ไม่เปิด PATCH บัญชีให้พนักงานทั่วไป อ่าน [คำอธิบาย advisory](https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable) รายการเตือนเดิมนอกขอบเขตยังคงเดิม
 
