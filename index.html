@@ -6856,8 +6856,12 @@ function bookSave(){
     BOOKINGS.unshift(b);
     u.status='reserved';
     if(LIVE){
+      /* ห้ามแนบ owner_id ที่นี่ — ลูกค้าเก่าที่ยังไม่มีเจ้าของจะกลายเป็น "เปลี่ยนเจ้าของ"
+         customer_guard ตอบ 42501 กับทุกคนที่ไม่ใช่ผู้บริหาร คนจองจึงบันทึกไม่ได้
+         ลูกค้าใหม่ก็ไม่ต้องส่ง trigger เติม coalesce(owner_id, auth.uid()) ให้เองอยู่แล้ว
+         (แนวเดียวกับ custPersist — ดู .claude/issues/005) */
       dbUp('customer', { id:c.id, branch_id:BR_IDS[c.branch]||null, full_name:c.name,
-        phone:c.phone||null, source:c.src||null, stage:c.stage, owner_id:c.ownerId||ME.id });
+        phone:c.phone||null, source:c.src||null, stage:c.stage });
       dbUp('booking', { id:b.id, branch_id:BR_IDS[u.branch], customer_id:c.id, unit_id:u.id,
         name:b.name, phone:b.phone, deposit:b.deposit, deposit_no:b.depositNo||null,
         status:b.status, booked_at:b.at, note:b.note||null });
